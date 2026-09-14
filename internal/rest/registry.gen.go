@@ -10,10 +10,25 @@ import (
 // RegisterRoutes mounts every generated resource's REST routes. Regenerated from
 // togo.resources.yaml on every make:* / generate.
 func RegisterRoutes(api huma.API, a *app.App) {
+	RegisterActivityLogRoutes(api, a)
+	RegisterAttachmentRoutes(api, a)
+	RegisterClientRoutes(api, a)
 	RegisterInvitationRoutes(api, a)
+	RegisterLabelRoutes(api, a)
 	RegisterMcpTokenRoutes(api, a)
+	RegisterProjectRoutes(api, a)
+	RegisterProjectMemberRoutes(api, a)
+	RegisterProjectTeamRoutes(api, a)
 	RegisterReportRoutes(api, a)
 	RegisterReportCommentRoutes(api, a)
+	RegisterTaskRoutes(api, a)
+	RegisterTaskAssigneeRoutes(api, a)
+	RegisterTaskChecklistItemRoutes(api, a)
+	RegisterTaskCommentRoutes(api, a)
+	RegisterTaskLabelRoutes(api, a)
+	RegisterTaskStatusRoutes(api, a)
+	RegisterTeamRoutes(api, a)
+	RegisterTeamMemberRoutes(api, a)
 	RegisterWorkspaceRoutes(api, a)
 	RegisterWorkspaceMemberRoutes(api, a)
 }

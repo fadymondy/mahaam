@@ -20,6 +20,16 @@ var tenantTables = map[string]string{
 	"report_comments":   `\bworkspace_id\s*=\s*\$\d+`,
 }
 
+func init() {
+	for _, t := range []string{
+		"clients", "projects", "project_members", "teams", "team_members", "project_teams",
+		"task_statuses", "tasks", "task_assignees", "task_checklist_items", "labels", "task_labels",
+		"task_comments", "attachments", "activity_logs", "key_counters",
+	} {
+		tenantTables[t] = `\bworkspace_id\s*=\s*\$\d+`
+	}
+}
+
 var tableRef = regexp.MustCompile(`(?i)\b(?:from|join|update|into)\s+([a-z_]+)`)
 
 /*

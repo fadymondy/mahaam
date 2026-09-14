@@ -50,6 +50,23 @@ const (
 	FeedbackRead      = "feedback:read"
 	FeedbackWrite     = "feedback:write"
 	GraphQL           = "graphql"
+
+	// P1 — projects and tasks. Project visibility (workspace vs members-only, direct or
+	// through a team) is applied on top of these in internal/work; project leads may also
+	// manage their own project.
+	ProjectsRead     = "projects:read"
+	ProjectsCreate   = "projects:create"
+	ProjectsManage   = "projects:manage"
+	TasksRead        = "tasks:read"
+	TasksWrite       = "tasks:write"
+	ClientsRead      = "clients:read"
+	ClientsWrite     = "clients:write"
+	TeamsRead        = "teams:read"
+	TeamsWrite       = "teams:write"
+	LabelsCreate     = "labels:create"
+	LabelsManage     = "labels:manage"
+	ActivityRead     = "activity:read"
+	CommentsModerate = "comments:moderate"
 )
 
 // Matrix is the minimum role per action.
@@ -68,6 +85,20 @@ var Matrix = map[string]Role{
 	// per-field authorization of their own; RLS isolates tenants, and this keeps
 	// it to people who could make the same changes in the UI.
 	GraphQL: Admin,
+
+	ProjectsRead:     Client, // clients: only projects they are a member of (internal/work)
+	ProjectsCreate:   Manager,
+	ProjectsManage:   Manager, // or the project's lead
+	TasksRead:        Client,
+	TasksWrite:       Member,
+	ClientsRead:      Member,
+	ClientsWrite:     Manager,
+	TeamsRead:        Member,
+	TeamsWrite:       Manager,
+	LabelsCreate:     Member,
+	LabelsManage:     Manager,
+	ActivityRead:     Manager, // the workspace-wide feed; project/task feeds follow project access
+	CommentsModerate: Manager,
 }
 
 // Can reports whether role may perform action. Unknown actions are denied.
@@ -115,6 +146,26 @@ var Generated = map[string]TablePolicy{
 	"mcp_tokens":        {Read: None, Write: None},
 	"reports":           {Read: Member, Write: Admin},
 	"report_comments":   {Read: Member, Write: Admin},
+
+	// P1. Generated CRUD is read-only and manager+ (managers see every project anyway): the
+	// generic list handlers know nothing of project visibility, and the generic writes would
+	// neither check references nor record activity. Every write goes through /api/w/*
+	// (internal/work), which derives the actor from the session and logs it.
+	"clients":              {Read: Manager, Write: None},
+	"projects":             {Read: Manager, Write: None},
+	"project_members":      {Read: Manager, Write: None},
+	"teams":                {Read: Manager, Write: None},
+	"team_members":         {Read: Manager, Write: None},
+	"project_teams":        {Read: Manager, Write: None},
+	"task_statuses":        {Read: Manager, Write: None},
+	"tasks":                {Read: Manager, Write: None},
+	"task_assignees":       {Read: Manager, Write: None},
+	"task_checklist_items": {Read: Manager, Write: None},
+	"labels":               {Read: Manager, Write: None},
+	"task_labels":          {Read: Manager, Write: None},
+	"task_comments":        {Read: Manager, Write: None},
+	"attachments":          {Read: Manager, Write: None},
+	"activity_logs":        {Read: Admin, Write: None},
 }
 
 // CanTable reports whether role may perform an HTTP method on a generated table.

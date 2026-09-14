@@ -9,19 +9,64 @@ import (
 
 // SeedAll runs every resource seeder. Regenerated from togo.resources.yaml.
 func SeedAll(ctx context.Context, a *app.App) error {
+	if err := SeedActivityLog(ctx, a); err != nil {
+		return err
+	}
 	if err := SeedAdminMcpToken(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedAttachment(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedClient(ctx, a); err != nil {
 		return err
 	}
 	if err := SeedInvitation(ctx, a); err != nil {
 		return err
 	}
+	if err := SeedLabel(ctx, a); err != nil {
+		return err
+	}
 	if err := SeedMcpToken(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedProject(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedProjectMember(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedProjectTeam(ctx, a); err != nil {
 		return err
 	}
 	if err := SeedReport(ctx, a); err != nil {
 		return err
 	}
 	if err := SeedReportComment(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTask(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTaskAssignee(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTaskChecklistItem(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTaskComment(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTaskLabel(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTaskStatus(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTeam(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTeamMember(ctx, a); err != nil {
 		return err
 	}
 	if err := SeedWorkspace(ctx, a); err != nil {

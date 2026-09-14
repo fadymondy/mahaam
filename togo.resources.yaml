@@ -1,5 +1,64 @@
 # Managed by togo. Source of truth for generated registries.
 resources:
+    - name: ActivityLog
+      table: activity_logs
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: project_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: task_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: actor_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: actor_via
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: action
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: subject_type
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: subject_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: changes
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: ip
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_agent
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
     - name: AdminMcpToken
       table: admin_mcp_tokens
       fields:
@@ -38,6 +97,94 @@ resources:
           gql: String
           pg: timestamptz
           "null": true
+    - name: Attachment
+      table: attachments
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: task_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: file_name
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: content_type
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: size
+          go: int64
+          gql: Int!
+          pg: bigint
+          "null": false
+        - name: storage_path
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: uploaded_by
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
+    - name: Client
+      table: clients
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: name
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: email
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: phone
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: country
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: currency
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: default_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: notes
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: archived_at
+          go: time.Time
+          gql: String
+          pg: timestamptz
+          "null": true
+      controller: true
     - name: Invitation
       table: invitations
       fields:
@@ -81,6 +228,25 @@ resources:
           gql: String
           pg: text
           "null": true
+      controller: true
+    - name: Label
+      table: labels
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: name
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: color
+          go: string
+          gql: String!
+          pg: text
+          "null": false
       controller: true
     - name: McpToken
       table: mcp_tokens
@@ -130,6 +296,128 @@ resources:
           gql: String
           pg: timestamptz
           "null": true
+      controller: true
+    - name: Project
+      table: projects
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: client_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: name
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: description
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: color
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: status
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: billing_mode
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: budget_minutes
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: budget_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: currency
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: visibility
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: starts_on
+          go: time.Time
+          gql: String
+          pg: date
+          "null": true
+        - name: ends_on
+          go: time.Time
+          gql: String
+          pg: date
+          "null": true
+        - name: archived_at
+          go: time.Time
+          gql: String
+          pg: timestamptz
+          "null": true
+        - name: created_by
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
+    - name: ProjectMember
+      table: project_members
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: project_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: role
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
+    - name: ProjectTeam
+      table: project_teams
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: project_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: team_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
       controller: true
     - name: Report
       table: reports
@@ -363,6 +651,273 @@ resources:
           gql: String
           pg: text
           "null": true
+      controller: true
+    - name: Task
+      table: tasks
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: project_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: status_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: number
+          go: int64
+          gql: Int!
+          pg: bigint
+          "null": false
+        - name: key
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: title
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: description
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: position
+          go: float64
+          gql: Float!
+          pg: double precision
+          "null": false
+        - name: due_at
+          go: time.Time
+          gql: String
+          pg: timestamptz
+          "null": true
+        - name: estimate_minutes
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: priority
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: parent_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: created_by
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: completed_at
+          go: time.Time
+          gql: String
+          pg: timestamptz
+          "null": true
+      controller: true
+    - name: TaskAssignee
+      table: task_assignees
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: task_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
+    - name: TaskChecklistItem
+      table: task_checklist_items
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: task_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: title
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: done
+          go: bool
+          gql: Boolean!
+          pg: boolean
+          "null": false
+        - name: position
+          go: float64
+          gql: Float!
+          pg: double precision
+          "null": false
+        - name: done_at
+          go: time.Time
+          gql: String
+          pg: timestamptz
+          "null": true
+        - name: done_by
+          go: string
+          gql: String
+          pg: text
+          "null": true
+      controller: true
+    - name: TaskComment
+      table: task_comments
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: task_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: author_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: author_kind
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: body
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: mentions
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: edited_at
+          go: time.Time
+          gql: String
+          pg: timestamptz
+          "null": true
+      controller: true
+    - name: TaskLabel
+      table: task_labels
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: task_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: label_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
+    - name: TaskStatus
+      table: task_statuses
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: project_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: name
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: color
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: category
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: position
+          go: float64
+          gql: Float!
+          pg: double precision
+          "null": false
+      controller: true
+    - name: Team
+      table: teams
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: name
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: description
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: color
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
+    - name: TeamMember
+      table: team_members
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: team_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
       controller: true
     - name: Workspace
       table: workspaces
