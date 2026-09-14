@@ -44,6 +44,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/togo-framework/togo"
@@ -92,6 +93,12 @@ func (c *client) ensureCSRF() {
 
 func (c *client) send(req *http.Request, method string) (int, []byte) {
 	c.t.Helper()
+	// The per-user realtime stream never ends by itself: read what it sends in two seconds.
+	if strings.HasSuffix(req.URL.Path, "/events") {
+		ctx, cancel := context.WithTimeout(req.Context(), 2*time.Second)
+		defer cancel()
+		req = req.WithContext(ctx)
+	}
 	if c.ws != "" {
 		req.Header.Set("X-Workspace-ID", c.ws)
 	}
@@ -282,8 +289,18 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	tlID := rowID(`SELECT id FROM task_labels WHERE workspace_id = $1 LIMIT 1`)
 	acID := rowID(`SELECT id FROM activity_logs WHERE workspace_id = $1 LIMIT 1`)
 
+	// P2 rows: a time entry (logged yesterday), a member rate, a notification.
+	yesterday := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02")
+	teID := alice.must("POST", "/api/w/time/entries", map[string]any{"project": prID, "description": marker + " time", "date": yesterday, "minutes": 30}, 201)["id"].(string)
+	rateID := alice.must("PUT", "/api/w/rates/"+aliceID, map[string]any{"bill_rate_minor": 12000, "cost_rate_minor": 5000}, 200)["id"].(string)
+	var noteID string
+	if err := a.SysDB.QueryRow(`INSERT INTO notifications (workspace_id, user_id, kind, title) VALUES ($1, $2, 'time.missing_day', $3) RETURNING id`,
+		aID, aliceID, marker).Scan(&noteID); err != nil {
+		t.Fatal(err)
+	}
+
 	aIDs := []string{aID, invID, tokID, repID, comID, memberID, clID, teamID, prID, stTodo, stDone, lbID, tkID,
-		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID}
+		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID}
 
 	// idFor names the A row a route's path parameters are filled with, by the route's first
 	// segment after /api/ (or /api/w/). A guarded route whose segment is missing here fails.
@@ -297,11 +314,16 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"attachments": atID, "activity_logs": acID,
 		// hand-written /api/w/<segment>/{...}
 		"statuses": stTodo, "checklist": ckID, "comments": cmID,
+		// P2: generated CRUD, and /api/w/time/entries/{entry}, /api/w/rates/{user},
+		// /api/w/member-rates/{rate}, /api/w/notifications/{notification}/read
+		"time_entries": teID, "member_rates": rateID, "notifications": noteID,
+		"time": teID, "rates": aliceID, "member-rates": rateID,
 	}
 	// Guarded routes without path parameters, by segment. Anything else is unknown.
 	unparameterised := map[string]bool{
 		"current": true, "members": true, "activity": true, "me": true, "graphql": true,
 		"feedback": true, // the signed-in "Report a problem" intake (reports land in the platform workspace)
+		"events":   true, // P2: the per-user realtime stream (read with a timeout, see send)
 	}
 
 	leaks := func(b []byte) string {
@@ -425,17 +447,37 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	bTask := bob.must("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "B task"}, 201)
 	bKey := bTask["key"].(string)
 	for label, attempt := range map[string]func() (int, []byte){
-		"task with A's parent":      func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "parent": tkID}) },
-		"task with A's status":      func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "status": stDone}) },
-		"task with A's label":       func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "label_ids": []string{lbID}}) },
-		"task assigned to alice":    func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "assignee_ids": []string{aliceID}}) },
-		"project with A's client":   func() (int, []byte) { return bob.do("POST", "/api/w/projects", map[string]any{"name": "x", "client_id": clID}) },
-		"attach A's team":           func() (int, []byte) { return bob.do("PUT", "/api/w/projects/"+pBID+"/teams/"+teamID, nil) },
-		"add alice to B's project":  func() (int, []byte) { return bob.do("PUT", "/api/w/projects/"+pBID+"/members/"+aliceID, map[string]any{}) },
-		"move into A's status":      func() (int, []byte) { return bob.do("POST", "/api/w/tasks/"+bKey+"/move", map[string]any{"status": stDone}) },
-		"label B's task with A's":   func() (int, []byte) { return bob.do("PUT", "/api/w/tasks/"+bKey+"/labels", map[string]any{"label_ids": []string{lbID}}) },
-		"assign alice to B's task":  func() (int, []byte) { return bob.do("PUT", "/api/w/tasks/"+bKey+"/assignees", map[string]any{"user_ids": []string{aliceID}}) },
-		"team with alice as member": func() (int, []byte) { return bob.do("POST", "/api/w/teams", map[string]any{"name": "x", "member_ids": []string{aliceID}}) },
+		"task with A's parent": func() (int, []byte) {
+			return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "parent": tkID})
+		},
+		"task with A's status": func() (int, []byte) {
+			return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "status": stDone})
+		},
+		"task with A's label": func() (int, []byte) {
+			return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "label_ids": []string{lbID}})
+		},
+		"task assigned to alice": func() (int, []byte) {
+			return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "assignee_ids": []string{aliceID}})
+		},
+		"project with A's client": func() (int, []byte) {
+			return bob.do("POST", "/api/w/projects", map[string]any{"name": "x", "client_id": clID})
+		},
+		"attach A's team": func() (int, []byte) { return bob.do("PUT", "/api/w/projects/"+pBID+"/teams/"+teamID, nil) },
+		"add alice to B's project": func() (int, []byte) {
+			return bob.do("PUT", "/api/w/projects/"+pBID+"/members/"+aliceID, map[string]any{})
+		},
+		"move into A's status": func() (int, []byte) {
+			return bob.do("POST", "/api/w/tasks/"+bKey+"/move", map[string]any{"status": stDone})
+		},
+		"label B's task with A's": func() (int, []byte) {
+			return bob.do("PUT", "/api/w/tasks/"+bKey+"/labels", map[string]any{"label_ids": []string{lbID}})
+		},
+		"assign alice to B's task": func() (int, []byte) {
+			return bob.do("PUT", "/api/w/tasks/"+bKey+"/assignees", map[string]any{"user_ids": []string{aliceID}})
+		},
+		"team with alice as member": func() (int, []byte) {
+			return bob.do("POST", "/api/w/teams", map[string]any{"name": "x", "member_ids": []string{aliceID}})
+		},
 	} {
 		// A refusal may echo the id B itself sent ("unknown client <id>") — the same words
 		// whether or not the id exists in A, so it confirms nothing. Anything else of A's is a leak.
@@ -457,6 +499,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"/api/w/tasks/" + tkID:          marker,
 		"/api/w/projects/" + prID:       marker,
 		"/api/w/clients/" + clID:        marker,
+		"/api/w/time/entries/" + teID:   marker,
 	} {
 		if code, b := alice.do("GET", path, nil); code != 200 || !strings.Contains(string(b), want) {
 			t.Errorf("A's row at %s was damaged from B: %d %s", path, code, b)

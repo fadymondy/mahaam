@@ -30,6 +30,8 @@ func Register(api huma.API, a *app.App) {
 	r.tasks()
 	r.labels()
 	r.activity()
+	r.time()          // P2: timer, entries, timesheets, settings, rates
+	r.notifications() // P2: the in-app inbox
 }
 
 type routes struct {
@@ -46,16 +48,36 @@ type WS struct {
 
 // Path references, embedded next to WS. Exported so Huma binds them (see above).
 type (
-	ClientRef  struct{ Client string `path:"client" doc:"Client id or exact name"` }
-	TeamRef    struct{ Team string `path:"team"` }
-	ProjectRef struct{ Project string `path:"project"` }
-	TaskRef    struct{ Task string `path:"task" doc:"MG-12, 12 or the task id"` }
-	StatusRef  struct{ Status string `path:"status"` }
-	LabelRef   struct{ Label string `path:"label"` }
-	ItemRef    struct{ Item string `path:"item"` }
-	CommentRef struct{ Comment string `path:"comment"` }
-	FileRef    struct{ Attachment string `path:"attachment"` }
-	UserRef    struct{ User string `path:"user"` }
+	ClientRef struct {
+		Client string `path:"client" doc:"Client id or exact name"`
+	}
+	TeamRef struct {
+		Team string `path:"team"`
+	}
+	ProjectRef struct {
+		Project string `path:"project"`
+	}
+	TaskRef struct {
+		Task string `path:"task" doc:"MG-12, 12 or the task id"`
+	}
+	StatusRef struct {
+		Status string `path:"status"`
+	}
+	LabelRef struct {
+		Label string `path:"label"`
+	}
+	ItemRef struct {
+		Item string `path:"item"`
+	}
+	CommentRef struct {
+		Comment string `path:"comment"`
+	}
+	FileRef struct {
+		Attachment string `path:"attachment"`
+	}
+	UserRef struct {
+		User string `path:"user"`
+	}
 )
 
 func (r routes) fail(err error) error {

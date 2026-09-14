@@ -18,6 +18,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	db "github.com/fadymondy/managy/internal/db/gen"
+	"github.com/fadymondy/managy/internal/live"
 	"github.com/fadymondy/managy/internal/tenant"
 )
 
@@ -47,6 +48,10 @@ type App struct {
 	Queue    togo.Queue
 	Storage  togo.Storage
 	Realtime togo.Broker
+
+	// Live is the per-user realtime channel (timer.started / timer.stopped, notifications).
+	// NOT k.Realtime: togo's brokers cannot scope a stream to one person (internal/live).
+	Live *live.Hub
 }
 
 // New builds the container from the kernel, opening both pools if configured.
@@ -60,6 +65,7 @@ func New(ctx context.Context, k *togo.Kernel) *App {
 		Queue:    k.Queue,
 		Storage:  k.Storage,
 		Realtime: k.Realtime,
+		Live:     live.New(),
 	}
 	if sysDB, err := k.SQL(ctx); err == nil {
 		a.SysDB = sysDB

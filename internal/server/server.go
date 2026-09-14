@@ -56,6 +56,11 @@ func Boot() *app.App {
 	registerREST(api, a)
 
 	mcp.Mount(k, a)
+	// P2: the per-user realtime stream (timer.started / timer.stopped / entry.changed / notification.*).
+	// Under /api/w/, so the guard resolves session + membership first and the stream can only carry the
+	// caller's own events (internal/live). The scaffold's global /events stays unmounted.
+	k.Router.Get("/api/w/events", work.New(a).Events())
+	installReminders(k, a)
 	reports.MountFeedback(k, a)
 
 	gql := handler.NewDefaultServer(graphgen.NewExecutableSchema(graphgen.Config{

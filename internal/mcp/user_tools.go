@@ -11,6 +11,7 @@ import (
 	"github.com/fadymondy/managy/internal/app"
 	"github.com/fadymondy/managy/internal/reports"
 	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/managy/internal/work"
 	"github.com/fadymondy/managy/internal/workspaces"
 )
 
@@ -24,7 +25,7 @@ Every tool reads its workspace from the token (tenant.Scope on ctx), never
 from an argument, and the feedback tools go through the RLS app pool.
 */
 func UserTools() []Tool {
-	return append(contextTools(), WorkTools()...)
+	return append(append(contextTools(), WorkTools()...), TimeTools()...)
 }
 
 func contextTools() []Tool {
@@ -44,7 +45,19 @@ func contextTools() []Tool {
 				fmt.Fprintf(&b, "user: %s id=%s\n", s.Email, s.UserID)
 				fmt.Fprintf(&b, "role: %s\n", s.Role)
 				fmt.Fprintf(&b, "scopes: %s\n", strings.Join(nonEmpty(s.Scopes), ", "))
-				b.WriteString("running timer: none — time tracking arrives in P2\n")
+				switch {
+				case !hasScope(s.Scopes, "time:read"):
+					b.WriteString("running timer: (this token has no time:read scope)\n")
+				default:
+					sv := work.New(a)
+					if e, err := sv.RunningTimer(ctx, ""); err != nil {
+						fmt.Fprintf(&b, "running timer: unavailable (%s)\n", toolErr(err))
+					} else if e == nil {
+						b.WriteString("running timer: none\n")
+					} else {
+						b.WriteString("running timer: " + entryLine(e, zone(ctx, sv), true) + "\n")
+					}
+				}
 				return b.String(), nil
 			},
 		},

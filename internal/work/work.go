@@ -30,6 +30,7 @@ import (
 
 	"github.com/fadymondy/managy/internal/app"
 	"github.com/fadymondy/managy/internal/authz"
+	"github.com/fadymondy/managy/internal/live"
 	"github.com/fadymondy/managy/internal/tenant"
 )
 
@@ -39,6 +40,7 @@ type Service struct {
 	Sys   *sql.DB // owner pool — only to read member emails (the app role has no grant on users)
 	Store togo.Storage
 	Log   *slog.Logger
+	Live  *live.Hub // per-user realtime events (nil in the OpenAPI export)
 }
 
 // New builds the service from the app container. a may be nil (OpenAPI export).
@@ -46,7 +48,7 @@ func New(a *app.App) *Service {
 	if a == nil {
 		return &Service{}
 	}
-	return &Service{DB: a.SQLDB, Sys: a.SysDB, Store: a.Storage, Log: a.Log}
+	return &Service{DB: a.SQLDB, Sys: a.SysDB, Store: a.Storage, Log: a.Log, Live: a.Live}
 }
 
 // ---- errors ----------------------------------------------------------------
@@ -80,7 +82,12 @@ func AsError(err error) (*Error, bool) {
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
 		switch pg.Code {
+		case "23P01": // no_overlap
+			return &Error{http.StatusConflict, "that overlaps another of your time entries (a running timer counts until it is stopped)"}, true
 		case "23505":
+			if pg.ConstraintName == "one_running_timer" {
+				return &Error{http.StatusConflict, "a timer is already running"}, true
+			}
 			return &Error{http.StatusConflict, "that already exists"}, true
 		case "23503":
 			return &Error{http.StatusUnprocessableEntity, "a referenced item does not exist in this workspace"}, true
