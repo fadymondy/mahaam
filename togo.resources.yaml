@@ -297,6 +297,94 @@ resources:
           pg: timestamptz
           "null": true
       controller: true
+    - name: MemberRate
+      table: member_rates
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: effective_from
+          go: time.Time
+          gql: Time!
+          pg: date
+          "null": false
+        - name: bill_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: cost_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: currency
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: created_by
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
+    - name: Notification
+      table: notifications
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: kind
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: title
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: body
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: url
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: data
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: dedupe_key
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: read_at
+          go: time.Time
+          gql: Time
+          pg: timestamptz
+          "null": true
+      controller: true
     - name: Project
       table: projects
       fields:
@@ -375,6 +463,11 @@ resources:
           gql: String!
           pg: text
           "null": false
+        - name: bill_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
       controller: true
     - name: ProjectMember
       table: project_members
@@ -725,6 +818,11 @@ resources:
           gql: String
           pg: timestamptz
           "null": true
+        - name: bill_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
       controller: true
     - name: TaskAssignee
       table: task_assignees
@@ -919,6 +1017,95 @@ resources:
           pg: text
           "null": false
       controller: true
+    - name: TimeEntry
+      table: time_entries
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: project_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: task_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: client_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: description
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: started_at
+          go: time.Time
+          gql: Time!
+          pg: timestamptz
+          "null": false
+        - name: ended_at
+          go: time.Time
+          gql: Time
+          pg: timestamptz
+          "null": true
+        - name: duration_s
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: billable
+          go: bool
+          gql: Boolean!
+          pg: boolean
+          "null": false
+        - name: bill_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: cost_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: currency
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: source
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: invoice_id
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: locked_at
+          go: time.Time
+          gql: Time
+          pg: timestamptz
+          "null": true
+        - name: created_by
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+      controller: true
     - name: Workspace
       table: workspaces
       fields:
@@ -971,6 +1158,26 @@ resources:
           go: string
           gql: String!
           pg: text
+          "null": false
+        - name: default_bill_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: default_cost_rate_minor
+          go: int64
+          gql: Int
+          pg: bigint
+          "null": true
+        - name: reminder_running_hours
+          go: int64
+          gql: Int!
+          pg: bigint
+          "null": false
+        - name: reminder_daily
+          go: bool
+          gql: Boolean!
+          pg: boolean
           "null": false
       controller: true
     - name: WorkspaceMember

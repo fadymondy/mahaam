@@ -25,6 +25,7 @@ require (
 	github.com/togo-framework/queue v0.3.0
 	github.com/togo-framework/ratelimit v0.1.0
 	github.com/togo-framework/realtime v0.2.0
+	github.com/togo-framework/scheduler v0.1.0
 	github.com/togo-framework/storage v0.2.0
 	github.com/togo-framework/validation v0.1.0
 	github.com/vektah/gqlparser/v2 v2.5.22
@@ -46,6 +47,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect

@@ -21,3 +21,6 @@ CREATE TABLE IF NOT EXISTS tasks (
     created_at   timestamptz NOT NULL DEFAULT now(),
     updated_at   timestamptz NOT NULL DEFAULT now()
 );
+
+-- P2: a task's hourly bill rate (minor units, workspace currency); overrides the project rate.
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS bill_rate_minor bigint CHECK (bill_rate_minor IS NULL OR bill_rate_minor >= 0);

@@ -24,6 +24,8 @@ var TenantTables = []string{
 	"clients", "projects", "project_members", "teams", "team_members", "project_teams",
 	"task_statuses", "tasks", "task_assignees", "task_checklist_items", "labels", "task_labels",
 	"task_comments", "attachments", "activity_logs", "key_counters",
+	// P2
+	"time_entries", "member_rates", "notifications",
 }
 
 var roleName = regexp.MustCompile(`^[a-z_][a-z0-9_]{0,62}$`)

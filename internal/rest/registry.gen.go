@@ -16,6 +16,8 @@ func RegisterRoutes(api huma.API, a *app.App) {
 	RegisterInvitationRoutes(api, a)
 	RegisterLabelRoutes(api, a)
 	RegisterMcpTokenRoutes(api, a)
+	RegisterMemberRateRoutes(api, a)
+	RegisterNotificationRoutes(api, a)
 	RegisterProjectRoutes(api, a)
 	RegisterProjectMemberRoutes(api, a)
 	RegisterProjectTeamRoutes(api, a)
@@ -29,6 +31,7 @@ func RegisterRoutes(api huma.API, a *app.App) {
 	RegisterTaskStatusRoutes(api, a)
 	RegisterTeamRoutes(api, a)
 	RegisterTeamMemberRoutes(api, a)
+	RegisterTimeEntryRoutes(api, a)
 	RegisterWorkspaceRoutes(api, a)
 	RegisterWorkspaceMemberRoutes(api, a)
 }

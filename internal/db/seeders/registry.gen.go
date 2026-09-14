@@ -30,6 +30,12 @@ func SeedAll(ctx context.Context, a *app.App) error {
 	if err := SeedMcpToken(ctx, a); err != nil {
 		return err
 	}
+	if err := SeedMemberRate(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedNotification(ctx, a); err != nil {
+		return err
+	}
 	if err := SeedProject(ctx, a); err != nil {
 		return err
 	}
@@ -67,6 +73,9 @@ func SeedAll(ctx context.Context, a *app.App) error {
 		return err
 	}
 	if err := SeedTeamMember(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedTimeEntry(ctx, a); err != nil {
 		return err
 	}
 	if err := SeedWorkspace(ctx, a); err != nil {

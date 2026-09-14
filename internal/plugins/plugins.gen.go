@@ -9,6 +9,9 @@
 // body in any non-production APP_ENV (fadymondy.com FM-42); dashboard injects a
 // generic admin UI over the unscoped generated CRUD. Neither fits a
 // multi-tenant app. Keep togo.yaml's plugins list in sync.
+//
+// `togo install` rewrites this file and drops this note (and ignores --dry-run):
+// re-add it after every install. README, framework note 14.
 package plugins
 
 import (
@@ -20,5 +23,6 @@ import (
 	_ "github.com/togo-framework/queue"
 	_ "github.com/togo-framework/ratelimit"
 	_ "github.com/togo-framework/realtime"
+	_ "github.com/togo-framework/scheduler"
 	_ "github.com/togo-framework/storage"
 )

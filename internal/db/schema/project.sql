@@ -24,3 +24,6 @@ CREATE TABLE IF NOT EXISTS projects (
     updated_at   timestamptz NOT NULL DEFAULT now(),
     CHECK (ends_on IS NULL OR starts_on IS NULL OR ends_on >= starts_on)
 );
+
+-- P2: a project's hourly bill rate (minor units, workspace currency); overrides the member rate.
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS bill_rate_minor bigint CHECK (bill_rate_minor IS NULL OR bill_rate_minor >= 0);

@@ -20,3 +20,11 @@ CREATE TABLE IF NOT EXISTS workspaces (
     created_at       timestamptz NOT NULL DEFAULT now(),
     updated_at       timestamptz NOT NULL DEFAULT now()
 );
+
+-- P2: time settings and default rates (minor units, workspace currency). week_start: 0 = Sunday …
+-- 6 = Saturday. rounding_minutes applies at report time only. reminder_running_hours: a running
+-- timer older than this raises an in-app reminder; reminder_daily: "no time logged by 18:00 local".
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS default_bill_rate_minor bigint CHECK (default_bill_rate_minor IS NULL OR default_bill_rate_minor >= 0);
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS default_cost_rate_minor bigint CHECK (default_cost_rate_minor IS NULL OR default_cost_rate_minor >= 0);
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS reminder_running_hours bigint NOT NULL DEFAULT 8 CHECK (reminder_running_hours BETWEEN 1 AND 24);
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS reminder_daily boolean NOT NULL DEFAULT true;

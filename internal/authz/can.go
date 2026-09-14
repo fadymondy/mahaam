@@ -67,6 +67,13 @@ const (
 	LabelsManage     = "labels:manage"
 	ActivityRead     = "activity:read"
 	CommentsModerate = "comments:moderate"
+
+	// P2 — time tracking. Tracking is your own time; time:manage reaches other people's timers,
+	// entries and timesheets. Rates are finance: managers read them, admins set them.
+	TimeTrack   = "time:track"
+	TimeManage  = "time:manage"
+	RatesRead   = "rates:read"
+	RatesManage = "rates:manage"
 )
 
 // Matrix is the minimum role per action.
@@ -99,6 +106,11 @@ var Matrix = map[string]Role{
 	LabelsManage:     Manager,
 	ActivityRead:     Manager, // the workspace-wide feed; project/task feeds follow project access
 	CommentsModerate: Manager,
+
+	TimeTrack:   Member, // clients never track time
+	TimeManage:  Manager,
+	RatesRead:   Manager,
+	RatesManage: Admin,
 }
 
 // Can reports whether role may perform action. Unknown actions are denied.
@@ -166,6 +178,14 @@ var Generated = map[string]TablePolicy{
 	"task_comments":        {Read: Manager, Write: None},
 	"attachments":          {Read: Manager, Write: None},
 	"activity_logs":        {Read: Admin, Write: None},
+
+	// P2. Every write goes through /api/w/time* (internal/work/time.go), which enforces the
+	// invariants' application half (own entries, locks, rate snapshots) and records activity.
+	// Time entries carry rates, so the generic read is manager+ (managers see every timesheet).
+	// Rates are finance: admin+. Notifications are one person's inbox: no generic read at all.
+	"time_entries":  {Read: Manager, Write: None},
+	"member_rates":  {Read: Admin, Write: None},
+	"notifications": {Read: None, Write: None},
 }
 
 // CanTable reports whether role may perform an HTTP method on a generated table.
