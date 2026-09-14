@@ -56,6 +56,11 @@ func classify(r *http.Request) tier {
 		"/api/auth/otp",
 		// Magic links — the auth-mfa vulnerability class (fadymondy.com FM-81).
 		"/api/auth/magic",
+		// togo-framework/settings arrives transitively (queue -> providers -> settings) and its
+		// init() mounts GET/PUT/DELETE /api/settings/{scope}/{key} over one GLOBAL table, the
+		// scope taken from the path, with no authentication or tenant of its own. Workspace
+		// settings, when they come, go through /api/w/* with the scope derived from the session.
+		"/api/settings",
 	} {
 		if strings.HasPrefix(path, p) {
 			return tierBlocked

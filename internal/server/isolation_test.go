@@ -1,19 +1,25 @@
 package server
 
 /*
-TestCrossWorkspaceIsolation — the cross-workspace sweep (plan: tenancy step 5).
+TestCrossWorkspaceIsolation — the cross-workspace sweep (plan: tenancy step 5; P1 exit gate).
 
-It boots the real stack (guard, generated CRUD, RLS pool, MCP) against a
-throwaway database, gives two users a workspace each, fills workspace A with
-one row of every tenant table, then walks EVERY route on the router
-(chi.Walk — the same list `list_routes` shows) and asserts, per route:
+It boots the real stack (guard, generated CRUD, /api/w/* domain routes, RLS pool, MCP) against
+a throwaway database, gives two users a workspace each, fills workspace A with one row of EVERY
+tenant table through the real endpoints, then walks EVERY route on the router (chi.Walk — the
+same list `list_routes` shows) and asserts, per route:
 
-  1. anonymous            -> 401 (or the route is on the public allowlist)
-  2. bob + X-Workspace-ID=A -> 404 (not a member; existence not revealed)
-  3. bob + X-Workspace-ID=B, A's ids in the path -> never 2xx with A's data,
-     never A's marker in any body, and A's rows survive every write attempt
+  1. anonymous                 -> 401 (or the route is on the public allowlist)
+  2. bob + X-Workspace-ID=A    -> 404 (not a member; existence not revealed)
+  3. bob + X-Workspace-ID=B, A's ids in the path -> never A's marker or ids in any body,
+     never 2xx on a GET, never 2xx on ANY method of a /api/w/* route, and A's rows survive
 
-New routes are swept automatically: nothing here lists them by hand.
+A guarded route whose first path segment has no fixture below FAILS the test: a new route
+cannot be swept with a meaningless id by accident — whoever adds it must say what it names.
+
+After the sweep: bodies that reference A's rows from B (parent task, status, label, assignee,
+client, team, member) are refused; the activity actor comes from the session even when
+X-User-Id says otherwise; and the Claude-style MCP flow (create_task -> move_task ->
+comment_task) lands on the board.
 
 Run it with a dedicated database (it creates users and workspaces):
 
@@ -30,6 +36,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -59,11 +66,52 @@ type client struct {
 	csrf   string
 	ws     string
 	bearer string
+	extra  map[string]string
 }
 
 func newClient(t *testing.T, base string) *client {
 	jar, _ := cookiejar.New(nil)
 	return &client{t: t, base: base, http: &http.Client{Jar: jar}}
+}
+
+func (c *client) ensureCSRF() {
+	if c.csrf != "" {
+		return
+	}
+	r, err := c.http.Get(c.base + "/api/auth/csrf")
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	var out struct {
+		Token string `json:"csrf_token"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&out)
+	r.Body.Close()
+	c.csrf = out.Token
+}
+
+func (c *client) send(req *http.Request, method string) (int, []byte) {
+	c.t.Helper()
+	if c.ws != "" {
+		req.Header.Set("X-Workspace-ID", c.ws)
+	}
+	if c.bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearer)
+	}
+	for k, v := range c.extra {
+		req.Header.Set(k, v)
+	}
+	if method != http.MethodGet && method != http.MethodHead && c.bearer == "" {
+		c.ensureCSRF()
+		req.Header.Set("X-CSRF-Token", c.csrf)
+	}
+	res, err := c.http.Do(req)
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	defer res.Body.Close()
+	b, _ := io.ReadAll(res.Body)
+	return res.StatusCode, b
 }
 
 func (c *client) do(method, path string, body any) (int, []byte) {
@@ -75,34 +123,19 @@ func (c *client) do(method, path string, body any) (int, []byte) {
 	}
 	req, _ := http.NewRequest(method, c.base+path, rd)
 	req.Header.Set("Content-Type", "application/json")
-	if c.ws != "" {
-		req.Header.Set("X-Workspace-ID", c.ws)
-	}
-	if c.bearer != "" {
-		req.Header.Set("Authorization", "Bearer "+c.bearer)
-	}
-	if method != http.MethodGet && method != http.MethodHead && c.bearer == "" {
-		if c.csrf == "" {
-			r, err := c.http.Get(c.base + "/api/auth/csrf")
-			if err != nil {
-				c.t.Fatal(err)
-			}
-			var out struct {
-				Token string `json:"csrf_token"`
-			}
-			_ = json.NewDecoder(r.Body).Decode(&out)
-			r.Body.Close()
-			c.csrf = out.Token
-		}
-		req.Header.Set("X-CSRF-Token", c.csrf)
-	}
-	res, err := c.http.Do(req)
-	if err != nil {
-		c.t.Fatal(err)
-	}
-	defer res.Body.Close()
-	b, _ := io.ReadAll(res.Body)
-	return res.StatusCode, b
+	return c.send(req, method)
+}
+
+func (c *client) upload(path, name string, data []byte) (int, []byte) {
+	c.t.Helper()
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	f, _ := w.CreateFormFile("file", name)
+	_, _ = f.Write(data)
+	_ = w.Close()
+	req, _ := http.NewRequest(http.MethodPost, c.base+path, &buf)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	return c.send(req, http.MethodPost)
 }
 
 func (c *client) must(method, path string, body any, want int) map[string]any {
@@ -171,6 +204,9 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	aliceEmail, bobEmail := "alice-"+rnd()+"@example.test", "bob-"+rnd()+"@example.test"
 	alice.must("POST", "/api/auth/register", map[string]string{"email": aliceEmail, "password": "correct-horse-1"}, 201)
 	bob.must("POST", "/api/auth/register", map[string]string{"email": bobEmail, "password": "correct-horse-2"}, 201)
+	var aliceID, bobID string
+	_ = a.SysDB.QueryRow(`SELECT id FROM users WHERE email = $1`, aliceEmail).Scan(&aliceID)
+	_ = a.SysDB.QueryRow(`SELECT id FROM users WHERE email = $1`, bobEmail).Scan(&bobID)
 
 	wsA := alice.must("POST", "/api/me/workspaces", map[string]string{"name": "Iso A " + rnd()}, 201)["workspace"].(map[string]any)
 	wsB := bob.must("POST", "/api/me/workspaces", map[string]string{"name": "Iso B " + rnd()}, 201)["workspace"].(map[string]any)
@@ -180,7 +216,8 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	alice.ws = aID
 	inv := alice.must("POST", "/api/w/invitations", map[string]string{"email": "carol-" + rnd() + "@example.test", "role": "member"}, 201)
 	invID := inv["invitation"].(map[string]any)["id"].(string)
-	tok := alice.must("POST", "/api/w/mcp_tokens", map[string]any{"name": marker, "scopes": []string{"members:read", "feedback:read"}}, 201)
+	tok := alice.must("POST", "/api/w/mcp_tokens", map[string]any{"name": marker,
+		"scopes": []string{"members:read", "feedback:read", "projects:read", "tasks:read", "tasks:write", "clients:read"}}, 201)
 	tokID := tok["token"].(map[string]any)["id"].(string)
 	aliceToken := tok["plaintext"].(string)
 	rep := alice.must("POST", "/api/reports", map[string]any{
@@ -196,10 +233,75 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	if err := a.SysDB.QueryRow(`SELECT id FROM workspace_members WHERE workspace_id = $1`, aID).Scan(&memberID); err != nil {
 		t.Fatal(err)
 	}
-	aIDs := []string{aID, invID, tokID, repID, comID, memberID}
+
+	// P1 rows, all through the real /api/w/* endpoints.
+	clID := alice.must("POST", "/api/w/clients", map[string]any{"name": marker + " client", "email": "ap@example.test"}, 201)["id"].(string)
+	teamID := alice.must("POST", "/api/w/teams", map[string]any{"name": marker + " team", "member_ids": []string{aliceID}}, 201)["id"].(string)
+	proj := alice.must("POST", "/api/w/projects", map[string]any{"name": marker + " project", "client_id": clID, "visibility": "members"}, 201)
+	prID := proj["id"].(string)
+	statuses := proj["statuses"].([]any)
+	if len(statuses) != 4 {
+		t.Fatalf("a new project should get 4 default statuses, got %d", len(statuses))
+	}
+	stTodo := statuses[0].(map[string]any)["id"].(string)
+	stDone := statuses[3].(map[string]any)["id"].(string)
+	alice.must("PUT", "/api/w/projects/"+prID+"/teams/"+teamID, nil, 200)
+	lbID := alice.must("POST", "/api/w/labels", map[string]any{"name": marker + "-label", "color": "teal"}, 201)["id"].(string)
+	task := alice.must("POST", "/api/w/projects/"+prID+"/tasks", map[string]any{
+		"title": marker + " task", "label_ids": []string{lbID}, "assignee_ids": []string{aliceID}, "priority": "high",
+	}, 201)
+	tkID, tkKey := task["id"].(string), task["key"].(string)
+	if tkKey == "MG-1" {
+		t.Errorf("task reused the report's key MG-1 — tasks and reports must share one sequence")
+	}
+	ckID := alice.must("POST", "/api/w/tasks/"+tkKey+"/checklist", map[string]any{"title": marker}, 201)["id"].(string)
+	cmID := alice.must("POST", "/api/w/tasks/"+tkKey+"/comments", map[string]any{"body": marker + " @" + strings.Split(aliceEmail, "@")[0]}, 201)["id"].(string)
+	code, b := alice.upload("/api/w/tasks/"+tkKey+"/attachments", "brief.txt", []byte(marker+" file body"))
+	if code != 201 {
+		t.Fatalf("upload: %d %s", code, b)
+	}
+	var att map[string]any
+	_ = json.Unmarshal(b, &att)
+	atID := att["id"].(string)
+	subtask := alice.must("POST", "/api/w/projects/"+prID+"/tasks", map[string]any{"title": marker + " sub", "parent": tkKey}, 201)
+	if subtask["parent"] == nil {
+		t.Errorf("subtask was created without its parent: %v", subtask)
+	}
+
+	rowID := func(q string) string {
+		var id string
+		if err := a.SysDB.QueryRow(q, aID).Scan(&id); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+		return id
+	}
+	pmID := rowID(`SELECT id FROM project_members WHERE workspace_id = $1 LIMIT 1`)
+	tmID := rowID(`SELECT id FROM team_members WHERE workspace_id = $1 LIMIT 1`)
+	ptID := rowID(`SELECT id FROM project_teams WHERE workspace_id = $1 LIMIT 1`)
+	taID := rowID(`SELECT id FROM task_assignees WHERE workspace_id = $1 LIMIT 1`)
+	tlID := rowID(`SELECT id FROM task_labels WHERE workspace_id = $1 LIMIT 1`)
+	acID := rowID(`SELECT id FROM activity_logs WHERE workspace_id = $1 LIMIT 1`)
+
+	aIDs := []string{aID, invID, tokID, repID, comID, memberID, clID, teamID, prID, stTodo, stDone, lbID, tkID,
+		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID}
+
+	// idFor names the A row a route's path parameters are filled with, by the route's first
+	// segment after /api/ (or /api/w/). A guarded route whose segment is missing here fails.
 	idFor := map[string]string{
+		// generated CRUD (/api/<table>/{id})
 		"workspaces": aID, "workspace_members": memberID, "invitations": invID, "mcp_tokens": tokID,
 		"reports": repID, "report_comments": comID,
+		"clients": clID, "projects": prID, "project_members": pmID, "teams": teamID, "team_members": tmID,
+		"project_teams": ptID, "task_statuses": stTodo, "tasks": tkID, "task_assignees": taID,
+		"task_checklist_items": ckID, "labels": lbID, "task_labels": tlID, "task_comments": cmID,
+		"attachments": atID, "activity_logs": acID,
+		// hand-written /api/w/<segment>/{...}
+		"statuses": stTodo, "checklist": ckID, "comments": cmID,
+	}
+	// Guarded routes without path parameters, by segment. Anything else is unknown.
+	unparameterised := map[string]bool{
+		"current": true, "members": true, "activity": true, "me": true, "graphql": true,
+		"feedback": true, // the signed-in "Report a problem" intake (reports land in the platform workspace)
 	}
 
 	leaks := func(b []byte) string {
@@ -224,7 +326,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	})
 
 	param := regexp.MustCompile(`\{[^}]+\}`)
-	swept := 0
+	swept, swept1 := 0, 0
 	anon := newClient(t, srv.URL)
 	for _, rt := range routes {
 		if !strings.HasPrefix(rt.pattern, "/api/") && rt.pattern != "/graphql" {
@@ -237,23 +339,35 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		}
 		segs := strings.Split(strings.TrimPrefix(rt.pattern, "/api/"), "/")
 		table := segs[0]
-		if table == "w" && len(segs) > 1 {
+		handWritten := table == "w"
+		if handWritten && len(segs) > 1 {
 			table = segs[1]
 		}
-		path := param.ReplaceAllStringFunc(rt.pattern, func(string) string {
-			if id, ok := idFor[table]; ok {
-				return id
-			}
-			return aID
-		})
 		if rt.pattern == "/graphql" {
-			path = "/graphql"
+			table = "graphql"
+		}
+		hasParam := strings.Contains(rt.pattern, "{")
+		fixture, known := idFor[table]
+		if hasParam && !known {
+			t.Errorf("UNKNOWN ROUTE %s %s: no fixture id for %q — add a row of it to workspace A and map it in idFor", rt.method, rt.pattern, table)
+			continue
+		}
+		if !hasParam && !known && !unparameterised[table] {
+			t.Errorf("UNKNOWN ROUTE %s %s: segment %q is not in the sweep's route map", rt.method, rt.pattern, table)
+			continue
+		}
+		path := param.ReplaceAllString(rt.pattern, fixture)
+		if !hasParam {
+			path = rt.pattern
 		}
 		var body any = map[string]any{}
 		if rt.pattern == "/graphql" {
-			body = map[string]any{"query": "{ reports { id title } workspaces { id name } reportComments { id body } }"}
+			body = map[string]any{"query": "{ reports { id title } workspaces { id name } reportComments { id body } tasks { id title } projects { id name } }"}
 		}
 		swept++
+		if handWritten && strings.HasPrefix(rt.pattern, "/api/w/") && hasParam {
+			swept1++
+		}
 		name := rt.method + " " + rt.pattern
 
 		// 1. anonymous
@@ -276,14 +390,25 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		if what := leaks(b); what != "" {
 			t.Errorf("%s from B leaked A's %s (status %d): %s", name, what, code, b)
 		}
-		if strings.Contains(rt.pattern, "{") && rt.method == http.MethodGet && code/100 == 2 {
+		if hasParam && rt.method == http.MethodGet && code/100 == 2 {
 			t.Errorf("%s from B with A's id answered %d", name, code)
 		}
+		if hasParam && handWritten && code/100 == 2 {
+			t.Errorf("%s from B with A's id answered %d — a domain route must 404 another workspace's row", name, code)
+		}
 	}
-	if swept < 20 {
-		t.Fatalf("swept only %d routes — the walk is broken", swept)
+	if swept < 60 || swept1 < 30 {
+		t.Fatalf("swept only %d routes (%d parameterised domain routes) — the walk is broken", swept, swept1)
 	}
-	t.Logf("swept %d guarded routes x 3 callers", swept)
+	t.Logf("swept %d guarded routes x 3 callers (%d parameterised /api/w/* routes)", swept, swept1)
+
+	// Unknown routes are 404 for a member, on the generic tree and the domain tree alike.
+	alice.ws = aID
+	for _, p := range []string{"/api/not_a_table", "/api/not_a_table/" + tkID, "/api/w/not-a-route", "/api/w/tasks/" + tkID + "/nope"} {
+		if code, b := alice.do("GET", p, nil); code != http.StatusNotFound {
+			t.Errorf("unknown route %s answered %d, want 404: %s", p, code, b)
+		}
+	}
 
 	// A write that names A in the BODY from B is refused by RLS WITH CHECK.
 	bob.ws = bID
@@ -294,11 +419,44 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		t.Errorf("B planted a report in A: %d %s", code, b)
 	}
 
+	// ---- B references A's rows in request bodies ----------------------------
+	pB := bob.must("POST", "/api/w/projects", map[string]any{"name": "B project"}, 201)
+	pBID := pB["id"].(string)
+	bTask := bob.must("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "B task"}, 201)
+	bKey := bTask["key"].(string)
+	for label, attempt := range map[string]func() (int, []byte){
+		"task with A's parent":      func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "parent": tkID}) },
+		"task with A's status":      func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "status": stDone}) },
+		"task with A's label":       func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "label_ids": []string{lbID}}) },
+		"task assigned to alice":    func() (int, []byte) { return bob.do("POST", "/api/w/projects/"+pBID+"/tasks", map[string]any{"title": "x", "assignee_ids": []string{aliceID}}) },
+		"project with A's client":   func() (int, []byte) { return bob.do("POST", "/api/w/projects", map[string]any{"name": "x", "client_id": clID}) },
+		"attach A's team":           func() (int, []byte) { return bob.do("PUT", "/api/w/projects/"+pBID+"/teams/"+teamID, nil) },
+		"add alice to B's project":  func() (int, []byte) { return bob.do("PUT", "/api/w/projects/"+pBID+"/members/"+aliceID, map[string]any{}) },
+		"move into A's status":      func() (int, []byte) { return bob.do("POST", "/api/w/tasks/"+bKey+"/move", map[string]any{"status": stDone}) },
+		"label B's task with A's":   func() (int, []byte) { return bob.do("PUT", "/api/w/tasks/"+bKey+"/labels", map[string]any{"label_ids": []string{lbID}}) },
+		"assign alice to B's task":  func() (int, []byte) { return bob.do("PUT", "/api/w/tasks/"+bKey+"/assignees", map[string]any{"user_ids": []string{aliceID}}) },
+		"team with alice as member": func() (int, []byte) { return bob.do("POST", "/api/w/teams", map[string]any{"name": "x", "member_ids": []string{aliceID}}) },
+	} {
+		// A refusal may echo the id B itself sent ("unknown client <id>") — the same words
+		// whether or not the id exists in A, so it confirms nothing. Anything else of A's is a leak.
+		echo := strings.NewReplacer(tkID, "", stDone, "", lbID, "", clID, "", teamID, "")
+		if code, b := attempt(); code/100 == 2 || leaks([]byte(echo.Replace(string(b)))) != "" {
+			t.Errorf("B %s: %d %s", label, code, b)
+		}
+	}
+	// B's own MG-1 is B's, not A's: keys are per workspace and resolve inside the caller's.
+	if code, b := bob.do("GET", "/api/w/tasks/"+tkKey, nil); leaks(b) != "" {
+		t.Errorf("B resolving A's key %s leaked (status %d): %s", tkKey, code, b)
+	}
+
 	// ---- A survived every write attempt -------------------------------------
 	alice.ws = aID
 	for path, want := range map[string]string{
 		"/api/reports/" + repID:         marker,
 		"/api/report_comments/" + comID: marker,
+		"/api/w/tasks/" + tkID:          marker,
+		"/api/w/projects/" + prID:       marker,
+		"/api/w/clients/" + clID:        marker,
 	} {
 		if code, b := alice.do("GET", path, nil); code != 200 || !strings.Contains(string(b), want) {
 			t.Errorf("A's row at %s was damaged from B: %d %s", path, code, b)
@@ -312,6 +470,46 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	if planted != 1 {
 		t.Errorf("A should have exactly 1 report, has %d", planted)
 	}
+	var aTasks int
+	_ = a.SysDB.QueryRow(`SELECT count(*) FROM tasks WHERE workspace_id = $1`, aID).Scan(&aTasks)
+	if aTasks != 2 {
+		t.Errorf("A should have exactly 2 tasks, has %d", aTasks)
+	}
+	if code, b := alice.do("GET", "/api/w/attachments/"+atID, nil); code != 200 || !strings.Contains(string(b), marker+" file body") {
+		t.Errorf("A's attachment should download for alice: %d %s", code, b)
+	}
+
+	// ---- activity: the actor is the session, never a header ------------------
+	alice.extra = map[string]string{"X-User-Id": bobID, "X-Forwarded-For": "6.6.6.6"}
+	spoof := alice.must("POST", "/api/w/tasks/"+tkKey+"/comments", map[string]any{"body": "spoof attempt"}, 201)
+	alice.extra = nil
+	var actor, via, ip string
+	if err := a.SysDB.QueryRow(`SELECT actor_id, actor_via, ip FROM activity_logs WHERE workspace_id = $1 AND subject_id = $2`,
+		aID, spoof["id"]).Scan(&actor, &via, &ip); err != nil {
+		t.Fatal(err)
+	}
+	if actor != aliceID || via != "session" || ip == "6.6.6.6" {
+		t.Errorf("activity must record the session user and RemoteAddr, got actor=%s via=%s ip=%s", actor, via, ip)
+	}
+	// The app role cannot rewrite history.
+	if code, _ := alice.do("DELETE", "/api/activity_logs/"+acID, nil); code/100 == 2 {
+		t.Errorf("activity entries must not be deletable through the generic API (got %d)", code)
+	}
+
+	// ---- board order persists -------------------------------------------------
+	second := alice.must("POST", "/api/w/projects/"+prID+"/tasks", map[string]any{"title": "second"}, 201)
+	alice.must("POST", "/api/w/tasks/"+second["key"].(string)+"/move", map[string]any{"status": stTodo, "index": 0}, 200)
+	board := alice.must("GET", "/api/w/projects/"+prID+"/board", nil, 200)
+	var todo []string
+	for _, x := range board["tasks"].([]any) {
+		tk := x.(map[string]any)
+		if tk["status_id"] == stTodo {
+			todo = append(todo, tk["key"].(string))
+		}
+	}
+	if len(todo) < 2 || todo[0] != second["key"] {
+		t.Errorf("moving %s to index 0 did not persist; To do column is %v", second["key"], todo)
+	}
 
 	// ---- account level: bob's list never shows A ----------------------------
 	bob.ws = ""
@@ -321,7 +519,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 
 	// ---- MCP: a token acts only in its own workspace -------------------------
 	bob.ws = bID
-	btok := bob.must("POST", "/api/w/mcp_tokens", map[string]any{"name": "bob agent", "scopes": []string{"members:read"}}, 201)
+	btok := bob.must("POST", "/api/w/mcp_tokens", map[string]any{"name": "bob agent", "scopes": []string{"members:read", "tasks:read"}}, 201)
 	bobMCP := newClient(t, srv.URL)
 	bobMCP.bearer = btok["plaintext"].(string)
 	if code, text, isErr := mcpCall(bobMCP, "/api/mcp", "whoami", nil); code != 200 || isErr || !strings.Contains(text, bID) || strings.Contains(text, aID) {
@@ -330,10 +528,56 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	if _, text, isErr := mcpCall(bobMCP, "/api/mcp", "list_feedback", nil); !isErr || !strings.Contains(text, "feedback:read") {
 		t.Errorf("an out-of-scope call must fail in-band naming the scope, got isErr=%v %q", isErr, text)
 	}
+	if _, text, isErr := mcpCall(bobMCP, "/api/mcp", "create_task", map[string]any{"project": "B project", "title": "x"}); !isErr || !strings.Contains(text, "tasks:write") {
+		t.Errorf("create_task without tasks:write must fail in-band naming the scope, got isErr=%v %q", isErr, text)
+	}
+	for _, ref := range []string{tkKey, tkID} {
+		if _, text, isErr := mcpCall(bobMCP, "/api/mcp", "get_task", map[string]any{"key": ref}); leaks([]byte(text)) != "" || (strings.Contains(text, marker)) {
+			t.Errorf("bob's token reading A's task %s leaked: isErr=%v %q", ref, isErr, text)
+		}
+	}
+	if _, text, _ := mcpCall(bobMCP, "/api/mcp", "list_tasks", nil); leaks([]byte(text)) != "" {
+		t.Errorf("bob's list_tasks leaked A: %q", text)
+	}
+
+	// Claude-style: create_task -> move_task -> comment_task, then it is on the board.
 	aliceMCP := newClient(t, srv.URL)
 	aliceMCP.bearer = aliceToken
 	if _, text, isErr := mcpCall(aliceMCP, "/api/mcp", "list_feedback", nil); isErr || !strings.Contains(text, marker) {
 		t.Errorf("alice's token should see A's feedback: %v %q", isErr, text)
+	}
+	_, text, isErr := mcpCall(aliceMCP, "/api/mcp", "create_task", map[string]any{
+		"project": marker + " project", "title": "Filed by Claude", "assignees": []string{"me"}, "labels": []string{marker + "-label"}, "priority": "urgent",
+	})
+	key := regexp.MustCompile(`MG-\d+`).FindString(text)
+	if isErr || key == "" {
+		t.Fatalf("create_task over MCP: %v %q", isErr, text)
+	}
+	if _, text, isErr := mcpCall(aliceMCP, "/api/mcp", "move_task", map[string]any{"key": key, "status": "done"}); isErr || !strings.Contains(text, "Done") {
+		t.Errorf("move_task: %v %q", isErr, text)
+	}
+	if _, text, isErr := mcpCall(aliceMCP, "/api/mcp", "comment_task", map[string]any{"key": strings.ToLower(key), "body": "Picked up by the agent."}); isErr {
+		t.Errorf("comment_task: %v %q", isErr, text)
+	}
+	board = alice.must("GET", "/api/w/projects/"+prID+"/board", nil, 200)
+	found := false
+	for _, x := range board["tasks"].([]any) {
+		tk := x.(map[string]any)
+		if tk["key"] == key {
+			found = true
+			if tk["status_id"] != stDone || tk["completed_at"] == nil || tk["comment_count"].(float64) != 1 {
+				t.Errorf("%s on the board: status=%v completed=%v comments=%v", key, tk["status_id"], tk["completed_at"], tk["comment_count"])
+			}
+		}
+	}
+	if !found {
+		t.Errorf("%s created over MCP is not on the board", key)
+	}
+	var mcpEntries int
+	_ = a.SysDB.QueryRow(`SELECT count(*) FROM activity_logs WHERE workspace_id = $1 AND actor_via = 'mcp' AND actor_id = $2
+		AND changes::jsonb ->> 'mcp_token_id' = $3`, aID, aliceID, tokID).Scan(&mcpEntries)
+	if mcpEntries < 3 {
+		t.Errorf("MCP writes must be attributed to the token's user via mcp with the token id, found %d entries", mcpEntries)
 	}
 	if code, _, _ := mcpCall(aliceMCP, "/api/admin/mcp", "list_issues", nil); code != http.StatusUnauthorized {
 		t.Errorf("a user token must not open the admin MCP, got %d", code)
@@ -341,8 +585,6 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 
 	// ---- admin MCP: only a platform admin's admin token ----------------------
 	plain, visible := mcp.NewToken(mcp.AdminPrefix)
-	var aliceID string
-	_ = a.SysDB.QueryRow(`SELECT id FROM users WHERE email = $1`, aliceEmail).Scan(&aliceID)
 	if _, err := a.SysDB.Exec(`INSERT INTO admin_mcp_tokens (user_id, name, token_hash, prefix, scopes) VALUES ($1, 't', $2, $3, '["admin:issues:read"]')`,
 		aliceID, mcp.HashToken(plain), visible); err != nil {
 		t.Fatal(err)

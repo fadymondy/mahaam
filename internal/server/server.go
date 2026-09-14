@@ -24,6 +24,7 @@ import (
 	"github.com/fadymondy/managy/internal/reports"
 	"github.com/fadymondy/managy/internal/rest"
 	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/managy/internal/work"
 	"github.com/fadymondy/managy/internal/workspaces"
 )
 
@@ -48,6 +49,8 @@ func Boot() *app.App {
 
 	installErrors()
 	installGuard(k, a)
+	// Client address + user agent for activity entries (RemoteAddr, never forwarding headers).
+	k.UseMiddleware(work.MetaMiddleware)
 
 	api := humachi.New(k.Router, huma.DefaultConfig("Managy API", "0.1.0"))
 	registerREST(api, a)
@@ -77,6 +80,7 @@ func registerREST(api huma.API, a *app.App) {
 	rest.RegisterRoutes(api, a) // generated CRUD — behind the guard's workspace tier
 	workspaces.Register(api, a)
 	mcp.RegisterTokenRoutes(api, a)
+	work.Register(api, a) // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
 }
 
 // togoVersion reports the togo framework version this app is built against.

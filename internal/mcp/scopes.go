@@ -21,7 +21,9 @@ ahead of P1–P6 — they grant nothing until a tool declares them.
 var UserScopes = []ScopeDef{
 	{"members:read", "See the workspace, your role and its members (whoami, list_members)", authz.Member},
 	{"projects:read", "Read projects", authz.Client},
-	{"projects:write", "Create and change projects", authz.Member},
+	// Manager: creating and changing projects is a manager action in authz.Matrix
+	// (project leads manage their own project in the UI; a token needs the role).
+	{"projects:write", "Create, change and archive projects", authz.Manager},
 	{"tasks:read", "Read tasks", authz.Client},
 	{"tasks:write", "Create, move, assign and comment on tasks", authz.Member},
 	{"time:read", "Read your own time entries and running timer", authz.Member},

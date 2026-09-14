@@ -24,6 +24,10 @@ Every tool reads its workspace from the token (tenant.Scope on ctx), never
 from an argument, and the feedback tools go through the RLS app pool.
 */
 func UserTools() []Tool {
+	return append(contextTools(), WorkTools()...)
+}
+
+func contextTools() []Tool {
 	return []Tool{
 		{
 			Name:        "whoami",

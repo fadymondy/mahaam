@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/managy/internal/work"
 )
 
 // KeyPrefix is Managy's issue/task key prefix: MG-123.
@@ -183,19 +184,24 @@ func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*
 		state, closed = "closed", time.Now().UTC()
 	}
 	for attempt := 0; attempt < 5; attempt++ {
+		// MG-<n> comes from the workspace's shared key counter (work.NextNumber), so a
+		// report and a task never share a key.
+		num, err := work.NextNumber(ctx, db, workspaceID)
+		if err != nil {
+			return nil, fmt.Errorf("could not allocate an issue number: %w", err)
+		}
 		r, err := scanReport(db.QueryRowContext(ctx, `
 			INSERT INTO reports (workspace_id, number, key, title, body, issue_type, status, state, priority,
 			                     route, page_url, selector, screenshot, console_log, network_log, user_agent,
 			                     viewport, reporter_id, closed_at, sort_order, agent_seconds, human_only)
-			SELECT $1, s.n, '`+KeyPrefix+`' || s.n, $2, $3, $4, $5, $6, $7,
+			SELECT $1, $18::bigint, '`+KeyPrefix+`' || $18::bigint, $2, $3, $4, $5, $6, $7,
 			       $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 0, 0, false
-			FROM (SELECT COALESCE(MAX(number), 0) + 1 AS n FROM reports WHERE workspace_id = $1) s
 			RETURNING `+reportCols,
 			workspaceID, strings.TrimSpace(n.Title), nullable(n.Body),
 			firstNonEmpty(n.IssueType, "bug"), status, state, firstNonEmpty(n.Priority, "medium"),
 			nullable(n.Route), nullable(n.PageURL), nullable(n.Selector), nullable(n.Screenshot),
 			nullable(n.ConsoleLog), nullable(n.NetworkLog), nullable(n.UserAgent), nullable(n.Viewport),
-			nullable(n.ReporterID), closed,
+			nullable(n.ReporterID), closed, num,
 		))
 		var pg *pgconn.PgError
 		if errors.As(err, &pg) && pg.Code == "23505" {

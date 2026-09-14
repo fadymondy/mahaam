@@ -19,6 +19,8 @@ type Scope struct {
 	// Scopes are the MCP scopes in effect (token scopes ∩ what the role allows).
 	// Empty for a browser session.
 	Scopes []string
+	// TokenID is the MCP token making the call (Via == "mcp"), recorded on activity entries.
+	TokenID string
 }
 
 type scopeKey struct{}

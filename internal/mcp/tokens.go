@@ -72,6 +72,7 @@ func authUser(r *http.Request, a *app.App, token string) (context.Context, []str
 		return nil, nil, false
 	}
 	s.Via = "mcp"
+	s.TokenID = id
 	s.Scopes = Effective(s.Role, parseScopes(rawScopes))
 
 	_, _ = a.SysDB.ExecContext(ctx, `UPDATE mcp_tokens SET last_used_at = now() WHERE id = $1`, id)
