@@ -1,15 +1,19 @@
 "use client"
 
 import Link from "next/link"
-import { KeyRoundIcon, UsersIcon } from "lucide-react"
+import { BriefcaseIcon, FolderKanbanIcon, KeyRoundIcon, UsersIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
+import { ActivityFeed } from "@/components/work/activity-feed"
+import { useDirectory } from "@/components/work/people"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
+import { useMe } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
+import { useWorkspaceActivity } from "@/lib/work"
 
 export default function OverviewPage() {
   const { t, locale } = useTranslations()
@@ -17,6 +21,10 @@ export default function OverviewPage() {
   useDocumentTitle(`${t("nav.overview")} · ${ws.summary.name}`)
   const base = `/${locale}/w/${ws.slug}`
   const details = ws.current?.workspace
+  const me = useMe()
+  const dir = useDirectory(me.data ? String(me.data.id) : undefined)
+  const canFeed = ws.can("activity:read")
+  const activity = useWorkspaceActivity(ws.id, canFeed)
 
   return (
     <>
@@ -29,7 +37,7 @@ export default function OverviewPage() {
           <p className="text-base font-medium text-grid-fg">{t("dev.title")}</p>
           <p className="grid-body mt-1 text-sm">
             <span className="font-medium text-grid-fg">
-              <Ltr>P0</Ltr>:
+              <Ltr>P1</Ltr>:
             </span>{" "}
             {t("dev.now")}
           </p>
@@ -37,9 +45,28 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      <div className="grid-separator-contained hatch-band mt-8 border-t-0" aria-hidden />
+      <div className="flex flex-wrap gap-2 px-6 py-6">
+        <Button nativeButton={false} render={<Link href={`${base}/projects`} />}>
+          <FolderKanbanIcon />
+          {t("nav.projects")}
+        </Button>
+        {ws.can("clients:read") ? (
+          <Button variant="outline" nativeButton={false} render={<Link href={`${base}/clients`} />}>
+            <BriefcaseIcon />
+            {t("nav.clients")}
+          </Button>
+        ) : null}
+        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/members`} />}>
+          <UsersIcon />
+          {t("nav.members")}
+        </Button>
+        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/settings/mcp`} />}>
+          <KeyRoundIcon />
+          {t("nav.mcpTokens")}
+        </Button>
+      </div>
 
-      <dl className="grid grid-cols-1 divide-y divide-line border-b border-line text-sm sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
+      <dl className="grid grid-cols-1 divide-y divide-line border-y border-line text-sm sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
         {[
           [t("overview.slug"), <Ltr key="s" mono>/{ws.slug}</Ltr>],
           [t("overview.locale"), details?.locale ? <Ltr key="l" mono>{details.locale}</Ltr> : "—"],
@@ -53,16 +80,12 @@ export default function OverviewPage() {
         ))}
       </dl>
 
-      <div className="flex flex-wrap gap-2 px-6 py-6">
-        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/members`} />}>
-          <UsersIcon />
-          {t("nav.members")}
-        </Button>
-        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/settings/mcp`} />}>
-          <KeyRoundIcon />
-          {t("nav.mcpTokens")}
-        </Button>
-      </div>
+      {canFeed ? (
+        <>
+          <h2 className="px-6 pt-6 pb-3 text-base font-medium">{t("overview.recentActivity")}</h2>
+          <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} />
+        </>
+      ) : null}
     </>
   )
 }

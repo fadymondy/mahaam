@@ -8,3 +8,6 @@ next-env.d.ts
 *.tsbuildinfo
 .DS_Store
 *.log
+
+# Browser verification output (web/e2e/p1-verify.mjs)
+e2e/shots/

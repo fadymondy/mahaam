@@ -20,5 +20,14 @@
     "hooks": "@/hooks"
   },
   "menuColor": "default",
-  "menuAccent": "subtle"
+  "menuAccent": "subtle",
+  "registries": {
+    "@ncdai": "https://chanhdai.com/r/{name}.json",
+    "@shadcnspace": "https://shadcnspace.com/r/{name}.json",
+    "@shadcncraft": "https://shadcncraft.com/r/{name}.json",
+    "@reactbits": "https://reactbits.dev/r/{name}.json",
+    "@animate-ui": "https://animate-ui.com/r/{name}.json",
+    "@lucide-animated": "https://lucide-animated.com/r/{name}.json",
+    "@benday": "https://benday.kacemmathlouthi.dev/r/{name}.json"
+  }
 }

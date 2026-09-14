@@ -3,7 +3,19 @@
 import Link from "next/link"
 import { useState, type ReactNode } from "react"
 import { useParams, usePathname, useRouter } from "next/navigation"
-import { CheckIcon, ChevronsUpDownIcon, KeyRoundIcon, LayoutGridIcon, MessageSquarePlusIcon, PlusIcon, UsersIcon } from "lucide-react"
+import {
+  BriefcaseIcon,
+  CheckIcon,
+  ChevronsUpDownIcon,
+  FolderKanbanIcon,
+  KeyRoundIcon,
+  LayoutGridIcon,
+  MessageSquarePlusIcon,
+  PlusIcon,
+  TagIcon,
+  UsersIcon,
+  UsersRoundIcon,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -172,8 +184,25 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             <NavLink href={base} exact icon={<LayoutGridIcon />}>
               {t("nav.overview")}
             </NavLink>
+            <NavLink href={`${base}/projects`} icon={<FolderKanbanIcon />}>
+              {t("nav.projects")}
+            </NavLink>
+            {current.data?.can?.includes("clients:read") ? (
+              <NavLink href={`${base}/clients`} icon={<BriefcaseIcon />}>
+                {t("nav.clients")}
+              </NavLink>
+            ) : null}
+            {current.data?.can?.includes("teams:read") ? (
+              <NavLink href={`${base}/teams`} icon={<UsersRoundIcon />}>
+                {t("nav.teams")}
+              </NavLink>
+            ) : null}
             <NavLink href={`${base}/members`} icon={<UsersIcon />}>
               {t("nav.members")}
+            </NavLink>
+            <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">{t("nav.settings")}</p>
+            <NavLink href={`${base}/settings/labels`} icon={<TagIcon />}>
+              {t("nav.labels")}
             </NavLink>
             <NavLink href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
               {t("nav.mcpTokens")}

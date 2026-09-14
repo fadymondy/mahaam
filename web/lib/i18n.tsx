@@ -7,12 +7,16 @@ import { createContext, useContext, useMemo, type ReactNode } from "react"
 import { dirForLocale, intlTag, isLocale, type Locale } from "@/lib/i18n-locale"
 import en from "@/lang/en.json"
 import ar from "@/lang/ar.json"
+// P1 (projects, tasks, clients, teams, labels, activity) keeps its keys in its own files; they
+// are merged over the base dictionaries, so a key here overrides the same key in en/ar.json.
+import workEn from "@/lang/work.en.json"
+import workAr from "@/lang/work.ar.json"
 
 export { LOCALES, dirForLocale, isLocale } from "@/lib/i18n-locale"
 export type { Locale } from "@/lib/i18n-locale"
 
 type Dict = Record<string, string>
-const DICTIONARIES: Record<Locale, Dict> = { en, ar }
+const DICTIONARIES: Record<Locale, Dict> = { en: { ...en, ...workEn }, ar: { ...ar, ...workAr } }
 
 /** Non-reactive lookup — for use outside React. */
 export function trans(key: string, locale: string = "en"): string {
