@@ -5,7 +5,9 @@ Project management and time tracking — a rebuild of `fadymondy/3x1projects` on
 and Next.js 16 on the fadymondy.com grid. Plan: `fadymondy.com-v2/.setup/plans/imanage.md`
 (renamed iManage → Managy on 2026-09-14).
 
-**Status: P0 — local development only.** No deploy, no DNS.
+**Status: P1 — local development only.** No deploy, no DNS. P0 (tenancy, RLS, MCP, feedback)
+plus P1: clients, projects, teams, per-project statuses, tasks with board/list, checklist,
+subtasks, labels, comments with @mentions, attachments and the activity feed.
 
 ## Ports (local dev)
 
@@ -46,6 +48,41 @@ make test-e2e   # boots the real stack on managy_test and sweeps EVERY route as
 make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
 ```
 
+## P1 — projects and tasks
+
+- **One domain layer**, `internal/work`: REST under `/api/w/*` (`routes.go`) and the MCP tools
+  call the same functions, so a browser and an agent share one authorization path.
+- **Visibility** (`work.visibleClause`): managers+ see every project; members see
+  `visibility = workspace` projects plus the ones they belong to; clients only the ones they
+  belong to. Belonging = a `project_members` row or a team attached via `project_teams`.
+  A project you cannot see answers **404**. Managers, or the project's lead, change a project;
+  task writes need `member` and a non-archived project.
+- **Generated CRUD** for the P1 tables is read-only and manager+ (`authz.Generated`); every
+  write goes through `/api/w/*`, which validates references and records activity.
+- **Integrity in the database**: every reference between tenant rows is a composite foreign key
+  on `(workspace_id, ref)` (`internal/db/post/11_p1_constraints.sql`), so no row can point into
+  another workspace whatever the code does. RLS covers every P1 table (`21_rls_p1.sql`).
+- **Activity** (`activity_logs`): written by Managy in the transaction of the change; the actor
+  is the session user or the MCP token's user (`actor_via = mcp`, token id recorded), the IP is
+  `RemoteAddr`. Never togo `audit`, which takes the causer from `X-User-Id`. Append-only (RLS has
+  SELECT + INSERT policies only).
+- **Keys**: `MG-n` from `key_counters`, one sequence per workspace shared by tasks and reports.
+- **Board order**: fractional positions per column; a drop calls
+  `POST /api/w/tasks/{key}/move {status, index}` and the column is renumbered in the same
+  transaction when a gap runs out.
+- **Attachments**: togo storage at `attachments/<workspace>/<id>`, served only through the
+  authorised download (`Content-Disposition: attachment`, `nosniff`, sandbox CSP), 25 MB max.
+- **UI**: `/[locale]/w/{slug}/projects` (list), `/projects/{id}` Overview · Board · List ·
+  Settings, the task side-over on `?task=MG-12`, `/clients`, `/teams`, `/settings/labels`.
+  The board is `@shadcnspace/kanban-application-01` (dnd-kit) adapted; attachments use
+  `@shadcnspace/file-upload-02` (react-dropzone). P1 strings live in `web/lang/work.{en,ar}.json`;
+  user colours are palette keys mapped to `app/styles/managy-palette.css`.
+
+Browser check (headless Chrome, fresh profile; counts animation frames first): with the API and
+web running, `cd web && node e2e/p1-verify.mjs` — drag-and-drop persists across reload, the
+Claude-style MCP flow lands on the board, the side-over's checklist / @mention / upload /
+activity work, and board + side-over are screenshotted in en/ar × light/dark (`web/e2e/shots/`).
+
 ## Tenancy
 
 - `workspaces`, `workspace_members` (owner/admin/manager/member/client), `invitations`;
@@ -67,7 +104,14 @@ make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
 - **User MCP** `POST /api/mcp` — `mgy_` tokens owned by a user in a workspace, SHA-256 hashed,
   explicit scopes (no wildcard), narrowed to the user's *current* role on every call; same
   `tenant.Scope`, authz and RLS as the browser. Tools (P0): `whoami`, `list_members`,
-  `list_feedback`, `get_feedback`, `comment_feedback`.
+  `list_feedback`, `get_feedback`, `comment_feedback`. Tools (P1, `internal/mcp/work_tools.go`):
+  `list_projects`, `get_project` (`projects:read`); `create_project`, `update_project`,
+  `archive_project` (`projects:write`, manager+); `list_tasks`, `get_task` (`tasks:read`);
+  `create_task`, `update_task`, `move_task`, `assign_task`, `comment_task`,
+  `toggle_checklist_item` (`tasks:write`); `list_clients`, `get_client` (`clients:read`);
+  `create_client`, `update_client` (`clients:write`). Tasks accept `MG-123`, `123` or the id;
+  projects/clients an id or exact name; people an email, id or `me`. Agent writes land in the
+  activity feed as the token's user "via MCP", with the token id recorded.
 - **Admin MCP** `POST /api/admin/mcp` — `mga_` tokens, only for platform admins
   (`users.roles` contains `admin`, re-checked per call). Tools: `list_issues`, `get_issue`,
   `create_issue`, `update_issue`, `comment_issue`, `start_issue`, `finish_issue`,
@@ -110,3 +154,23 @@ triaged through the admin MCP.
 7. The ORM holds a concrete `*sql.DB` (no executor interface), so per-request
    `SET LOCAL` in a transaction is impossible for generated code — hence the per-statement
    connection wrapper. `db-postgres` exposes no pgx hooks.
+
+Found building P1:
+
+8. `togo generate` prints "Codegen complete" and exits 0 when gqlgen or the OpenAPI gate fails
+   ("! openapi failed (continuing)"). Grep its output; don't trust the last line.
+9. `make:resource` GraphQL fragments type nullable timestamps/dates as `String` against Go
+   `*time.Time`, so gqlgen demands field resolvers and the gate fails — retyped to `Time`. Its
+   resolver for a field `ip` uses `input.Ip`, but gqlgen names it `IP`.
+10. `make:resource` also scaffolds `web/app/<table>/page.tsx` and `web/lib/api/*.ts`; the latter
+    shadows a Next app's own `lib/api.ts`. Deleted.
+11. Huma v2.27 silently skips fields promoted through an **unexported** embedded struct — the
+    path parameter arrives as `""`, no error. `internal/server/params_test.go` fails the build if
+    any operation's `{param}` is unbound. (P0's embedded `wsHeader` has the same defect for its
+    header — docs only, the guard reads the raw header.)
+12. `togo-framework/settings` is linked transitively (queue → providers → settings) and its
+    `init()` mounts GET/PUT/DELETE `/api/settings/{scope}/{key}` over one global table with no
+    auth or tenancy. The guard blocks `/api/settings`.
+13. Next 16 dev blocks `/_next/*` and HMR for any origin other than the one it started on: a page
+    opened on `127.0.0.1` while the server runs as `localhost` never hydrates. Both are in
+    `allowedDevOrigins` (`web/next.config.mjs`).
