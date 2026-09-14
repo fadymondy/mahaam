@@ -10,6 +10,7 @@ import {
   FolderKanbanIcon,
   KeyRoundIcon,
   LayoutGridIcon,
+  MenuIcon,
   MessageSquarePlusIcon,
   PlusIcon,
   TagIcon,
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { CubeMark } from "@/components/brand/cube-mark"
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls"
 import { ReportProblemDialog } from "@/components/feedback/report-problem"
@@ -114,12 +116,13 @@ function WorkspaceSwitcher({ active, all }: { active: WorkspaceSummary; all: Wor
   )
 }
 
-function NavLink({ href, icon, children, exact = false }: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean }) {
+function NavLink({ href, icon, children, exact = false, onNavigate }: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname()
   const active = exact ? pathname === href : pathname === href || pathname.startsWith(href + "/")
   return (
     <Link
       href={href}
+      onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-center gap-2.5 border-s-2 px-3 py-2 text-sm transition-colors [&_svg]:size-4 [&_svg]:shrink-0",
@@ -140,6 +143,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const me = useRequireAuth()
   const list = useMyWorkspaces(!!me.data)
   const [reporting, setReporting] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const { isRtl } = useTranslations()
 
   const summary = list.data?.find((w) => w.slug === slug)
   const current = useCurrentWorkspace(summary?.id)
@@ -175,46 +180,21 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="grid-shell">
-      <aside className="grid-shell-nav flex flex-col">
+      <aside className="grid-shell-nav sticky top-0 hidden h-dvh flex-col overflow-y-auto md:flex">
         <div className="flex h-14 items-center border-b border-line px-4">
           <Brand />
         </div>
-        {summary ? (
-          <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
-            <NavLink href={base} exact icon={<LayoutGridIcon />}>
-              {t("nav.overview")}
-            </NavLink>
-            <NavLink href={`${base}/projects`} icon={<FolderKanbanIcon />}>
-              {t("nav.projects")}
-            </NavLink>
-            {current.data?.can?.includes("clients:read") ? (
-              <NavLink href={`${base}/clients`} icon={<BriefcaseIcon />}>
-                {t("nav.clients")}
-              </NavLink>
-            ) : null}
-            {current.data?.can?.includes("teams:read") ? (
-              <NavLink href={`${base}/teams`} icon={<UsersRoundIcon />}>
-                {t("nav.teams")}
-              </NavLink>
-            ) : null}
-            <NavLink href={`${base}/members`} icon={<UsersIcon />}>
-              {t("nav.members")}
-            </NavLink>
-            <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">{t("nav.settings")}</p>
-            <NavLink href={`${base}/settings/labels`} icon={<TagIcon />}>
-              {t("nav.labels")}
-            </NavLink>
-            <NavLink href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
-              {t("nav.mcpTokens")}
-            </NavLink>
-            <p className="mt-4 border-t border-line px-4 pt-4 text-xs text-grid-muted">{t("nav.comingNext")}</p>
-          </nav>
-        ) : null}
+        {summary ? <ShellNav base={base} can={current.data?.can ?? []} /> : null}
       </aside>
 
       <div className="flex min-w-0 flex-col">
         <header className="flex h-14 items-center justify-between gap-2 border-b border-line px-3 sm:px-4">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1">
+            {summary ? (
+              <Button variant="ghost" size="icon-sm" className="md:hidden" aria-label={t("shell.navigation")} onClick={() => setNavOpen(true)}>
+                <MenuIcon />
+              </Button>
+            ) : null}
             {summary && list.data ? <WorkspaceSwitcher active={summary} all={list.data} /> : <Skeleton className="h-6 w-40" />}
           </div>
           <div className="flex items-center gap-1">
@@ -232,6 +212,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <main className="min-w-0 flex-1">{body}</main>
       </div>
 
+      <Sheet open={navOpen} onOpenChange={setNavOpen}>
+        <SheetContent side={isRtl ? "right" : "left"} className="w-72 gap-0 p-0" data-mobile-nav>
+          <SheetTitle className="flex h-14 items-center border-b border-line px-4">
+            <Brand />
+          </SheetTitle>
+          {summary ? <ShellNav base={base} can={current.data?.can ?? []} onNavigate={() => setNavOpen(false)} /> : null}
+        </SheetContent>
+      </Sheet>
+
       <ReportProblemDialog open={reporting} onOpenChange={setReporting} workspaceSlug={summary?.slug} />
     </div>
   )
@@ -244,5 +233,41 @@ function ShellSkeleton() {
       <Skeleton className="h-4 w-96 max-w-full" />
       <Skeleton className="h-32 w-full" />
     </div>
+  )
+}
+
+/** The workspace navigation: the sticky sidebar on desktop, a slide-out sheet below md. */
+function ShellNav({ base, can, onNavigate }: { base: string; can: string[]; onNavigate?: () => void }) {
+  const { t } = useTranslations()
+  const L = (props: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean }) => <NavLink {...props} onNavigate={onNavigate} />
+  return (
+    <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
+      <L href={base} exact icon={<LayoutGridIcon />}>
+        {t("nav.overview")}
+      </L>
+      <L href={`${base}/projects`} icon={<FolderKanbanIcon />}>
+        {t("nav.projects")}
+      </L>
+      {can.includes("clients:read") ? (
+        <L href={`${base}/clients`} icon={<BriefcaseIcon />}>
+          {t("nav.clients")}
+        </L>
+      ) : null}
+      {can.includes("teams:read") ? (
+        <L href={`${base}/teams`} icon={<UsersRoundIcon />}>
+          {t("nav.teams")}
+        </L>
+      ) : null}
+      <L href={`${base}/members`} icon={<UsersIcon />}>
+        {t("nav.members")}
+      </L>
+      <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">{t("nav.settings")}</p>
+      <L href={`${base}/settings/labels`} icon={<TagIcon />}>
+        {t("nav.labels")}
+      </L>
+      <L href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
+        {t("nav.mcpTokens")}
+      </L>
+    </nav>
   )
 }

@@ -162,7 +162,7 @@ export default function KanbanBoard({
           screenReaderInstructions: { draggable: t("board.dragInstructions") },
         }}
       >
-        <div className="flex min-w-max items-start gap-3 p-4 sm:p-6">
+        <div className="flex w-full min-w-max items-start gap-3 p-4 sm:p-6">
           {board.statuses.map((s) => (
             <KanbanColumn
               key={s.id}
