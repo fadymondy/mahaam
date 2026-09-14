@@ -161,8 +161,9 @@ func Register(api huma.API, a *app.App) {
 		DefaultStatus: http.StatusCreated, Summary: "Create a workspace (you become its owner)", Tags: []string{"Tenancy"},
 	}, func(ctx context.Context, in *struct {
 		Body struct {
-			Name string `json:"name" minLength:"1" maxLength:"80"`
-			Slug string `json:"slug,omitempty"`
+			Name   string `json:"name" minLength:"1" maxLength:"80"`
+			Slug   string `json:"slug,omitempty"`
+			Locale string `json:"locale,omitempty" enum:"en,ar," doc:"Workspace language; seeds the default columns of new projects. Default en."`
 		}
 	}) (*struct {
 		Body struct {
@@ -184,7 +185,7 @@ func Register(api huma.API, a *app.App) {
 		if !ValidSlug(slug) {
 			return nil, huma.Error422UnprocessableEntity("the address must be 3–40 lowercase letters, digits or dashes, and not a reserved word")
 		}
-		ws, err := Create(ctx, a.SysDB, id.ID, name, slug)
+		ws, err := Create(ctx, a.SysDB, id.ID, name, slug, in.Body.Locale)
 		if isUniqueViolation(err) {
 			return nil, huma.Error409Conflict("that address is taken")
 		}
@@ -505,7 +506,10 @@ func MyWorkspaces(ctx context.Context, sys *sql.DB, userID string) ([]WorkspaceO
 }
 
 // Create makes a workspace with userID as its owner, in one transaction.
-func Create(ctx context.Context, sys *sql.DB, userID, name, slug string) (*WorkspaceOut, error) {
+func Create(ctx context.Context, sys *sql.DB, userID, name, slug, locale string) (*WorkspaceOut, error) {
+	if locale != "ar" {
+		locale = "en"
+	}
 	tx, err := sys.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -513,8 +517,8 @@ func Create(ctx context.Context, sys *sql.DB, userID, name, slug string) (*Works
 	defer tx.Rollback() //nolint:errcheck
 	ws := &WorkspaceOut{Name: name, Slug: slug, Role: string(authz.Owner)}
 	if err := tx.QueryRowContext(ctx,
-		`INSERT INTO workspaces (slug, name, created_by) VALUES ($1, $2, $3) RETURNING id, locale`,
-		slug, name, userID,
+		`INSERT INTO workspaces (slug, name, created_by, locale) VALUES ($1, $2, $3, $4) RETURNING id, locale`,
+		slug, name, userID, locale,
 	).Scan(&ws.ID, &ws.Locale); err != nil {
 		return nil, err
 	}

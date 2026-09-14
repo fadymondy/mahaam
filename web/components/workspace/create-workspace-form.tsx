@@ -32,7 +32,8 @@ export function CreateWorkspaceForm({ onCreated, autoFocus }: { onCreated?: () =
     setBusy(true)
     try {
       const res = await api<{ workspace: WorkspaceSummary }>("/api/me/workspaces", {
-        json: s ? { name: name.trim(), slug: s } : { name: name.trim() },
+        // The workspace language seeds new projects' default columns (To do … / للتنفيذ …).
+        json: { name: name.trim(), locale, ...(s ? { slug: s } : {}) },
       })
       await mutate("/api/me/workspaces")
       onCreated?.()

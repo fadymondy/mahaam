@@ -422,7 +422,7 @@ func projectValues(ctx context.Context, q querier, ws string, in ProjectInput, p
 
 var defaultStatuses = map[string][4][2]string{
 	"en": {{"To do", "todo"}, {"In progress", "doing"}, {"In review", "doing"}, {"Done", "done"}},
-	"ar": {{"للتنفيذ", "todo"}, {"قيد التنفيذ", "doing"}, {"قيد المراجعة", "doing"}, {"منجز", "done"}},
+	"ar": {{"للتنفيذ", "todo"}, {"قيد التنفيذ", "doing"}, {"قيد المراجعة", "doing"}, {"تمّ", "done"}},
 }
 
 var defaultStatusColors = [4]string{"slate", "blue", "amber", "green"}
