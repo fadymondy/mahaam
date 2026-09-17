@@ -16,6 +16,7 @@ import { ColorDot, ColorPicker, PALETTE } from "@/components/work/palette"
 import { useDirectory } from "@/components/work/people"
 import { useProjectCtx } from "@/components/work/project-context"
 import { ProjectForm } from "@/components/work/project-form"
+import { FeedbackWidgetSection } from "@/components/work/feedback-widget"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { useMe } from "@/lib/queries"
@@ -175,6 +176,8 @@ export default function ProjectSettingsPage() {
           ) : null}
         </Section>
       ) : null}
+
+      {ws.can("feedback_keys:read") ? <FeedbackWidgetSection projectId={p.id} clientId={p.client_id ?? null} /> : null}
 
       <Section title={p.archived_at ? t("settings.restoreTitle") : t("settings.archiveTitle")} hint={p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}>
         <div className="px-6 pb-6">

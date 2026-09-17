@@ -333,6 +333,7 @@
   "activity.label.deleted": "حذف الوسم {name}",
 
   "nav.issues": "المشكلات",
+  "nav.portal": "البوابة",
 
   "clientDetail.notFound": "العميل غير موجود",
   "clientDetail.notFoundBody": "غير موجود، أو صلاحيتك لا تسمح برؤيته.",

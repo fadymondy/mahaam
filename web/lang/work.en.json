@@ -333,6 +333,7 @@
   "activity.label.deleted": "deleted the label {name}",
 
   "nav.issues": "Issues",
+  "nav.portal": "Portal",
 
   "clientDetail.notFound": "Client not found",
   "clientDetail.notFoundBody": "It doesn't exist, or your role can't see it.",

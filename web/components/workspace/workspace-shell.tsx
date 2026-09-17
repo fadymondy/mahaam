@@ -335,6 +335,19 @@ function ShellNav({
   const L = (props: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean }) => (
     <NavLink {...props} onNavigate={onNavigate} />
   );
+  // A client is external: they get only the portal (their projects, issues and
+  // invoices). members:read is the Member tier, which a client never holds, so
+  // its absence identifies the client role without threading the role in.
+  const isClient = !can.includes("members:read");
+  if (isClient) {
+    return (
+      <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
+        <L href={`${base}/portal`} exact icon={<LayoutGridIcon />}>
+          {t("nav.portal")}
+        </L>
+      </nav>
+    );
+  }
   return (
     <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
       <L href={base} exact icon={<LayoutGridIcon />}>
