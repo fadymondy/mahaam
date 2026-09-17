@@ -114,10 +114,12 @@ var Matrix = map[string]Role{
 	// it to people who could make the same changes in the UI.
 	GraphQL: Admin,
 
-	ProjectsRead:     Client, // clients: only projects they are a member of (internal/work)
+	ProjectsRead:     Client, // clients: only the projects of the client they are a portal contact of (internal/work)
 	ProjectsCreate:   Manager,
 	ProjectsManage:   Manager, // or the project's lead
-	TasksRead:        Client,
+	// A client never reads tasks: the portal shows their projects, the issues they
+	// filed and their invoices — never the internal task board (P7). Members up.
+	TasksRead:        Member,
 	TasksWrite:       Member,
 	ClientsRead:      Member,
 	ClientsWrite:     Manager,

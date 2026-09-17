@@ -24,7 +24,7 @@ var UserScopes = []ScopeDef{
 	// Manager: creating and changing projects is a manager action in authz.Matrix
 	// (project leads manage their own project in the UI; a token needs the role).
 	{"projects:write", "Create, change and archive projects", authz.Manager},
-	{"tasks:read", "Read tasks", authz.Client},
+	{"tasks:read", "Read tasks", authz.Member},
 	{"tasks:write", "Create, move, assign and comment on tasks", authz.Member},
 	{"time:read", "Read your own time entries and running timer", authz.Member},
 	{"time:write", "Start/stop timers and log your own time", authz.Member},
