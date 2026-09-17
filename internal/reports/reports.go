@@ -64,21 +64,23 @@ type Report struct {
 	Number, SortOrder, AgentSeconds              int64
 	IssueType, Status, State, Priority           string
 	Body, Resolution, Route, PageURL, Selector   *string
-	Screenshot, Viewport, UserAgent, ReporterID  *string
+	Screenshot, ConsoleLog, NetworkLog           *string
+	Viewport, UserAgent, ReporterID              *string
 	ClosedAt, StartedAt, FinishedAt              *time.Time
 	HumanOnly                                    bool
 	CreatedAt, UpdatedAt                         time.Time
 }
 
 const reportCols = `id, workspace_id, key, title, number, sort_order, agent_seconds, issue_type, status, state, priority,
-	body, resolution, route, page_url, selector, screenshot, viewport, user_agent, reporter_id,
+	body, resolution, route, page_url, selector, screenshot, console_log, network_log, viewport, user_agent, reporter_id,
 	closed_at, started_at, finished_at, human_only, created_at, updated_at`
 
 func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 	r := &Report{}
 	err := row.Scan(&r.ID, &r.WorkspaceID, &r.Key, &r.Title, &r.Number, &r.SortOrder, &r.AgentSeconds,
 		&r.IssueType, &r.Status, &r.State, &r.Priority,
-		&r.Body, &r.Resolution, &r.Route, &r.PageURL, &r.Selector, &r.Screenshot, &r.Viewport, &r.UserAgent, &r.ReporterID,
+		&r.Body, &r.Resolution, &r.Route, &r.PageURL, &r.Selector, &r.Screenshot, &r.ConsoleLog, &r.NetworkLog,
+		&r.Viewport, &r.UserAgent, &r.ReporterID,
 		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt)
 	return r, err
 }
@@ -240,6 +242,7 @@ func Update(ctx context.Context, db *sql.DB, r *Report, fields map[string]any) e
 
 // Comment is one entry on a report's thread.
 type Comment struct {
+	ID         string
 	AuthorKind string
 	AuthorID   *string
 	Body       string
@@ -249,7 +252,7 @@ type Comment struct {
 // Comments returns a report's thread, oldest first.
 func Comments(ctx context.Context, db *sql.DB, workspaceID, reportID string) ([]Comment, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT author_kind, author_id, body, created_at FROM report_comments
+		SELECT id, author_kind, author_id, body, created_at FROM report_comments
 		WHERE workspace_id = $1 AND report_id = $2 ORDER BY created_at ASC`, workspaceID, reportID)
 	if err != nil {
 		return nil, err
@@ -258,7 +261,7 @@ func Comments(ctx context.Context, db *sql.DB, workspaceID, reportID string) ([]
 	var out []Comment
 	for rows.Next() {
 		var c Comment
-		if err := rows.Scan(&c.AuthorKind, &c.AuthorID, &c.Body, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.AuthorKind, &c.AuthorID, &c.Body, &c.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -268,13 +271,24 @@ func Comments(ctx context.Context, db *sql.DB, workspaceID, reportID string) ([]
 
 // AddComment appends to a report's thread and touches the report.
 func AddComment(ctx context.Context, db *sql.DB, r *Report, authorID, kind, body string) error {
-	if _, err := db.ExecContext(ctx, `
+	_, err := AddCommentReturning(ctx, db, r, authorID, kind, body)
+	return err
+}
+
+// AddCommentReturning appends to a report's thread, touches the report and
+// returns the inserted comment (for the REST handler, which echoes it back).
+func AddCommentReturning(ctx context.Context, db *sql.DB, r *Report, authorID, kind, body string) (*Comment, error) {
+	c := &Comment{}
+	if err := db.QueryRowContext(ctx, `
 		INSERT INTO report_comments (workspace_id, report_id, author_id, author_kind, body)
-		VALUES ($1, $2, $3, $4, $5)`, r.WorkspaceID, r.ID, nullable(authorID), kind, body); err != nil {
-		return fmt.Errorf("could not comment: %w", err)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, author_kind, author_id, body, created_at`,
+		r.WorkspaceID, r.ID, nullable(authorID), kind, body,
+	).Scan(&c.ID, &c.AuthorKind, &c.AuthorID, &c.Body, &c.CreatedAt); err != nil {
+		return nil, fmt.Errorf("could not comment: %w", err)
 	}
 	_, _ = db.ExecContext(ctx, `UPDATE reports SET updated_at = now() WHERE workspace_id = $1 AND id = $2`, r.WorkspaceID, r.ID)
-	return nil
+	return c, nil
 }
 
 // FormatList renders reports compactly for a model.

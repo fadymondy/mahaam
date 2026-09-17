@@ -17,6 +17,7 @@ import (
 	"github.com/togo-framework/togo"
 
 	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/managy/internal/tenant"
 )
 
 /*
@@ -118,10 +119,20 @@ func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		issueType = "bug"
 	}
 
-	platform, err := PlatformID(r.Context(), a)
+	// Where the report lands: the reporter's CURRENT workspace when the request
+	// names one (X-Workspace-ID) and the reporter is a member of it — so a
+	// workspace's own "Report a problem" intake is triaged inside that workspace.
+	// With no workspace named (Managy's own-platform bug reports, and the
+	// feedback-sdk's default), it lands in the platform workspace as before.
+	target, err := PlatformID(r.Context(), a)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "intake unavailable"})
 		return
+	}
+	if ref := strings.TrimSpace(r.Header.Get(tenant.Header)); ref != "" {
+		if sc, err := tenant.Resolve(r.Context(), a.SysDB, id.ID, ref); err == nil {
+			target = sc.WorkspaceID
+		}
 	}
 
 	screenshot := ""
@@ -145,7 +156,7 @@ func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		}
 	}
 
-	rep, err := Create(r.Context(), a.SysDB, platform, NewReport{
+	rep, err := Create(r.Context(), a.SysDB, target, NewReport{
 		Title: title, IssueType: issueType, Body: strings.TrimSpace(body),
 		Route: fields["route"], PageURL: fields["page_url"], Selector: fields["selector"], Screenshot: screenshot,
 		ConsoleLog: fields["console_log"], NetworkLog: fields["network_log"],

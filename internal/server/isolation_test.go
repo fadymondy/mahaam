@@ -313,6 +313,8 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		// generated CRUD (/api/<table>/{id})
 		"workspaces": aID, "workspace_members": memberID, "invitations": invID, "mcp_tokens": tokID,
 		"reports": repID, "report_comments": comID,
+		// hand-written /api/w/issues/{key} and /api/w/issues/{key}/comments
+		"issues": repID,
 		"clients": clID, "projects": prID, "project_members": pmID, "teams": teamID, "team_members": tmID,
 		"project_teams": ptID, "task_statuses": stTodo, "tasks": tkID, "task_assignees": taID,
 		"task_checklist_items": ckID, "labels": lbID, "task_labels": tlID, "task_comments": cmID,

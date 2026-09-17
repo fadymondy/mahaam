@@ -37,6 +37,8 @@ var UserScopes = []ScopeDef{
 	{"invoices:write", "Draft invoices from time", authz.Manager},
 	{"feedback:read", "Read the workspace's feedback issues", authz.Member},
 	{"feedback:write", "Comment on and update feedback issues", authz.Member},
+	{"issues:read", "Read the workspace's own issues (its \"Report a problem\" intake)", authz.Member},
+	{"issues:write", "Comment on and triage the workspace's own issues", authz.Member},
 }
 
 // AdminScopes is the closed list for the platform admin MCP. Admin tokens are

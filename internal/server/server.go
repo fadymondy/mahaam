@@ -85,7 +85,8 @@ func registerREST(api huma.API, a *app.App) {
 	rest.RegisterRoutes(api, a) // generated CRUD — behind the guard's workspace tier
 	workspaces.Register(api, a)
 	mcp.RegisterTokenRoutes(api, a)
-	work.Register(api, a) // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
+	work.Register(api, a)         // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
+	reports.RegisterIssues(api, a) // per-workspace issues — /api/w/issues/*
 }
 
 // togoVersion reports the togo framework version this app is built against.
