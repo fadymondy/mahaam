@@ -318,7 +318,19 @@ func TestTimeTracking(t *testing.T) {
 
 	// ---- 5. locked and invoiced entries are immutable -------------------------------------------
 	_, _ = a.SysDB.Exec(`UPDATE time_entries SET locked_at = now() WHERE id = $1`, e1ID)
-	_, _ = a.SysDB.Exec(`UPDATE time_entries SET invoice_id = 'inv-p6-placeholder' WHERE id = $1`, later["id"])
+	// P6 is real now: an invoiced entry points at an actual invoice (composite FK), so mark `later`
+	// invoiced by drafting a minimal invoice and linking it, as DraftFromTime does.
+	var invClientID, invoiceID string
+	if err := a.SysDB.QueryRow(`INSERT INTO clients (workspace_id, name, currency) VALUES ($1, 'Invoiced Co', 'USD') RETURNING id`, aID).Scan(&invClientID); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.SysDB.QueryRow(`INSERT INTO invoices (workspace_id, client_id, number, status, currency, created_by)
+		VALUES ($1, $2, 'INV-TEST-000001', 'sent', 'USD', $3) RETURNING id`, aID, invClientID, miaID).Scan(&invoiceID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.SysDB.Exec(`UPDATE time_entries SET invoice_id = $2, locked_at = now() WHERE id = $1`, later["id"], invoiceID); err != nil {
+		t.Fatal(err)
+	}
 	if code, b := mia.do("DELETE", "/api/w/time/entries/"+e1ID, nil); code != 409 {
 		t.Errorf("deleting a locked entry: %d %s", code, b)
 	}

@@ -304,8 +304,14 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	alice.must("PATCH", "/api/w/notification-settings", map[string]any{"muted_kinds": []string{"time.missing_day"}}, 200)
 	prefID := rowID(`SELECT id FROM notification_prefs WHERE workspace_id = $1 LIMIT 1`)
 
+	// P6 row: a billable hour today (rateID set alice's bill rate above) drafted into an invoice,
+	// which locks that entry. The invoice's client_name carries the marker.
+	today := time.Now().UTC().Format("2006-01-02")
+	alice.must("POST", "/api/w/time/entries", map[string]any{"project": prID, "description": marker + " billable", "date": today, "minutes": 60, "billable": true}, 201)
+	invoiceID := alice.must("POST", "/api/w/invoices/from-time", map[string]any{"client_id": clID, "tax_rate": "0.1"}, 201)["id"].(string)
+
 	aIDs := []string{aID, invID, tokID, repID, comID, memberID, clID, teamID, prID, stTodo, stDone, lbID, tkID,
-		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID, savedID, prefID}
+		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID, savedID, prefID, invoiceID}
 
 	// idFor names the A row a route's path parameters are filled with, by the route's first
 	// segment after /api/ (or /api/w/). A guarded route whose segment is missing here fails.
@@ -327,6 +333,9 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"time": teID, "rates": aliceID, "member-rates": rateID,
 		// P5: generated CRUD, /api/w/saved-reports/{saved}; /api/w/projects/{project}/budget uses "projects"
 		"saved_reports": savedID, "notification_prefs": prefID, "saved-reports": savedID,
+		// P6: /api/w/invoices/{invoice}[/payments|/export|/print], and the client-scoped
+		// /api/w/clients/{client}/{invoices,unbilled} (segment "clients", already mapped).
+		"invoices": invoiceID,
 	}
 	// Guarded routes without path parameters, by segment. Anything else is unknown.
 	unparameterised := map[string]bool{
@@ -512,6 +521,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"/api/w/clients/" + clID:          marker,
 		"/api/w/time/entries/" + teID:     marker,
 		"/api/w/saved-reports/" + savedID: marker,
+		"/api/w/invoices/" + invoiceID:        marker, // the invoice's client_name carries the marker
 	} {
 		if code, b := alice.do("GET", path, nil); code != 200 || !strings.Contains(string(b), want) {
 			t.Errorf("A's row at %s was damaged from B: %d %s", path, code, b)

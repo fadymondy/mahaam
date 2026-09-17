@@ -82,6 +82,11 @@ const (
 	ReportsFinance = "reports:finance"
 	ReportsShare   = "reports:share"
 	ReportsAll     = "reports:all"
+
+	// P6 — invoices. Invoices are finance documents (money in minor units, rate snapshots), so both
+	// reading and writing them are manager+ (matches the invoices:read/write MCP scopes' MinRole).
+	InvoicesRead  = "invoices:read"
+	InvoicesWrite = "invoices:write"
 )
 
 // Matrix is the minimum role per action.
@@ -124,6 +129,9 @@ var Matrix = map[string]Role{
 	ReportsAll:     Manager,
 	ReportsFinance: Manager,
 	ReportsShare:   Manager,
+
+	InvoicesRead:  Manager,
+	InvoicesWrite: Manager,
 }
 
 // Can reports whether role may perform action. Unknown actions are denied.
@@ -205,6 +213,15 @@ var Generated = map[string]TablePolicy{
 	// /api/w/saved-reports and /api/w/notification-settings.
 	"saved_reports":      {Read: None, Write: None},
 	"notification_prefs": {Read: None, Write: None},
+
+	// P6. Invoices, lines and payments are read-only and manager+ through the generic API; every
+	// write (draft from time, status transitions, payments, delete) goes through /api/w/invoices*
+	// (internal/work/invoices.go), which snapshots money, locks and releases time entries, guards
+	// status transitions and records activity. The counter is internal only.
+	"invoices":         {Read: Manager, Write: None},
+	"invoice_lines":    {Read: Manager, Write: None},
+	"invoice_payments": {Read: Manager, Write: None},
+	"invoice_counters": {Read: None, Write: None},
 }
 
 // CanTable reports whether role may perform an HTTP method on a generated table.
