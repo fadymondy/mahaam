@@ -594,6 +594,11 @@ func (sv *Service) UpdateTask(ctx context.Context, ref string, in TaskInput) (*T
 			pt.set("status_id", st.ID)
 			pt.set("position", pos)
 			changes["status"] = st.Name
+			var fromCat string
+			_ = tx.QueryRowContext(ctx, `SELECT category FROM task_statuses WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, t.StatusID).Scan(&fromCat)
+			if st.Category == "done" && fromCat != "done" {
+				changes["done"] = true // notify.go: task.done
+			}
 		}
 		if err := pt.update(ctx, tx, "tasks", s.WorkspaceID, t.ID); err != nil {
 			return err
@@ -683,10 +688,13 @@ func (sv *Service) MoveTask(ctx context.Context, ref, statusRef string, index *i
 		if st.ID == t.StatusID {
 			return nil // a reorder inside one column is not worth a feed entry
 		}
-		var from string
-		_ = tx.QueryRowContext(ctx, `SELECT name FROM task_statuses WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, t.StatusID).Scan(&from)
-		return record(ctx, tx, s, entry{ProjectID: p.ID, TaskID: t.ID, Action: "task.moved", SubjectType: "task", SubjectID: t.ID,
-			Changes: map[string]any{"key": t.Key, "title": t.Title, "from": from, "to": st.Name}})
+		var from, fromCat string
+		_ = tx.QueryRowContext(ctx, `SELECT name, category FROM task_statuses WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, t.StatusID).Scan(&from, &fromCat)
+		changes := map[string]any{"key": t.Key, "title": t.Title, "from": from, "to": st.Name}
+		if st.Category == "done" && fromCat != "done" {
+			changes["done"] = true // notify.go: task.done
+		}
+		return record(ctx, tx, s, entry{ProjectID: p.ID, TaskID: t.ID, Action: "task.moved", SubjectType: "task", SubjectID: t.ID, Changes: changes})
 	})
 	if err != nil {
 		return nil, err

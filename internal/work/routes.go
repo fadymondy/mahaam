@@ -32,6 +32,7 @@ func Register(api huma.API, a *app.App) {
 	r.activity()
 	r.time()          // P2: timer, entries, timesheets, settings, rates
 	r.notifications() // P2: the in-app inbox
+	r.reports()       // P5: reports, exports, budgets, saved views, notification settings
 }
 
 type routes struct {

@@ -387,6 +387,7 @@ func (sv *Service) StartTimer(ctx context.Context, in StartInput) (*TimerChange,
 			return nil, err
 		}
 		sv.publish(s.WorkspaceID, s.UserID, "timer.stopped", public(out.Stopped))
+		sv.afterTimeWrite(ctx, s.WorkspaceID, out.Stopped.ProjectID)
 	}
 	if out.Started, err = sv.entry(ctx, s, startedID); err != nil {
 		return nil, err
@@ -431,6 +432,7 @@ func (sv *Service) StopTimer(ctx context.Context, userRef string) (*TimeEntry, e
 		return nil, err
 	}
 	sv.publish(s.WorkspaceID, who, "timer.stopped", public(e))
+	sv.afterTimeWrite(ctx, s.WorkspaceID, e.ProjectID)
 	return view(s, e), nil
 }
 
@@ -643,6 +645,7 @@ func (sv *Service) LogTime(ctx context.Context, in LogInput) (*TimeEntry, error)
 		return nil, err
 	}
 	sv.publish(s.WorkspaceID, who, "entry.changed", public(e))
+	sv.afterTimeWrite(ctx, s.WorkspaceID, e.ProjectID)
 	return view(s, e), nil
 }
 
@@ -813,6 +816,7 @@ func (sv *Service) UpdateTimeEntry(ctx context.Context, id string, in EntryPatch
 		return nil, err
 	}
 	sv.publish(s.WorkspaceID, cur.UserID, "entry.changed", public(e))
+	sv.afterTimeWrite(ctx, s.WorkspaceID, e.ProjectID)
 	return view(s, e), nil
 }
 

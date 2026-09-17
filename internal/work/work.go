@@ -26,11 +26,13 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	importexport "github.com/togo-framework/import-export"
 	"github.com/togo-framework/togo"
 
 	"github.com/fadymondy/managy/internal/app"
 	"github.com/fadymondy/managy/internal/authz"
 	"github.com/fadymondy/managy/internal/live"
+	"github.com/fadymondy/managy/internal/mailer"
 	"github.com/fadymondy/managy/internal/tenant"
 )
 
@@ -40,7 +42,9 @@ type Service struct {
 	Sys   *sql.DB // owner pool — only to read member emails (the app role has no grant on users)
 	Store togo.Storage
 	Log   *slog.Logger
-	Live  *live.Hub // per-user realtime events (nil in the OpenAPI export)
+	Live  *live.Hub             // per-user realtime events (nil in the OpenAPI export)
+	Mail  mailer.Sender         // togo mail (nil when absent): notification email and the digest
+	Sheet *importexport.Service // togo import-export: report CSV/XLSX
 }
 
 // New builds the service from the app container. a may be nil (OpenAPI export).
@@ -48,7 +52,11 @@ func New(a *app.App) *Service {
 	if a == nil {
 		return &Service{}
 	}
-	return &Service{DB: a.SQLDB, Sys: a.SysDB, Store: a.Storage, Log: a.Log, Live: a.Live}
+	sv := &Service{DB: a.SQLDB, Sys: a.SysDB, Store: a.Storage, Log: a.Log, Live: a.Live, Mail: mailer.FromKernel(a.Kernel)}
+	if a.Kernel != nil {
+		sv.Sheet, _ = importexport.FromKernel(a.Kernel)
+	}
+	return sv
 }
 
 // ---- errors ----------------------------------------------------------------
@@ -137,10 +145,17 @@ func (sv *Service) tx(ctx context.Context, fn func(tx *sql.Tx) error) error {
 		return err
 	}
 	defer tx.Rollback() //nolint:errcheck
+	defer pendingNotes.Delete(tx)
 	if err := fn(tx); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	// Notifications written inside the transaction go out on the realtime channel only now that
+	// they exist for the reader (notify.go).
+	sv.flushNotes(tx)
+	return nil
 }
 
 // ---- request metadata for activity entries ---------------------------------

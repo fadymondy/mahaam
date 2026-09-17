@@ -299,8 +299,13 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// P5 rows: a saved report view and notification settings.
+	savedID := alice.must("POST", "/api/w/saved-reports", map[string]any{"name": marker + " view", "filters": map[string]any{"group_by": "member"}}, 201)["id"].(string)
+	alice.must("PATCH", "/api/w/notification-settings", map[string]any{"muted_kinds": []string{"time.missing_day"}}, 200)
+	prefID := rowID(`SELECT id FROM notification_prefs WHERE workspace_id = $1 LIMIT 1`)
+
 	aIDs := []string{aID, invID, tokID, repID, comID, memberID, clID, teamID, prID, stTodo, stDone, lbID, tkID,
-		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID}
+		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID, savedID, prefID}
 
 	// idFor names the A row a route's path parameters are filled with, by the route's first
 	// segment after /api/ (or /api/w/). A guarded route whose segment is missing here fails.
@@ -318,12 +323,16 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		// /api/w/member-rates/{rate}, /api/w/notifications/{notification}/read
 		"time_entries": teID, "member_rates": rateID, "notifications": noteID,
 		"time": teID, "rates": aliceID, "member-rates": rateID,
+		// P5: generated CRUD, /api/w/saved-reports/{saved}; /api/w/projects/{project}/budget uses "projects"
+		"saved_reports": savedID, "notification_prefs": prefID, "saved-reports": savedID,
 	}
 	// Guarded routes without path parameters, by segment. Anything else is unknown.
 	unparameterised := map[string]bool{
 		"current": true, "members": true, "activity": true, "me": true, "graphql": true,
 		"feedback": true, // the signed-in "Report a problem" intake (reports land in the platform workspace)
 		"events":   true, // P2: the per-user realtime stream (read with a timeout, see send)
+		// P5: /api/w/report/{time,export,budgets,profitability}, /api/w/notification-settings
+		"report": true, "notification-settings": true,
 	}
 
 	leaks := func(b []byte) string {
@@ -494,12 +503,13 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	// ---- A survived every write attempt -------------------------------------
 	alice.ws = aID
 	for path, want := range map[string]string{
-		"/api/reports/" + repID:         marker,
-		"/api/report_comments/" + comID: marker,
-		"/api/w/tasks/" + tkID:          marker,
-		"/api/w/projects/" + prID:       marker,
-		"/api/w/clients/" + clID:        marker,
-		"/api/w/time/entries/" + teID:   marker,
+		"/api/reports/" + repID:           marker,
+		"/api/report_comments/" + comID:   marker,
+		"/api/w/tasks/" + tkID:            marker,
+		"/api/w/projects/" + prID:         marker,
+		"/api/w/clients/" + clID:          marker,
+		"/api/w/time/entries/" + teID:     marker,
+		"/api/w/saved-reports/" + savedID: marker,
 	} {
 		if code, b := alice.do("GET", path, nil); code != 200 || !strings.Contains(string(b), want) {
 			t.Errorf("A's row at %s was damaged from B: %d %s", path, code, b)

@@ -128,6 +128,9 @@ type newNote struct {
 // notify inserts a notification, or nothing when (user, kind, dedupe key) was already sent — so a
 // job that runs every five minutes sends each reminder once. Returns nil when it was a duplicate.
 func notify(ctx context.Context, q querier, ws, user string, n newNote) (*Notification, error) {
+	if muted(ctx, q, ws, user, n.Kind) {
+		return nil, nil
+	}
 	data, err := json.Marshal(n.Data)
 	if err != nil {
 		return nil, err

@@ -52,6 +52,9 @@ func record(ctx context.Context, q querier, s *tenant.Scope, e entry) error {
 	if err != nil {
 		return fmt.Errorf("activity: %w", err)
 	}
+	if err := fanout(ctx, q, s, e); err != nil {
+		return fmt.Errorf("notifications: %w", err)
+	}
 	return nil
 }
 
