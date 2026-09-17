@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ElementType,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
@@ -16,9 +17,11 @@ import {
   CheckCircle2Icon,
   CircleIcon,
   DownloadIcon,
+  ExternalLinkIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -177,18 +180,21 @@ function Section({
   );
 }
 
-function TaskBody({
+export function TaskBody({
   d,
   statuses,
   onOpen,
   onChanged,
   onDeleted,
+  chrome = "sheet",
 }: {
   d: TaskDetail;
   statuses: Status[];
   onOpen: (key: string) => void;
   onChanged: () => void;
   onDeleted: () => void;
+  /** "sheet" renders the accessible dialog header; "page" renders a plain heading. */
+  chrome?: "sheet" | "page";
 }) {
   const { t, locale } = useTranslations();
   const ws = useWorkspace();
@@ -233,22 +239,44 @@ function TaskBody({
   };
 
   const overdue = isOverdue(d.due_at, d.completed_at);
+  const page = chrome === "page";
+  const HeaderWrap: ElementType = page ? "div" : SheetHeader;
+  const meta = (
+    <>
+      <Ltr mono>{d.key}</Ltr>
+      <span aria-hidden>·</span>
+      <span className="truncate">{d.project.name}</span>
+      {d.completed_at ? (
+        <Badge variant="outline" className="gap-1">
+          <CheckCircle2Icon />
+          {t("task.completed")}
+        </Badge>
+      ) : null}
+      {!page ? (
+        <Link
+          href={`/${locale}/w/${ws.slug}/projects/${d.project.id}/tasks/${d.key}`}
+          className="ms-auto inline-flex items-center gap-1 text-grid-muted hover:text-grid-fg"
+        >
+          <ExternalLinkIcon className="size-3.5" />
+          {t("task.openFullPage")}
+        </Link>
+      ) : null}
+    </>
+  );
 
   return (
     <>
-      <SheetHeader className="gap-1 border-b border-line px-6 pt-5 pb-4">
-        <SheetDescription className="flex items-center gap-2 text-xs">
-          <Ltr mono>{d.key}</Ltr>
-          <span aria-hidden>·</span>
-          <span className="truncate">{d.project.name}</span>
-          {d.completed_at ? (
-            <Badge variant="outline" className="gap-1">
-              <CheckCircle2Icon />
-              {t("task.completed")}
-            </Badge>
-          ) : null}
-        </SheetDescription>
-        <SheetTitle className="sr-only">{d.title}</SheetTitle>
+      <HeaderWrap className="gap-1 border-b border-line px-6 pt-5 pb-4">
+        {page ? (
+          <p className="flex items-center gap-2 text-xs text-grid-muted">{meta}</p>
+        ) : (
+          <SheetDescription className="flex items-center gap-2 text-xs">{meta}</SheetDescription>
+        )}
+        {page ? (
+          <h1 className="sr-only">{d.title}</h1>
+        ) : (
+          <SheetTitle className="sr-only">{d.title}</SheetTitle>
+        )}
         {can ? (
           <Textarea
             aria-label={t("task.title")}
@@ -281,7 +309,7 @@ function TaskBody({
             {t("task.subtaskOf")} <Ltr mono>{d.parent.key}</Ltr> {d.parent.title}
           </button>
         ) : null}
-      </SheetHeader>
+      </HeaderWrap>
 
       <div className="py-3">
         <Row label={t("task.status")} htmlFor="ts-status">

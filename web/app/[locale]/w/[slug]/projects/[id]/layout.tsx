@@ -67,6 +67,9 @@ function ProjectShell({ children }: { children: ReactNode }) {
   }
   const p = project.data
   const tab = TABS.find((x) => pathname.endsWith(`/${x}`)) ?? "overview"
+  // A task detail page (/projects/{id}/tasks/{key}) nests under this layout: keep the
+  // project breadcrumb and context (statuses) but drop the project tabs, which don't apply.
+  const isTaskRoute = pathname.includes(`/projects/${id}/tasks/`)
 
   return (
     <ProjectContext.Provider value={{ project: p, reload, openTask: (k) => setTask(k), base }}>
@@ -88,17 +91,19 @@ function ProjectShell({ children }: { children: ReactNode }) {
           {p.client_name ? <span className="text-sm text-grid-muted">{p.client_name}</span> : null}
         </div>
       </div>
-      <div className="mt-4 border-b border-line px-6">
-        <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
-          <TabsList variant="line">
-            {TABS.map((x) => (
-              <TabsTrigger key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
-                {t(`projectTab.${x}`)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      </div>
+      {!isTaskRoute ? (
+        <div className="mt-4 border-b border-line px-6">
+          <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
+            <TabsList variant="line">
+              {TABS.map((x) => (
+                <TabsTrigger key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
+                  {t(`projectTab.${x}`)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      ) : null}
       {p.archived_at ? <p className="border-b border-line bg-grid-soft px-6 py-2 text-sm text-grid-muted">{t("project.archivedNotice")}</p> : null}
       {children}
       <TaskSheet taskKey={taskKey} statuses={p.statuses} onClose={() => setTask(null)} onOpen={(k) => setTask(k)} onChanged={reload} />
