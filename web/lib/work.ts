@@ -270,6 +270,127 @@ export const issuesApi = {
     w.post<IssueComment>(ws, `/api/w/issues/${encodeURIComponent(key)}/comments`, { body }),
 }
 
+// ── invoices (P6) ────────────────────────────────────────────────────────────
+
+export const INVOICE_STATUSES = ["draft", "sent", "paid", "void"] as const
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
+
+export type Invoice = {
+  id: string
+  number: string
+  client_id: string
+  client_name: string | null
+  status: InvoiceStatus
+  currency: string
+  issue_date: string
+  due_date: string | null
+  subtotal_minor: number
+  tax_rate: string
+  tax_minor: number
+  total_minor: number
+  paid_minor: number
+  notes: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export type InvoiceLine = {
+  id: string
+  description: string
+  quantity: string
+  unit_minor: number
+  amount_minor: number
+  source_time_entry_ids: string[]
+}
+
+export type InvoicePayment = {
+  id: string
+  amount_minor: number
+  paid_at: string
+  ref: string | null
+  created_by: string
+  created_at: string
+}
+
+export type InvoiceDetail = Invoice & { lines: InvoiceLine[]; payments: InvoicePayment[] }
+
+export type Unbilled = { currency: string; seconds: number; amount_minor: number; entry_count: number }
+
+export type InvoiceQuery = { client?: string; status?: string }
+function invoiceQs(q: InvoiceQuery) {
+  const s = new URLSearchParams()
+  if (q.client) s.set("client", q.client)
+  if (q.status) s.set("status", q.status)
+  const str = s.toString()
+  return str ? `?${str}` : ""
+}
+
+export const useInvoices = (ws: string, query: InvoiceQuery = {}, enabled = true) =>
+  useW<{ invoices: Invoice[] }>(enabled ? `/api/w/invoices${invoiceQs(query)}` : null, ws)
+export const useInvoice = (ws: string, ref: string | null, enabled = true) =>
+  useW<InvoiceDetail>(ref && enabled ? `/api/w/invoices/${encodeURIComponent(ref)}` : null, ws)
+export const useClientInvoices = (ws: string, id: string | null, enabled = true) =>
+  useW<{ invoices: Invoice[] }>(id && enabled ? `/api/w/clients/${encodeURIComponent(id)}/invoices` : null, ws)
+export const useClientUnbilled = (ws: string, id: string | null, enabled = true) =>
+  useW<Unbilled>(id && enabled ? `/api/w/clients/${encodeURIComponent(id)}/unbilled` : null, ws)
+
+export type DraftInvoiceBody = {
+  client_id: string
+  from?: string
+  to?: string
+  project_ids?: string[]
+  group_by?: "project" | "task"
+  tax_rate?: string
+  due_date?: string
+  notes?: string
+}
+
+export const invoicesApi = {
+  draft: (ws: string, body: DraftInvoiceBody) => w.post<InvoiceDetail>(ws, "/api/w/invoices/from-time", body),
+  setStatus: (ws: string, ref: string, status: InvoiceStatus) =>
+    w.patch<InvoiceDetail>(ws, `/api/w/invoices/${encodeURIComponent(ref)}`, { status }),
+  pay: (ws: string, ref: string, body: { amount_minor: number; paid_at?: string; ref?: string }) =>
+    w.post<InvoiceDetail>(ws, `/api/w/invoices/${encodeURIComponent(ref)}/payments`, body),
+  del: (ws: string, ref: string) => w.del(ws, `/api/w/invoices/${encodeURIComponent(ref)}`),
+}
+
+/** Fetch a workspace-scoped file (needs the X-Workspace-ID header a plain link can't set). */
+async function fetchWithWs(ws: string, path: string) {
+  const res = await fetch(path, { headers: { "X-Workspace-ID": ws }, credentials: "same-origin", cache: "no-store" })
+  if (!res.ok) {
+    let msg = res.statusText
+    try {
+      msg = ((await res.json()) as { error?: string }).error ?? msg
+    } catch {}
+    throw new ApiError(res.status, msg || `Request failed (${res.status})`)
+  }
+  return res
+}
+
+export async function downloadInvoice(ws: string, ref: string, format: "csv" | "xlsx", lang: string) {
+  const res = await fetchWithWs(ws, `/api/w/invoices/${encodeURIComponent(ref)}/export?format=${format}&lang=${lang}`)
+  const cd = res.headers.get("content-disposition") ?? ""
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(cd)
+  const name = star ? decodeURIComponent(star[1]) : `${ref}.${format}`
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement("a")
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
+
+export async function openInvoicePrint(ws: string, ref: string, lang: string) {
+  const res = await fetchWithWs(ws, `/api/w/invoices/${encodeURIComponent(ref)}/print?lang=${lang}`)
+  const url = URL.createObjectURL(await res.blob())
+  const win = window.open(url, "_blank")
+  if (win) win.addEventListener("load", () => setTimeout(() => win.print(), 300))
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
 export type { KeyedMutator }
 
 /** Mutations: one place, always scoped to the workspace. */

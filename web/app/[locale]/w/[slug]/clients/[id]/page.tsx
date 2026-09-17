@@ -16,7 +16,8 @@ import { money } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
 import { filterQuery, hmCell, useTimeReport } from "@/lib/reports"
 import { useDocumentTitle } from "@/lib/title"
-import { useClient, useProjects } from "@/lib/work"
+import { StatusBadge } from "../../invoices/page"
+import { useClient, useClientInvoices, useClientUnbilled, useProjects } from "@/lib/work"
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -27,6 +28,9 @@ export default function ClientDetailPage() {
   const projects = useProjects(ws.id)
   const canReport = ws.can("reports:read")
   const report = useTimeReport(ws.id, filterQuery({ clients: [id], group_by: "project" }), canReport)
+  const canInvoice = ws.can("invoices:read")
+  const unbilled = useClientUnbilled(ws.id, id, canInvoice)
+  const clientInvoices = useClientInvoices(ws.id, id, canInvoice)
   const back = `/${locale}/w/${ws.slug}/clients`
 
   const c = client.data
@@ -126,15 +130,42 @@ export default function ClientDetailPage() {
             <dl className="grid grid-cols-1 gap-px border-y border-line bg-grid-line text-sm">
               <Stat label={t("clientDetail.tracked")}><Ltr mono>{hmCell(r.total.seconds)}</Ltr></Stat>
               <Stat label={t("clientDetail.billable")}><Ltr mono>{hmCell(r.total.billable_rounded_s)}</Ltr></Stat>
-              {r.finance ? (
-                <Stat label={t("clientDetail.unbilled")}>
-                  <Ltr>{money(r.total.billable_minor ?? 0, cur, locale)}</Ltr>
-                </Stat>
-              ) : null}
             </dl>
           )}
-          {/* Invoices come with billing (P6); no dead controls until then. */}
-          <p className="px-6 py-4 text-xs text-grid-muted">{t("clientDetail.invoicesSoon")}</p>
+          {canInvoice ? (
+            <>
+              <div className="flex items-center justify-between gap-2 border-t border-line px-6 pt-5 pb-3">
+                <h2 className="text-base font-medium">{t("clientDetail.invoices")}</h2>
+                <Link href={`/${locale}/w/${ws.slug}/invoices`} className="text-xs text-grid-brand hover:underline">
+                  {t("clientDetail.newInvoice")}
+                </Link>
+              </div>
+              <dl className="grid grid-cols-1 gap-px border-y border-line bg-grid-line text-sm">
+                <Stat label={t("clientDetail.unbilledValue")}>
+                  <Ltr>{money(unbilled.data?.amount_minor ?? 0, unbilled.data?.currency ?? cur, locale)}</Ltr>
+                </Stat>
+              </dl>
+              {(clientInvoices.data?.invoices ?? []).length === 0 ? (
+                <p className="px-6 py-4 text-xs text-grid-muted">{t("clientDetail.noInvoices")}</p>
+              ) : (
+                <ul className="divide-y divide-line border-b border-line">
+                  {(clientInvoices.data?.invoices ?? []).map((iv) => (
+                    <li key={iv.id}>
+                      <Link href={`/${locale}/w/${ws.slug}/invoices/${iv.number}`} className="flex items-center justify-between gap-2 px-6 py-3 hover:bg-grid-soft">
+                        <span className="flex items-center gap-2">
+                          <Ltr mono>{iv.number}</Ltr>
+                          <StatusBadge status={iv.status} />
+                        </span>
+                        <span className="tabular-nums text-grid-body">
+                          <Ltr>{money(iv.total_minor, iv.currency, locale)}</Ltr>
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : null}
         </aside>
       </div>
     </>

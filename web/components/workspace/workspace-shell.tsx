@@ -18,6 +18,7 @@ import {
   LayoutGridIcon,
   MenuIcon,
   MessageSquarePlusIcon,
+  ReceiptTextIcon,
   PlusIcon,
   TagIcon,
   UsersIcon,
@@ -360,6 +361,11 @@ function ShellNav({
       {can.includes("clients:read") ? (
         <L href={`${base}/clients`} icon={<BriefcaseIcon />}>
           {t("nav.clients")}
+        </L>
+      ) : null}
+      {can.includes("invoices:read") ? (
+        <L href={`${base}/invoices`} icon={<ReceiptTextIcon />}>
+          {t("nav.invoices")}
         </L>
       ) : null}
       {can.includes("teams:read") ? (

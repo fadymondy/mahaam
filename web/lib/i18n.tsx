@@ -18,13 +18,16 @@ import timeAr from "@/lang/time.ar.json"
 import reportsEn from "@/lang/reports.en.json"
 import reportsAr from "@/lang/reports.ar.json"
 
+import invoicesEn from "@/lang/invoices.en.json"
+import invoicesAr from "@/lang/invoices.ar.json"
+
 export { LOCALES, dirForLocale, isLocale } from "@/lib/i18n-locale"
 export type { Locale } from "@/lib/i18n-locale"
 
 type Dict = Record<string, string>
 const DICTIONARIES: Record<Locale, Dict> = {
-  en: { ...en, ...workEn, ...timeEn, ...reportsEn },
-  ar: { ...ar, ...workAr, ...timeAr, ...reportsAr },
+  en: { ...en, ...workEn, ...timeEn, ...reportsEn, ...invoicesEn },
+  ar: { ...ar, ...workAr, ...timeAr, ...reportsAr, ...invoicesAr },
 }
 
 /** Non-reactive lookup — for use outside React. */
