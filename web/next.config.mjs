@@ -15,6 +15,9 @@ const nextConfig = {
     return [
       { source: "/api/:path*", destination: `${API_ORIGIN}/api/:path*` },
       { source: "/graphql", destination: `${API_ORIGIN}/graphql` },
+      // The embeddable feedback loader/bundle is served by the Go API; proxy it so
+      // the snippet's {app-origin}/embed/v1.js works on the public host too.
+      { source: "/embed/:path*", destination: `${API_ORIGIN}/embed/:path*` },
     ];
   },
 
@@ -23,7 +26,7 @@ const nextConfig = {
     if (process.env.NODE_ENV !== "development") return [];
     return [
       {
-        source: "/:path((?!api|graphql).*)",
+        source: "/:path((?!api|graphql|embed).*)",
         headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
       },
     ];
