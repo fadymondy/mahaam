@@ -11,12 +11,15 @@ import ar from "@/lang/ar.json"
 // are merged over the base dictionaries, so a key here overrides the same key in en/ar.json.
 import workEn from "@/lang/work.en.json"
 import workAr from "@/lang/work.ar.json"
+// P2 (time tracking, rates, notifications) — merged last, so it may override a P1 key (dev.*, nav.comingNext).
+import timeEn from "@/lang/time.en.json"
+import timeAr from "@/lang/time.ar.json"
 
 export { LOCALES, dirForLocale, isLocale } from "@/lib/i18n-locale"
 export type { Locale } from "@/lib/i18n-locale"
 
 type Dict = Record<string, string>
-const DICTIONARIES: Record<Locale, Dict> = { en: { ...en, ...workEn }, ar: { ...ar, ...workAr } }
+const DICTIONARIES: Record<Locale, Dict> = { en: { ...en, ...workEn, ...timeEn }, ar: { ...ar, ...workAr, ...timeAr } }
 
 /** Non-reactive lookup — for use outside React. */
 export function trans(key: string, locale: string = "en"): string {

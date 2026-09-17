@@ -47,9 +47,14 @@ export function CopyField({ value, label }: { value: string; label?: string }) {
 }
 
 /** Codes, emails, numbers and dates keep LTR order inside RTL text. */
-export function Ltr({ children, mono = false, className = "" }: { children: React.ReactNode; mono?: boolean; className?: string }) {
+export function Ltr({
+  children,
+  mono = false,
+  className = "",
+  ...rest
+}: { children: React.ReactNode; mono?: boolean; className?: string } & Omit<React.ComponentProps<"span">, "children" | "className" | "dir">) {
   return (
-    <span dir="ltr" className={`ltr-isolate ${mono ? "font-mono" : ""} ${className}`}>
+    <span {...rest} dir="ltr" className={`ltr-isolate ${mono ? "font-mono" : ""} ${className}`}>
       {children}
     </span>
   )

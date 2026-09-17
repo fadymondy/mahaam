@@ -5,9 +5,10 @@ Project management and time tracking — a rebuild of `fadymondy/3x1projects` on
 and Next.js 16 on the fadymondy.com grid. Plan: `fadymondy.com-v2/.setup/plans/imanage.md`
 (renamed iManage → Managy on 2026-09-14).
 
-**Status: P1 — local development only.** No deploy, no DNS. P0 (tenancy, RLS, MCP, feedback)
+**Status: P2 — local development (public preview at https://managy-app.fadymondy.com via a tunnel to the dev servers).** No deploy, no DNS. P0 (tenancy, RLS, MCP, feedback)
 plus P1: clients, projects, teams, per-project statuses, tasks with board/list, checklist,
-subtasks, labels, comments with @mentions, attachments and the activity feed.
+subtasks, labels, comments with @mentions, attachments and the activity feed; P2: time tracking —
+the timer, timesheets, rates, realtime sync and reminders.
 
 ## Ports (local dev)
 
@@ -82,6 +83,53 @@ Browser check (headless Chrome, fresh profile; counts animation frames first): w
 web running, `cd web && node e2e/p1-verify.mjs` — drag-and-drop persists across reload, the
 Claude-style MCP flow lands on the board, the side-over's checklist / @mention / upload /
 activity work, and board + side-over are screenshotted in en/ar × light/dark (`web/e2e/shots/`).
+
+## P2 — time tracking
+
+- **Invariants in Postgres** (`internal/db/schema/time_entry.sql`, `internal/db/post/12_p2_constraints.sql`):
+  `one_running_timer` (unique partial index on `(workspace_id, user_id) WHERE ended_at IS NULL`),
+  `no_overlap` (gist exclusion, btree_gist), `duration_s` GENERATED, `source` timer|manual|mcp|import,
+  `invoice_id` / `locked_at` reserved (a set value makes the entry immutable). Deviations from the plan:
+  `no_overlap` also keys on `workspace_id` (a cross-tenant constraint leaks another workspace's rows and
+  contradicts the per-workspace running index); `user_id` references `users`, not `workspace_members`
+  (removing a member deletes the membership row — a composite key would cascade billing history away or
+  block the removal; membership is checked on every write instead). The task reference is
+  `(workspace_id, project_id, task_id)`, so a task always belongs to the entry's project.
+- **Start stops the running timer in the same transaction**, serialised per person by
+  `pg_advisory_xact_lock` with the clock read after the lock — concurrent starts queue; the index is the
+  backstop. Stop is own-only; `time:manage` (manager+) reaches members' timers.
+- **Rates are snapshotted** on the entry when it is created: bill task → project → member → workspace
+  default; cost member → workspace default (`internal/work/time.go`, `resolveRates`). `member_rates` are
+  effective-dated rate cards; editing one never changes an entry already logged. Managers read rates,
+  admins set them; members never see rates on entries.
+- **Days are cut at local midnight** of the workspace timezone (calendar days, DST-safe; `time/tzdata`
+  embedded). `week_start` and `rounding_minutes` are applied at report time only.
+- **Realtime**: `internal/live`, `GET /api/w/events` (SSE) behind the guard — one stream per person per
+  workspace, the channel taken from the session, never named by the client. Events: `timer.state`
+  (sent first), `timer.started`, `timer.stopped`, `entry.changed`, `notification.*`. togo realtime is not
+  used: its SSE broker broadcasts to every client, and realtime-ws lets any ticket holder subscribe to any
+  `private-` channel by name. Fan-out is in-process (one API instance; several need LISTEN/NOTIFY).
+- **Reminders**: togo `scheduler`, every five minutes, idempotent (`notifications.dedupe_key`): timers running
+  longer than `reminder_running_hours`; no time by 18:00 local on the five workdays from `week_start`, for
+  members with an entry in the last 30 days. **In-app only** — email delivery waits for P5.
+- **REST**: `/api/w/time/{running,start,stop,entries,entries/{entry},timesheet,team,settings}`,
+  `/api/w/rates`, `/api/w/rates/{user}`, `/api/w/member-rates/{rate}`, `/api/w/notifications` (+ `/{id}/read`,
+  `/read-all`). **MCP** (`internal/mcp/time_tools.go`): `get_running_timer`, `list_time_entries` (`time:read`);
+  `start_timer`, `stop_timer`, `log_time`, `update_time_entry`, `delete_time_entry` (`time:write`; another
+  member's time also needs `time:manage` on the token); `whoami` shows the running timer.
+- **UI**: the timer bar in the header (start on a project, a task or free text; ⌘K / Ctrl+K "Start timer
+  on…"), "Start timer" on the task side-over and on board cards, `/time` (week grid + day list + manual
+  entries with the Calendar + Popover date picker; `?user=` for managers), `/time/team`, `/settings/time`,
+  `/settings/rates`, and the notifications bell. Strings in `web/lang/time.{en,ar}.json`.
+- A new workspace takes the UI language (`locale`), which names a new project's default columns.
+
+Verification: `make test-e2e` runs the sweep and `TestTimeTracking` (50 parallel starts → one running
+timer and no overlaps; the same entry split in Africa/Cairo and America/New_York; rate snapshot after a
+rate edit; locked/invoiced refusals; MCP round-trip; realtime isolation; reminders). Browser:
+`cd web && node e2e/p2-verify.mjs` (tab A → tab B realtime, ⌘K, side-over and card timers, MCP on the open
+timesheet, a 23:00–01:00 manual entry, en/ar × light/dark at 1440 and 390; `WEB_ORIGIN=https://managy-app.fadymondy.com`
+for the public preview) and `node e2e/ui-tour.mjs` (every page, both widths, both languages and themes).
+The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a request open.
 
 ## Tenancy
 
@@ -174,3 +222,14 @@ Found building P1:
 13. Next 16 dev blocks `/_next/*` and HMR for any origin other than the one it started on: a page
     opened on `127.0.0.1` while the server runs as `localhost` never hydrates. Both are in
     `allowedDevOrigins` (`web/next.config.mjs`).
+
+Found building P2:
+
+14. `togo install` ignores `--dry-run` (it ran `go get`, rewrote `plugins.gen.go` and `togo.yaml` and added
+    `.claude/` files) and strips the hand-written header of `plugins.gen.go`. Re-add it after every install.
+15. `make:resource` names a field `url` `uRL` in the GraphQL fragment; gqlgen then generates `URl` while the
+    resolver uses `input.URL` — the OpenAPI gate fails (and `togo generate` still exits 0, note 8).
+16. togo realtime cannot carry per-user data: the SSE broker broadcasts to everyone, and realtime-ws
+    tickets are not bound to a user, so any ticket holder may subscribe to any `private-` channel.
+17. The `togo-framework/queue` memory driver runs a dispatched job on its own goroutine, so scheduler jobs
+    do run in-process; the kernel's `http.ListenAndServe` has no timeouts (fine for SSE, not for production).

@@ -1,10 +1,14 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useState, type ReactNode } from "react"
-import { useParams, usePathname, useRouter } from "next/navigation"
+import Link from "next/link";
+import { useState, type ReactNode } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   BriefcaseIcon,
+  CalendarRangeIcon,
+  ClockIcon,
+  CoinsIcon,
+  TimerIcon,
   CheckIcon,
   ChevronsUpDownIcon,
   FolderKanbanIcon,
@@ -16,9 +20,9 @@ import {
   TagIcon,
   UsersIcon,
   UsersRoundIcon,
-} from "lucide-react"
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,27 +31,36 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
-import { CubeMark } from "@/components/brand/cube-mark"
-import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls"
-import { ReportProblemDialog } from "@/components/feedback/report-problem"
-import { NotFoundState } from "@/components/not-found-state"
-import { ErrorState } from "@/components/states"
-import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form"
-import { UserMenu } from "@/components/workspace/user-menu"
-import { WorkspaceContext } from "@/components/workspace/workspace-context"
-import { MANAGY_MARK } from "@/lib/brand/mark"
-import type { WorkspaceSummary } from "@/lib/api"
-import { useTranslations } from "@/lib/i18n"
-import { useCurrentWorkspace, useMyWorkspaces } from "@/lib/queries"
-import { useRequireAuth } from "@/lib/use-require-auth"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { CubeMark } from "@/components/brand/cube-mark";
+import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls";
+import { ReportProblemDialog } from "@/components/feedback/report-problem";
+import { NotFoundState } from "@/components/not-found-state";
+import { ErrorState } from "@/components/states";
+import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
+import { UserMenu } from "@/components/workspace/user-menu";
+import { WorkspaceContext, type WorkspaceCtx } from "@/components/workspace/workspace-context";
+import { MANAGY_MARK } from "@/lib/brand/mark";
+import type { WorkspaceSummary } from "@/lib/api";
+import { useTranslations } from "@/lib/i18n";
+import { useCurrentWorkspace, useMyWorkspaces } from "@/lib/queries";
+import { useRequireAuth } from "@/lib/use-require-auth";
+import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/time/notification-bell";
+import { TimerBar } from "@/components/time/timer-bar";
+import { useLiveStream } from "@/lib/time";
 
 function Brand() {
-  const { locale } = useTranslations()
+  const { locale } = useTranslations();
   return (
     <Link href={`/${locale}/workspaces`} className="flex items-center gap-2.5">
       <CubeMark mark={MANAGY_MARK} size={24} />
@@ -55,20 +68,20 @@ function Brand() {
         Managy
       </span>
     </Link>
-  )
+  );
 }
 
 function WorkspaceSwitcher({ active, all }: { active: WorkspaceSummary; all: WorkspaceSummary[] }) {
-  const { t, locale } = useTranslations()
-  const router = useRouter()
-  const pathname = usePathname()
-  const [creating, setCreating] = useState(false)
+  const { t, locale } = useTranslations();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [creating, setCreating] = useState(false);
 
   // Switching keeps the section (members, MCP) when it exists in every workspace.
   function hrefFor(slug: string) {
-    const prefix = `/${locale}/w/${active.slug}`
-    const rest = pathname.startsWith(prefix) ? pathname.slice(prefix.length) : ""
-    return `/${locale}/w/${slug}${rest}`
+    const prefix = `/${locale}/w/${active.slug}`;
+    const rest = pathname.startsWith(prefix) ? pathname.slice(prefix.length) : "";
+    return `/${locale}/w/${slug}${rest}`;
   }
 
   return (
@@ -76,13 +89,17 @@ function WorkspaceSwitcher({ active, all }: { active: WorkspaceSummary; all: Wor
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" className="h-9 max-w-[16rem] justify-between gap-2 px-2.5" aria-label={t("shell.switchWorkspace")} />
+            <Button
+              variant="ghost"
+              className="h-9 max-w-[9rem] justify-between gap-2 px-2.5 sm:max-w-[16rem]"
+              aria-label={t("shell.switchWorkspace")}
+            />
           }
         >
           <span className="flex size-6 shrink-0 items-center justify-center border border-line bg-grid-card text-xs font-medium text-grid-brand">
             {active.name.slice(0, 1).toUpperCase()}
           </span>
-          <span className="truncate text-sm font-medium">{active.name}</span>
+          <span className="hidden truncate text-sm font-medium sm:inline">{active.name}</span>
           <ChevronsUpDownIcon className="text-grid-muted" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-64">
@@ -113,12 +130,24 @@ function WorkspaceSwitcher({ active, all }: { active: WorkspaceSummary; all: Wor
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
 
-function NavLink({ href, icon, children, exact = false, onNavigate }: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean; onNavigate?: () => void }) {
-  const pathname = usePathname()
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(href + "/")
+function NavLink({
+  href,
+  icon,
+  children,
+  exact = false,
+  onNavigate,
+}: {
+  href: string;
+  icon: ReactNode;
+  children: ReactNode;
+  exact?: boolean;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  const active = exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
   return (
     <Link
       href={href}
@@ -134,25 +163,37 @@ function NavLink({ href, icon, children, exact = false, onNavigate }: { href: st
       {icon}
       {children}
     </Link>
-  )
+  );
 }
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
-  const { slug } = useParams<{ slug: string }>()
-  const { t, locale } = useTranslations()
-  const me = useRequireAuth()
-  const list = useMyWorkspaces(!!me.data)
-  const [reporting, setReporting] = useState(false)
-  const [navOpen, setNavOpen] = useState(false)
-  const { isRtl } = useTranslations()
+  const { slug } = useParams<{ slug: string }>();
+  const { t, locale } = useTranslations();
+  const me = useRequireAuth();
+  const list = useMyWorkspaces(!!me.data);
+  const [reporting, setReporting] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const { isRtl } = useTranslations();
 
-  const summary = list.data?.find((w) => w.slug === slug)
-  const current = useCurrentWorkspace(summary?.id)
-  const base = `/${locale}/w/${slug}`
+  const summary = list.data?.find((w) => w.slug === slug);
+  const current = useCurrentWorkspace(summary?.id);
+  const base = `/${locale}/w/${slug}`;
+  // One context object for the header's timer/bell and the page body (the header sits outside <main>).
+  const ctx: WorkspaceCtx | null = summary
+    ? {
+        summary,
+        current: current.data,
+        id: summary.id,
+        slug: summary.slug,
+        can: (p: string) => !!current.data?.can?.includes(p),
+      }
+    : null;
+  // The per-user realtime stream: mounted once per tab, it keeps every view of the timer in step.
+  const live = useLiveStream(summary?.id);
 
-  let body: ReactNode
-  if (me.error || list.error) body = <ErrorState error={me.error ?? list.error} />
-  else if (!me.data || !list.data) body = <ShellSkeleton />
+  let body: ReactNode;
+  if (me.error || list.error) body = <ErrorState error={me.error ?? list.error} />;
+  else if (!me.data || !list.data) body = <ShellSkeleton />;
   else if (!summary)
     body = (
       <NotFoundState
@@ -161,8 +202,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         backHref={`/${locale}/workspaces`}
         backLabel={t("shell.allWorkspaces")}
       />
-    )
-  else if (current.error) body = <ErrorState error={current.error} />
+    );
+  else if (current.error) body = <ErrorState error={current.error} />;
   else
     body = (
       <WorkspaceContext.Provider
@@ -176,7 +217,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       >
         {children}
       </WorkspaceContext.Provider>
-    )
+    );
 
   return (
     <div className="grid-shell">
@@ -188,25 +229,56 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-col">
-        <header className="flex h-14 items-center justify-between gap-2 border-b border-line px-3 sm:px-4">
+        <header
+          className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-line bg-background px-3 sm:px-4"
+          data-live={live}
+        >
           <div className="flex min-w-0 items-center gap-1">
             {summary ? (
-              <Button variant="ghost" size="icon-sm" className="md:hidden" aria-label={t("shell.navigation")} onClick={() => setNavOpen(true)}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="md:hidden"
+                aria-label={t("shell.navigation")}
+                onClick={() => setNavOpen(true)}
+              >
                 <MenuIcon />
               </Button>
             ) : null}
-            {summary && list.data ? <WorkspaceSwitcher active={summary} all={list.data} /> : <Skeleton className="h-6 w-40" />}
+            {summary && list.data ? (
+              <WorkspaceSwitcher active={summary} all={list.data} />
+            ) : (
+              <Skeleton className="h-6 w-40" />
+            )}
+            {ctx ? (
+              <WorkspaceContext.Provider value={ctx}>
+                <TimerBar />
+              </WorkspaceContext.Provider>
+            ) : null}
           </div>
           <div className="flex items-center gap-1">
             {me.data ? (
-              <Button variant="outline" size="sm" onClick={() => setReporting(true)} aria-label={t("feedback.report")}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden sm:inline-flex"
+                onClick={() => setReporting(true)}
+                aria-label={t("feedback.report")}
+              >
                 <MessageSquarePlusIcon />
                 <span className="hidden sm:inline">{t("feedback.report")}</span>
               </Button>
             ) : null}
+            {ctx ? (
+              <WorkspaceContext.Provider value={ctx}>
+                <NotificationBell />
+              </WorkspaceContext.Provider>
+            ) : null}
             <LanguageSwitcher />
             <ThemeToggle />
-            {me.data ? <UserMenu email={me.data.email} onReport={() => setReporting(true)} /> : null}
+            {me.data ? (
+              <UserMenu email={me.data.email} onReport={() => setReporting(true)} />
+            ) : null}
           </div>
         </header>
         <main className="min-w-0 flex-1">{body}</main>
@@ -217,13 +289,23 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           <SheetTitle className="flex h-14 items-center border-b border-line px-4">
             <Brand />
           </SheetTitle>
-          {summary ? <ShellNav base={base} can={current.data?.can ?? []} onNavigate={() => setNavOpen(false)} /> : null}
+          {summary ? (
+            <ShellNav
+              base={base}
+              can={current.data?.can ?? []}
+              onNavigate={() => setNavOpen(false)}
+            />
+          ) : null}
         </SheetContent>
       </Sheet>
 
-      <ReportProblemDialog open={reporting} onOpenChange={setReporting} workspaceSlug={summary?.slug} />
+      <ReportProblemDialog
+        open={reporting}
+        onOpenChange={setReporting}
+        workspaceSlug={summary?.slug}
+      />
     </div>
-  )
+  );
 }
 
 function ShellSkeleton() {
@@ -233,13 +315,23 @@ function ShellSkeleton() {
       <Skeleton className="h-4 w-96 max-w-full" />
       <Skeleton className="h-32 w-full" />
     </div>
-  )
+  );
 }
 
 /** The workspace navigation: the sticky sidebar on desktop, a slide-out sheet below md. */
-function ShellNav({ base, can, onNavigate }: { base: string; can: string[]; onNavigate?: () => void }) {
-  const { t } = useTranslations()
-  const L = (props: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean }) => <NavLink {...props} onNavigate={onNavigate} />
+function ShellNav({
+  base,
+  can,
+  onNavigate,
+}: {
+  base: string;
+  can: string[];
+  onNavigate?: () => void;
+}) {
+  const { t } = useTranslations();
+  const L = (props: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean }) => (
+    <NavLink {...props} onNavigate={onNavigate} />
+  );
   return (
     <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
       <L href={base} exact icon={<LayoutGridIcon />}>
@@ -248,6 +340,16 @@ function ShellNav({ base, can, onNavigate }: { base: string; can: string[]; onNa
       <L href={`${base}/projects`} icon={<FolderKanbanIcon />}>
         {t("nav.projects")}
       </L>
+      {can.includes("time:track") ? (
+        <L href={`${base}/time`} exact icon={<ClockIcon />}>
+          {t("nav.time")}
+        </L>
+      ) : null}
+      {can.includes("time:manage") ? (
+        <L href={`${base}/time/team`} icon={<CalendarRangeIcon />}>
+          {t("nav.teamTime")}
+        </L>
+      ) : null}
       {can.includes("clients:read") ? (
         <L href={`${base}/clients`} icon={<BriefcaseIcon />}>
           {t("nav.clients")}
@@ -268,6 +370,17 @@ function ShellNav({ base, can, onNavigate }: { base: string; can: string[]; onNa
       <L href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
         {t("nav.mcpTokens")}
       </L>
+      <L href={`${base}/settings/time`} icon={<TimerIcon />}>
+        {t("nav.timeSettings")}
+      </L>
+      {can.includes("rates:read") ? (
+        <L href={`${base}/settings/rates`} icon={<CoinsIcon />}>
+          {t("nav.rates")}
+        </L>
+      ) : null}
+      <p className="mt-4 border-t border-line px-4 pt-4 text-xs text-grid-muted">
+        {t("nav.comingNext")}
+      </p>
     </nav>
-  )
+  );
 }

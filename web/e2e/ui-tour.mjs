@@ -26,7 +26,7 @@ const page = ctx.pages()[0]
 const errors = []
 page.on("pageerror", (e) => errors.push(String(e)))
 
-await page.goto(`${WEB}/en/login`, { waitUntil: "networkidle" })
+await page.goto(`${WEB}/en/login`, { waitUntil: "load" })
 const frames = await page.evaluate(() => new Promise((r) => { let n = 0; const t0 = performance.now(); const f = () => (performance.now() - t0 < 1000 ? (n++, requestAnimationFrame(f)) : r(n)); requestAnimationFrame(f) }))
 check(frames > 20, `page paints: ${frames} frames/s`)
 
@@ -76,8 +76,8 @@ for (const width of [1440, 390]) {
     await page.evaluate((t) => localStorage.setItem("theme", t), theme)
     for (const [name, route] of routes) {
       if (ONLY && !ONLY.includes(name)) continue
-      await page.goto(`${WEB}/${locale}${route}`, { waitUntil: "networkidle" })
-      await page.waitForTimeout(700)
+      await page.goto(`${WEB}/${locale}${route}`, { waitUntil: "load" })
+      await page.waitForLoadState("networkidle", { timeout: 1500 }).catch(() => {}); await page.waitForTimeout(900)
       const m = await page.evaluate(() => {
         const main = document.querySelector("main")
         const inner = main ? [...main.querySelectorAll("*")].reduce((w, el) => Math.max(w, el.getBoundingClientRect().width), 0) : 0

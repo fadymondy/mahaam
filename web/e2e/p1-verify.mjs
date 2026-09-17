@@ -61,7 +61,7 @@ process.on("unhandledRejection", dump)
 process.on("uncaughtException", dump)
 
 // ── 0. the browser paints ─────────────────────────────────────────────────────
-await page.goto(`${WEB}/en/login`, { waitUntil: "networkidle" })
+await page.goto(`${WEB}/en/login`, { waitUntil: "load" })
 const frames = await page.evaluate(
   () =>
     new Promise((resolve) => {
@@ -116,7 +116,7 @@ const card = (key) => page.locator(`[data-task-key="${key}"]`)
 const column = (id) => page.locator(`[data-status-id="${id}"]`)
 
 // ── 2. drag-and-drop persists across reload ───────────────────────────────────────
-await page.goto(boardUrl(), { waitUntil: "networkidle" })
+await page.goto(boardUrl(), { waitUntil: "load" })
 await card(setup.a.key).waitFor()
 assert((await page.title()).startsWith("Board · Website relaunch"), `board sets its title: "${await page.title()}"`)
 const from = await card(setup.a.key).boundingBox()
@@ -132,7 +132,7 @@ await page.mouse.up()
 const moveRes = await moveDone
 const moveBody = moveRes.request().postDataJSON()
 assert(moveRes.status() === 200, `drop persisted through POST …/move (status ${moveRes.status()}, body ${JSON.stringify(moveBody)})`)
-await page.reload({ waitUntil: "networkidle" })
+await page.reload({ waitUntil: "load" })
 await card(setup.a.key).waitFor()
 const inDoing = await column(setup.doing.id).locator(`[data-task-key]`).evaluateAll((els) => els.map((e) => e.getAttribute("data-task-key")))
 assert(inDoing.includes(setup.a.key), `after reload ${setup.a.key} is in "In progress": [${inDoing.join(", ")}]`)
@@ -155,7 +155,7 @@ const mcpKey = created.match(/MG-\d+/)[0]
 log(`create_task -> ${created.split("\n")[0]}`)
 log(`move_task -> ${await mcp("move_task", { key: mcpKey, status: "Done" })}`)
 log(`comment_task -> ${await mcp("comment_task", { key: mcpKey, body: `Lighthouse run attached next. @${local} FYI` })}`)
-await page.reload({ waitUntil: "networkidle" })
+await page.reload({ waitUntil: "load" })
 await card(mcpKey).waitFor()
 const doneKeys = await column(setup.done.id).locator("[data-task-key]").evaluateAll((els) => els.map((e) => e.getAttribute("data-task-key")))
 assert(doneKeys.includes(mcpKey), `${mcpKey} created over MCP renders in Done: [${doneKeys.join(", ")}]`)
@@ -195,13 +195,13 @@ for (const locale of ["en", "ar"]) {
   for (const theme of ["light", "dark"]) {
     await page.emulateMedia({ colorScheme: theme })
     await page.evaluate((t) => localStorage.setItem("theme", t), theme)
-    await page.goto(boardUrl(locale), { waitUntil: "networkidle" }) // navigate after a theme change
+    await page.goto(boardUrl(locale), { waitUntil: "load" }) // navigate after a theme change
     await card(mcpKey).waitFor()
     const html = await page.evaluate(() => ({ dir: document.documentElement.dir, lang: document.documentElement.lang, dark: document.documentElement.classList.contains("dark"), bg: getComputedStyle(document.body).backgroundColor }))
     assert(html.dir === (locale === "ar" ? "rtl" : "ltr") && html.dark === (theme === "dark"), `${locale}/${theme}: dir=${html.dir} dark=${html.dark} body bg ${html.bg}`)
     const b = path.join(SHOTS, `p1-board-${locale}-${theme}.png`)
     await page.screenshot({ path: b })
-    await page.goto(`${boardUrl(locale)}?task=${setup.b.key}`, { waitUntil: "networkidle" })
+    await page.goto(`${boardUrl(locale)}?task=${setup.b.key}`, { waitUntil: "load" })
     await page.locator(`[data-task-sheet="${setup.b.key}"] [data-attachments]`).waitFor()
     await page.waitForTimeout(400) // sheet enter transition (the page paints: counted above)
     const side = await page.locator(`[data-task-sheet="${setup.b.key}"]`).boundingBox()
@@ -226,7 +226,7 @@ for (const [route, want] of [
   ["settings/labels", "Labels ·"],
   ["", "Overview ·"],
 ]) {
-  await page.goto(`${WEB}/en/w/${setup.slug}/${route}`, { waitUntil: "networkidle" })
+  await page.goto(`${WEB}/en/w/${setup.slug}/${route}`, { waitUntil: "load" })
   await page.waitForFunction((w) => document.title.startsWith(w), want, { timeout: 10000 })
   assert(true, `/${route || "(overview)"} renders, title "${await page.title()}"`)
 }
