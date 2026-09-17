@@ -5,10 +5,11 @@ Project management and time tracking — a rebuild of `fadymondy/3x1projects` on
 and Next.js 16 on the fadymondy.com grid. Plan: `fadymondy.com-v2/.setup/plans/imanage.md`
 (renamed iManage → Managy on 2026-09-14).
 
-**Status: P2 — local development (public preview at https://managy-app.fadymondy.com via a tunnel to the dev servers).** No deploy, no DNS. P0 (tenancy, RLS, MCP, feedback)
+**Status: P5 — local development (public preview at https://managy-app.fadymondy.com via a tunnel to the dev servers).** No deploy, no DNS. P0 (tenancy, RLS, MCP, feedback)
 plus P1: clients, projects, teams, per-project statuses, tasks with board/list, checklist,
 subtasks, labels, comments with @mentions, attachments and the activity feed; P2: time tracking —
-the timer, timesheets, rates, realtime sync and reminders.
+the timer, timesheets, rates, realtime sync and reminders; P3: MCP rate limits and report tools; P5: reports,
+budgets, profitability, exports, saved views, notification events, email and the daily digest.
 
 ## Ports (local dev)
 
@@ -44,7 +45,7 @@ User MCP tokens are minted in the app: Workspace → MCP tokens.
 ```bash
 make test       # unit + CI guards: every MCP tool has a scope; every sqlc query on a
                 # tenant table carries workspace_id = $n; authz matrix; slugs
-make test-e2e   # boots the real stack on managy_test and sweeps EVERY route as
+make test-e2e   # boots the real stack on managy_test: the route sweep, TestTimeTracking, TestReports, TestMCPSession; sweeps EVERY route as
                 # anonymous / non-member / other-workspace member (+ MCP checks)
 make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
 ```
@@ -131,6 +132,45 @@ timesheet, a 23:00–01:00 manual entry, en/ar × light/dark at 1440 and 390; `W
 for the public preview) and `node e2e/ui-tour.mjs` (every page, both widths, both languages and themes).
 The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a request open.
 
+## P3 — MCP completion
+
+- **Rate limits** (togo `ratelimit`) on `/api/mcp` and `/api/admin/mcp`, separate policies: `MCP_RATE_PER_MINUTE`
+  (default 120) calls per token, and `MCP_AUTH_FAIL_PER_MINUTE` (default 30) failed authentications per client
+  address (`RemoteAddr` host). A limited call: HTTP 429, `Retry-After`, `X-RateLimit-*`, JSON-RPC error `-32029`.
+- **Tools**: `time_summary`, `budget_status`, `timesheet` (`reports:read`); `profitability` (`reports:finance`,
+  manager+); `update_feedback_status` (`feedback:write`).
+- **Owner decision 11 is open**: tokens carry explicit scopes only, owners included (no `*`).
+- Exit check: `TestMCPSession` (in `make test-e2e`), and against a running stack
+  `cd web && node e2e/p3-mcp.mjs` (`WEB_ORIGIN=https://managy-app.fadymondy.com` for the preview; on this machine Node
+  needs `--dns-result-order=ipv4first --network-family-autoselection-attempt-timeout=5000` to reach Cloudflare).
+
+## P5 — reports and notifications
+
+- **One aggregate** (`internal/work/reports.go`): time by project / member / client / label / task / day / week over
+  local days; entries clipped to the range and cut at local midnight; a running timer counts to now. **Rounding at
+  report time only**, per entry, spread over day/week buckets by cumulative rounding so rows always sum to the total
+  (labels excepted: an entry counts under each label). Money = rounded time × rate snapshot, half up, workspace
+  currency only (others counted in `other_currency_entries`), **manager+**. A member's report is their own time.
+- **Budgets**: raw burn (hours; money = billable value for managers), levels ok / warning (80%) / over (100%).
+  `budget.threshold` alerts go once per project/metric/threshold/budget value to managers+ (and, for hours, project
+  leads), after time writes and every five minutes.
+- **Profitability** per project and client (`reports:finance`). **Saved views** (`saved_reports`): own, shared by
+  managers, owner-only edits; opening a view never widens rights.
+- **Exports**: `GET /api/w/report/export?format=csv|xlsx` through togo `import-export` — the page's table, cell for
+  cell, with the total row, en/ar headers, UTF-8 BOM and formula-injection neutralised.
+- **Notifications**: `task.assigned`, `task.mentioned`, `task.done` written from the activity entry in the same
+  transaction (never to the actor), plus `budget.threshold` and the P2 reminders. `notification_prefs`: mute kinds
+  (not stored at all), email on/off, daily digest + hour.
+- **Email** (togo `mail`): each inbox item mailed once (claimed first), the digest once per local day. `MAIL_DRIVER=file`
+  (dev) writes `.eml` files to `storage/mail`; only `smtp` counts as configured — otherwise settings say "email is not
+  configured" and refuse the email switches.
+- **REST**: `/api/w/report/{time,export,budgets,profitability}`, `/api/w/projects/{project}/budget`,
+  `/api/w/saved-reports[/{saved}]`, `/api/w/notification-settings`.
+- Verification: `TestReports` (totals vs an independent computation in 140 reports: Cairo + New York across DST,
+  rounding 0/1/6/15/60, every grouping; CSV = XLSX = table; alerts once; email once), the sweep, and
+  `cd web && node e2e/p5-verify.mjs`.
+- **Next (not built)**: timesheet submit/approve (`locked_at`), Toggl/Clockify CSV import (`source=import`).
+
 ## Tenancy
 
 - `workspaces`, `workspace_members` (owner/admin/manager/member/client), `invitations`;
@@ -152,7 +192,8 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
 - **User MCP** `POST /api/mcp` — `mgy_` tokens owned by a user in a workspace, SHA-256 hashed,
   explicit scopes (no wildcard), narrowed to the user's *current* role on every call; same
   `tenant.Scope`, authz and RLS as the browser. Tools (P0): `whoami`, `list_members`,
-  `list_feedback`, `get_feedback`, `comment_feedback`. Tools (P1, `internal/mcp/work_tools.go`):
+  `list_feedback`, `get_feedback`, `comment_feedback`, `update_feedback_status`. P3/P5: `time_summary`, `budget_status`,
+  `timesheet` (`reports:read`), `profitability` (`reports:finance`). Tools (P1, `internal/mcp/work_tools.go`):
   `list_projects`, `get_project` (`projects:read`); `create_project`, `update_project`,
   `archive_project` (`projects:write`, manager+); `list_tasks`, `get_task` (`tasks:read`);
   `create_task`, `update_task`, `move_task`, `assign_task`, `comment_task`,
@@ -233,3 +274,15 @@ Found building P2:
     tickets are not bound to a user, so any ticket holder may subscribe to any `private-` channel.
 17. The `togo-framework/queue` memory driver runs a dispatched job on its own goroutine, so scheduler jobs
     do run in-process; the kernel's `http.ListenAndServe` has no timeouts (fine for SSE, not for production).
+
+Found building P3/P5:
+
+18. togo `ratelimit`'s `Middleware` answers `text/plain` "rate limit exceeded" (an MCP client cannot parse it) and
+    its in-memory store never evicts keys. Managy calls `Allow` and writes a JSON-RPC 429 itself.
+19. togo `import-export` mounts `GET /api/export/{resource}` and `POST /api/import/{resource}` with no auth over a
+    process-global registry (blocked in the guard); it writes every XLSX cell as text and does nothing about
+    spreadsheet formula injection.
+20. togo `mail`'s `log` driver records only recipient and subject, so nothing can be checked — Managy registers a
+    `file` driver (`internal/mailer`).
+21. `make:resource` types a nullable `date` field as `String!` in GraphQL and a non-pointer `time.Time` in the
+    resource and handler (retyped).
