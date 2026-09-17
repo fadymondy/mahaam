@@ -1,4 +1,4 @@
-.PHONY: db generate migrate api web build test test-e2e grid-check admin
+.PHONY: db generate migrate api web build test test-e2e grid-check admin embed
 
 db: ## Start Postgres (docker, :55460)
 	docker compose up -d
@@ -30,3 +30,6 @@ test-e2e: ## Cross-workspace isolation sweep over every route (throwaway DB)
 
 grid-check: ## Fail if the grid / feedback-sdk copies drifted from fadymondy.com-v2
 	cd web && npm run grid:check
+
+embed: ## Bundle the embeddable feedback widget IIFE -> embed/dist/v1.js
+	cd web && npx --yes esbuild ../embed/src/widget.ts --bundle --format=iife --minify --target=es2019 --outfile=../embed/dist/v1.js

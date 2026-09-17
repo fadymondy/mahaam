@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+  A throwaway page to exercise the embeddable Feedback widget from an allowed
+  origin. Serve it from a simple static server (an "allowed origin" registered on
+  the project's public key), then click "Report a problem":
+
+    cd embed && python -m http.server 4599   # http://localhost:4599/demo.html
+
+  Replace data-key below with a real pfk_… minted in project settings, and add
+  http://localhost:4599 to the key's allowed origins.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Managy feedback widget — demo</title>
+    <style>
+      body { font: 16px/1.6 system-ui, sans-serif; max-width: 640px; margin: 60px auto; padding: 0 20px; color: #222; }
+      h1 { color: #4B00B6; }
+      code { background: #f3f0fa; padding: 2px 6px; border-radius: 5px; }
+    </style>
+  </head>
+  <body>
+    <h1>A client's website</h1>
+    <p>
+      This page pretends to be a client's own site. The Managy feedback widget is
+      loaded from <code>/embed/v1.js</code> with a per-project public key. Click the
+      <strong>Report a problem</strong> button in the corner: it captures a
+      screenshot, the console and network logs, and files an issue into the project
+      the key belongs to — with no login.
+    </p>
+    <p>Trigger a console error for the capture to record: <button onclick="console.error('demo error at ' + new Date().toISOString())">log an error</button></p>
+
+    <script
+      src="http://localhost:8110/embed/v1.js"
+      data-key="pfk_REPLACE_ME"
+      data-endpoint="http://localhost:8110/api/feedback/embed"
+      data-locale="en"
+      defer
+    ></script>
+  </body>
+</html>
