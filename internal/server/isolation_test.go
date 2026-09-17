@@ -310,8 +310,11 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	alice.must("POST", "/api/w/time/entries", map[string]any{"project": prID, "description": marker + " billable", "date": today, "minutes": 60, "billable": true}, 201)
 	invoiceID := alice.must("POST", "/api/w/invoices/from-time", map[string]any{"client_id": clID, "tax_rate": "0.1"}, 201)["id"].(string)
 
+	// P7: a per-project public feedback key, for /api/w/feedback-keys/{key}.
+	fkID := alice.must("POST", "/api/w/projects/"+prID+"/feedback-keys", map[string]any{"name": marker + " key", "allowed_origins": []string{"https://example.com"}}, 201)["id"].(string)
+
 	aIDs := []string{aID, invID, tokID, repID, comID, memberID, clID, teamID, prID, stTodo, stDone, lbID, tkID,
-		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID, savedID, prefID, invoiceID}
+		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID, savedID, prefID, invoiceID, fkID}
 
 	// idFor names the A row a route's path parameters are filled with, by the route's first
 	// segment after /api/ (or /api/w/). A guarded route whose segment is missing here fails.
@@ -336,6 +339,9 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		// P6: /api/w/invoices/{invoice}[/payments|/export|/print], and the client-scoped
 		// /api/w/clients/{client}/{invoices,unbilled} (segment "clients", already mapped).
 		"invoices": invoiceID,
+		// P7: /api/w/feedback-keys/{key}[/revoke]. The client-portal contact routes
+		// /api/w/clients/{client}/contacts[/{user}] use segment "clients" (mapped above).
+		"feedback-keys": fkID,
 	}
 	// Guarded routes without path parameters, by segment. Anything else is unknown.
 	unparameterised := map[string]bool{
@@ -344,6 +350,9 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"events":   true, // P2: the per-user realtime stream (read with a timeout, see send)
 		// P5: /api/w/report/{time,export,budgets,profitability}, /api/w/notification-settings
 		"report": true, "notification-settings": true,
+		// P7: the client's own portal reads/writes (GET issues|invoices, POST issues) —
+		// collection routes scoped to the caller, no path parameter.
+		"portal": true,
 	}
 
 	leaks := func(b []byte) string {
