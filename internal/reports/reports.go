@@ -66,6 +66,8 @@ type Report struct {
 	Body, Resolution, Route, PageURL, Selector   *string
 	Screenshot, ConsoleLog, NetworkLog           *string
 	Viewport, UserAgent, ReporterID              *string
+	ProjectID                                    *string
+	Source                                       string
 	ClosedAt, StartedAt, FinishedAt              *time.Time
 	HumanOnly                                    bool
 	CreatedAt, UpdatedAt                         time.Time
@@ -73,6 +75,7 @@ type Report struct {
 
 const reportCols = `id, workspace_id, key, title, number, sort_order, agent_seconds, issue_type, status, state, priority,
 	body, resolution, route, page_url, selector, screenshot, console_log, network_log, viewport, user_agent, reporter_id,
+	project_id, source,
 	closed_at, started_at, finished_at, human_only, created_at, updated_at`
 
 func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
@@ -81,6 +84,7 @@ func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 		&r.IssueType, &r.Status, &r.State, &r.Priority,
 		&r.Body, &r.Resolution, &r.Route, &r.PageURL, &r.Selector, &r.Screenshot, &r.ConsoleLog, &r.NetworkLog,
 		&r.Viewport, &r.UserAgent, &r.ReporterID,
+		&r.ProjectID, &r.Source,
 		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt)
 	return r, err
 }
@@ -101,7 +105,10 @@ func ValidStatus(s string) bool {
 // Filter narrows List.
 type Filter struct {
 	Status, State, IssueType, Q string
-	Limit                       int
+	// ProjectID limits to one project's issues; ReporterID to one reporter's
+	// (both used by the client portal, which never sees other people's issues).
+	ProjectID, ReporterID string
+	Limit                 int
 }
 
 // List returns a workspace's reports, board order first.
@@ -123,6 +130,12 @@ func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Rep
 	}
 	if f.Q != "" {
 		add("title ILIKE $%d", "%"+f.Q+"%")
+	}
+	if f.ProjectID != "" {
+		add("project_id = $%d", f.ProjectID)
+	}
+	if f.ReporterID != "" {
+		add("reporter_id = $%d", f.ReporterID)
 	}
 	if f.Limit <= 0 || f.Limit > 500 {
 		f.Limit = 50
@@ -162,6 +175,9 @@ type NewReport struct {
 	Title, IssueType, Status, Priority                       string
 	Body, Route, PageURL, Selector, Screenshot               string
 	ConsoleLog, NetworkLog, UserAgent, Viewport, ReporterID  string
+	// ProjectID scopes the issue to a project (client portal / embed); empty for a
+	// workspace-level report. Source is app | portal | embed.
+	ProjectID, Source string
 }
 
 func nullable(s string) any {
@@ -195,15 +211,15 @@ func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*
 		r, err := scanReport(db.QueryRowContext(ctx, `
 			INSERT INTO reports (workspace_id, number, key, title, body, issue_type, status, state, priority,
 			                     route, page_url, selector, screenshot, console_log, network_log, user_agent,
-			                     viewport, reporter_id, closed_at, sort_order, agent_seconds, human_only)
-			SELECT $1, $18::bigint, '`+KeyPrefix+`' || $18::bigint, $2, $3, $4, $5, $6, $7,
-			       $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 0, 0, false
+			                     viewport, reporter_id, project_id, source, closed_at, sort_order, agent_seconds, human_only)
+			SELECT $1, $20::bigint, '`+KeyPrefix+`' || $20::bigint, $2, $3, $4, $5, $6, $7,
+			       $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 0, 0, false
 			RETURNING `+reportCols,
 			workspaceID, strings.TrimSpace(n.Title), nullable(n.Body),
 			firstNonEmpty(n.IssueType, "bug"), status, state, firstNonEmpty(n.Priority, "medium"),
 			nullable(n.Route), nullable(n.PageURL), nullable(n.Selector), nullable(n.Screenshot),
 			nullable(n.ConsoleLog), nullable(n.NetworkLog), nullable(n.UserAgent), nullable(n.Viewport),
-			nullable(n.ReporterID), closed, num,
+			nullable(n.ReporterID), nullable(n.ProjectID), firstNonEmpty(n.Source, "app"), closed, num,
 		))
 		var pg *pgconn.PgError
 		if errors.As(err, &pg) && pg.Code == "23505" {

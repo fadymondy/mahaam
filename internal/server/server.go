@@ -62,6 +62,8 @@ func Boot() *app.App {
 	k.Router.Get("/api/w/events", work.New(a).Events())
 	installReminders(k, a)
 	reports.MountFeedback(k, a)
+	reports.MountEmbed(k, a)       // P7: PUBLIC per-project embed intake + the /embed/v1.js loader
+	reports.MountPortalFile(k, a)  // P7: the client portal's multipart issue intake
 
 	gql := handler.NewDefaultServer(graphgen.NewExecutableSchema(graphgen.Config{
 		Resolvers: &resolvers.Resolver{App: a},
@@ -86,7 +88,8 @@ func registerREST(api huma.API, a *app.App) {
 	workspaces.Register(api, a)
 	mcp.RegisterTokenRoutes(api, a)
 	work.Register(api, a)         // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
-	reports.RegisterIssues(api, a) // per-workspace issues — /api/w/issues/*
+	reports.RegisterIssues(api, a)      // per-workspace issues — /api/w/issues/*
+	reports.RegisterPortalIssues(api, a) // P7: the client's own filed issues — GET /api/w/portal/issues
 }
 
 // togoVersion reports the togo framework version this app is built against.

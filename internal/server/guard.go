@@ -82,6 +82,13 @@ func classify(r *http.Request) tier {
 		return tierPublic
 	case "/api/invitations/accept", "/api/feedback":
 		return tierSignedIn
+	case
+		// The embeddable Feedback SDK's intake: PUBLIC on purpose — it authenticates
+		// with a per-project public key and an Origin allowlist, never a session or a
+		// workspace header (internal/reports/embed.go). It is CORS-guarded and
+		// rate-limited there.
+		"/api/feedback/embed":
+		return tierPublic
 	}
 	if strings.HasPrefix(path, "/api/auth/") {
 		return tierPublic // the auth plugin guards its own routes

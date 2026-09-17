@@ -19,11 +19,14 @@ visibleClause is THE project-visibility rule, as SQL over `projects p`:
 
 	managers and up     every project
 	members             projects with visibility = 'workspace', and any they belong to
-	clients             only projects they belong to
+	clients             ONLY projects whose client_id is the client they are a portal
+	                    contact of (client_contacts) — their whole book of shared work
 
 "Belong to" is a project_members row, or membership of a team attached to the project.
-Everything that reads a project or anything inside one goes through it, and a project the
-caller cannot see answers 404 — never 403 — so its existence is not revealed.
+A client never gains access through project_members or a team (they are external), only
+through the client their portal account is linked to. Everything that reads a project or
+anything inside one goes through this, and a project the caller cannot see answers 404 —
+never 403 — so its existence is not revealed.
 */
 func visibleClause(s *tenant.Scope, args *[]any) string {
 	if atLeast(s, authz.Manager) {
@@ -31,15 +34,18 @@ func visibleClause(s *tenant.Scope, args *[]any) string {
 	}
 	*args = append(*args, s.UserID)
 	u := len(*args)
-	open := ""
-	if atLeast(s, authz.Member) {
-		open = "p.visibility = 'workspace' OR "
+	// A client sees exactly the projects belonging to the client record their portal
+	// account is a contact of — nothing wider, and project_members/teams never apply.
+	if !atLeast(s, authz.Member) {
+		return fmt.Sprintf(`(p.client_id IS NOT NULL AND EXISTS (
+			SELECT 1 FROM client_contacts cc
+			WHERE cc.workspace_id = p.workspace_id AND cc.user_id = $%d AND cc.client_id = p.client_id))`, u)
 	}
-	return fmt.Sprintf(`(%sEXISTS (SELECT 1 FROM project_members pm
+	return fmt.Sprintf(`(p.visibility = 'workspace' OR EXISTS (SELECT 1 FROM project_members pm
 		WHERE pm.workspace_id = p.workspace_id AND pm.project_id = p.id AND pm.user_id = $%d)
 	OR EXISTS (SELECT 1 FROM project_teams pt JOIN team_members tmm
 		ON tmm.workspace_id = pt.workspace_id AND tmm.team_id = pt.team_id
-		WHERE pt.workspace_id = p.workspace_id AND pt.project_id = p.id AND tmm.user_id = $%d))`, open, u, u)
+		WHERE pt.workspace_id = p.workspace_id AND pt.project_id = p.id AND tmm.user_id = $%d))`, u, u)
 }
 
 // Project is a project as listed.

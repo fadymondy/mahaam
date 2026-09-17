@@ -48,24 +48,17 @@ func MountFeedback(k *togo.Kernel, a *app.App) {
 
 const maxScreenshot = 8 << 20
 
-func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
-		return
-	}
-	id, ok := auth.IdentityFrom(r.Context())
-	if !ok || id == nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
-		return
-	}
-
-	fields := map[string]string{}
-	var shot []byte
-	var shotExt string
+// parseFeedback reads the wire contract (multipart with an optional screenshot,
+// or JSON) into a flat string map plus the screenshot bytes. Shared by the in-app
+// intake, the client portal and the public embed endpoint so all three accept the
+// same "Report a problem" payload. On a client error it writes the response and
+// returns ok=false.
+func parseFeedback(w http.ResponseWriter, r *http.Request) (fields map[string]string, shot []byte, shotExt string, ok bool) {
+	fields = map[string]string{}
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
 		if err := r.ParseMultipartForm(maxScreenshot + 1<<20); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "could not read the form"})
-			return
+			return nil, nil, "", false
 		}
 		for k, v := range r.MultipartForm.Value {
 			if len(v) > 0 {
@@ -83,25 +76,57 @@ func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
 				shotExt = ".webp"
 			default:
 				writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": "the screenshot must be PNG, JPEG or WebP"})
-				return
+				return nil, nil, "", false
 			}
 			shot, _ = io.ReadAll(io.LimitReader(f, maxScreenshot+1))
 			if len(shot) > maxScreenshot {
 				writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "the screenshot is larger than 8 MB"})
-				return
+				return nil, nil, "", false
 			}
 		}
 	} else {
 		var body map[string]any
 		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20)).Decode(&body) != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid body"})
-			return
+			return nil, nil, "", false
 		}
 		for k, v := range body {
 			if s, ok := v.(string); ok {
 				fields[k] = s
 			}
 		}
+	}
+	return fields, shot, shotExt, true
+}
+
+// saveScreenshot writes the screenshot bytes under storage/feedback and returns
+// the stored relative path, or "" if there was nothing to write.
+func saveScreenshot(shot []byte, shotExt string) string {
+	if len(shot) == 0 {
+		return ""
+	}
+	name := randomName() + shotExt
+	dir := filepath.Join(storageDir(), "feedback")
+	if err := os.MkdirAll(dir, 0o755); err == nil && os.WriteFile(filepath.Join(dir, name), shot, 0o644) == nil {
+		return "feedback/" + name
+	}
+	return ""
+}
+
+func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "use POST"})
+		return
+	}
+	id, ok := auth.IdentityFrom(r.Context())
+	if !ok || id == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	fields, shot, shotExt, ok := parseFeedback(w, r)
+	if !ok {
+		return
 	}
 
 	title := strings.TrimSpace(fields["title"])
@@ -135,14 +160,7 @@ func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		}
 	}
 
-	screenshot := ""
-	if len(shot) > 0 {
-		name := randomName() + shotExt
-		dir := filepath.Join(storageDir(), "feedback")
-		if err := os.MkdirAll(dir, 0o755); err == nil && os.WriteFile(filepath.Join(dir, name), shot, 0o644) == nil {
-			screenshot = "feedback/" + name
-		}
-	}
+	screenshot := saveScreenshot(shot, shotExt)
 
 	// The reports table has no `meta` column (it mirrors fadymondy.com's), so the
 	// reporter's context travels in the body, where a human and an agent both see it.

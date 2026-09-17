@@ -34,6 +34,7 @@ func Register(api huma.API, a *app.App) {
 	r.notifications() // P2: the in-app inbox
 	r.reports()       // P5: reports, exports, budgets, saved views, notification settings
 	r.invoices()      // P6: invoices from unbilled time, status, payments, export, print
+	r.portal()        // P7: feedback-widget keys, client-portal contact links, client invoice view
 }
 
 type routes struct {

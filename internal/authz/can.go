@@ -87,6 +87,14 @@ const (
 	// reading and writing them are manager+ (matches the invoices:read/write MCP scopes' MinRole).
 	InvoicesRead  = "invoices:read"
 	InvoicesWrite = "invoices:write"
+
+	// P7 — client portal & feedback widget. Linking a portal contact to a client, and minting /
+	// rotating / revoking a project's public feedback keys, are workspace-configuration actions:
+	// manager+ (the same tier that manages clients and projects). Reading a project's keys is
+	// manager+ too — they carry no secret a client should see, but they are settings.
+	ClientContactsManage = "client_contacts:manage"
+	FeedbackKeysRead     = "feedback_keys:read"
+	FeedbackKeysManage   = "feedback_keys:manage"
 )
 
 // Matrix is the minimum role per action.
@@ -132,6 +140,10 @@ var Matrix = map[string]Role{
 
 	InvoicesRead:  Manager,
 	InvoicesWrite: Manager,
+
+	ClientContactsManage: Manager,
+	FeedbackKeysRead:     Manager,
+	FeedbackKeysManage:   Manager,
 }
 
 // Can reports whether role may perform action. Unknown actions are denied.
@@ -222,6 +234,13 @@ var Generated = map[string]TablePolicy{
 	"invoice_lines":    {Read: Manager, Write: None},
 	"invoice_payments": {Read: Manager, Write: None},
 	"invoice_counters": {Read: None, Write: None},
+
+	// P7. The client-portal link table and the per-project feedback keys are read-only and
+	// manager+ through the generic API; every write goes through /api/w/* (internal/work), which
+	// derives the actor from the session, validates references and records activity. The public
+	// key is not a secret, but the generic list handler knows nothing of project visibility.
+	"client_contacts":       {Read: Manager, Write: None},
+	"project_feedback_keys": {Read: Manager, Write: None},
 }
 
 // CanTable reports whether role may perform an HTTP method on a generated table.
