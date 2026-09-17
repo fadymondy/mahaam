@@ -185,5 +185,7 @@
   "notify.budget.threshold.body": "تم تجاوز عتبة {threshold}٪.",
   "notify.metric.hours": "الساعات",
   "notify.metric.money": "المال",
-  "notify.someone": "شخص ما"
+  "notify.someone": "شخص ما",
+  "saved.notFound": "طريقة العرض المحفوظة غير موجودة",
+  "saved.notFoundBody": "ربما حُذفت، أو أنها غير مشاركة معك."
 }

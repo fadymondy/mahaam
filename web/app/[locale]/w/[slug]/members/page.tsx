@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import Link from "next/link"
 import { MailWarningIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -21,7 +22,7 @@ import { useInvitations, useMembers } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
 
 export default function MembersPage() {
-  const { t, formatDate } = useTranslations()
+  const { t, locale, formatDate } = useTranslations()
   const ws = useWorkspace()
   useDocumentTitle(`${t("nav.members")} · ${ws.summary.name}`)
 
@@ -54,7 +55,9 @@ export default function MembersPage() {
               {(members.data?.members ?? []).map((m) => (
                 <TableRow key={m.user_id}>
                   <TableCell className="ps-6">
-                    <Ltr>{m.email}</Ltr>
+                    <Link href={`/${locale}/w/${ws.slug}/members/${m.user_id}`} className="hover:underline">
+                      <Ltr>{m.email}</Ltr>
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{t(`role.${m.role}`)}</Badge>

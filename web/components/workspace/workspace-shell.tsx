@@ -370,6 +370,9 @@ function ShellNav({
       <L href={`${base}/members`} icon={<UsersIcon />}>
         {t("nav.members")}
       </L>
+      <L href={`${base}/issues`} icon={<MessageSquarePlusIcon />}>
+        {t("nav.issues")}
+      </L>
       <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">{t("nav.settings")}</p>
       <L href={`${base}/settings/labels`} icon={<TagIcon />}>
         {t("nav.labels")}

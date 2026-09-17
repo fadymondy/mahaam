@@ -169,6 +169,45 @@ export type Team = {
 
 export type Label = { id: string; name: string; color: string; task_count: number }
 
+// ── issues (bug/feedback board; backend contract, may 404 until shipped) ─────
+
+export const ISSUE_STATUSES = ["backlog", "todo", "in_progress", "waiting_approval", "in_review", "done"] as const
+export type IssueStatus = (typeof ISSUE_STATUSES)[number]
+export const ISSUE_PRIORITIES = ["low", "medium", "high", "urgent"] as const
+export type IssuePriority = (typeof ISSUE_PRIORITIES)[number]
+
+export type Issue = {
+  key: string
+  title: string
+  status: IssueStatus
+  priority: IssuePriority
+  state: string | null
+  issue_type: string | null
+  body: string | null
+  route: string | null
+  page_url: string | null
+  selector: string | null
+  screenshot: string | null
+  console_log: string | null
+  network_log: string | null
+  viewport: string | null
+  user_agent: string | null
+  reporter_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type IssueComment = {
+  id: string
+  issue_key?: string
+  author_id: string
+  author_kind?: "user" | "agent"
+  body: string
+  created_at: string
+}
+
+export type IssueDetail = Issue & { comments: IssueComment[] }
+
 // ── hooks ──────────────────────────────────────────────────────────────────
 
 const opts = {
@@ -204,8 +243,32 @@ export const useWorkspaceActivity = (ws: string, enabled: boolean) =>
   useW<{ activity: Activity[] }>(enabled ? `/api/w/activity?limit=20` : null, ws)
 export const useClients = (ws: string, archived = false, enabled = true) =>
   useW<{ clients: Client[] }>(enabled ? `/api/w/clients${archived ? "?archived=true" : ""}` : null, ws)
+export const useClient = (ws: string, id: string | null, enabled = true) =>
+  useW<Client>(id && enabled ? `/api/w/clients/${encodeURIComponent(id)}` : null, ws)
 export const useTeams = (ws: string, enabled = true) => useW<{ teams: Team[] }>(enabled ? "/api/w/teams" : null, ws)
 export const useLabels = (ws: string) => useW<{ labels: Label[] }>("/api/w/labels", ws)
+
+export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string }
+function issueQs(q: IssueQuery) {
+  const s = new URLSearchParams()
+  if (q.status) s.set("status", q.status)
+  if (q.priority) s.set("priority", q.priority)
+  if (q.type) s.set("type", q.type)
+  if (q.q) s.set("q", q.q)
+  const str = s.toString()
+  return str ? `?${str}` : ""
+}
+export const useIssues = (ws: string, query: IssueQuery = {}, enabled = true) =>
+  useW<{ issues: Issue[] }>(enabled ? `/api/w/issues${issueQs(query)}` : null, ws)
+export const useIssue = (ws: string, key: string | null, enabled = true) =>
+  useW<IssueDetail>(key && enabled ? `/api/w/issues/${encodeURIComponent(key)}` : null, ws)
+
+export const issuesApi = {
+  patch: (ws: string, key: string, body: { status?: IssueStatus; priority?: IssuePriority }) =>
+    w.patch<Issue>(ws, `/api/w/issues/${encodeURIComponent(key)}`, body),
+  comment: (ws: string, key: string, body: string) =>
+    w.post<IssueComment>(ws, `/api/w/issues/${encodeURIComponent(key)}/comments`, { body }),
+}
 
 export type { KeyedMutator }
 

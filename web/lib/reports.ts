@@ -264,6 +264,8 @@ export const useProjectBudget = (ws: string, project: string | null) =>
 export const useProfitability = (ws: string, q: string, enabled: boolean) =>
   useW<Profitability>(enabled ? `/api/w/report/profitability?${q}` : null, ws)
 export const useSavedReports = (ws: string, enabled = true) => useW<{ reports: SavedReport[] }>(enabled ? "/api/w/saved-reports" : null, ws)
+export const useSavedReport = (ws: string, id: string | null, enabled = true) =>
+  useW<SavedReport>(id && enabled ? `/api/w/saved-reports/${encodeURIComponent(id)}` : null, ws)
 export const useNotificationSettings = (ws: string) => useW<NotificationSettings>("/api/w/notification-settings", ws)
 
 export type SavedInput = { name?: string; kind?: ReportKind; filters?: Filters; shared?: boolean }

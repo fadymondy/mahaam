@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -22,7 +23,7 @@ import { useDocumentTitle } from "@/lib/title"
 import { errorText, useTeams, w, type Team } from "@/lib/work"
 
 export default function TeamsPage() {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const ws = useWorkspace()
   useDocumentTitle(`${t("nav.teams")} · ${ws.summary.name}`)
   const me = useMe()
@@ -61,7 +62,9 @@ export default function TeamsPage() {
             <li key={team.id} className="flex flex-wrap items-center gap-3 px-6 py-3" data-team={team.id}>
               <ColorDot color={team.color} className="size-3" />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-grid-fg">{team.name}</p>
+                <Link href={`/${locale}/w/${ws.slug}/teams/${team.id}`} className="block truncate font-medium text-grid-fg hover:underline">
+                  {team.name}
+                </Link>
                 <p className="truncate text-xs text-grid-muted">
                   {team.description ? `${team.description} · ` : ""}
                   {t("teams.memberCount", { n: team.member_ids.length })} · {t("teams.projectCount", { n: team.project_count })}

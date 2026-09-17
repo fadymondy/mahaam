@@ -27,10 +27,8 @@ import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
-import { cleanFilters, filterQuery, reportsApi, useSavedReports, type Filters, type ReportKind, type SavedReport } from "@/lib/reports"
+import { cleanFilters, reportsApi, useSavedReports, type Filters, type ReportKind, type SavedReport } from "@/lib/reports"
 import { errorText } from "@/lib/work"
-
-const TAB: Record<ReportKind, string> = { time: "", budget: "/budgets", profitability: "/profitability" }
 
 export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters: Filters; base: string }) {
   const { t } = useTranslations()
@@ -49,8 +47,8 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
 
   function openView(v: SavedReport) {
     setOpen(false)
-    const q = v.kind === "budget" ? "" : filterQuery({ group_by: v.kind === "time" ? "project" : undefined, ...v.filters })
-    router.push(`${base}${TAB[v.kind]}${q ? `?${q}` : ""}${q ? "&" : "?"}view=${encodeURIComponent(v.id)}`)
+    // Navigate to the view's own permalink; it forwards to the right tab with the filters applied.
+    router.push(`${base}/saved/${encodeURIComponent(v.id)}`)
   }
 
   async function toggleShare(v: SavedReport) {

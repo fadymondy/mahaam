@@ -50,8 +50,13 @@ export function ReportProblemDialog({
       form.append("screenshot", blob, `screenshot.${blob.type.split("/")[1] || "png"}`)
     }
 
-    // A thrown ApiError keeps the SDK dialog open and shows its message.
-    const res = await api<{ key?: string }>("/api/feedback", { form })
+    // A thrown ApiError keeps the SDK dialog open and shows its message. Sending the
+    // workspace makes the report land in THIS workspace's issues board (the intake falls
+    // back to the platform workspace when no workspace is named or you're not a member).
+    const res = await api<{ key?: string }>("/api/feedback", {
+      form,
+      ...(workspaceSlug ? { workspaceId: workspaceSlug } : {}),
+    })
     toast.success(res?.key ? t("feedback.sentWithKey", { key: res.key }) : t("feedback.sent"), {
       description: t("feedback.sentHint"),
     })

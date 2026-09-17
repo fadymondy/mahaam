@@ -185,5 +185,7 @@
   "notify.budget.threshold.body": "The {threshold}% threshold was crossed.",
   "notify.metric.hours": "hours",
   "notify.metric.money": "money",
-  "notify.someone": "Someone"
+  "notify.someone": "Someone",
+  "saved.notFound": "Saved view not found",
+  "saved.notFoundBody": "It may have been deleted, or it's not shared with you."
 }

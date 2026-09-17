@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import Link from "next/link"
 import { PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -87,7 +88,9 @@ export default function ClientsPage() {
               {list.map((c) => (
                 <TableRow key={c.id} data-client={c.id}>
                   <TableCell className="ps-6 font-medium">
-                    {c.name}
+                    <Link href={`/${locale}/w/${ws.slug}/clients/${c.id}`} className="hover:underline">
+                      {c.name}
+                    </Link>
                     {c.archived_at ? (
                       <Badge variant="secondary" className="ms-2">
                         {t("project.archivedBadge")}
