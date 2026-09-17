@@ -16,3 +16,5 @@ plugins:
     - github.com/togo-framework/auth-oauth
     - github.com/togo-framework/ratelimit
     - github.com/togo-framework/scheduler
+    - github.com/togo-framework/mail
+    - github.com/togo-framework/import-export

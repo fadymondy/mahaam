@@ -12,6 +12,11 @@
 //
 // `togo install` rewrites this file and drops this note (and ignores --dry-run):
 // re-add it after every install. README, framework note 14.
+//
+// P5 added mail (notification email + digest; Managy registers a "file" driver,
+// internal/mailer) and import-export (report CSV/XLSX). import-export mounts
+// unauthenticated /api/export/{resource} and /api/import/{resource} over a
+// global registry; the guard blocks both (README, framework note 19).
 package plugins
 
 import (
@@ -20,6 +25,8 @@ import (
 	_ "github.com/togo-framework/cache"
 	_ "github.com/togo-framework/db-postgres"
 	_ "github.com/togo-framework/i18n"
+	_ "github.com/togo-framework/import-export"
+	_ "github.com/togo-framework/mail"
 	_ "github.com/togo-framework/queue"
 	_ "github.com/togo-framework/ratelimit"
 	_ "github.com/togo-framework/realtime"

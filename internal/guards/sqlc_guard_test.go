@@ -26,6 +26,7 @@ func init() {
 		"task_statuses", "tasks", "task_assignees", "task_checklist_items", "labels", "task_labels",
 		"task_comments", "attachments", "activity_logs", "key_counters",
 		"time_entries", "member_rates", "notifications", // P2
+		"saved_reports", "notification_prefs", // P5
 	} {
 		tenantTables[t] = `\bworkspace_id\s*=\s*\$\d+`
 	}

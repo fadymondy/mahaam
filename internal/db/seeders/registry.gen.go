@@ -36,6 +36,9 @@ func SeedAll(ctx context.Context, a *app.App) error {
 	if err := SeedNotification(ctx, a); err != nil {
 		return err
 	}
+	if err := SeedNotificationPref(ctx, a); err != nil {
+		return err
+	}
 	if err := SeedProject(ctx, a); err != nil {
 		return err
 	}
@@ -49,6 +52,9 @@ func SeedAll(ctx context.Context, a *app.App) error {
 		return err
 	}
 	if err := SeedReportComment(ctx, a); err != nil {
+		return err
+	}
+	if err := SeedSavedReport(ctx, a); err != nil {
 		return err
 	}
 	if err := SeedTask(ctx, a); err != nil {

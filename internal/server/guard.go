@@ -61,6 +61,12 @@ func classify(r *http.Request) tier {
 		// scope taken from the path, with no authentication or tenant of its own. Workspace
 		// settings, when they come, go through /api/w/* with the scope derived from the session.
 		"/api/settings",
+		// togo-framework/import-export mounts GET /api/export/{resource} and POST
+		// /api/import/{resource} with no authentication, over a process-global resource registry
+		// with no tenant. Managy registers no resources there and exports through
+		// /api/w/report/export (session + membership + the report's own checks).
+		"/api/export/",
+		"/api/import/",
 	} {
 		if strings.HasPrefix(path, p) {
 			return tierBlocked

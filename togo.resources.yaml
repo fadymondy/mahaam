@@ -384,6 +384,55 @@ resources:
           gql: Time
           pg: timestamptz
           "null": true
+        - name: email_status
+          go: string
+          gql: String
+          pg: text
+          "null": true
+        - name: emailed_at
+          go: time.Time
+          gql: Time
+          pg: timestamptz
+          "null": true
+      controller: true
+    - name: NotificationPref
+      table: notification_prefs
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: user_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: email_enabled
+          go: bool
+          gql: Boolean!
+          pg: boolean
+          "null": false
+        - name: digest_enabled
+          go: bool
+          gql: Boolean!
+          pg: boolean
+          "null": false
+        - name: digest_hour
+          go: int64
+          gql: Int!
+          pg: bigint
+          "null": false
+        - name: muted_kinds
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: last_digest_on
+          go: time.Time
+          gql: Time
+          pg: date
+          "null": true
       controller: true
     - name: Project
       table: projects
@@ -744,6 +793,40 @@ resources:
           gql: String
           pg: text
           "null": true
+      controller: true
+    - name: SavedReport
+      table: saved_reports
+      fields:
+        - name: workspace_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: owner_id
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: name
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: kind
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: filters
+          go: string
+          gql: String!
+          pg: text
+          "null": false
+        - name: shared
+          go: bool
+          gql: Boolean!
+          pg: boolean
+          "null": false
       controller: true
     - name: Task
       table: tasks

@@ -74,6 +74,14 @@ const (
 	TimeManage  = "time:manage"
 	RatesRead   = "rates:read"
 	RatesManage = "rates:manage"
+
+	// P5 — reports. Everyone who tracks time reads reports, but a member's reports cover only their
+	// own time; managers see everyone's. Finance (money columns, profitability, budget money) is
+	// manager+. Sharing a saved view with the workspace is manager+.
+	ReportsRead    = "reports:read"
+	ReportsFinance = "reports:finance"
+	ReportsShare   = "reports:share"
+	ReportsAll     = "reports:all"
 )
 
 // Matrix is the minimum role per action.
@@ -111,6 +119,11 @@ var Matrix = map[string]Role{
 	TimeManage:  Manager,
 	RatesRead:   Manager,
 	RatesManage: Admin,
+
+	ReportsRead:    Member,
+	ReportsAll:     Manager,
+	ReportsFinance: Manager,
+	ReportsShare:   Manager,
 }
 
 // Can reports whether role may perform action. Unknown actions are denied.
@@ -186,6 +199,12 @@ var Generated = map[string]TablePolicy{
 	"time_entries":  {Read: Manager, Write: None},
 	"member_rates":  {Read: Admin, Write: None},
 	"notifications": {Read: None, Write: None},
+
+	// P5. A saved view is its owner's unless shared, and a person's notification settings are
+	// theirs alone — neither rule is expressible in the generic handlers. Both go through
+	// /api/w/saved-reports and /api/w/notification-settings.
+	"saved_reports":      {Read: None, Write: None},
+	"notification_prefs": {Read: None, Write: None},
 }
 
 // CanTable reports whether role may perform an HTTP method on a generated table.
