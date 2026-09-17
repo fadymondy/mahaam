@@ -397,9 +397,6 @@ function ShellNav({
           {t("nav.rates")}
         </L>
       ) : null}
-      <p className="mt-4 border-t border-line px-4 pt-4 text-xs text-grid-muted">
-        {t("nav.comingNext")}
-      </p>
     </nav>
   );
 }
