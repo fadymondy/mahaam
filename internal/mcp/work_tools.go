@@ -543,18 +543,18 @@ func strList(m map[string]any, k string) []string {
 
 func projectProps(withRef bool) map[string]any {
 	p := map[string]any{
-		"name":           prop("string", "Project name"),
-		"description":    prop("string", "Markdown"),
-		"client":         prop("string", "Client id or exact name (empty clears)"),
-		"color":          prop("string", strings.Join(work.Palette, ", ")),
-		"status":         prop("string", "planned, active, on_hold, completed or cancelled"),
-		"billing_mode":   prop("string", "non_billable, hourly or fixed"),
-		"budget_hours":   prop("number", "Time budget in hours (0 clears)"),
-		"budget_minor":   prop("integer", "Money budget in minor units, e.g. cents (0 clears)"),
-		"currency":       prop("string", "ISO 4217, e.g. USD"),
-		"visibility":     prop("string", "workspace (every member) or members (only people on the project)"),
-		"starts_on":      prop("string", "YYYY-MM-DD"),
-		"ends_on":        prop("string", "YYYY-MM-DD"),
+		"name":         prop("string", "Project name"),
+		"description":  prop("string", "Markdown"),
+		"client":       prop("string", "Client id or exact name (empty clears)"),
+		"color":        prop("string", strings.Join(work.Palette, ", ")),
+		"status":       prop("string", "planned, active, on_hold, completed or cancelled"),
+		"billing_mode": prop("string", "non_billable, hourly or fixed"),
+		"budget_hours": prop("number", "Time budget in hours (0 clears)"),
+		"budget_minor": prop("integer", "Money budget in minor units, e.g. cents (0 clears)"),
+		"currency":     prop("string", "ISO 4217, e.g. USD"),
+		"visibility":   prop("string", "workspace (every member) or members (only people on the project)"),
+		"starts_on":    prop("string", "YYYY-MM-DD"),
+		"ends_on":      prop("string", "YYYY-MM-DD"),
 	}
 	if withRef {
 		p["project"] = prop("string", "Project id or exact name")
