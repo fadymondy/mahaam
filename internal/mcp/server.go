@@ -16,7 +16,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +57,8 @@ type server struct {
 	// auth resolves the bearer token to a context carrying the caller and the
 	// scopes in effect. ok=false => 401.
 	auth func(r *http.Request, a *app.App, token string) (ctx context.Context, scopes []string, ok bool)
+	// limit is nil when the ratelimit plugin is absent (and in unit tests).
+	limit *limiter
 }
 
 type rpcRequest struct {
@@ -75,24 +80,82 @@ type rpcResponse struct {
 	Error   *rpcError       `json:"error,omitempty"`
 }
 
-// Mount registers both MCP endpoints on the kernel router, rate-limited per
-// token when the ratelimit plugin is installed.
+/*
+Rate limiting (togo ratelimit, token bucket). Two buckets per endpoint:
+
+	per token   MCP_RATE_PER_MINUTE (default 120) calls per minute per bearer token, keyed by the
+	            token's hash — every call, valid token or not, so a burst is cut before any DB work
+	per address MCP_AUTH_FAIL_PER_MINUTE (default 30) FAILED authentications per minute per client
+	            address (RemoteAddr host, never X-Forwarded-For, which the client sets), so rotating
+	            made-up tokens does not escape the per-token bucket
+
+A limited call answers HTTP 429 with Retry-After and X-RateLimit-* headers and a JSON-RPC error
+body (code -32029) — not the plugin's text/plain middleware body, which an MCP client cannot parse.
+The plugin's Middleware is not used for that reason (README, framework note 18). The user and admin
+endpoints have separate policies.
+*/
+const rpcRateLimited = -32029
+
+type limiter struct {
+	svc            *ratelimit.Service
+	perToken, fail ratelimit.Policy
+}
+
+func envInt(name string, def int) int {
+	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(name))); err == nil && v > 0 {
+		return v
+	}
+	return def
+}
+
+func newLimiter(svc *ratelimit.Service, name string) *limiter {
+	if svc == nil {
+		return nil
+	}
+	return &limiter{svc: svc,
+		perToken: ratelimit.Rate(name, envInt("MCP_RATE_PER_MINUTE", 120), time.Minute),
+		fail:     ratelimit.Rate(name+"-authfail", envInt("MCP_AUTH_FAIL_PER_MINUTE", 30), time.Minute),
+	}
+}
+
+// take consumes one token of p for key; on refusal it writes the 429 and returns false.
+func (l *limiter) take(w http.ResponseWriter, r *http.Request, p ratelimit.Policy, key string) bool {
+	if l == nil {
+		return true
+	}
+	ok, retry := l.svc.Allow(r.Context(), key, p)
+	w.Header().Set("X-RateLimit-Limit", strconv.Itoa(p.Limit))
+	if ok {
+		return true
+	}
+	secs := int(retry/time.Second) + 1
+	w.Header().Set("Retry-After", strconv.Itoa(secs))
+	w.Header().Set("X-RateLimit-Remaining", "0")
+	writeRPC(w, http.StatusTooManyRequests, rpcResponse{JSONRPC: "2.0", Error: &rpcError{Code: rpcRateLimited,
+		Message: fmt.Sprintf("rate limit exceeded: at most %d requests per %s; retry in %ds", p.Limit, p.Window, secs)}})
+	return false
+}
+
+func clientHost(r *http.Request) string {
+	if h, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return h
+	}
+	return r.RemoteAddr
+}
+
+// Mount registers both MCP endpoints on the kernel router, rate-limited when the ratelimit plugin
+// is installed (it is: togo.yaml, plugins.gen.go).
 func Mount(k *togo.Kernel, a *app.App) {
 	user := &server{name: "managy-mcp", tools: UserTools(), auth: authUser}
 	admin := &server{name: "managy-admin-mcp", tools: AdminTools(), auth: authAdmin}
-
-	wrap := func(h http.Handler) http.Handler { return h }
 	if rl, ok := ratelimit.FromKernel(k); ok {
-		wrap = rl.Middleware(ratelimit.Rate("mcp", 120, time.Minute), func(r *http.Request) string {
-			// Per token (hashed), falling back to the client address.
-			if t := bearer(r); t != "" {
-				return "mcp:" + HashToken(t)[:16]
-			}
-			return "mcp-ip:" + r.RemoteAddr
-		})
+		user.limit = newLimiter(rl, "mcp")
+		admin.limit = newLimiter(rl, "admin-mcp")
+	} else {
+		a.Log.Warn("ratelimit plugin not registered — the MCP endpoints are NOT rate limited")
 	}
-	k.Router.Handle("/api/mcp", wrap(user.handler(a)))
-	k.Router.Handle("/api/admin/mcp", wrap(admin.handler(a)))
+	k.Router.Handle("/api/mcp", user.handler(a))
+	k.Router.Handle("/api/admin/mcp", admin.handler(a))
 }
 
 func bearer(r *http.Request) string {
@@ -111,8 +174,15 @@ func (s *server) handler(a *app.App) http.Handler {
 				Error: &rpcError{Code: -32600, Message: "use POST"}})
 			return
 		}
-		ctx, scopes, ok := s.auth(req, a, bearer(req))
+		token := bearer(req)
+		if s.limit != nil && !s.limit.take(w, req, s.limit.perToken, "t:"+HashToken(token)[:24]) {
+			return
+		}
+		ctx, scopes, ok := s.auth(req, a, token)
 		if !ok {
+			if s.limit != nil && !s.limit.take(w, req, s.limit.fail, "ip:"+clientHost(req)) {
+				return
+			}
 			w.Header().Set("WWW-Authenticate", `Bearer realm="`+s.name+`"`)
 			writeRPC(w, http.StatusUnauthorized, rpcResponse{JSONRPC: "2.0",
 				Error: &rpcError{Code: -32001, Message: "invalid or missing MCP token"}})
