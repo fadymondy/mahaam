@@ -14,12 +14,18 @@ import workAr from "@/lang/work.ar.json"
 // P2 (time tracking, rates, notifications) — merged last, so it may override a P1 key (dev.*, nav.comingNext).
 import timeEn from "@/lang/time.en.json"
 import timeAr from "@/lang/time.ar.json"
+// P5 (reports, budgets, saved views, notification settings, new inbox kinds) — merged after P2.
+import reportsEn from "@/lang/reports.en.json"
+import reportsAr from "@/lang/reports.ar.json"
 
 export { LOCALES, dirForLocale, isLocale } from "@/lib/i18n-locale"
 export type { Locale } from "@/lib/i18n-locale"
 
 type Dict = Record<string, string>
-const DICTIONARIES: Record<Locale, Dict> = { en: { ...en, ...workEn, ...timeEn }, ar: { ...ar, ...workAr, ...timeAr } }
+const DICTIONARIES: Record<Locale, Dict> = {
+  en: { ...en, ...workEn, ...timeEn, ...reportsEn },
+  ar: { ...ar, ...workAr, ...timeAr, ...reportsAr },
+}
 
 /** Non-reactive lookup — for use outside React. */
 export function trans(key: string, locale: string = "en"): string {

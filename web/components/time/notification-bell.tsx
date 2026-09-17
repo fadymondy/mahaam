@@ -26,12 +26,19 @@ export function NotificationBell() {
   const unread = inbox.data?.unread ?? 0
 
   const text = (n: AppNotification) => {
-    const vars = { hours: String(n.data?.hours ?? ""), date: String(n.data?.date ?? "") }
+    // Every scalar in data is a template variable (task.*: actor, task_key, task_title, excerpt;
+    // budget.threshold: project_name, metric, threshold, percent); metric is localised.
+    const vars: Record<string, string> = {}
+    for (const [k, v] of Object.entries(n.data ?? {})) if (v != null && typeof v !== "object") vars[k] = String(v)
+    if (n.kind.startsWith("task.") && !vars.actor) vars.actor = t("notify.someone")
+    if (vars.metric === "hours" || vars.metric === "money") vars.metric = t(`notify.metric.${vars.metric}`)
     const title = t(`notify.${n.kind}`, vars)
     const body = t(`notify.${n.kind}.body`, vars)
+    // A template whose variable is missing from data falls back to the server's text.
+    const unfilled = (s: string) => /\{[a-z_]+\}/.test(s)
     return {
-      title: title === `notify.${n.kind}` ? n.title : title,
-      body: body === `notify.${n.kind}.body` ? (n.body ?? "") : body,
+      title: title === `notify.${n.kind}` || unfilled(title) ? n.title : title,
+      body: body === `notify.${n.kind}.body` || unfilled(body) ? (n.body ?? "") : body,
     }
   }
 

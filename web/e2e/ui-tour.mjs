@@ -66,6 +66,10 @@ const routes = [
   ["members", `/w/${s.slug}/members`],
   ["labels", `/w/${s.slug}/settings/labels`],
   ["mcp", `/w/${s.slug}/settings/mcp`],
+  ["reports", `/w/${s.slug}/reports`],
+  ["budgets", `/w/${s.slug}/reports/budgets`],
+  ["profitability", `/w/${s.slug}/reports/profitability`],
+  ["notifications", `/w/${s.slug}/settings/notifications`],
   ...(process.env.EXTRA_ROUTES ? JSON.parse(process.env.EXTRA_ROUTES).map(([n, r]) => [n, r.replace("{slug}", s.slug)]) : []),
 ]
 const matrix = QUICK ? [["en", "light"]] : [["en", "light"], ["en", "dark"], ["ar", "light"], ["ar", "dark"]]

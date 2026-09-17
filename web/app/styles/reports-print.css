@@ -1,0 +1,131 @@
+/* Repo-owned: printing a report (Reports → Print, window.print()).
+   Paper is black on white whatever the screen theme: the app chrome (sidebar, header, toolbars,
+   filters, buttons) is hidden, the print-only header names the range / grouping / timezone, and
+   table rows never split across pages. Colours here are the paper's, not the theme's. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .grid-shell-nav,
+  header[data-live],
+  [data-print-hide],
+  [data-mobile-nav],
+  [data-sonner-toaster],
+  button {
+    display: none !important;
+  }
+
+  .grid-shell {
+    display: block !important;
+  }
+
+  main,
+  [data-reports] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  [data-reports] *,
+  [data-reports] *::before,
+  [data-reports] *::after {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: #bbb !important;
+    opacity: 1 !important;
+  }
+
+  [data-print-only] {
+    display: block !important;
+    margin: 0 0 6mm;
+    padding: 0 0 3mm;
+    border-bottom: 1px solid #000 !important;
+  }
+
+  /* Tables: no scroll containers, header repeated per page, rows kept whole. */
+  [data-slot="table-container"],
+  .print-table,
+  .print-table > div {
+    overflow: visible !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9pt !important;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-row-group;
+  }
+  tr,
+  td,
+  th {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  th,
+  td {
+    padding: 1.5mm 2mm !important;
+    border-bottom: 1px solid #bbb !important;
+  }
+  tfoot td {
+    border-top: 1.5px solid #000 !important;
+    font-weight: 700 !important;
+  }
+
+  [data-report-summary],
+  [data-report-charts],
+  [data-print-block],
+  .print-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Charts in greys. */
+  [data-slot="chart"] {
+    --color-billable: #000 !important;
+    --color-non_billable: #9a9a9a !important;
+    --color-hours: #444 !important;
+  }
+  [data-slot="chart"] .recharts-bar-rectangle path,
+  [data-slot="chart"] .recharts-rectangle {
+    fill: #555 !important;
+  }
+  [data-series-chart] .recharts-bar:first-of-type .recharts-rectangle {
+    fill: #9a9a9a !important;
+  }
+  [data-series-chart] .recharts-bar:last-of-type .recharts-rectangle {
+    fill: #000 !important;
+  }
+  [data-slot="chart"] text {
+    fill: #000 !important;
+  }
+  [data-slot="chart"] .recharts-cartesian-grid line {
+    stroke: #ddd !important;
+  }
+
+  /* Budget bars stay visible on paper. */
+  [data-slot="progress-track"] {
+    background: #e5e5e5 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  [data-slot="progress-indicator"] {
+    background: #000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  a {
+    text-decoration: none !important;
+  }
+}

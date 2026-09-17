@@ -2,6 +2,7 @@
 
 import { Progress } from "@/components/ui/progress"
 import { Ltr } from "@/components/copy-field"
+import { ProjectBudgetPanel } from "@/components/reports/project-budget-panel"
 import { ActivityFeed } from "@/components/work/activity-feed"
 import { AvatarStack, useDirectory } from "@/components/work/people"
 import { useProjectCtx } from "@/components/work/project-context"
@@ -15,7 +16,7 @@ import { useProjectActivity } from "@/lib/work"
 export default function ProjectOverviewPage() {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
-  const { project: p } = useProjectCtx()
+  const { project: p, base } = useProjectCtx()
   useDocumentTitle(`${t("projectTab.overview")} · ${p.name}`)
   const me = useMe()
   const dir = useDirectory(me.data ? String(me.data.id) : undefined)
@@ -52,6 +53,8 @@ export default function ProjectOverviewPage() {
           <Ltr>{pct}%</Ltr> {t("project.done")}
         </span>
       </div>
+
+      <ProjectBudgetPanel projectId={p.id} canManage={p.can_manage} settingsHref={`${base}/settings`} />
 
       {p.description ? <p className="border-b border-line px-6 py-4 text-sm whitespace-pre-wrap text-grid-body">{p.description}</p> : null}
 

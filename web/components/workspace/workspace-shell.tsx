@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
+  BellIcon,
   BriefcaseIcon,
+  ChartColumnIcon,
   CalendarRangeIcon,
   ClockIcon,
   CoinsIcon,
@@ -350,6 +352,11 @@ function ShellNav({
           {t("nav.teamTime")}
         </L>
       ) : null}
+      {can.includes("reports:read") ? (
+        <L href={`${base}/reports`} icon={<ChartColumnIcon />}>
+          {t("nav.reports")}
+        </L>
+      ) : null}
       {can.includes("clients:read") ? (
         <L href={`${base}/clients`} icon={<BriefcaseIcon />}>
           {t("nav.clients")}
@@ -372,6 +379,9 @@ function ShellNav({
       </L>
       <L href={`${base}/settings/time`} icon={<TimerIcon />}>
         {t("nav.timeSettings")}
+      </L>
+      <L href={`${base}/settings/notifications`} icon={<BellIcon />}>
+        {t("nav.notifications")}
       </L>
       {can.includes("rates:read") ? (
         <L href={`${base}/settings/rates`} icon={<CoinsIcon />}>
