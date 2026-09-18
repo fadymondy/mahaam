@@ -12,3 +12,6 @@
 /storage/
 *.log
 .DS_Store
+
+# LXC deploy env holds real DB creds/secrets — keep out of git
+deploy/lxc/.env.prod

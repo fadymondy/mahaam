@@ -1,0 +1,24 @@
+# Managy PRODUCTION on Proxmox LXC 116 (10.10.10.116). Images built on the
+# workstation and loaded via `docker load` (no registry/GitHub auth needed).
+# NPM host 60 forwards managy-app.fadymondy.com -> 10.10.10.116:3010 (web).
+# web (next start) proxies /api,/graphql,/embed to the api container.
+name: managy-prod
+services:
+  api:
+    image: managy-api
+    container_name: managy-api
+    env_file: .env.prod
+    ports:
+      - "0.0.0.0:8110:8110"
+    restart: unless-stopped
+  web:
+    image: managy-web
+    container_name: managy-web
+    environment:
+      NODE_ENV: production
+      API_ORIGIN: http://api:8110
+    ports:
+      - "0.0.0.0:3010:3010"
+    depends_on:
+      - api
+    restart: unless-stopped
