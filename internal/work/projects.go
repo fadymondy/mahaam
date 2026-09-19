@@ -548,12 +548,29 @@ func projectValues(ctx context.Context, q querier, ws string, in ProjectInput, p
 	return nil
 }
 
-var defaultStatuses = map[string][4][2]string{
-	"en": {{"To do", "todo"}, {"In progress", "doing"}, {"In review", "doing"}, {"Done", "done"}},
-	"ar": {{"للتنفيذ", "todo"}, {"قيد التنفيذ", "doing"}, {"قيد المراجعة", "doing"}, {"تمّ", "done"}},
+// The default workflow: one column per stage of the issue tracker / agent loop. A project's
+// columns are its workflow (Settings → Board columns): {name, category, stage}.
+var defaultStatuses = map[string][6][3]string{
+	"en": {{"Backlog", "todo", "backlog"}, {"To do", "todo", "todo"}, {"In progress", "doing", "in_progress"},
+		{"Waiting approval", "doing", "waiting_approval"}, {"In review", "doing", "in_review"}, {"Done", "done", "done"}},
+	"ar": {{"قائمة الانتظار", "todo", "backlog"}, {"للتنفيذ", "todo", "todo"}, {"قيد التنفيذ", "doing", "in_progress"},
+		{"بانتظار الموافقة", "doing", "waiting_approval"}, {"قيد المراجعة", "doing", "in_review"}, {"منجز", "done", "done"}},
 }
 
-var defaultStatusColors = [4]string{"slate", "blue", "amber", "green"}
+var defaultStatusColors = [6]string{"slate", "blue", "violet", "orange", "amber", "green"}
+
+// stageCategory is the coarse category (reports, progress) of a workflow stage.
+func stageCategory(stage string) string {
+	switch stage {
+	case "in_progress", "waiting_approval", "in_review":
+		return "doing"
+	case "done":
+		return "done"
+	}
+	return "todo"
+}
+
+var stages = []string{"backlog", "todo", "in_progress", "waiting_approval", "in_review", "done"}
 
 // CreateProject creates a project with the four default statuses (in the workspace's
 // language) and the creator as its lead.
@@ -589,8 +606,8 @@ func (sv *Service) CreateProject(ctx context.Context, in ProjectInput) (*Project
 			return err
 		}
 		for i, st := range names {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position)
-				VALUES ($1, $2, $3, $4, $5, $6)`, s.WorkspaceID, id, st[0], defaultStatusColors[i], st[1], float64(i+1)*1024); err != nil {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)`, s.WorkspaceID, id, st[0], defaultStatusColors[i], st[1], float64(i+1)*1024, st[2]); err != nil {
 				return err
 			}
 		}
@@ -811,16 +828,17 @@ type Status struct {
 	Name      string  `json:"name"`
 	Color     string  `json:"color"`
 	Category  string  `json:"category" doc:"todo, doing or done"`
+	Stage     string  `json:"stage" doc:"Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review or done"`
 	Position  float64 `json:"position"`
 	TaskCount int     `json:"task_count"`
 }
 
-const statusCols = `st.id, st.project_id, st.name, st.color, st.category, st.position,
+const statusCols = `st.id, st.project_id, st.name, st.color, st.category, COALESCE(st.stage, CASE st.category WHEN 'doing' THEN 'in_progress' WHEN 'done' THEN 'done' ELSE 'todo' END), st.position,
 	(SELECT count(*) FROM tasks t WHERE t.workspace_id = st.workspace_id AND t.status_id = st.id)`
 
 func scanStatus(r scanner) (*Status, error) {
 	st := &Status{}
-	err := r.Scan(&st.ID, &st.ProjectID, &st.Name, &st.Color, &st.Category, &st.Position, &st.TaskCount)
+	err := r.Scan(&st.ID, &st.ProjectID, &st.Name, &st.Color, &st.Category, &st.Stage, &st.Position, &st.TaskCount)
 	return st, err
 }
 
@@ -864,6 +882,7 @@ type StatusInput struct {
 	Name     *string `json:"name,omitempty" maxLength:"60"`
 	Color    *string `json:"color,omitempty"`
 	Category *string `json:"category,omitempty" enum:"todo,doing,done"`
+	Stage    *string `json:"stage,omitempty" enum:"backlog,todo,in_progress,waiting_approval,in_review,done" doc:"Workflow stage; sets the category too"`
 	Index    *int    `json:"index,omitempty" minimum:"0"`
 }
 
@@ -907,15 +926,22 @@ func (sv *Service) CreateStatus(ctx context.Context, projectID string, in Status
 		}
 		cat = v
 	}
+	stage := map[string]string{"todo": "todo", "doing": "in_progress", "done": "done"}[cat]
+	if v, ok := trimmed(in.Stage); ok && v != "" {
+		if err := oneOf("stage", v, stages...); err != nil {
+			return nil, err
+		}
+		stage, cat = v, stageCategory(v)
+	}
 	color, err := pickColor(in.Color, "slate")
 	if err != nil {
 		return nil, err
 	}
 	var id string
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
-		if err := tx.QueryRowContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position)
-			VALUES ($1, $2, $3, $4, $5, (SELECT COALESCE(MAX(position), 0) + 1024 FROM task_statuses WHERE workspace_id = $1 AND project_id = $2))
-			RETURNING id`, s.WorkspaceID, p.ID, name, color, cat).Scan(&id); err != nil {
+		if err := tx.QueryRowContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage)
+			VALUES ($1, $2, $3, $4, $5, (SELECT COALESCE(MAX(position), 0) + 1024 FROM task_statuses WHERE workspace_id = $1 AND project_id = $2), $6)
+			RETURNING id`, s.WorkspaceID, p.ID, name, color, cat, stage).Scan(&id); err != nil {
 			return err
 		}
 		return record(ctx, tx, s, entry{ProjectID: p.ID, Action: "status.created", SubjectType: "status", SubjectID: id,
@@ -961,6 +987,13 @@ func (sv *Service) UpdateStatus(ctx context.Context, id string, in StatusInput) 
 			return nil, err
 		}
 		pt.set("category", v)
+	}
+	if v, ok := trimmed(in.Stage); ok && v != "" && v != st.Stage {
+		if err := oneOf("stage", v, stages...); err != nil {
+			return nil, err
+		}
+		pt.set("stage", v)
+		pt.set("category", stageCategory(v))
 	}
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
 		if in.Index != nil {

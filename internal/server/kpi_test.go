@@ -38,7 +38,7 @@ func TestKPI(t *testing.T) {
 	projName := "KPI app " + rnd()
 	proj := owner.must("POST", "/api/w/projects", map[string]any{"name": projName, "visibility": "workspace"}, 201)
 	pid := proj["id"].(string)
-	done := proj["statuses"].([]any)[3].(map[string]any)["id"].(string)
+	done := proj["statuses"].([]any)[5].(map[string]any)["id"].(string)
 
 	now := time.Now().UTC()
 	day := func(n int) string { return now.AddDate(0, 0, n).Format("2006-01-02") }

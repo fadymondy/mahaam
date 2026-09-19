@@ -122,7 +122,7 @@ BEGIN
     -- A card with this key already exists (e.g. created before the link): adopt it.
     SELECT id INTO tid FROM tasks WHERE workspace_id = r.workspace_id AND key = r.key;
     IF tid IS NULL THEN
-        col := project_column(r.workspace_id, pid, issue_status_category(r.status));
+        col := stage_column(r.workspace_id, pid, r.status);
         IF col IS NULL THEN
             RETURN NULL; -- a project with no columns: nothing to put the card in
         END IF;

@@ -43,7 +43,7 @@ import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { useMe } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
-import { CATEGORIES, errorText, useTeams, w, type Status } from "@/lib/work"
+import { ISSUE_STATUSES, errorText, useTeams, w, type Status } from "@/lib/work"
 
 const ActiveSection = createContext<string | null>(null)
 
@@ -318,7 +318,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
           <li key={s.id} className="flex items-center gap-3 px-6 py-2 text-sm" data-status-row={s.id}>
             <ColorDot color={s.color} />
             <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
-            <Badge variant="outline">{t(`category.${s.category}`)}</Badge>
+            <Badge variant="outline">{t(`issues.status.${s.stage ?? "todo"}`)}</Badge>
             <span className="w-16 text-end text-xs text-grid-muted">{t("settings.taskCount", { n: s.task_count })}</span>
             <Button variant="ghost" size="icon-sm" aria-label={t("settings.moveUp")} disabled={i === 0} onClick={() => run(() => w.patch(ws.id, `/api/w/statuses/${s.id}`, { index: i - 1 }))}>
               <ArrowUpIcon />
@@ -411,21 +411,21 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
   )
 }
 
-function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | null; onClose: () => void; onSave: (b: { name: string; color: string; category: string }) => Promise<void> }) {
+function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | null; onClose: () => void; onSave: (b: { name: string; color: string; stage: string }) => Promise<void> }) {
   const { t } = useTranslations()
   const s = status && status !== "new" ? status : null
   const [name, setName] = useState("")
   const [color, setColor] = useState<string>("slate")
-  const [category, setCategory] = useState("doing")
+  const [category, setCategory] = useState("in_progress")
   const [key, setKey] = useState<string | null>(null)
   const current = status === "new" ? "new" : (s?.id ?? null)
   if (current !== key) {
     setKey(current)
     setName(s?.name ?? "")
     setColor(s?.color ?? PALETTE[8])
-    setCategory(s?.category ?? "doing")
+    setCategory(s?.stage ?? "in_progress")
   }
-  const catItems = CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) }))
+  const catItems = ISSUE_STATUSES.map((c) => ({ value: c as string, label: t(`issues.status.${c}`) }))
   return (
     <Dialog open={!!status} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -439,7 +439,7 @@ function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | nu
         </Field>
         <Field>
           <FieldLabel htmlFor="st-cat">{t("settings.category")}</FieldLabel>
-          <Select items={catItems} value={category} onValueChange={(v) => setCategory(String(v ?? "doing"))}>
+          <Select items={catItems} value={category} onValueChange={(v) => setCategory(String(v ?? "in_progress"))}>
             <SelectTrigger id="st-cat" className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -460,7 +460,7 @@ function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | nu
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color, category })}>
+          <Button disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color, stage: category })}>
             {t("common.save")}
           </Button>
         </DialogFooter>

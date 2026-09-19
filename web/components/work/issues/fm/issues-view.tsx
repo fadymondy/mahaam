@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/states"
+import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
@@ -20,6 +21,9 @@ import {
   errorText,
   issuesApi,
   useIssues,
+  useProject,
+  w,
+  type Status,
   type Issue,
   type IssueStatus,
 } from "@/lib/work"
@@ -71,32 +75,40 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
   // Where in the target column the card would land. null means "at the end".
   const [dropIndex, setDropIndex] = useState<number | null>(null)
 
+  // The project's columns ARE the workflow (Settings → Board columns): the board renders them,
+  // in their order, with their names and colours. An item sits in its card's column.
+  const project = useProject(ws.id, projectId)
+  const columns = useMemo(() => [...(project.data?.statuses ?? [])].sort((a, b) => a.position - b.position), [project.data])
+  const columnOf = (i: Issue) => i.column_id ?? columns.find((c) => c.stage === i.status)?.id ?? columns[0]?.id ?? ""
   const byStatus = useMemo(() => {
     const map = new Map<string, Issue[]>()
-    for (const s of ISSUE_STATUSES) map.set(s, [])
-    for (const i of [...issues].sort((a, b) => a.sort_order - b.sort_order)) map.get(i.status)?.push(i)
+    for (const c of columns) map.set(c.id, [])
+    for (const i of [...issues].sort((a, b) => a.sort_order - b.sort_order)) {
+      const col = i.column_id ?? columns.find((c) => c.stage === i.status)?.id ?? columns[0]?.id ?? ""
+      map.get(col)?.push(i)
+    }
     return map
-  }, [issues])
+  }, [issues, columns])
 
   /** Move a card locally, so the board does not wait on a round-trip mid-drag. */
-  function moveLocally(issue: Issue, to: IssueStatus, at: number | null) {
+  function moveLocally(issue: Issue, to: string, at: number | null) {
     const column = (byStatus.get(to) ?? []).filter((r) => r.key !== issue.key)
     const index = at === null ? column.length : Math.max(0, Math.min(at, column.length))
     const before = column[index - 1]
     const after = column[index]
     const rank = before && after ? (before.sort_order + after.sort_order) / 2 : before ? before.sort_order + 1 : after ? after.sort_order - 1 : 0
     void list.mutate(
-      (prev) => prev && { issues: prev.issues.map((r) => (r.key === issue.key ? { ...r, status: to, sort_order: rank } : r)) },
+      (prev) => prev && { issues: prev.issues.map((r) => (r.key === issue.key ? { ...r, column_id: to, status: (columns.find((c) => c.id === to)?.stage ?? r.status) as IssueStatus, sort_order: rank } : r)) },
       { revalidate: false },
     )
   }
 
   async function changeStatus(key: string, status: string) {
     const issue = issues.find((r) => r.key === key)
-    if (!issue || issue.status === status) return
-    moveLocally(issue, status as IssueStatus, null)
+    if (!issue || columnOf(issue) === status) return
+    moveLocally(issue, status, null)
     try {
-      await issuesApi.move(ws.id, key, { status: status as IssueStatus })
+      await w.post(ws.id, `/api/w/tasks/${encodeURIComponent(key)}/move`, { status })
     } catch (err) {
       toast.error(errorText(err, t("issues.moveFailed")))
     }
@@ -108,19 +120,22 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
    * neighbours: "just before" the card it lands on, "just after" the last one,
    * or the end of an empty column.
    */
-  async function dropCard(issue: Issue, status: IssueStatus, index: number | null) {
+  async function dropCard(issue: Issue, status: string, index: number | null) {
     const column = (byStatus.get(status) ?? []).filter((r) => r.key !== issue.key)
     const at = index === null ? column.length : Math.max(0, Math.min(index, column.length))
     const before = column[at - 1]
     const after = column[at]
 
-    const current = byStatus.get(issue.status) ?? []
+    const from = columnOf(issue)
+    const current = byStatus.get(from) ?? []
     const was = current.findIndex((r) => r.key === issue.key)
-    if (issue.status === status && current[was - 1]?.key === before?.key && current[was + 1]?.key === after?.key) return
+    if (from === status && current[was - 1]?.key === before?.key && current[was + 1]?.key === after?.key) return
 
     moveLocally(issue, status, at)
     try {
-      await issuesApi.move(ws.id, issue.key, after ? { before: after.key } : before ? { after: before.key } : { status })
+      // The column first (the item takes the column's workflow stage), then its place in it.
+      if (from !== status) await w.post(ws.id, `/api/w/tasks/${encodeURIComponent(issue.key)}/move`, { status })
+      if (after || before) await issuesApi.move(ws.id, issue.key, after ? { before: after.key } : { after: before!.key })
     } catch (err) {
       toast.error(errorText(err, t("issues.moveFailed")))
     }
@@ -189,7 +204,8 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
       ) : (
         /* Columns scroll horizontally; each is a fixed width so cards stay legible. */
         <div className="flex flex-1 overflow-hidden">
-          {ISSUE_STATUSES.map((status) => {
+          {columns.map((column) => {
+            const status = column.id
             const cards = byStatus.get(status) ?? []
             const isTarget = dragOverStatus === status
 
@@ -220,7 +236,10 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                 }}
               >
                 <h2 className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5 font-mono text-[11px] tracking-wider text-grid-muted uppercase">
-                  {t(`issues.status.${status}`)}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <ColorDot color={column.color} className="size-2" />
+                    <span className="truncate" dir="auto">{column.name}</span>
+                  </span>
                   <span dir="ltr" className="tabular-nums">
                     {cards.length}
                   </span>
@@ -257,6 +276,8 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                           setDragOverStatus(null)
                           setDropIndex(null)
                         }}
+                        columns={columns}
+                        column={status}
                         onStatusChange={(s) => void changeStatus(issue.key, s)}
                         onOpen={() => setSelectedKey(issue.key)}
                         onChanged={refresh}
@@ -288,9 +309,13 @@ function IssueCard({
   onDragStart,
   onDragEnd,
   onStatusChange,
+  columns,
+  column,
   onOpen,
   onChanged,
 }: {
+  columns: Status[]
+  column: string
   issue: Issue
   canWrite: boolean
   onDragStart: () => void
@@ -386,14 +411,14 @@ function IssueCard({
           </p>
         ) : null}
 
-        <Select value={issue.status} disabled={!canWrite} onValueChange={(v) => onStatusChange(v ?? issue.status)}>
+        <Select value={column} disabled={!canWrite} onValueChange={(v) => onStatusChange(String(v ?? column))}>
           <SelectTrigger size="sm" className="w-full">
-            <SelectValue>{(v) => t(`issues.status.${String(v)}`)}</SelectValue>
+            <SelectValue>{(v) => columns.find((c) => c.id === v)?.name ?? ""}</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {ISSUE_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {t(`issues.status.${s}`)}
+            {columns.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
               </SelectItem>
             ))}
           </SelectContent>

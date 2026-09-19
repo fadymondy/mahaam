@@ -249,11 +249,11 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	proj := alice.must("POST", "/api/w/projects", map[string]any{"name": marker + " project", "client_id": clID, "visibility": "members"}, 201)
 	prID := proj["id"].(string)
 	statuses := proj["statuses"].([]any)
-	if len(statuses) != 4 {
-		t.Fatalf("a new project should get 4 default statuses, got %d", len(statuses))
+	if len(statuses) != 6 {
+		t.Fatalf("a new project should get 6 default statuses (the workflow stages), got %d", len(statuses))
 	}
 	stTodo := statuses[0].(map[string]any)["id"].(string)
-	stDone := statuses[3].(map[string]any)["id"].(string)
+	stDone := statuses[5].(map[string]any)["id"].(string)
 	alice.must("PUT", "/api/w/projects/"+prID+"/teams/"+teamID, nil, 200)
 	lbID := alice.must("POST", "/api/w/labels", map[string]any{"name": marker + "-label", "color": "teal"}, 201)["id"].(string)
 	task := alice.must("POST", "/api/w/projects/"+prID+"/tasks", map[string]any{

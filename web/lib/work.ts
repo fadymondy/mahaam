@@ -52,6 +52,8 @@ export type Status = {
   name: string
   color: string
   category: Category
+  /** Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review, done. */
+  stage?: string
   position: number
   task_count: number
 }
@@ -201,6 +203,8 @@ export type IssueType = (typeof ISSUE_TYPES)[number]
 export type Issue = {
   key: string
   title: string
+  /** The board column (project status) the item sits in. */
+  column_id?: string
   status: IssueStatus
   priority: IssuePriority
   state: string | null

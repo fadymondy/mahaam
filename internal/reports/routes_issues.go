@@ -62,6 +62,7 @@ type IssueKeyRef struct {
 
 // Issue is one report as JSON for a TS client (snake_case, the reports columns).
 type Issue struct {
+	ColumnID     string     `json:"column_id,omitempty" doc:"The board column (project status) the item sits in"`
 	Key          string     `json:"key"`
 	Title        string     `json:"title"`
 	Status       string     `json:"status"`
@@ -204,6 +205,19 @@ func (h *issueRoutes) mount() {
 		if err != nil {
 			return nil, h.fail(err)
 		}
+		// Which board column each item sits in (the project's columns are the workflow).
+		columns := map[string]string{}
+		if cr, err := h.db.QueryContext(ctx, `SELECT r.key, t.status_id FROM reports r JOIN tasks t
+			ON t.workspace_id = r.workspace_id AND t.id = r.task_id WHERE r.workspace_id = $1
+			AND ($2 = '' OR r.project_id = $2)`, s.WorkspaceID, projectID); err == nil {
+			for cr.Next() {
+				var k, c string
+				if cr.Scan(&k, &c) == nil {
+					columns[k] = c
+				}
+			}
+			cr.Close()
+		}
 		out := IssueList{Issues: make([]Issue, 0, len(rows))}
 		for _, rep := range rows {
 			if in.Priority != "" && rep.Priority != in.Priority {
@@ -211,6 +225,7 @@ func (h *issueRoutes) mount() {
 			}
 			i := toIssue(rep)
 			i.CommentCount = counts[rep.ID]
+			i.ColumnID = columns[rep.Key]
 			out.Issues = append(out.Issues, i)
 		}
 		return &work.Resp[IssueList]{Body: out}, nil

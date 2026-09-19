@@ -489,7 +489,7 @@ func TestTimeTracking(t *testing.T) {
 	for _, st := range proj["statuses"].([]any) {
 		names = append(names, st.(map[string]any)["name"].(string))
 	}
-	if strings.Join(names, "|") != "للتنفيذ|قيد التنفيذ|قيد المراجعة|تمّ" {
+	if strings.Join(names, "|") != "قائمة الانتظار|للتنفيذ|قيد التنفيذ|بانتظار الموافقة|قيد المراجعة|منجز" {
 		t.Errorf("an Arabic workspace's default columns: %v", names)
 	}
 	bob.ws = bID
