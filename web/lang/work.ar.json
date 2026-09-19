@@ -632,5 +632,12 @@
   "issues.mention.skill": "مهارة المشروع",
   "issues.agent.add": "إضافة",
   "issues.agent.addSave": "أضف إلى هذا المشروع",
-  "issues.agent.counts": "{agents} وكيل و{skills} مهارة في هذا المشروع"
+  "issues.agent.counts": "{agents} وكيل و{skills} مهارة في هذا المشروع",
+  "settings.card.details": "الاسم والعميل واللون والفوترة والميزانية والتواريخ والظهور.",
+  "settings.card.labelsTitle": "الوسوم والصلاحيات",
+  "settings.card.labels": "وسوم هذا المشروع، وتُستخدم لمنح الوصول حسب الوسم.",
+  "settings.card.integrationsTitle": "التكاملات",
+  "settings.card.integrations": "GitHub وJira وLinear: المستودعات والاستيراد والمزامنة.",
+  "settings.card.feedbackTitle": "أداة الملاحظات (SDK)",
+  "settings.card.feedback": "مفاتيح الأداة والمواقع المسموحة وشكل الزر وأدلة التثبيت."
 }

@@ -1,7 +1,25 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { createContext, useContext, useState } from "react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import {
+  ArchiveIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ColumnsIcon,
+  MessageSquarePlusIcon,
+  PlugIcon,
+  PlusIcon,
+  SettingsIcon,
+  Share2Icon,
+  TagIcon,
+  Trash2Icon,
+  UsersIcon,
+  UsersRoundIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -26,7 +44,12 @@ import { useMe } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
 import { CATEGORIES, errorText, useTeams, w, type Status } from "@/lib/work"
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+const ActiveSection = createContext<string | null>(null)
+
+/** One settings page: rendered only when it is the open one (?s=<id>). */
+function Section({ id, title, hint, children }: { id: string; title: string; hint?: string; children: React.ReactNode }) {
+  const active = useContext(ActiveSection)
+  if (active !== id) return null
   return (
     <section className="border-b border-line">
       <div className="px-6 pt-6 pb-3">
@@ -41,7 +64,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 export default function ProjectSettingsPage() {
   const { t } = useTranslations()
   const ws = useWorkspace()
-  const { project: p, reload } = useProjectCtx()
+  const { project: p, reload, base } = useProjectCtx()
+  const sec = useSearchParams().get("s")
   useDocumentTitle(`${t("projectTab.settings")} · ${p.name}`)
   const me = useMe()
   const dir = useDirectory(me.data ? String(me.data.id) : undefined)
@@ -73,19 +97,60 @@ export default function ProjectSettingsPage() {
     { value: "lead", label: t("projectRole.lead") },
   ]
 
+  const cards: { id: string; Icon: typeof SettingsIcon; title: string; hint: string; show: boolean; danger?: boolean }[] = [
+    { id: "details", Icon: SettingsIcon, title: t("settings.details"), hint: t("settings.card.details"), show: true },
+    { id: "statuses", Icon: ColumnsIcon, title: t("settings.statuses"), hint: t("settings.statusesHint"), show: true },
+    { id: "members", Icon: UsersIcon, title: t("settings.members"), hint: t("settings.membersHint"), show: true },
+    { id: "teams", Icon: UsersRoundIcon, title: t("settings.teams"), hint: t("settings.teamsHint"), show: ws.can("teams:read") },
+    { id: "share", Icon: Share2Icon, title: t("settings.share"), hint: t("settings.shareHint"), show: true },
+    { id: "labels", Icon: TagIcon, title: t("settings.card.labelsTitle"), hint: t("settings.card.labels"), show: ws.can("access:manage") },
+    { id: "integrations", Icon: PlugIcon, title: t("settings.card.integrationsTitle"), hint: t("settings.card.integrations"), show: ws.can("integrations:read") },
+    { id: "feedback", Icon: MessageSquarePlusIcon, title: t("settings.card.feedbackTitle"), hint: t("settings.card.feedback"), show: ws.can("feedback_keys:read") },
+    { id: "archive", Icon: ArchiveIcon, title: p.archived_at ? t("settings.restoreTitle") : t("settings.archiveTitle"), hint: p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint"), show: true, danger: true },
+  ]
+
+  if (!sec || !cards.some((c) => c.id === sec && c.show)) {
+    return (
+      <div className="grid gap-px bg-grid-line sm:grid-cols-2 xl:grid-cols-3" data-settings-cards>
+        {cards
+          .filter((c) => c.show)
+          .map((c) => (
+            <Link
+              key={c.id}
+              href={`${base}/settings?s=${c.id}`}
+              className="group flex items-start gap-3 bg-grid-bg p-6 transition-colors hover:bg-grid-soft"
+            >
+              <c.Icon className={c.danger ? "mt-0.5 size-5 shrink-0 text-grid-danger-text" : "mt-0.5 size-5 shrink-0 text-grid-action"} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-medium text-grid-fg">{c.title}</span>
+                <span className="mt-1 line-clamp-2 block text-sm text-grid-muted">{c.hint}</span>
+              </span>
+              <ChevronRightIcon className="mt-1 size-4 shrink-0 text-grid-muted transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100" />
+            </Link>
+          ))}
+      </div>
+    )
+  }
+
   return (
-    <>
-      <Section title={t("settings.details")}>
+    <ActiveSection.Provider value={sec}>
+      <div className="border-b border-line px-6 py-3">
+        <Link href={`${base}/settings`} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+          <ChevronLeftIcon className="size-3.5 rtl:-scale-x-100" />
+          {t("projectTab.settings")}
+        </Link>
+      </div>
+      <Section id="details" title={t("settings.details")}>
         <div className="px-6 pb-6">
           <ProjectForm key={p.updated_at} project={p} onSaved={() => { toast.success(t("common.saved")); reload() }} />
         </div>
       </Section>
 
-      <Section title={t("settings.statuses")} hint={t("settings.statusesHint")}>
+      <Section id="statuses" title={t("settings.statuses")} hint={t("settings.statusesHint")}>
         <StatusManager statuses={p.statuses} projectId={p.id} onChanged={reload} />
       </Section>
 
-      <Section title={t("settings.members")} hint={p.visibility === "members" ? t("settings.membersHintPrivate") : t("settings.membersHint")}>
+      <Section id="members" title={t("settings.members")} hint={p.visibility === "members" ? t("settings.membersHintPrivate") : t("settings.membersHint")}>
         <ul className="divide-y divide-line border-y border-line">
           {p.members.map((m) => (
             <li key={m.user_id} className="flex items-center gap-3 px-6 py-2.5 text-sm">
@@ -141,7 +206,7 @@ export default function ProjectSettingsPage() {
       </Section>
 
       {ws.can("teams:read") ? (
-        <Section title={t("settings.teams")} hint={t("settings.teamsHint")}>
+        <Section id="teams" title={t("settings.teams")} hint={t("settings.teamsHint")}>
           {p.teams.length ? (
             <ul className="divide-y divide-line border-y border-line">
               {p.teams.map((x) => (
@@ -180,7 +245,7 @@ export default function ProjectSettingsPage() {
         </Section>
       ) : null}
 
-      <Section title={t("settings.share")} hint={t("settings.shareHint")}>
+      <Section id="share" title={t("settings.share")} hint={t("settings.shareHint")}>
         <div className="divide-y divide-line border-t border-line">
           {(["share_board", "share_team", "share_money"] as const).map((k) => (
             <label key={k} className="flex cursor-pointer items-start justify-between gap-4 px-6 py-3" data-share={k}>
@@ -198,12 +263,12 @@ export default function ProjectSettingsPage() {
         </div>
       </Section>
 
-      {ws.can("access:manage") ? <ProjectLabelsSection projectId={p.id} /> : null}
-      {ws.can("integrations:read") ? <IntegrationsSection projectId={p.id} /> : null}
+      {sec === "labels" && ws.can("access:manage") ? <ProjectLabelsSection projectId={p.id} /> : null}
+      {sec === "integrations" && ws.can("integrations:read") ? <IntegrationsSection projectId={p.id} /> : null}
 
-      {ws.can("feedback_keys:read") ? <FeedbackWidgetSection projectId={p.id} clientId={p.client_id ?? null} /> : null}
+      {sec === "feedback" && ws.can("feedback_keys:read") ? <FeedbackWidgetSection projectId={p.id} clientId={p.client_id ?? null} /> : null}
 
-      <Section title={p.archived_at ? t("settings.restoreTitle") : t("settings.archiveTitle")} hint={p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}>
+      <Section id="archive" title={p.archived_at ? t("settings.restoreTitle") : t("settings.archiveTitle")} hint={p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}>
         <div className="px-6 pb-6">
           {p.archived_at ? (
             <Button variant="outline" onClick={() => run(() => w.post(ws.id, `/api/w/projects/${p.id}/restore`), t("project.restored"))}>
@@ -220,7 +285,7 @@ export default function ProjectSettingsPage() {
           )}
         </div>
       </Section>
-    </>
+    </ActiveSection.Provider>
   )
 }
 

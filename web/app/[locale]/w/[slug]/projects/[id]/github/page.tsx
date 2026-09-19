@@ -43,7 +43,7 @@ export default function ProjectGitHubPage() {
       <div className="px-6 py-8 text-sm">
         <p className="text-grid-muted">{t("gh.notLinked")}</p>
         {p.can_manage ? (
-          <Button variant="outline" className="mt-3" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/projects/${p.id}/settings#integrations`} />}>
+          <Button variant="outline" className="mt-3" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/projects/${p.id}/settings?s=integrations`} />}>
             {t("gh.goSettings")}
           </Button>
         ) : null}

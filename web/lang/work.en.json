@@ -632,5 +632,12 @@
   "issues.mention.skill": "project skill",
   "issues.agent.add": "Add",
   "issues.agent.addSave": "Add to this project",
-  "issues.agent.counts": "{agents} agents and {skills} skills in this project"
+  "issues.agent.counts": "{agents} agents and {skills} skills in this project",
+  "settings.card.details": "Name, client, colour, billing, budget, dates and visibility.",
+  "settings.card.labelsTitle": "Labels & access",
+  "settings.card.labels": "Labels this project carries, used for access by label.",
+  "settings.card.integrationsTitle": "Integrations",
+  "settings.card.integrations": "GitHub, Jira and Linear: repositories, imports and sync.",
+  "settings.card.feedbackTitle": "Feedback SDK",
+  "settings.card.feedback": "Widget keys, allowed sites, the button look and install guides."
 }
