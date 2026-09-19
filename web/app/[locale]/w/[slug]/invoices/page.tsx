@@ -3,7 +3,8 @@
 import { useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { PlusIcon } from "lucide-react"
+import { PlusIcon, SearchIcon } from "lucide-react"
+import { ListFilter } from "@/components/list-filter"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -59,7 +60,28 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState<string>("")
   const [creating, setCreating] = useState(false)
   const invoices = useInvoices(ws.id, status ? { status } : {}, canRead)
-  const list = invoices.data?.invoices ?? []
+  const all = useMemo(() => invoices.data?.invoices ?? [], [invoices.data])
+  const [q, setQ] = useState("")
+  const [client, setClient] = useState("")
+  const [due, setDue] = useState("")
+  const clientOptions = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const iv of all) if (iv.client_name) m.set(iv.client_id, iv.client_name)
+    return [...m].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))
+  }, [all])
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase()
+    const today = new Date().toISOString().slice(0, 10)
+    return all.filter((iv) => {
+      if (needle && !`${iv.number} ${iv.client_name ?? ""} ${iv.notes ?? ""}`.toLowerCase().includes(needle)) return false
+      if (client && iv.client_id !== client) return false
+      const unpaid = iv.status === "sent" && iv.paid_minor < iv.total_minor
+      if (due === "overdue" && !(unpaid && iv.due_date && iv.due_date.slice(0, 10) < today)) return false
+      if (due === "unpaid" && !unpaid) return false
+      return true
+    })
+  }, [all, q, client, due])
+  const filtered = !!(q.trim() || client || due)
 
   if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-grid-muted">{t("invoices.noPermission")}</p>
 
@@ -78,7 +100,13 @@ export default function InvoicesPage() {
           ) : null
         }
       />
-      <div className="flex items-center gap-2 border-t border-line px-6 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-line px-6 py-3">
+        <div className="relative min-w-48 flex-1">
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-grid-muted" aria-hidden />
+          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("invoices.search")} aria-label={t("invoices.search")} className="h-9 ps-8" dir="auto" />
+        </div>
+        <ListFilter value={client} onChange={setClient} label={t("invoices.col.client")} items={[{ value: "", label: t("invoices.filter.allClients") }, ...clientOptions]} />
+        <ListFilter value={due} onChange={setDue} label={t("invoices.filter.payment")} items={[{ value: "", label: t("invoices.filter.anyPayment") }, { value: "unpaid", label: t("invoices.filter.unpaid") }, { value: "overdue", label: t("invoices.filter.overdue") }]} />
         <Select items={STATUS_ITEMS(t)} value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : (v ?? ""))}>
           <SelectTrigger className="w-48" data-status-filter>
             <SelectValue />
@@ -97,6 +125,8 @@ export default function InvoicesPage() {
         <ErrorState error={invoices.error} />
       ) : invoices.isLoading ? (
         <LoadingRows />
+      ) : list.length === 0 && filtered ? (
+        <EmptyState title={t("invoices.noMatch")} />
       ) : list.length === 0 ? (
         <EmptyState title={t("invoices.none")} body={canWrite ? t("invoices.noneHint") : undefined} />
       ) : (

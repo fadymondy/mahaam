@@ -71,5 +71,11 @@
   "clientDetail.invoices": "Invoices",
   "clientDetail.newInvoice": "New invoice",
   "clientDetail.unbilledValue": "Unbilled value",
-  "clientDetail.noInvoices": "No invoices yet."
+  "clientDetail.noInvoices": "No invoices yet.",
+  "invoices.search": "Search by number, client or notes…",
+  "invoices.filter.payment": "Payment",
+  "invoices.filter.anyPayment": "Any payment state",
+  "invoices.filter.unpaid": "Unpaid",
+  "invoices.filter.overdue": "Overdue",
+  "invoices.noMatch": "No invoice matches these filters."
 }

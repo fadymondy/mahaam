@@ -146,6 +146,8 @@ type Project struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 	Tasks         TaskCounts `json:"tasks"`
 	MemberCount   int        `json:"member_count"`
+	// Issues counts the project's items by issue status (the board's columns); only in lists.
+	Issues map[string]int `json:"issues,omitempty" doc:"Items per status: backlog, todo, in_progress, waiting_approval, in_review, done"`
 	// What the project's customer sees in the portal (19c_portal_share.sql).
 	ShareBoard bool `json:"share_board" doc:"Customers see the task board read-only (titles, columns, due dates, assignees, labels)"`
 	ShareTeam  bool `json:"share_team" doc:"Customers see who works on the project (names only, never rates)"`
@@ -275,7 +277,33 @@ func (sv *Service) ListProjects(ctx context.Context, f ProjectFilter) ([]Project
 		}
 		out = append(out, *p)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	// The issue track: items per status, for every listed project in one query.
+	at := map[string]int{}
+	ids := make([]string, len(out))
+	for i := range out {
+		at[out[i].ID], ids[i] = i, out[i].ID
+		out[i].Issues = map[string]int{}
+	}
+	cr, err := sv.DB.QueryContext(ctx, `SELECT project_id, status, count(*) FROM reports
+		WHERE workspace_id = $1 AND project_id = ANY($2) AND (request_state IS NULL OR request_state = 'accepted')
+		GROUP BY project_id, status`, s.WorkspaceID, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer cr.Close()
+	for cr.Next() {
+		var pid, st string
+		var n int
+		if err := cr.Scan(&pid, &st, &n); err != nil {
+			return nil, err
+		}
+		out[at[pid]].Issues[st] = n
+	}
+	return out, cr.Err()
 }
 
 // FindProject resolves an id or an exact name (case-insensitive) — for MCP callers.

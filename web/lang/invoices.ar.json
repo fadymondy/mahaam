@@ -71,5 +71,11 @@
   "clientDetail.invoices": "الفواتير",
   "clientDetail.newInvoice": "فاتورة جديدة",
   "clientDetail.unbilledValue": "القيمة غير المفوترة",
-  "clientDetail.noInvoices": "لا توجد فواتير بعد."
+  "clientDetail.noInvoices": "لا توجد فواتير بعد.",
+  "invoices.search": "ابحث بالرقم أو العميل أو الملاحظات…",
+  "invoices.filter.payment": "الدفع",
+  "invoices.filter.anyPayment": "أي حالة دفع",
+  "invoices.filter.unpaid": "غير مدفوعة",
+  "invoices.filter.overdue": "متأخرة",
+  "invoices.noMatch": "لا توجد فاتورة تطابق هذه المرشحات."
 }

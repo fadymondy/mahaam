@@ -28,6 +28,8 @@ export type Project = {
   updated_at: string
   tasks: TaskCounts
   member_count: number
+  /** Items per issue status (lists only). */
+  issues?: Record<string, number> | null
   share_board: boolean
   share_team: boolean
   share_money: boolean

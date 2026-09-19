@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { PlusIcon, UploadIcon } from "lucide-react"
+import { PlusIcon, SearchIcon, UploadIcon } from "lucide-react"
+import { ListFilter } from "@/components/list-filter"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -33,7 +34,22 @@ export default function ClientsPage() {
   const [googleSession, setGoogleSession] = useState<string | null>(null)
   const clients = useClients(ws.id, archived, ws.can("clients:read"))
   const canWrite = ws.can("clients:write")
-  const list = clients.data?.clients ?? []
+  const all = useMemo(() => clients.data?.clients ?? [], [clients.data])
+  const [q, setQ] = useState("")
+  const [currency, setCurrency] = useState("")
+  const [work, setWork] = useState("")
+  const currencies = useMemo(() => [...new Set(all.map((c) => c.currency).filter(Boolean))].sort(), [all])
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase()
+    return all.filter((c) => {
+      if (needle && !`${c.name} ${c.email ?? ""} ${c.phone ?? ""} ${c.company ?? ""} ${c.country ?? ""}`.toLowerCase().includes(needle)) return false
+      if (currency && c.currency !== currency) return false
+      if (work === "with" && !c.project_count) return false
+      if (work === "without" && c.project_count) return false
+      return true
+    })
+  }, [all, q, currency, work])
+  const filtered = !!(q.trim() || currency || work)
 
   // Back from the Google Contacts consent screen: ?import=google&session=… (or &error=…).
   useEffect(() => {
@@ -82,15 +98,25 @@ export default function ClientsPage() {
           ) : null
         }
       />
-      <label className="flex items-center gap-2 border-t border-line px-6 py-3 text-sm text-grid-body">
-        <Switch checked={archived} onCheckedChange={setArchived} />
-        {t("clients.showArchived")}
-      </label>
+      <div className="flex flex-wrap items-center gap-2 border-t border-line px-6 py-3">
+        <div className="relative min-w-48 flex-1">
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-grid-muted" aria-hidden />
+          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("clients.search")} aria-label={t("clients.search")} className="h-9 ps-8" dir="auto" />
+        </div>
+        <ListFilter value={currency} onChange={setCurrency} label={t("clients.filterCurrency")} items={[{ value: "", label: t("clients.allCurrencies") }, ...currencies.map((c) => ({ value: c, label: c }))]} />
+        <ListFilter value={work} onChange={setWork} label={t("clients.filterWork")} items={[{ value: "", label: t("clients.allClients") }, { value: "with", label: t("clients.withProjects") }, { value: "without", label: t("clients.withoutProjects") }]} />
+        <label className="flex items-center gap-2 text-sm text-grid-body">
+          <Switch checked={archived} onCheckedChange={setArchived} />
+          {t("clients.showArchived")}
+        </label>
+      </div>
 
       {clients.error ? (
         <ErrorState error={clients.error} />
       ) : clients.isLoading ? (
         <LoadingRows />
+      ) : list.length === 0 && filtered ? (
+        <EmptyState title={t("clients.noMatch")} />
       ) : list.length === 0 ? (
         <EmptyState title={t("clients.empty")} body={canWrite ? t("clients.emptyBody") : undefined} />
       ) : (
