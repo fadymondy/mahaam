@@ -626,5 +626,11 @@
   "issues.form.editTitle": "تعديل المشكلة",
   "issues.form.editHint": "غيّر العنوان أو النوع أو الأولوية أو التفاصيل.",
   "task.issueReport": "تقرير المشكلة",
-  "task.issueReportHint": "التقرير خلف هذه البطاقة: الصفحة ولقطة الشاشة وسجلات الكونسول والشبكة وحلقة الوكيل"
+  "task.issueReportHint": "التقرير خلف هذه البطاقة: الصفحة ولقطة الشاشة وسجلات الكونسول والشبكة وحلقة الوكيل",
+  "issues.mention.loop": "سلّمها لحلقة الوكيل",
+  "issues.mention.agent": "وكيل المشروع",
+  "issues.mention.skill": "مهارة المشروع",
+  "issues.agent.add": "إضافة",
+  "issues.agent.addSave": "أضف إلى هذا المشروع",
+  "issues.agent.counts": "{agents} وكيل و{skills} مهارة في هذا المشروع"
 }

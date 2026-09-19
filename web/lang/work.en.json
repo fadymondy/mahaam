@@ -626,5 +626,11 @@
   "issues.form.editTitle": "Edit issue",
   "issues.form.editHint": "Change the title, type, priority or details.",
   "task.issueReport": "Issue report",
-  "task.issueReportHint": "The report behind this card: page, screenshot, console and network logs, agent loop"
+  "task.issueReportHint": "The report behind this card: page, screenshot, console and network logs, agent loop",
+  "issues.mention.loop": "Hand this to the agent loop",
+  "issues.mention.agent": "project agent",
+  "issues.mention.skill": "project skill",
+  "issues.agent.add": "Add",
+  "issues.agent.addSave": "Add to this project",
+  "issues.agent.counts": "{agents} agents and {skills} skills in this project"
 }

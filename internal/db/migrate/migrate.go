@@ -42,6 +42,8 @@ var TenantTables = []string{
 	"ai_usage", "project_subscriptions", "subscription_charges",
 	// Employee KPI: GitHub account mapping and manager reviews
 	"user_github_accounts", "member_reviews",
+	// Per-project catalogue of agents and skills
+	"project_catalogue",
 }
 
 var roleName = regexp.MustCompile(`^[a-z_][a-z0-9_]{0,62}$`)

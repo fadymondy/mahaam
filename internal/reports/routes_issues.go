@@ -453,6 +453,12 @@ func (h *issueRoutes) mount() {
 		if err != nil {
 			return nil, h.fail(err)
 		}
+		// @member mentions notify like a card comment's (the issue and its card are one item).
+		var taskID string
+		_ = h.db.QueryRowContext(ctx, `SELECT COALESCE(task_id, '') FROM reports WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, rep.ID).Scan(&taskID)
+		if err := work.New(h.app).NotifyIssueMentions(ctx, taskID, c.ID, c.Body); err != nil && h.app != nil && h.app.Log != nil {
+			h.app.Log.Warn("issue mention notify", "err", err)
+		}
 		return &work.Resp[IssueComment]{Body: IssueComment{ID: c.ID, AuthorID: c.AuthorID, AuthorKind: c.AuthorKind, Body: c.Body, CreatedAt: c.CreatedAt}}, nil
 	})
 }

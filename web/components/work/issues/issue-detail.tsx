@@ -361,7 +361,8 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
   )
 }
 
-function ContextPanel({ issue }: { issue: IssueDetail }) {
+/** What the feedback SDK captured: page, picked component, viewport, browser, screenshot, logs. */
+export function ContextPanel({ issue }: { issue: Pick<IssueDetail, "route" | "selector" | "viewport" | "user_agent" | "page_url" | "screenshot" | "console_log" | "network_log"> }) {
   const { t } = useTranslations()
   const rows: [string, string | null][] = [
     [t("issues.ctx.route"), issue.route],

@@ -40,6 +40,7 @@ func Register(api huma.API, a *app.App) {
 	r.clientImport()  // customer import (CSV/XLSX/vCard/Google/WhatsApp) + the project report document
 	r.billing()       // AI usage + project subscriptions (billed on invoices)
 	r.kpi()           // employee KPI, manager reviews, per-user GitHub accounts
+	r.catalogue()     // per-project agents and skills
 }
 
 type routes struct {

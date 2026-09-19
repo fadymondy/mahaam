@@ -262,3 +262,26 @@ func (sv *Service) DeleteComment(ctx context.Context, id string) error {
 			Changes: map[string]any{"key": t.Key, "author_id": c.AuthorID}})
 	})
 }
+
+// NotifyIssueMentions: an issue comment (the thread on an item's issue sheet) @mentions members
+// the same way a card comment does. The comment itself lives in report_comments; this records the
+// comment activity on the item's card with the resolved mentions, which is what the notification
+// inbox (and Web Push) fan out from. Nothing is recorded when nobody is mentioned.
+func (sv *Service) NotifyIssueMentions(ctx context.Context, taskID, commentID, body string) error {
+	s, err := caller(ctx)
+	if err != nil {
+		return err
+	}
+	mentions := sv.resolveMentions(ctx, s.WorkspaceID, body)
+	if len(mentions) == 0 || taskID == "" {
+		return nil
+	}
+	t, err := loadTask(ctx, sv.DB, s, taskID)
+	if err != nil {
+		return err
+	}
+	return sv.tx(ctx, func(tx *sql.Tx) error {
+		return record(ctx, tx, s, entry{ProjectID: t.ProjectID, TaskID: t.ID, Action: "comment.added", SubjectType: "comment", SubjectID: commentID,
+			Changes: map[string]any{"key": t.Key, "title": t.Title, "excerpt": excerpt(body), "mentions": mentions}})
+	})
+}

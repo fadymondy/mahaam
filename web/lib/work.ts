@@ -307,6 +307,16 @@ export type IssuePatch = {
 }
 export type NewIssue = { title: string; body?: string; issue_type?: IssueType; priority?: IssuePriority; status?: IssueStatus; project?: string }
 
+// ── project agents & skills (the catalogue behind the Agent / Skill pickers and @-mentions) ──
+export type CatalogueItem = { id: string; kind: "agent" | "skill"; name: string; description: string; source: string }
+export type Catalogue = { agents: CatalogueItem[] | null; skills: CatalogueItem[] | null }
+export const useProjectCatalogue = (ws: string, projectId: string | null) =>
+  useW<Catalogue>(projectId ? `/api/w/projects/${encodeURIComponent(projectId)}/catalogue` : null, ws)
+export const catalogueApi = {
+  add: (ws: string, projectId: string, body: { kind: "agent" | "skill"; name: string; description?: string }) =>
+    w.post<CatalogueItem>(ws, `/api/w/projects/${encodeURIComponent(projectId)}/catalogue`, body),
+}
+
 export const issuesApi = {
   create: (ws: string, body: NewIssue) => w.post<IssueDetail>(ws, "/api/w/issues", body),
   patch: (ws: string, key: string, body: IssuePatch) => w.patch<IssueDetail>(ws, `/api/w/issues/${encodeURIComponent(key)}`, body),

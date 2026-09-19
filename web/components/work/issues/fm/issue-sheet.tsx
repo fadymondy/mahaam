@@ -24,7 +24,9 @@ import {
 } from "@/lib/work"
 import { IssueActionsMenu } from "./issue-actions"
 import { IssueAgentSettings } from "./issue-agent-settings"
+import { MentionTextarea } from "./mention-textarea"
 import { CardExtras, CardPlanning } from "@/components/work/task-sheet"
+import { ContextPanel } from "@/components/work/issues/issue-detail"
 import { useCommentAuthor, useCommentForm } from "./issue-comments"
 import { IssueFormDialog } from "./issue-form-dialog"
 import { copyText, formatAgentTime, useIssueHref } from "./shared"
@@ -222,6 +224,10 @@ export function IssueSheet({
                     <p className="text-sm text-grid-muted">{t("issues.sheet.noDescription")}</p>
                   )}
 
+                  <div className="-mx-4 mt-6 border-t border-line">
+                    <ContextPanel issue={draft} />
+                  </div>
+
                   <CardExtras taskKey={draft.key} />
 
                   <section className="mt-8 border-t border-line pt-4">
@@ -251,11 +257,11 @@ export function IssueSheet({
 
                     {form.canWrite ? (
                       <form onSubmit={form.submit} className="mt-4 flex flex-col gap-3">
-                        <Textarea
-                          rows={3}
-                          dir="auto"
+                        <MentionTextarea
                           value={form.value}
-                          onChange={(e) => form.setValue(e.target.value)}
+                          onChange={form.setValue}
+                          projectId={draft.project_id}
+                          onChoose={(kind, name) => void patch(kind === "agent" ? { agent: name } : { skill: name })}
                           disabled={form.posting}
                           placeholder={t("issues.commentPlaceholder")}
                         />

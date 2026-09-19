@@ -188,7 +188,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
         </div>
       ) : (
         /* Columns scroll horizontally; each is a fixed width so cards stay legible. */
-        <div className="flex flex-1 overflow-x-auto">
+        <div className="flex flex-1 overflow-hidden">
           {ISSUE_STATUSES.map((status) => {
             const cards = byStatus.get(status) ?? []
             const isTarget = dragOverStatus === status
@@ -197,7 +197,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
               <section
                 key={status}
                 className={cn(
-                  "flex max-h-[calc(100vh-12rem)] w-72 shrink-0 flex-col border-e border-line transition-colors",
+                  "flex max-h-[calc(100vh-12rem)] min-w-0 flex-1 basis-0 flex-col border-e border-line transition-colors last:border-e-0",
                   isTarget && "bg-grid-action/[0.06] inset-ring-1 inset-ring-grid-action/40",
                 )}
                 onDragOver={(e) => {

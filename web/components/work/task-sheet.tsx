@@ -645,6 +645,37 @@ function Subtasks({
 
 // ── attachments ─────────────────────────────────────────────────────────────────
 
+/** An image attachment's thumbnail (the file needs the workspace header, so it is fetched as a blob). */
+function ImageThumb({ ws, a }: { ws: string; a: Attachment }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let revoke: string | null = null;
+    let cancelled = false;
+    fetch(`/api/w/attachments/${encodeURIComponent(a.id)}`, {
+      headers: { "X-Workspace-ID": ws },
+      credentials: "same-origin",
+    })
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((b) => {
+        if (!b || cancelled) return;
+        revoke = URL.createObjectURL(b);
+        setUrl(revoke);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (revoke) URL.revokeObjectURL(revoke);
+    };
+  }, [ws, a.id]);
+  if (!url) return <span className="size-14 shrink-0 animate-pulse border border-line bg-grid-soft" aria-hidden />;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="shrink-0" aria-label={a.file_name}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={a.file_name} className="size-14 border border-line object-cover" />
+    </a>
+  );
+}
+
 async function download(ws: string, a: Attachment, failed: string) {
   try {
     const res = await fetch(`/api/w/attachments/${encodeURIComponent(a.id)}`, {
@@ -701,6 +732,7 @@ function Attachments({
         <ul className="divide-y divide-line border-y border-line" data-attachments>
           {list.map((a) => (
             <li key={a.id} className="flex items-center gap-3 px-6 py-2 text-sm">
+              {a.content_type.startsWith("image/") ? <ImageThumb ws={ws.id} a={a} /> : null}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium" dir="auto">
                   {a.file_name}
