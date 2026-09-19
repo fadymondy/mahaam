@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   BellIcon,
@@ -19,6 +19,8 @@ import {
   MenuIcon,
   MessageSquarePlusIcon,
   DownloadIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
   ReceiptTextIcon,
   PlusIcon,
   TagIcon,
@@ -75,7 +77,7 @@ function Brand() {
   return (
     <Link href={`/${locale}/workspaces`} className="flex items-center gap-2.5">
       <CubeMark mark={MAHAAM_MARK} size={24} />
-      <span className="text-[15px] font-medium">{brandName(locale)}</span>
+      <span className="nav-label text-[15px] font-medium">{brandName(locale)}</span>
     </Link>
   );
 }
@@ -162,6 +164,7 @@ function NavLink({
       href={href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
+      title={typeof children === "string" ? children : undefined}
       className={cn(
         "flex items-center gap-2.5 border-s-2 px-3 py-2 text-sm transition-colors [&_svg]:size-4 [&_svg]:shrink-0",
         active
@@ -170,7 +173,7 @@ function NavLink({
       )}
     >
       {icon}
-      {children}
+      <span className="nav-label min-w-0 truncate">{children}</span>
     </Link>
   );
 }
@@ -181,6 +184,29 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const me = useRequireAuth();
   const list = useMyWorkspaces(!!me.data);
   const [reporting, setReporting] = useState(false);
+  // The sidebar collapses to icons (Ctrl/⌘+B or the header button); the choice is remembered.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem("mahaam.nav") === "collapsed");
+  }, []);
+  const toggleNav = useCallback(() => {
+    setCollapsed((c) => {
+      try {
+        window.localStorage.setItem("mahaam.nav", c ? "open" : "collapsed");
+      } catch {}
+      return !c;
+    });
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggleNav();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleNav]);
   const [appOpen, setAppOpen] = useState(false);
   const openApp = useCallback(() => setAppOpen(true), []);
   useAutoOpenAppPrompt(Boolean(me.data), openApp);
@@ -235,8 +261,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     );
 
   return (
-    <div className="grid-shell">
-      <aside className="grid-shell-nav sticky top-0 hidden h-dvh flex-col overflow-y-auto md:flex">
+    <div className="grid-shell" data-nav={collapsed ? "collapsed" : "open"}>
+      <aside className="grid-shell-nav sticky top-0 hidden h-dvh flex-col overflow-x-hidden overflow-y-auto md:flex">
         <div className="flex h-14 items-center border-b border-line px-4">
           <Brand />
         </div>
@@ -249,6 +275,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           data-live={live}
         >
           <div className="flex min-w-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="hidden md:inline-flex"
+              aria-label={t(collapsed ? "shell.expandNav" : "shell.collapseNav")}
+              title={t(collapsed ? "shell.expandNav" : "shell.collapseNav")}
+              aria-pressed={collapsed}
+              onClick={toggleNav}
+            >
+              {collapsed ? <PanelLeftOpenIcon className="rtl:-scale-x-100" /> : <PanelLeftCloseIcon className="rtl:-scale-x-100" />}
+            </Button>
             {summary ? (
               <Button
                 variant="ghost"
@@ -421,7 +458,9 @@ function ShellNav({
           {t("nav.requests")}
         </L>
       ) : null}
-      <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">{t("nav.settings")}</p>
+      <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">
+        <span className="nav-label">{t("nav.settings")}</span>
+      </p>
       <L href={`${base}/settings/labels`} icon={<TagIcon />}>
         {t("nav.labels")}
       </L>

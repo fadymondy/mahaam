@@ -188,5 +188,7 @@
   "mcp.projects": "Projects",
   "mcp.projectsHint": "Limit this token to some projects: an agent then sees and files issues and tasks only there. Leave “All projects” for everything you can see.",
   "mcp.allProjects": "All projects",
-  "mcp.projectCount": "{n} projects"
+  "mcp.projectCount": "{n} projects",
+  "shell.collapseNav": "Collapse sidebar (Ctrl+B)",
+  "shell.expandNav": "Expand sidebar (Ctrl+B)"
 }

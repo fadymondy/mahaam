@@ -189,5 +189,7 @@
   "mcp.projects": "المشاريع",
   "mcp.projectsHint": "قيّد هذا الرمز ببعض المشاريع: يرى الوكيل حينها مشكلاتها ومهامها فقط ويضيف إليها. اترك «كل المشاريع» لكل ما يمكنك رؤيته.",
   "mcp.allProjects": "كل المشاريع",
-  "mcp.projectCount": "{n} مشاريع"
+  "mcp.projectCount": "{n} مشاريع",
+  "shell.collapseNav": "طيّ الشريط الجانبي (Ctrl+B)",
+  "shell.expandNav": "توسيع الشريط الجانبي (Ctrl+B)"
 }

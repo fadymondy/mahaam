@@ -71,3 +71,14 @@
   background-image: var(--grid-hatch);
   background-size: 8px 8px;
 }
+
+/* The workspace sidebar, collapsed to icons (workspace-shell.tsx; grid.css is a synced copy, so
+   the override lives here). */
+@media (min-width: 768px) {
+  .grid-shell { transition: grid-template-columns 0.18s ease; }
+  .grid-shell[data-nav="collapsed"] { grid-template-columns: 3.25rem minmax(0, 1fr); }
+  .grid-shell[data-nav="collapsed"] .grid-shell-nav .nav-label { display: none; }
+  .grid-shell[data-nav="collapsed"] .grid-shell-nav a { justify-content: center; padding-inline: 0; }
+  .grid-shell[data-nav="collapsed"] .grid-shell-nav > div:first-child { justify-content: center; padding-inline: 0; }
+  .grid-shell[data-nav="collapsed"] .grid-shell-nav .grid-micro { padding: 0; margin-top: 0.5rem; }
+}
