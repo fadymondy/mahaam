@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/mahaam/internal/app"
 )
 
 // TestEveryToolDeclaresAScope is the CI guard for FM-22: a tool without a

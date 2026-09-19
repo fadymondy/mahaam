@@ -13,12 +13,14 @@ import (
 	"github.com/togo-framework/ratelimit"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 /*
 The PUBLIC embeddable-feedback intake. This is the only unauthenticated write
-surface in Managy, so it is locked down deliberately:
+surface in Mahaam, so it is locked down deliberately:
 
   * No session, no workspace header. The ONLY credential is a per-project public
     key (pfk_…) sent in the form body. A workspace/JWT is never read — there is no
@@ -43,6 +45,11 @@ func MountEmbed(k *togo.Kernel, a *app.App) {
 		})(h)
 	}
 	k.Router.Handle("/api/feedback/embed", h)
+
+	// The launcher's look for a key (colour, icon, text, shape, position). Public and
+	// cacheable: it is presentation, not a secret, and the widget reads it before it
+	// renders. An unknown or revoked key answers the default look, so it reveals nothing.
+	k.Router.Get("/api/feedback/embed/config", func(w http.ResponseWriter, r *http.Request) { embedConfig(w, r, a) })
 
 	// The loader/bundle the owner pastes onto a client's site. Served from disk
 	// (EMBED_DIR, default embed/dist) so the Go build never depends on the JS build;
@@ -167,8 +174,25 @@ func embedIntake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		title = title[:200]
 	}
 
+	// A suspended workspace, or one whose plan is out of issues or storage, takes no reports: the
+	// widget shows "not available" (402 / 403 with a code, never the plan details to a visitor).
+	var wsStatus string
+	if err := a.SysDB.QueryRowContext(r.Context(), `SELECT status FROM workspaces WHERE id = $1`, key.workspaceID).Scan(&wsStatus); err != nil || wsStatus != "active" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "feedback is not available here", "code": "workspace_suspended"})
+		return
+	}
+	if err := intakePreflight(r.Context(), key.workspaceID, len(shot)); err != nil {
+		if x, ok := limits.As(err); ok {
+			writeJSON(w, x.Status, map[string]string{"error": "feedback is not available here right now", "code": "quota_exceeded"})
+			return
+		}
+		a.Log.Error("embed intake", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not file the report"})
+		return
+	}
+
 	rep, err := Create(r.Context(), a.SysDB, key.workspaceID, NewReport{
-		Title: title, IssueType: normType(fields["issue_type"]),
+		Title: title, IssueType: normType(fields["issue_type"]), Priority: normPriority(fields["priority"]),
 		Body:       clip(fields["body"], 20000),
 		Route:      clip(fields["route"], 500),
 		PageURL:    clip(fields["page_url"], 1000),
@@ -181,6 +205,10 @@ func embedIntake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		ProjectID:  key.projectID, Source: "embed",
 	})
 	if err != nil {
+		if _, ok := limits.As(err); ok {
+			writeJSON(w, http.StatusPaymentRequired, map[string]string{"error": "feedback is not available here right now", "code": "quota_exceeded"})
+			return
+		}
 		a.Log.Error("embed intake", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not file the report"})
 		return
@@ -188,6 +216,15 @@ func embedIntake(w http.ResponseWriter, r *http.Request, a *app.App) {
 	_, _ = a.SysDB.ExecContext(r.Context(), `UPDATE project_feedback_keys SET last_used_at = now() WHERE public_key = $1`, strings.TrimSpace(fields["public_key"]))
 	a.Emit(r.Context(), "report.created", map[string]string{"key": rep.Key})
 	writeJSON(w, http.StatusCreated, map[string]string{"key": rep.Key})
+}
+
+func embedConfig(w http.ResponseWriter, r *http.Request, a *app.App) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Cache-Control", "public, max-age=60")
+	var raw []byte
+	_ = a.SysDB.QueryRowContext(r.Context(), `SELECT widget FROM project_feedback_keys
+		WHERE public_key = $1 AND active AND revoked_at IS NULL`, strings.TrimSpace(r.URL.Query().Get("key"))).Scan(&raw)
+	writeJSON(w, http.StatusOK, map[string]any{"widget": work.ParseWidget(raw)})
 }
 
 func clientIP(r *http.Request) string {
@@ -212,6 +249,16 @@ func originOf(pageURL string) string {
 		return strings.ToLower(pageURL[:i+3] + rest)
 	}
 	return ""
+}
+
+// normPriority keeps a board priority and drops anything else (the column default applies).
+func normPriority(p string) string {
+	switch p = strings.TrimSpace(p); p {
+	case "highest", "high", "medium", "low", "lowest":
+		return p
+	default:
+		return ""
+	}
 }
 
 func clip(s string, n int) string {

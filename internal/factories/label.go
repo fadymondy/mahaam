@@ -7,9 +7,9 @@ import (
 
 	"github.com/togo-framework/faker"
 
-	"github.com/fadymondy/managy/internal/app"
-	db "github.com/fadymondy/managy/internal/db/gen"
-	"github.com/fadymondy/managy/internal/models"
+	"github.com/fadymondy/mahaam/internal/app"
+	db "github.com/fadymondy/mahaam/internal/db/gen"
+	"github.com/fadymondy/mahaam/internal/models"
 )
 
 // LabelFactory builds fake Label records.

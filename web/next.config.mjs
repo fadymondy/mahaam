@@ -2,12 +2,15 @@
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:8110";
 
 const nextConfig = {
+  // A self-contained server (.next/standalone) for the production image: web/Dockerfile copies
+  // only it, .next/static and public, so the image carries no node_modules tree.
+  output: "standalone",
+
   // Next 16 dev blocks its own dev resources (/_next/*, HMR) for any origin but the one it was
   // started on, so a page opened on 127.0.0.1 while the server was started as localhost never
   // hydrates — the SSR shell renders and nothing client-side runs. List both loopback names.
-  // (The managy-app tunnel host is added when that tunnel exists.)
-  // managy-app.fadymondy.com is the progress preview: Cloudflare → NPM → SSH reverse tunnel → this dev server.
-  allowedDevOrigins: ["127.0.0.1", "localhost", "managy-app.fadymondy.com"],
+  // console.mahaam.app (and the old managy-app.fadymondy.com) is the progress preview: Cloudflare → NPM → SSH reverse tunnel → this dev server.
+  allowedDevOrigins: ["127.0.0.1", "localhost", "console.mahaam.app", "managy-app.fadymondy.com"],
 
   // The Go API and this app feel like one origin: /api and /graphql are proxied to the API, so
   // the togo_session cookie and the CSRF cookie are first-party. Realtime (/events) is not in P0.
@@ -21,10 +24,22 @@ const nextConfig = {
     ];
   },
 
-  // Dev only: never let a browser keep a stale page or chunk (dev chunk names are stable).
+  // The service worker is never cached. Dev only: never let a browser keep a stale page or chunk (dev chunk names are stable).
   async headers() {
-    if (process.env.NODE_ENV !== "development") return [];
+    // The service worker must be re-checked on every load so a deploy reaches installed apps.
+    const sw = { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }] };
+    // The embeddable feedback widget loads these fonts from other sites: they are public.
+    const fonts = {
+      source: "/fonts/:path*",
+      headers: [
+        { key: "Access-Control-Allow-Origin", value: "*" },
+        { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+      ],
+    };
+    if (process.env.NODE_ENV !== "development") return [sw, fonts];
     return [
+      sw,
+      fonts,
       {
         source: "/:path((?!api|graphql|embed).*)",
         headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],

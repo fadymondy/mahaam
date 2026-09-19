@@ -7,8 +7,8 @@ import (
 	"github.com/togo-framework/scheduler"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 // Reminder job names (togo scheduler). They run every five minutes and are idempotent: each

@@ -1,4 +1,4 @@
-// Package live is Managy's realtime channel: one stream per person per workspace.
+// Package live is Mahaam's realtime channel: one stream per person per workspace.
 //
 // Why not togo realtime: its SSE broker (togo-framework/realtime) sends every event to every
 // connected client, and realtime-ws authenticates a connection with a ticket that is not bound to a
@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 type key struct{ workspace, user string }

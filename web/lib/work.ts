@@ -28,6 +28,9 @@ export type Project = {
   updated_at: string
   tasks: TaskCounts
   member_count: number
+  share_board: boolean
+  share_team: boolean
+  share_money: boolean
 }
 
 export const PROJECT_STATUSES = ["planned", "active", "on_hold", "completed", "cancelled"] as const
@@ -148,6 +151,7 @@ export type Client = {
   name: string
   email: string | null
   phone: string | null
+  company?: string | null
   country: string | null
   currency: string
   default_rate_minor: number | null
@@ -169,12 +173,14 @@ export type Team = {
 
 export type Label = { id: string; name: string; color: string; task_count: number }
 
-// ── issues (bug/feedback board; backend contract, may 404 until shipped) ─────
+// ── issues (the workspace's own issue tracker: /api/w/issues) ───────────────
 
 export const ISSUE_STATUSES = ["backlog", "todo", "in_progress", "waiting_approval", "in_review", "done"] as const
 export type IssueStatus = (typeof ISSUE_STATUSES)[number]
-export const ISSUE_PRIORITIES = ["low", "medium", "high", "urgent"] as const
+export const ISSUE_PRIORITIES = ["highest", "high", "medium", "low", "lowest"] as const
 export type IssuePriority = (typeof ISSUE_PRIORITIES)[number]
+export const ISSUE_TYPES = ["bug", "feature", "task", "story", "epic"] as const
+export type IssueType = (typeof ISSUE_TYPES)[number]
 
 export type Issue = {
   key: string
@@ -182,8 +188,9 @@ export type Issue = {
   status: IssueStatus
   priority: IssuePriority
   state: string | null
-  issue_type: string | null
+  issue_type: IssueType | string
   body: string | null
+  resolution: string | null
   route: string | null
   page_url: string | null
   selector: string | null
@@ -193,15 +200,28 @@ export type Issue = {
   viewport: string | null
   user_agent: string | null
   reporter_id: string | null
+  project_id: string | null
+  source: string
+  human_only: boolean
+  request_state?: "pending" | "accepted" | "declined" | "converted" | null
+  ai_model: string | null
+  ai_effort: string | null
+  agent: string | null
+  skill: string | null
+  sort_order: number
+  agent_seconds: number
+  comment_count: number
+  started_at: string | null
+  finished_at: string | null
+  closed_at: string | null
   created_at: string
   updated_at: string
 }
 
 export type IssueComment = {
   id: string
-  issue_key?: string
-  author_id: string
-  author_kind?: "user" | "agent"
+  author_id: string | null
+  author_kind: "user" | "agent" | "admin" | string
   body: string
   created_at: string
 }
@@ -248,13 +268,10 @@ export const useClient = (ws: string, id: string | null, enabled = true) =>
 export const useTeams = (ws: string, enabled = true) => useW<{ teams: Team[] }>(enabled ? "/api/w/teams" : null, ws)
 export const useLabels = (ws: string) => useW<{ labels: Label[] }>("/api/w/labels", ws)
 
-export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string }
+export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string; project?: string; state?: string }
 function issueQs(q: IssueQuery) {
   const s = new URLSearchParams()
-  if (q.status) s.set("status", q.status)
-  if (q.priority) s.set("priority", q.priority)
-  if (q.type) s.set("type", q.type)
-  if (q.q) s.set("q", q.q)
+  for (const k of ["status", "priority", "type", "q", "project", "state"] as const) if (q[k]) s.set(k, q[k]!)
   const str = s.toString()
   return str ? `?${str}` : ""
 }
@@ -263,9 +280,26 @@ export const useIssues = (ws: string, query: IssueQuery = {}, enabled = true) =>
 export const useIssue = (ws: string, key: string | null, enabled = true) =>
   useW<IssueDetail>(key && enabled ? `/api/w/issues/${encodeURIComponent(key)}` : null, ws)
 
+export type IssuePatch = {
+  title?: string
+  body?: string
+  issue_type?: IssueType
+  status?: IssueStatus
+  priority?: IssuePriority
+  resolution?: string
+  human_only?: boolean
+  ai_model?: string
+  ai_effort?: string
+  agent?: string
+  skill?: string
+}
+export type NewIssue = { title: string; body?: string; issue_type?: IssueType; priority?: IssuePriority; status?: IssueStatus; project?: string }
+
 export const issuesApi = {
-  patch: (ws: string, key: string, body: { status?: IssueStatus; priority?: IssuePriority }) =>
-    w.patch<Issue>(ws, `/api/w/issues/${encodeURIComponent(key)}`, body),
+  create: (ws: string, body: NewIssue) => w.post<IssueDetail>(ws, "/api/w/issues", body),
+  patch: (ws: string, key: string, body: IssuePatch) => w.patch<IssueDetail>(ws, `/api/w/issues/${encodeURIComponent(key)}`, body),
+  move: (ws: string, key: string, to: { before?: string; after?: string; status?: IssueStatus }) =>
+    w.post<IssueDetail>(ws, `/api/w/issues/${encodeURIComponent(key)}/move`, to),
   comment: (ws: string, key: string, body: string) =>
     w.post<IssueComment>(ws, `/api/w/issues/${encodeURIComponent(key)}/comments`, { body }),
 }

@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:16
-    container_name: managy-postgres
+    container_name: mahaam-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: managy
+      POSTGRES_DB: mahaam
     ports:
       - "55460:5432"
     volumes:

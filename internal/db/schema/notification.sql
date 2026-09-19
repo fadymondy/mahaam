@@ -1,5 +1,5 @@
 -- Hand-written Postgres DDL (togo 0.2.31 make:resource emits SQLite; README note 1).
--- The per-user in-app inbox (plan, "Notifications"). Managy's own table, not togo
+-- The per-user in-app inbox (plan, "Notifications"). Mahaam's own table, not togo
 -- notification-center (in-memory store, user from X-User-Id). kind + data drive the localised text
 -- in the UI; title/body are a fallback in the workspace language. dedupe_key makes a reminder job
 -- idempotent: one row per (workspace, user, kind, key) — e.g. one "no time today" per day.

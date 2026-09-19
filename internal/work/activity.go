@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*
-The activity feed. Managy writes its own entries rather than using togo's audit plugin:
+The activity feed. Mahaam writes its own entries rather than using togo's audit plugin:
 that plugin takes the causer from the X-User-Id header, which any client can set, has no
 tenant column, and writes through the pool outside any transaction. Here the actor is the
 tenant.Scope of the request (session user, or the user an MCP token acts for, with the token

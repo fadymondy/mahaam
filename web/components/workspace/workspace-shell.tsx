@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   BellIcon,
@@ -18,11 +18,17 @@ import {
   LayoutGridIcon,
   MenuIcon,
   MessageSquarePlusIcon,
+  DownloadIcon,
   ReceiptTextIcon,
   PlusIcon,
   TagIcon,
   UsersIcon,
   UsersRoundIcon,
+  ShieldCheckIcon,
+  Settings2Icon,
+  InboxIcon,
+  GaugeIcon,
+  BanIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -47,13 +53,14 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { CubeMark } from "@/components/brand/cube-mark";
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls";
 import { ReportProblemDialog } from "@/components/feedback/report-problem";
+import { AppInstallDialog, useAutoOpenAppPrompt } from "@/components/app-install-dialog";
 import { NotFoundState } from "@/components/not-found-state";
 import { ErrorState } from "@/components/states";
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
 import { UserMenu } from "@/components/workspace/user-menu";
 import { WorkspaceContext, type WorkspaceCtx } from "@/components/workspace/workspace-context";
-import { MANAGY_MARK } from "@/lib/brand/mark";
-import type { WorkspaceSummary } from "@/lib/api";
+import { MAHAAM_MARK } from "@/lib/brand/mark";
+import { suspensionCode, type WorkspaceSummary } from "@/lib/api";
 import { useTranslations } from "@/lib/i18n";
 import { useCurrentWorkspace, useMyWorkspaces } from "@/lib/queries";
 import { useRequireAuth } from "@/lib/use-require-auth";
@@ -61,15 +68,14 @@ import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/time/notification-bell";
 import { TimerBar } from "@/components/time/timer-bar";
 import { useLiveStream } from "@/lib/time";
+import { brandName } from "@/lib/brand-name";
 
 function Brand() {
   const { locale } = useTranslations();
   return (
     <Link href={`/${locale}/workspaces`} className="flex items-center gap-2.5">
-      <CubeMark mark={MANAGY_MARK} size={24} />
-      <span className="text-[15px] font-medium" dir="ltr">
-        Managy
-      </span>
+      <CubeMark mark={MAHAAM_MARK} size={24} />
+      <span className="text-[15px] font-medium">{brandName(locale)}</span>
     </Link>
   );
 }
@@ -175,6 +181,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const me = useRequireAuth();
   const list = useMyWorkspaces(!!me.data);
   const [reporting, setReporting] = useState(false);
+  const [appOpen, setAppOpen] = useState(false);
+  const openApp = useCallback(() => setAppOpen(true), []);
+  useAutoOpenAppPrompt(Boolean(me.data), openApp);
   const [navOpen, setNavOpen] = useState(false);
   const { isRtl } = useTranslations();
 
@@ -194,8 +203,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   // The per-user realtime stream: mounted once per tab, it keeps every view of the timer in step.
   const live = useLiveStream(summary?.id);
 
+  const suspended = suspensionCode(me.error) ?? suspensionCode(list.error) ?? suspensionCode(current.error);
+
   let body: ReactNode;
-  if (me.error || list.error) body = <ErrorState error={me.error ?? list.error} />;
+  if (suspended) body = <SuspendedState code={suspended} message={(me.error ?? list.error ?? current.error)?.message} />;
+  else if (me.error || list.error) body = <ErrorState error={me.error ?? list.error} />;
   else if (!me.data || !list.data) body = <ShellSkeleton />;
   else if (!summary)
     body = (
@@ -228,7 +240,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <div className="flex h-14 items-center border-b border-line px-4">
           <Brand />
         </div>
-        {summary ? <ShellNav base={base} can={current.data?.can ?? []} /> : null}
+        {summary ? <ShellNav base={base} can={current.data?.can ?? []} isOwner={summary.role === "owner"} /> : null}
       </aside>
 
       <div className="flex min-w-0 flex-col">
@@ -272,6 +284,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 <span className="hidden sm:inline">{t("feedback.report")}</span>
               </Button>
             ) : null}
+            {me.data ? (
+              <Button variant="ghost" size="icon-sm" onClick={openApp} aria-label={t("pwa.title")} title={t("pwa.title")}>
+                <DownloadIcon />
+              </Button>
+            ) : null}
             {ctx ? (
               <WorkspaceContext.Provider value={ctx}>
                 <NotificationBell />
@@ -280,7 +297,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             <LanguageSwitcher />
             <ThemeToggle />
             {me.data ? (
-              <UserMenu email={me.data.email} onReport={() => setReporting(true)} />
+              <UserMenu
+                email={me.data.email}
+                onReport={() => setReporting(true)}
+                profileHref={ctx ? `${base}/me` : undefined}
+              />
             ) : null}
           </div>
         </header>
@@ -295,13 +316,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           {summary ? (
             <ShellNav
               base={base}
-              can={current.data?.can ?? []}
+              can={current.data?.can ?? []} isOwner={summary.role === "owner"}
               onNavigate={() => setNavOpen(false)}
             />
           ) : null}
         </SheetContent>
       </Sheet>
 
+      <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
       <ReportProblemDialog
         open={reporting}
         onOpenChange={setReporting}
@@ -325,10 +347,12 @@ function ShellSkeleton() {
 function ShellNav({
   base,
   can,
+  isOwner,
   onNavigate,
 }: {
   base: string;
   can: string[];
+  isOwner?: boolean;
   onNavigate?: () => void;
 }) {
   const { t } = useTranslations();
@@ -342,8 +366,11 @@ function ShellNav({
   if (isClient) {
     return (
       <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
-        <L href={`${base}/portal`} exact icon={<LayoutGridIcon />}>
+        <L href={`${base}/portal`} icon={<LayoutGridIcon />}>
           {t("nav.portal")}
+        </L>
+        <L href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
+          {t("nav.connectAi")}
         </L>
       </nav>
     );
@@ -392,10 +419,20 @@ function ShellNav({
       <L href={`${base}/issues`} icon={<MessageSquarePlusIcon />}>
         {t("nav.issues")}
       </L>
+      {can.includes("requests:manage") ? (
+        <L href={`${base}/requests`} icon={<InboxIcon />}>
+          {t("nav.requests")}
+        </L>
+      ) : null}
       <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">{t("nav.settings")}</p>
       <L href={`${base}/settings/labels`} icon={<TagIcon />}>
         {t("nav.labels")}
       </L>
+      {can.includes("access:manage") ? (
+        <L href={`${base}/settings/access`} icon={<ShieldCheckIcon />}>
+          {t("nav.access")}
+        </L>
+      ) : null}
       <L href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
         {t("nav.mcpTokens")}
       </L>
@@ -405,11 +442,38 @@ function ShellNav({
       <L href={`${base}/settings/notifications`} icon={<BellIcon />}>
         {t("nav.notifications")}
       </L>
+      {isOwner ? (
+        <L href={`${base}/settings/workspace`} icon={<Settings2Icon />}>
+          {t("nav.workspaceSettings")}
+        </L>
+      ) : null}
+      {can.includes("workspace:update") ? (
+        <L href={`${base}/settings/plan`} icon={<GaugeIcon />}>
+          {t("nav.plan")}
+        </L>
+      ) : null}
       {can.includes("rates:read") ? (
         <L href={`${base}/settings/rates`} icon={<CoinsIcon />}>
           {t("nav.rates")}
         </L>
       ) : null}
     </nav>
+  );
+}
+
+/** The whole account or this workspace is suspended by a platform admin: say so plainly. */
+function SuspendedState({ code, message }: { code: "workspace_suspended" | "account_suspended"; message?: string }) {
+  const { t, locale } = useTranslations();
+  return (
+    <div className="flex flex-col items-center gap-4 px-6 py-20 text-center" role="alert" data-suspended={code}>
+      <BanIcon className="size-10 text-grid-danger" />
+      <h1 className="grid-title text-2xl">{t(code === "workspace_suspended" ? "suspended.workspaceTitle" : "suspended.accountTitle")}</h1>
+      <p className="grid-body max-w-md text-sm">{message || t(code === "workspace_suspended" ? "suspended.workspaceBody" : "suspended.accountBody")}</p>
+      {code === "workspace_suspended" ? (
+        <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/workspaces`} />}>
+          {t("shell.allWorkspaces")}
+        </Button>
+      ) : null}
+    </div>
   );
 }

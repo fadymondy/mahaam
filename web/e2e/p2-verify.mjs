@@ -1,7 +1,7 @@
-// Managy P2 — real-browser verification (time tracking exit criteria).
+// Mahaam P2 — real-browser verification (time tracking exit criteria).
 //
 //   node e2e/p2-verify.mjs            (API :8110 and web :3010 running; system Chrome)
-//   WEB_ORIGIN=https://managy-app.fadymondy.com node e2e/p2-verify.mjs
+//   WEB_ORIGIN=https://console.mahaam.app node e2e/p2-verify.mjs
 //
 // Headless Chrome, fresh profile, frames counted first. Two tabs of one session:
 //   1. timer started in tab A (header popover) appears in tab B without reload; stopped in B -> A
@@ -42,7 +42,7 @@ async function dump(err) {
 process.on("unhandledRejection", dump)
 process.on("uncaughtException", dump)
 
-const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "managy-p2-")), {
+const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "mahaam-p2-")), {
   executablePath: process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe",
   headless: true,
   viewport: { width: 1440, height: 900 },

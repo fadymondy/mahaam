@@ -5,7 +5,7 @@ package resources
 import (
 	"time"
 
-	db "github.com/fadymondy/managy/internal/db/gen"
+	db "github.com/fadymondy/mahaam/internal/db/gen"
 )
 
 // ActivityLogResponse is the JSON shape returned by the ActivityLog API.

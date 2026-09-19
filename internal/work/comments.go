@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/workspaces"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/workspaces"
 )
 
 // Comment is one entry on a task's thread.

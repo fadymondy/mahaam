@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/tenant"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 /*

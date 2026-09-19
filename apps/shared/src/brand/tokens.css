@@ -1,0 +1,63 @@
+/* Mahaam client tokens — the web app's grid tokens (web/app/styles/grid-tokens.css) with the
+   mahaam brand block (web/app/styles/mahaam-brand.css) applied, trimmed to what the tray popover
+   and the extension popup use. Theme: `.dark` on <html>. Direction: dir="rtl" on <html>. */
+@font-face { font-family: "Lusail"; src: url("../../assets/fonts/Lusail-Light.woff2") format("woff2"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "Lusail"; src: url("../../assets/fonts/Lusail-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Lusail"; src: url("../../assets/fonts/Lusail-Medium.woff2") format("woff2"); font-weight: 500 600; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../../assets/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+
+:root {
+  --grid-bg: #f0ebe1;
+  --grid-card: #f7f4ec;
+  --grid-line: #ded5c4;
+  --grid-soft: #ede7db;
+  --grid-fg: #0e1a3c;
+  --grid-body: #4a4438;
+  --grid-muted: #6e6551;
+  --grid-elevated: #faf8f3;
+  --grid-elevated-soft: #e8e1d2;
+  --grid-elevated-line: #ded5c4;
+  --grid-elevated-hover: #efe9dd;
+  --grid-gold: #c9a227;
+  --grid-ok: #4e9a3e;
+  --grid-warn: #c9a227;
+  --grid-danger: #d9455f;
+  --grid-on-danger: #0e1a3c;
+  --grid-ok-text: #33702a;
+  --grid-warn-text: #7d6310;
+  --grid-danger-text: #a8233b;
+  --grid-gold-text: #7d6310;
+  --grid-brand: #8c3fb5;
+  --grid-brand-accent: #c9a227;
+  --grid-action: #8c3fb5;
+  --grid-on-action: #f0ebe1;
+  --grid-ring: var(--grid-action);
+  --grid-font-sans: "Lusail", "Alexandria", system-ui, sans-serif;
+  --grid-font-mono: "JetBrains Mono", "JetBrains Mono Variable", "Lusail", ui-monospace, monospace;
+  --grid-radius: 0px;
+  --grid-radius-control: 6px;
+  --grid-radius-elevated: 0.75rem;
+  --grid-transition: 150ms ease;
+  color-scheme: light;
+}
+.dark {
+  --grid-bg: #0b1429;
+  --grid-card: #0e1a3c;
+  --grid-line: #25355c;
+  --grid-soft: #1a2747;
+  --grid-fg: #f0ebe1;
+  --grid-body: #c8d0e4;
+  --grid-muted: #8a97b8;
+  --grid-elevated: #18264a;
+  --grid-elevated-soft: #2a3b66;
+  --grid-elevated-line: #32456f;
+  --grid-elevated-hover: #22325c;
+  --grid-ok-text: #6fbf5e;
+  --grid-warn-text: #c9a227;
+  --grid-danger-text: #e8788c;
+  --grid-gold-text: #c9a227;
+  --grid-brand: #b784d6;
+  --grid-action: #b784d6;
+  --grid-on-action: #0e1a3c;
+  color-scheme: dark;
+}

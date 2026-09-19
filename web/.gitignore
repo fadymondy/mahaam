@@ -12,5 +12,5 @@ next-env.d.ts
 # Browser verification output (web/e2e/p1-verify.mjs)
 e2e/shots/
 
-# Cloudy product's scratch scripts (not Managy's)
+# Cloudy product's scratch scripts (not Mahaam's)
 .cloudy-*.cjs

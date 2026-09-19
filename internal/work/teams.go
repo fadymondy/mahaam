@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
 )
 
 // Team is a group of workspace members. Attaching a team to a project gives its members the
@@ -156,6 +157,9 @@ func (sv *Service) CreateTeam(ctx context.Context, in TeamInput) (*Team, error) 
 	name, _ := trimmed(in.Name)
 	if name == "" {
 		return nil, invalid("a team needs a name")
+	}
+	if err := quota(ctx, s, limits.Teams, 1); err != nil {
+		return nil, err
 	}
 	color, err := pickColor(in.Color, "teal")
 	if err != nil {

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { ColorDot, ColorPicker, PALETTE } from "@/components/work/palette"
@@ -17,6 +18,8 @@ import { useDirectory } from "@/components/work/people"
 import { useProjectCtx } from "@/components/work/project-context"
 import { ProjectForm } from "@/components/work/project-form"
 import { FeedbackWidgetSection } from "@/components/work/feedback-widget"
+import { IntegrationsSection } from "@/components/work/integrations-section"
+import { ProjectLabelsSection } from "@/components/work/project-labels-section"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { useMe } from "@/lib/queries"
@@ -176,6 +179,27 @@ export default function ProjectSettingsPage() {
           ) : null}
         </Section>
       ) : null}
+
+      <Section title={t("settings.share")} hint={t("settings.shareHint")}>
+        <div className="divide-y divide-line border-t border-line">
+          {(["share_board", "share_team", "share_money"] as const).map((k) => (
+            <label key={k} className="flex cursor-pointer items-start justify-between gap-4 px-6 py-3" data-share={k}>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">{t(`settings.${k}`)}</span>
+                <span className="block text-xs text-grid-muted">{t(`settings.${k}Hint`)}</span>
+              </span>
+              <Switch
+                checked={p[k]}
+                onCheckedChange={(v) => run(() => w.patch(ws.id, `/api/w/projects/${p.id}`, { [k]: v }), t("common.saved"))}
+                aria-label={t(`settings.${k}`)}
+              />
+            </label>
+          ))}
+        </div>
+      </Section>
+
+      {ws.can("access:manage") ? <ProjectLabelsSection projectId={p.id} /> : null}
+      {ws.can("integrations:read") ? <IntegrationsSection projectId={p.id} /> : null}
 
       {ws.can("feedback_keys:read") ? <FeedbackWidgetSection projectId={p.id} clientId={p.client_id ?? null} /> : null}
 

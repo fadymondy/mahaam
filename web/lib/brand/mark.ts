@@ -1,4 +1,4 @@
-// The Managy cube mark.
+// The Mahaam cube mark.
 //
 // TEMPORARY: the upstream entry in fadymondy.com-v2/web/lib/brand/marks.ts (PRODUCT_MARKS.managy)
 // is being added separately. Once it lands, `npm run grid:sync` brings it into
@@ -19,8 +19,8 @@ export interface MarkSpec {
   actionOnDark?: string
 }
 
-export const MANAGY_MARK: MarkSpec = {
-  name: "Managy",
+export const MAHAAM_MARK: MarkSpec = {
+  name: "Mahaam",
   cells: [
     [1, 0],
     [3, 0],

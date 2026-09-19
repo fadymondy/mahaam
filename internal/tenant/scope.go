@@ -19,6 +19,9 @@ type Scope struct {
 	// Scopes are the MCP scopes in effect (token scopes ∩ what the role allows).
 	// Empty for a browser session.
 	Scopes []string
+	// ProjectIDs, when non-empty, limits the caller to these projects (a project-scoped MCP
+	// token). Everything project-bound narrows by it; issues without a project are hidden.
+	ProjectIDs []string
 	// TokenID is the MCP token making the call (Via == "mcp"), recorded on activity entries.
 	TokenID string
 }

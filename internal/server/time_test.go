@@ -33,9 +33,9 @@ import (
 
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/db/migrate"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/db/migrate"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 func bootStack(t *testing.T) (*app.App, *httptest.Server) {
@@ -49,6 +49,8 @@ func bootStack(t *testing.T) (*app.App, *httptest.Server) {
 	t.Setenv("DB_DRIVER", "pgx")
 	t.Setenv("AUTH_SECRET", "time-test-secret-time-test-secret-time-test-0123")
 	t.Setenv("STORAGE_DIR", t.TempDir())
+	// Workspaces created by these tests start unlimited (the plan tests move them explicitly).
+	t.Setenv("PLAN_DEFAULT", "unlimited")
 	k0 := togo.New()
 	sys, err := k0.SQL(context.Background())
 	if err != nil {
@@ -495,3 +497,5 @@ func TestTimeTracking(t *testing.T) {
 		t.Errorf("bob read A's entry: %d %s", code, b)
 	}
 }
+
+func testAppURL() string { return os.Getenv("TEST_APP_DATABASE_URL") }

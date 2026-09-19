@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*
-The in-app inbox (plan: "Notifications"): Managy's own notifications table, one person's items
+The in-app inbox (plan: "Notifications"): Mahaam's own notifications table, one person's items
 only, read state on the server, new items pushed on the per-user channel (notification.created).
 
 P2 writes two kinds, from the reminder jobs below (run by the togo scheduler, internal/server):

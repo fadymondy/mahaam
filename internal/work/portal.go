@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*
@@ -61,6 +62,9 @@ func (sv *Service) PortalClientID(ctx context.Context) (string, error) {
 }
 
 func (sv *Service) portalClientID(ctx context.Context, s *tenant.Scope) (string, error) {
+	if err := feature(ctx, s, limits.FeaturePortal); err != nil {
+		return "", err
+	}
 	var id string
 	err := sv.DB.QueryRowContext(ctx, `SELECT client_id FROM client_contacts
 		WHERE workspace_id = $1 AND user_id = $2`, s.WorkspaceID, s.UserID).Scan(&id)
@@ -125,6 +129,9 @@ func (sv *Service) fillContactEmails(ctx context.Context, cs []ClientContact) {
 func (sv *Service) ShareClient(ctx context.Context, clientRef, userRef string) (*ClientContact, error) {
 	s, err := caller(ctx)
 	if err != nil {
+		return nil, err
+	}
+	if err := feature(ctx, s, limits.FeaturePortal); err != nil {
 		return nil, err
 	}
 	if err := require(s, authz.ClientContactsManage); err != nil {

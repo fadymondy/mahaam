@@ -101,7 +101,7 @@ func TestMCPSession(t *testing.T) {
 	started := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Second)
 	day := started.Format("2006-01-02")
 	text, isErr := call(agent, "create_task", map[string]any{"project": proj, "title": "Wire the reports", "assignees": []string{"me"}})
-	key := regexp.MustCompile(`MG-\d+`).FindString(text)
+	key := regexp.MustCompile(`M[HG]-\d+`).FindString(text)
 	if isErr || key == "" {
 		t.Fatalf("create_task: %v %q", isErr, text)
 	}

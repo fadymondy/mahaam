@@ -4,9 +4,9 @@ package resolvers
 import (
 	"context"
 
-	db "github.com/fadymondy/managy/internal/db/gen"
-	graphgen "github.com/fadymondy/managy/internal/graph/gen"
-	"github.com/fadymondy/managy/internal/models"
+	db "github.com/fadymondy/mahaam/internal/db/gen"
+	graphgen "github.com/fadymondy/mahaam/internal/graph/gen"
+	"github.com/fadymondy/mahaam/internal/models"
 )
 
 func (r *queryResolver) ProjectMember(ctx context.Context, id string) (*db.ProjectMember, error) {

@@ -33,7 +33,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 type logged struct {

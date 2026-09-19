@@ -19,6 +19,7 @@ import { useMe, useMembers } from "@/lib/queries"
 import { hm, useRates, useTimesheet } from "@/lib/time"
 import { useDocumentTitle } from "@/lib/title"
 import { useTeams } from "@/lib/work"
+import { KpiDashboard } from "@/components/kpi/kpi-dashboard"
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -183,6 +184,13 @@ export default function MemberDetailPage() {
           )}
         </aside>
       </div>
+
+      {/* the employee KPI: your own, or anyone's as a manager (clients have none) */}
+      {member.role !== "client" && (isSelf || ws.can("kpi:all")) ? (
+        <div className="pt-6 pb-8">
+          <KpiDashboard userId={id} isSelf={isSelf} />
+        </div>
+      ) : null}
     </>
   )
 }

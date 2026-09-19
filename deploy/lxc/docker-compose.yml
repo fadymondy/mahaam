@@ -1,24 +1,45 @@
-# Managy PRODUCTION on Proxmox LXC 116 (10.10.10.116). Images built on the
+# Mahaam PRODUCTION on Proxmox LXC 116 (10.10.10.116). Images built on the
 # workstation and loaded via `docker load` (no registry/GitHub auth needed).
-# NPM host 60 forwards managy-app.fadymondy.com -> 10.10.10.116:3010 (web).
+# NPM host 60 forwards console.mahaam.app (and the old managy-app.fadymondy.com) -> 10.10.10.116:3010 (web).
 # web (next start) proxies /api,/graphql,/embed to the api container.
-name: managy-prod
+name: mahaam-prod
 services:
   api:
-    image: managy-api
-    container_name: managy-api
+    image: mahaam-api
+    container_name: mahaam-api
+    volumes:
+      # Attachments, feedback screenshots and mail (.eml) — STORAGE_DIR=storage under /app.
+      # A named volume, so a redeploy (force-recreate) never loses uploaded files.
+      - mahaam-storage:/app/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8110/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     env_file: .env.prod
     ports:
-      - "0.0.0.0:8110:8110"
+      # The API is reached through the web container (/api, /graphql, /embed, MCP); only loopback here.
+      - "127.0.0.1:8110:8110"
     restart: unless-stopped
   web:
-    image: managy-web
-    container_name: managy-web
+    image: mahaam-web
+    container_name: mahaam-web
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3010/en/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     environment:
       NODE_ENV: production
       API_ORIGIN: http://api:8110
     ports:
       - "0.0.0.0:3010:3010"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  mahaam-storage:

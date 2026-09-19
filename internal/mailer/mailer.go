@@ -58,7 +58,7 @@ func (f *fileMailer) Send(_ context.Context, m mail.Message) error {
 	fmt.Fprintf(&s, "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\nMIME-Version: 1.0\r\n",
 		from, strings.Join(m.To, ", "), mime.QEncoding.Encode("utf-8", m.Subject), time.Now().UTC().Format(time.RFC1123Z))
 	if m.HTML != "" {
-		const boundary = "managy-file-mailer"
+		const boundary = "mahaam-file-mailer"
 		fmt.Fprintf(&s, "Content-Type: multipart/alternative; boundary=%q\r\n\r\n", boundary)
 		fmt.Fprintf(&s, "--%s\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s\r\n", boundary, m.Text)
 		fmt.Fprintf(&s, "--%s\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s\r\n--%s--\r\n", boundary, m.HTML, boundary)

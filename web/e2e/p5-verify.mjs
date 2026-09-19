@@ -1,7 +1,7 @@
-// Managy P5 — real-browser verification (reports, budgets, profitability, saved views, notification settings).
+// Mahaam P5 — real-browser verification (reports, budgets, profitability, saved views, notification settings).
 //
 //   node e2e/p5-verify.mjs            (API :8110 and web :3010 running; system Chrome)
-//   WEB_ORIGIN=https://managy-app.fadymondy.com node e2e/p5-verify.mjs
+//   WEB_ORIGIN=https://console.mahaam.app node e2e/p5-verify.mjs
 //   QUICK=1 node e2e/p5-verify.mjs    (screenshots at 1440 en/light only)
 //
 // Headless Chrome, fresh profile, frames counted first; waits for `load` (the live stream keeps a
@@ -51,7 +51,7 @@ async function dump(err) {
 process.on("unhandledRejection", dump)
 process.on("uncaughtException", dump)
 
-const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "managy-p5-")), {
+const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "mahaam-p5-")), {
   executablePath: process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe",
   headless: true,
   viewport: { width: 1440, height: 900 },

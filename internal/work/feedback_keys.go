@@ -6,13 +6,15 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
 )
 
 // pqStringArray is a Postgres text[] usable as both a query parameter (Valuer)
@@ -95,15 +97,16 @@ const KeyPrefixPFK = "pfk_"
 // FeedbackKey is a per-project public key as returned to the settings UI. The
 // public_key is not a secret, so it is always shown (unlike an MCP token).
 type FeedbackKey struct {
-	ID             string     `json:"id"`
-	ProjectID      string     `json:"project_id"`
-	Name           string     `json:"name"`
-	PublicKey      string     `json:"public_key"`
-	Active         bool       `json:"active"`
-	AllowedOrigins []string   `json:"allowed_origins"`
-	LastUsedAt     *time.Time `json:"last_used_at"`
-	RevokedAt      *time.Time `json:"revoked_at"`
-	CreatedAt      time.Time  `json:"created_at"`
+	ID             string       `json:"id"`
+	ProjectID      string       `json:"project_id"`
+	Name           string       `json:"name"`
+	PublicKey      string       `json:"public_key"`
+	Active         bool         `json:"active"`
+	AllowedOrigins []string     `json:"allowed_origins"`
+	Widget         WidgetConfig `json:"widget" doc:"How the launcher looks on the customer's site"`
+	LastUsedAt     *time.Time   `json:"last_used_at"`
+	RevokedAt      *time.Time   `json:"revoked_at"`
+	CreatedAt      time.Time    `json:"created_at"`
 }
 
 func genPublicKey() string {
@@ -157,7 +160,7 @@ func (sv *Service) ListFeedbackKeys(ctx context.Context, projectRef string) ([]F
 		return nil, err
 	}
 	rows, err := sv.DB.QueryContext(ctx, `SELECT id, project_id, name, public_key, active, allowed_origins,
-		last_used_at, revoked_at, created_at FROM project_feedback_keys
+		last_used_at, revoked_at, created_at, widget FROM project_feedback_keys
 		WHERE workspace_id = $1 AND project_id = $2 ORDER BY created_at DESC`, s.WorkspaceID, p.ID)
 	if err != nil {
 		return nil, err
@@ -171,10 +174,12 @@ func scanKeys(rows *sql.Rows) ([]FeedbackKey, error) {
 	for rows.Next() {
 		var k FeedbackKey
 		var origins pqStringArray
+		var widget []byte
 		if err := rows.Scan(&k.ID, &k.ProjectID, &k.Name, &k.PublicKey, &k.Active, &origins,
-			&k.LastUsedAt, &k.RevokedAt, &k.CreatedAt); err != nil {
+			&k.LastUsedAt, &k.RevokedAt, &k.CreatedAt, &widget); err != nil {
 			return nil, err
 		}
+		k.Widget = ParseWidget(widget)
 		k.AllowedOrigins = origins
 		out = append(out, k)
 	}
@@ -190,6 +195,9 @@ func (sv *Service) CreateFeedbackKey(ctx context.Context, projectRef, name strin
 	if err := require(s, authz.FeedbackKeysManage); err != nil {
 		return nil, err
 	}
+	if err := quota(ctx, s, limits.FeedbackKeys, 1); err != nil {
+		return nil, err
+	}
 	p, err := loadProject(ctx, sv.DB, s, strings.TrimSpace(projectRef))
 	if err != nil {
 		return nil, err
@@ -201,15 +209,17 @@ func (sv *Service) CreateFeedbackKey(ctx context.Context, projectRef, name strin
 	var k FeedbackKey
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
 		var got pqStringArray
+		var widget []byte
 		row := tx.QueryRowContext(ctx, `
 			INSERT INTO project_feedback_keys (workspace_id, project_id, name, public_key, allowed_origins, created_by)
 			VALUES ($1, $2, $3, $4, $5, $6)
-			RETURNING id, project_id, name, public_key, active, allowed_origins, last_used_at, revoked_at, created_at`,
+			RETURNING id, project_id, name, public_key, active, allowed_origins, last_used_at, revoked_at, created_at, widget`,
 			s.WorkspaceID, p.ID, truncate(strings.TrimSpace(name), 100), genPublicKey(), pqStringArray(ori), s.UserID)
-		if err := row.Scan(&k.ID, &k.ProjectID, &k.Name, &k.PublicKey, &k.Active, &got, &k.LastUsedAt, &k.RevokedAt, &k.CreatedAt); err != nil {
+		if err := row.Scan(&k.ID, &k.ProjectID, &k.Name, &k.PublicKey, &k.Active, &got, &k.LastUsedAt, &k.RevokedAt, &k.CreatedAt, &widget); err != nil {
 			return err
 		}
 		k.AllowedOrigins = got
+		k.Widget = ParseWidget(widget)
 		return record(ctx, tx, s, entry{ProjectID: p.ID, Action: "feedback_key.created", SubjectType: "feedback_key", SubjectID: k.ID})
 	})
 	if err != nil {
@@ -219,7 +229,7 @@ func (sv *Service) CreateFeedbackKey(ctx context.Context, projectRef, name strin
 }
 
 // UpdateFeedbackKey changes a key's name, active flag or allowed origins.
-func (sv *Service) UpdateFeedbackKey(ctx context.Context, keyID string, name *string, active *bool, origins *[]string) (*FeedbackKey, error) {
+func (sv *Service) UpdateFeedbackKey(ctx context.Context, keyID string, name *string, active *bool, origins *[]string, widget *WidgetConfig) (*FeedbackKey, error) {
 	s, err := caller(ctx)
 	if err != nil {
 		return nil, err
@@ -227,7 +237,7 @@ func (sv *Service) UpdateFeedbackKey(ctx context.Context, keyID string, name *st
 	if err := require(s, authz.FeedbackKeysManage); err != nil {
 		return nil, err
 	}
-	p := &patch{}
+	p := newPatch()
 	if name != nil {
 		p.set("name", truncate(strings.TrimSpace(*name), 100))
 	}
@@ -243,6 +253,14 @@ func (sv *Service) UpdateFeedbackKey(ctx context.Context, keyID string, name *st
 			return nil, err
 		}
 		p.set("allowed_origins", pqStringArray(ori))
+	}
+	if widget != nil {
+		w, err := widget.Normalize()
+		if err != nil {
+			return nil, err
+		}
+		b, _ := json.Marshal(w)
+		p.set("widget", string(b))
 	}
 	if _, err := sv.getKey(ctx, keyID); err != nil {
 		return nil, err
@@ -292,10 +310,11 @@ func (sv *Service) getKey(ctx context.Context, keyID string) (*FeedbackKey, erro
 	}
 	var k FeedbackKey
 	var origins pqStringArray
+	var widget []byte
 	err = sv.DB.QueryRowContext(ctx, `SELECT id, project_id, name, public_key, active, allowed_origins,
-		last_used_at, revoked_at, created_at FROM project_feedback_keys
+		last_used_at, revoked_at, created_at, widget FROM project_feedback_keys
 		WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, strings.TrimSpace(keyID)).Scan(
-		&k.ID, &k.ProjectID, &k.Name, &k.PublicKey, &k.Active, &origins, &k.LastUsedAt, &k.RevokedAt, &k.CreatedAt)
+		&k.ID, &k.ProjectID, &k.Name, &k.PublicKey, &k.Active, &origins, &k.LastUsedAt, &k.RevokedAt, &k.CreatedAt, &widget)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, notFound("feedback key")
 	}
@@ -303,5 +322,6 @@ func (sv *Service) getKey(ctx context.Context, keyID string) (*FeedbackKey, erro
 		return nil, err
 	}
 	k.AllowedOrigins = origins
+	k.Widget = ParseWidget(widget)
 	return &k, nil
 }

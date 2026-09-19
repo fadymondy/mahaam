@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { CopyIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
+import { BotIcon, CopyIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
 import { toast } from "sonner"
 import useSWR from "swr"
 
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ConfirmButton } from "@/components/confirm-button"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { errorText, w } from "@/lib/work"
@@ -28,9 +29,21 @@ type FeedbackKey = {
   public_key: string
   active: boolean
   allowed_origins: string[]
+  widget: WidgetLook
   last_used_at: string | null
   revoked_at: string | null
   created_at: string
+}
+
+type WidgetLook = {
+  color?: string
+  text_color?: string
+  icon?: string
+  text?: string
+  shape?: string
+  position?: string
+  theme?: string
+  locale?: string
 }
 
 type Contact = { id: string; client_id: string; user_id: string; email: string | null; created_at: string }
@@ -324,6 +337,175 @@ function KeyRow({
           </Button>
         </div>
       </Field>
+      {k.active && canManage ? <WidgetLookEditor k={k} busy={busy} run={run} onChange={onChange} /> : null}
+      {k.active ? <InstallGuides projectId={k.project_id} keyId={k.id} copy={copy} /> : null}
     </div>
+  )
+}
+
+const ICONS = ["bug", "message", "help", "lightbulb", "megaphone", "sparkles", "none"]
+const SHAPES = ["pill", "circle", "square", "tab"]
+const POSITIONS = ["bottom-end", "bottom-start", "top-end", "top-start", "middle-end", "middle-start"]
+
+// How this key's launcher looks on the customer's site (GET /api/feedback/embed/config).
+// Visitors can still drag it, dock it to the edge or hide it from its right-click menu.
+function WidgetLookEditor({
+  k,
+  busy,
+  run,
+  onChange,
+}: {
+  k: FeedbackKey
+  busy: boolean
+  run: (fn: () => Promise<unknown>, ok?: string) => Promise<void>
+  onChange: () => void
+}) {
+  const ws = useWorkspace()
+  const [look, setLook] = useState<WidgetLook>(k.widget ?? {})
+  const set = (f: keyof WidgetLook, v: string) => setLook((l) => ({ ...l, [f]: v === "default" ? undefined : v }))
+  const sel = (f: keyof WidgetLook, label: string, options: string[]) => (
+    <Field>
+      <FieldLabel>{label}</FieldLabel>
+      <select
+        className="h-8 w-full rounded-lg border border-line bg-transparent px-2 text-sm"
+        value={look[f] ?? "default"}
+        disabled={busy}
+        onChange={(e) => set(f, e.target.value)}
+      >
+        <option value="default">Default</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </Field>
+  )
+  const bg = look.color || "#8c3fb5"
+  const fg = look.text_color || "#f0ebe1"
+  const iconOnly = look.shape === "circle" || look.shape === "square"
+  return (
+    <Field>
+      <FieldLabel>Launcher look</FieldLabel>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field>
+          <FieldLabel>Text</FieldLabel>
+          <Input maxLength={40} value={look.text ?? ""} placeholder="Report a problem" disabled={busy} onChange={(e) => set("text", e.target.value)} />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field>
+            <FieldLabel>Colour</FieldLabel>
+            <input type="color" className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent" value={bg} disabled={busy} onChange={(e) => set("color", e.target.value)} />
+          </Field>
+          <Field>
+            <FieldLabel>Text colour</FieldLabel>
+            <input type="color" className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent" value={fg} disabled={busy} onChange={(e) => set("text_color", e.target.value)} />
+          </Field>
+        </div>
+        {sel("icon", "Icon", ICONS)}
+        {sel("shape", "Shape", SHAPES)}
+        {sel("position", "Starting position", POSITIONS)}
+        <div className="grid grid-cols-2 gap-3">
+          {sel("theme", "Dialog theme", ["auto", "light", "dark"])}
+          {sel("locale", "Language", ["auto", "en", "ar"])}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <span
+          aria-hidden
+          className={
+            "inline-flex h-10 items-center gap-2 px-4 text-sm font-medium shadow-md " +
+            (iconOnly ? "w-12 justify-center px-0 " : "") +
+            (look.shape === "square" ? "rounded-xl" : "rounded-full")
+          }
+          style={{ background: bg, color: fg }}
+        >
+          {look.icon === "none" ? null : <span className="text-xs">●</span>}
+          {iconOnly ? null : look.text || "Report a problem"}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => run(() => w.patch(ws.id, `/api/w/feedback-keys/${k.id}`, { widget: look }), "Launcher saved").then(onChange)}
+        >
+          Save look
+        </Button>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={() => setLook({})}>
+          Reset
+        </Button>
+      </div>
+    </Field>
+  )
+}
+
+const STACK_LABELS: Record<string, string> = {
+  agent: "AI agent",
+  html: "HTML",
+  laravel: "Laravel",
+  node: "Node",
+  next: "Next.js",
+  go: "Go",
+  python: "Python",
+}
+
+// The same guides the MCP tool get_feedback_install returns: one tab per stack, and
+// "AI agent" is a complete prompt to paste into a coding agent in the client's repo.
+function InstallGuides({
+  projectId,
+  keyId,
+  copy,
+}: {
+  projectId: string
+  keyId: string
+  copy: (text: string, label: string) => void
+}) {
+  const ws = useWorkspace()
+  const { data } = useSWR<{ guides: Record<string, string> }>(
+    [`/api/w/projects/${projectId}/feedback-install?key=${encodeURIComponent(keyId)}`, ws.id],
+    ([p, id]: [string, string]) => api(p, { workspaceId: id }),
+    { shouldRetryOnError: false, revalidateOnFocus: false },
+  )
+  if (!data?.guides) return null
+  const stacks = Object.keys(STACK_LABELS).filter((s) => data.guides[s])
+  return (
+    <Field>
+      <div className="flex items-center justify-between gap-2">
+        <FieldLabel>Install</FieldLabel>
+        <Button size="sm" variant="outline" onClick={() => copy(data.guides.agent, "Agent prompt")}>
+          <BotIcon /> Copy agent prompt
+        </Button>
+      </div>
+      <Tabs defaultValue="agent">
+        <TabsList className="flex-wrap">
+          {stacks.map((s) => (
+            <TabsTrigger key={s} value={s}>
+              {STACK_LABELS[s]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {stacks.map((s) => (
+          <TabsContent key={s} value={s} className="relative">
+            <pre
+              dir="ltr"
+              className="max-h-72 overflow-auto rounded-md border border-line bg-grid-muted/10 p-3 pe-20 font-mono text-xs whitespace-pre-wrap"
+            >
+              {data.guides[s]}
+            </pre>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute top-1.5 end-1.5"
+              onClick={() => copy(data.guides[s], STACK_LABELS[s])}
+            >
+              <CopyIcon /> Copy
+            </Button>
+          </TabsContent>
+        ))}
+      </Tabs>
+      <p className="text-xs text-grid-muted">
+        Or from any MCP client: <code dir="ltr">get_feedback_install {"{"} project, stack {"}"}</code>
+      </p>
+    </Field>
   )
 }

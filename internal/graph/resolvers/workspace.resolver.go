@@ -5,8 +5,8 @@ package resolvers
 import (
 	"context"
 
-	db "github.com/fadymondy/managy/internal/db/gen"
-	"github.com/fadymondy/managy/internal/models"
+	db "github.com/fadymondy/mahaam/internal/db/gen"
+	"github.com/fadymondy/mahaam/internal/models"
 )
 
 func (r *queryResolver) Workspace(ctx context.Context, id string) (*db.Workspace, error) {

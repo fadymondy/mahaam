@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // ---- project access ----------------------------------------------------------
@@ -29,6 +30,16 @@ anything inside one goes through this, and a project the caller cannot see answe
 never 403 — so its existence is not revealed.
 */
 func visibleClause(s *tenant.Scope, args *[]any) string {
+	// A project-scoped MCP token narrows whatever the role would see to its projects.
+	if len(s.ProjectIDs) > 0 {
+		*args = append(*args, s.ProjectIDs)
+		n := len(*args)
+		return fmt.Sprintf("(p.id = ANY($%d::text[]) AND %s)", n, roleVisibleClause(s, args))
+	}
+	return roleVisibleClause(s, args)
+}
+
+func roleVisibleClause(s *tenant.Scope, args *[]any) string {
 	if atLeast(s, authz.Manager) {
 		return "TRUE"
 	}
@@ -36,16 +47,81 @@ func visibleClause(s *tenant.Scope, args *[]any) string {
 	u := len(*args)
 	// A client sees exactly the projects belonging to the client record their portal
 	// account is a contact of — nothing wider, and project_members/teams never apply.
+	// A customer (client role) sees the projects of the client record they are a portal
+	// contact of, plus any project they were added to directly or through a team — the
+	// way a manager naturally "gives the customer access to the project". Tasks stay
+	// hidden either way (authz.TasksRead is member+); the portal shows aggregates only.
 	if !atLeast(s, authz.Member) {
-		return fmt.Sprintf(`(p.client_id IS NOT NULL AND EXISTS (
+		return fmt.Sprintf(`((p.client_id IS NOT NULL AND EXISTS (
 			SELECT 1 FROM client_contacts cc
-			WHERE cc.workspace_id = p.workspace_id AND cc.user_id = $%d AND cc.client_id = p.client_id))`, u)
+			WHERE cc.workspace_id = p.workspace_id AND cc.user_id = $%[1]d AND cc.client_id = p.client_id))
+		OR EXISTS (SELECT 1 FROM project_members pm
+			WHERE pm.workspace_id = p.workspace_id AND pm.project_id = p.id AND pm.user_id = $%[1]d)
+		OR EXISTS (SELECT 1 FROM project_teams pt JOIN team_members tmm
+			ON tmm.workspace_id = pt.workspace_id AND tmm.team_id = pt.team_id
+			WHERE pt.workspace_id = p.workspace_id AND pt.project_id = p.id AND tmm.user_id = $%[1]d))`, u)
 	}
+	// Full access, or a task grant / assignment inside the project (which shows the project
+	// but only those tasks — taskClause).
+	return "(" + fullAccessSQL(u) + " OR " + fmt.Sprintf(`EXISTS (SELECT 1 FROM tasks gt
+		WHERE gt.workspace_id = p.workspace_id AND gt.project_id = p.id AND (%s))`, taskGrantSQL("gt", u)) + ")"
+}
+
+// fullAccessSQL: a member sees the whole project when it is workspace-visible, they are on
+// it (project_members), a team they are in is attached (project_teams), or they — or a
+// team of theirs — hold a grant on a label the project carries (project_labels). $u is the
+// user id.
+func fullAccessSQL(u int) string {
 	return fmt.Sprintf(`(p.visibility = 'workspace' OR EXISTS (SELECT 1 FROM project_members pm
-		WHERE pm.workspace_id = p.workspace_id AND pm.project_id = p.id AND pm.user_id = $%d)
+		WHERE pm.workspace_id = p.workspace_id AND pm.project_id = p.id AND pm.user_id = $%[1]d)
 	OR EXISTS (SELECT 1 FROM project_teams pt JOIN team_members tmm
 		ON tmm.workspace_id = pt.workspace_id AND tmm.team_id = pt.team_id
-		WHERE pt.workspace_id = p.workspace_id AND pt.project_id = p.id AND tmm.user_id = $%d))`, u, u)
+		WHERE pt.workspace_id = p.workspace_id AND pt.project_id = p.id AND tmm.user_id = $%[1]d)
+	OR EXISTS (SELECT 1 FROM project_labels pl JOIN access_grants g
+		ON g.workspace_id = pl.workspace_id AND g.scope_type = 'label' AND g.scope_id = pl.label_id
+		WHERE pl.workspace_id = p.workspace_id AND pl.project_id = p.id AND %[2]s))`, u, grantSubjectSQL("g", u))
+}
+
+// grantSubjectSQL matches a grant row g given to user $u directly or to a team they are in.
+func grantSubjectSQL(g string, u int) string {
+	return fmt.Sprintf(`((%[1]s.subject_type = 'user' AND %[1]s.subject_id = $%[2]d) OR (%[1]s.subject_type = 'team' AND EXISTS (
+		SELECT 1 FROM team_members gtm WHERE gtm.workspace_id = %[1]s.workspace_id AND gtm.team_id = %[1]s.subject_id AND gtm.user_id = $%[2]d)))`, g, u)
+}
+
+// taskGrantSQL: task t (alias) is granted to $u (or a team of theirs), or assigned to them.
+func taskGrantSQL(t string, u int) string {
+	return fmt.Sprintf(`EXISTS (SELECT 1 FROM access_grants tg WHERE tg.workspace_id = %[1]s.workspace_id
+		AND tg.scope_type = 'task' AND tg.scope_id = %[1]s.id AND %[3]s)
+	OR EXISTS (SELECT 1 FROM task_assignees ta WHERE ta.workspace_id = %[1]s.workspace_id AND ta.task_id = %[1]s.id AND ta.user_id = $%[2]d)`,
+		t, u, grantSubjectSQL("tg", u))
+}
+
+// taskClause is visibleClause for a task row t joined to its project p: full access to the
+// project, or this very task is granted to / assigned to the caller.
+func taskClause(s *tenant.Scope, args *[]any) string {
+	if atLeast(s, authz.Manager) {
+		return "TRUE"
+	}
+	if !atLeast(s, authz.Member) {
+		return visibleClause(s, args) // clients never read tasks (authz.TasksRead); kept for completeness
+	}
+	*args = append(*args, s.UserID)
+	u := len(*args)
+	return "(" + fullAccessSQL(u) + " OR " + taskGrantSQL("t", u) + ")"
+}
+
+// hasFullAccess reports whether the caller sees the whole project (not only granted tasks).
+func hasFullAccess(ctx context.Context, q querier, s *tenant.Scope, projectID string) bool {
+	if atLeast(s, authz.Manager) {
+		return true
+	}
+	if !atLeast(s, authz.Member) {
+		return false
+	}
+	var ok bool
+	_ = q.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM projects p WHERE p.workspace_id = $1 AND p.id = $2 AND `+fullAccessSQL(3)+`)`,
+		s.WorkspaceID, projectID, s.UserID).Scan(&ok)
+	return ok
 }
 
 // Project is a project as listed.
@@ -70,6 +146,10 @@ type Project struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 	Tasks         TaskCounts `json:"tasks"`
 	MemberCount   int        `json:"member_count"`
+	// What the project's customer sees in the portal (19c_portal_share.sql).
+	ShareBoard bool `json:"share_board" doc:"Customers see the task board read-only (titles, columns, due dates, assignees, labels)"`
+	ShareTeam  bool `json:"share_team" doc:"Customers see who works on the project (names only, never rates)"`
+	ShareMoney bool `json:"share_money" doc:"Customers see the money budget"`
 }
 
 // TaskCounts are a project's tasks by status category.
@@ -88,14 +168,16 @@ var projectCols = `p.id, p.name, p.description, p.color, p.status, p.billing_mod
 	p.currency, p.visibility, p.starts_on, p.ends_on, p.archived_at, p.client_id,
 	(SELECT c.name FROM clients c WHERE c.workspace_id = p.workspace_id AND c.id = p.client_id),
 	p.created_by, p.created_at, p.updated_at, ` + countBy("todo") + `, ` + countBy("doing") + `, ` + countBy("done") + `,
-	(SELECT count(*) FROM project_members pm WHERE pm.workspace_id = p.workspace_id AND pm.project_id = p.id)`
+	(SELECT count(*) FROM project_members pm WHERE pm.workspace_id = p.workspace_id AND pm.project_id = p.id),
+	p.share_board, p.share_team, p.share_money`
 
 func scanProject(r scanner) (*Project, error) {
 	p := &Project{}
 	var starts, ends *time.Time
 	err := r.Scan(&p.ID, &p.Name, &p.Description, &p.Color, &p.Status, &p.BillingMode, &p.BudgetMinutes, &p.BudgetMinor,
 		&p.Currency, &p.Visibility, &starts, &ends, &p.ArchivedAt, &p.ClientID, &p.ClientName,
-		&p.CreatedBy, &p.CreatedAt, &p.UpdatedAt, &p.Tasks.Todo, &p.Tasks.Doing, &p.Tasks.Done, &p.MemberCount)
+		&p.CreatedBy, &p.CreatedAt, &p.UpdatedAt, &p.Tasks.Todo, &p.Tasks.Doing, &p.Tasks.Done, &p.MemberCount,
+		&p.ShareBoard, &p.ShareTeam, &p.ShareMoney)
 	p.StartsOn, p.EndsOn = dayString(starts), dayString(ends)
 	return p, err
 }
@@ -329,6 +411,9 @@ type ProjectInput struct {
 	ClientID      *string `json:"client_id,omitempty" doc:"Empty clears"`
 	StartsOn      *string `json:"starts_on,omitempty" doc:"YYYY-MM-DD; empty clears"`
 	EndsOn        *string `json:"ends_on,omitempty" doc:"YYYY-MM-DD; empty clears"`
+	ShareBoard    *bool   `json:"share_board,omitempty" doc:"Customer portal: show the task board read-only"`
+	ShareTeam     *bool   `json:"share_team,omitempty" doc:"Customer portal: show the team's names"`
+	ShareMoney    *bool   `json:"share_money,omitempty" doc:"Customer portal: show the money budget"`
 }
 
 func projectValues(ctx context.Context, q querier, ws string, in ProjectInput, p *patch, current *Project) error {
@@ -407,6 +492,14 @@ func projectValues(ctx context.Context, q querier, ws string, in ProjectInput, p
 		}
 		p.set("client_id", nullIfEmpty(v))
 	}
+	for _, b := range []struct {
+		col string
+		in  *bool
+	}{{"share_board", in.ShareBoard}, {"share_team", in.ShareTeam}, {"share_money", in.ShareMoney}} {
+		if b.in != nil {
+			p.set(b.col, *b.in)
+		}
+	}
 	for _, d := range []struct {
 		col string
 		in  *string
@@ -441,6 +534,9 @@ func (sv *Service) CreateProject(ctx context.Context, in ProjectInput) (*Project
 		return nil, err
 	}
 	if err := require(s, authz.ProjectsCreate); err != nil {
+		return nil, err
+	}
+	if err := quota(ctx, s, limits.Projects, 1); err != nil {
 		return nil, err
 	}
 	if v, _ := trimmed(in.Name); v == "" {
@@ -573,6 +669,16 @@ func (sv *Service) AddProjectMember(ctx context.Context, projectID, userID, role
 			ON CONFLICT (workspace_id, project_id, user_id) DO UPDATE SET role = EXCLUDED.role, updated_at = now()`,
 			s.WorkspaceID, p.ID, userID, role); err != nil {
 			return err
+		}
+		// A customer added to a client's project also becomes that client's portal contact
+		// (if they are not one already), so their invoices show in the portal too.
+		if p.ClientID != nil {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO client_contacts (workspace_id, client_id, user_id)
+				SELECT $1, $2, $3 WHERE EXISTS (SELECT 1 FROM workspace_members m
+					WHERE m.workspace_id = $1 AND m.user_id = $3 AND m.role = 'client')
+				ON CONFLICT (workspace_id, user_id) DO NOTHING`, s.WorkspaceID, *p.ClientID, userID); err != nil {
+				return err
+			}
 		}
 		return record(ctx, tx, s, entry{ProjectID: p.ID, Action: "project.member_added", SubjectType: "project", SubjectID: p.ID,
 			Changes: map[string]any{"user_id": userID, "role": role}})

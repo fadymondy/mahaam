@@ -1,4 +1,4 @@
-// Package reports is Managy's own issue tracker: the reports + report_comments
+// Package reports is Mahaam's own issue tracker: the reports + report_comments
 // tables (same columns as fadymondy.com-v2's, plus workspace_id), fed by the
 // "Report a problem" intake and worked through the MCP servers.
 //
@@ -14,20 +14,23 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/fadymondy/mahaam/internal/tenant"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
-// KeyPrefix is Managy's issue/task key prefix: MG-123.
-const KeyPrefix = "MG-"
+// KeyPrefix is Mahaam's issue/task key prefix: MH-123. MG-123 keys minted before the
+// rename still resolve (internal/work keyRe accepts both).
+const KeyPrefix = "MH-"
 
-// PlatformSlug is the workspace that holds Managy's OWN bug reports (owner
+// PlatformSlug is the workspace that holds Mahaam's OWN bug reports (owner
 // decision 3: an own platform workspace rather than forwarding to
 // fadymondy.com). No user is a member of it; the admin MCP reads it.
 const PlatformSlug = "platform"
@@ -45,8 +48,9 @@ func EnsurePlatform(ctx context.Context, a *app.App) (string, error) {
 		return platformID, nil
 	}
 	if _, err := a.SysDB.ExecContext(ctx, `
-		INSERT INTO workspaces (slug, name, created_by) VALUES ($1, 'Managy platform', 'system')
-		ON CONFLICT (slug) DO NOTHING`, PlatformSlug); err != nil {
+		INSERT INTO workspaces (slug, name, created_by, plan) VALUES ($1, 'Mahaam platform', 'system', 'unlimited')
+		ON CONFLICT (slug) DO UPDATE SET plan = 'unlimited', status = 'active'
+		WHERE workspaces.plan <> 'unlimited' OR workspaces.status <> 'active'`, PlatformSlug); err != nil {
 		return "", err
 	}
 	if err := a.SysDB.QueryRowContext(ctx, `SELECT id FROM workspaces WHERE slug = $1`, PlatformSlug).Scan(&platformID); err != nil {
@@ -60,23 +64,28 @@ func PlatformID(ctx context.Context, a *app.App) (string, error) { return Ensure
 
 // Report is the subset of a reports row the tools and intake use.
 type Report struct {
-	ID, WorkspaceID, Key, Title                  string
-	Number, SortOrder, AgentSeconds              int64
-	IssueType, Status, State, Priority           string
-	Body, Resolution, Route, PageURL, Selector   *string
-	Screenshot, ConsoleLog, NetworkLog           *string
-	Viewport, UserAgent, ReporterID              *string
-	ProjectID                                    *string
-	Source                                       string
-	ClosedAt, StartedAt, FinishedAt              *time.Time
-	HumanOnly                                    bool
-	CreatedAt, UpdatedAt                         time.Time
+	// RequestState is set on a customer request (pending, accepted, declined, converted); nil on an issue.
+	RequestState                               *string
+	ID, WorkspaceID, Key, Title                string
+	Number, SortOrder, AgentSeconds            int64
+	IssueType, Status, State, Priority         string
+	Body, Resolution, Route, PageURL, Selector *string
+	Screenshot, ConsoleLog, NetworkLog         *string
+	Viewport, UserAgent, ReporterID            *string
+	ProjectID                                  *string
+	// The issue's own agent strategy (fadymondy's issue-agent-settings): which
+	// subagent / skill runs it, at which model and effort. Empty = the loop's default.
+	AIModel, AIEffort, Agent, Skill *string
+	Source                          string
+	ClosedAt, StartedAt, FinishedAt *time.Time
+	HumanOnly                       bool
+	CreatedAt, UpdatedAt            time.Time
 }
 
 const reportCols = `id, workspace_id, key, title, number, sort_order, agent_seconds, issue_type, status, state, priority,
 	body, resolution, route, page_url, selector, screenshot, console_log, network_log, viewport, user_agent, reporter_id,
-	project_id, source,
-	closed_at, started_at, finished_at, human_only, created_at, updated_at`
+	project_id, ai_model, ai_effort, agent, skill, source,
+	closed_at, started_at, finished_at, human_only, created_at, updated_at, request_state`
 
 func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 	r := &Report{}
@@ -84,8 +93,8 @@ func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 		&r.IssueType, &r.Status, &r.State, &r.Priority,
 		&r.Body, &r.Resolution, &r.Route, &r.PageURL, &r.Selector, &r.Screenshot, &r.ConsoleLog, &r.NetworkLog,
 		&r.Viewport, &r.UserAgent, &r.ReporterID,
-		&r.ProjectID, &r.Source,
-		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt)
+		&r.ProjectID, &r.AIModel, &r.AIEffort, &r.Agent, &r.Skill, &r.Source,
+		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt, &r.RequestState)
 	return r, err
 }
 
@@ -108,7 +117,13 @@ type Filter struct {
 	// ProjectID limits to one project's issues; ReporterID to one reporter's
 	// (both used by the client portal, which never sees other people's issues).
 	ProjectID, ReporterID string
-	Limit                 int
+	// HideHumanOnly drops issues marked human_only (the agent queue's default).
+	HideHumanOnly bool
+	// IncludeRequests also lists customer requests that are not (yet) on the board —
+	// pending, declined or converted. Off by default: the board and list_issues show
+	// normal issues and ACCEPTED requests only (requests.go).
+	IncludeRequests bool
+	Limit           int
 }
 
 // List returns a workspace's reports, board order first.
@@ -136,6 +151,15 @@ func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Rep
 	}
 	if f.ReporterID != "" {
 		add("reporter_id = $%d", f.ReporterID)
+	}
+	if ids := scopedProjects(ctx); len(ids) > 0 {
+		add("project_id = ANY($%d::text[])", ids)
+	}
+	if f.HideHumanOnly {
+		q += " AND NOT human_only"
+	}
+	if !f.IncludeRequests {
+		q += " AND (request_state IS NULL OR request_state = 'accepted')"
 	}
 	if f.Limit <= 0 || f.Limit > 500 {
 		f.Limit = 50
@@ -165,19 +189,52 @@ func Find(ctx context.Context, db *sql.DB, workspaceID, ref string) (*Report, er
 	if ref == "" {
 		return nil, sql.ErrNoRows
 	}
-	return scanReport(db.QueryRowContext(ctx,
+	r, err := scanReport(db.QueryRowContext(ctx,
 		`SELECT `+reportCols+` FROM reports WHERE workspace_id = $1 AND (key = $2 OR id = $3)`,
 		workspaceID, strings.ToUpper(ref), ref))
+	if err == nil && !inScope(ctx, r.ProjectID) {
+		return nil, sql.ErrNoRows
+	}
+	return r, err
+}
+
+// scopedProjects is the project limit of a project-scoped MCP token (tenant.Scope.ProjectIDs).
+func scopedProjects(ctx context.Context) []string {
+	if s, ok := tenant.From(ctx); ok {
+		return s.ProjectIDs
+	}
+	return nil
+}
+
+// inScope reports whether an issue in project (nil = workspace-level) is reachable by the caller:
+// always, unless a project-scoped token is calling and the issue is outside its projects.
+func inScope(ctx context.Context, project *string) bool {
+	ids := scopedProjects(ctx)
+	if len(ids) == 0 {
+		return true
+	}
+	if project == nil {
+		return false
+	}
+	for _, id := range ids {
+		if id == *project {
+			return true
+		}
+	}
+	return false
 }
 
 // NewReport is what an intake or tool supplies; the server allocates the key.
 type NewReport struct {
-	Title, IssueType, Status, Priority                       string
-	Body, Route, PageURL, Selector, Screenshot               string
-	ConsoleLog, NetworkLog, UserAgent, Viewport, ReporterID  string
+	Title, IssueType, Status, Priority                      string
+	Body, Route, PageURL, Selector, Screenshot              string
+	ConsoleLog, NetworkLog, UserAgent, Viewport, ReporterID string
 	// ProjectID scopes the issue to a project (client portal / embed); empty for a
 	// workspace-level report. Source is app | portal | embed.
 	ProjectID, Source string
+	// RequestKind + DesiredOn file a customer REQUEST (request_state 'pending', off the
+	// board) in the same INSERT, so it is never briefly an ordinary issue.
+	RequestKind, DesiredOn string
 }
 
 func nullable(s string) any {
@@ -192,6 +249,24 @@ func nullable(s string) any {
 // correct without a lock, and the client never chooses its own number
 // (fadymondy.com FM-39).
 func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*Report, error) {
+	// Plan quotas (internal/limits): every issue — app, portal, embed, MCP, integration import —
+	// is created here, so this is the one place they are enforced.
+	if err := limits.Check(ctx, workspaceID, limits.Issues, 1); err != nil {
+		return nil, err
+	}
+	if err := limits.Check(ctx, workspaceID, limits.IssuesMonth, 1); err != nil {
+		return nil, err
+	}
+	// A project-scoped token files only into its projects.
+	if ids := scopedProjects(ctx); len(ids) > 0 {
+		if n.ProjectID == "" && len(ids) == 1 {
+			n.ProjectID = ids[0]
+		}
+		pid := n.ProjectID
+		if !inScope(ctx, &pid) || pid == "" {
+			return nil, fmt.Errorf("this token is limited to its projects: pass one of them as project")
+		}
+	}
 	status := firstNonEmpty(n.Status, "backlog")
 	if !ValidStatus(status) {
 		return nil, fmt.Errorf("unknown status %q", status)
@@ -211,15 +286,18 @@ func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*
 		r, err := scanReport(db.QueryRowContext(ctx, `
 			INSERT INTO reports (workspace_id, number, key, title, body, issue_type, status, state, priority,
 			                     route, page_url, selector, screenshot, console_log, network_log, user_agent,
-			                     viewport, reporter_id, project_id, source, closed_at, sort_order, agent_seconds, human_only)
+			                     viewport, reporter_id, project_id, source, closed_at, sort_order, agent_seconds, human_only,
+			                     request_state, request_kind, desired_on)
 			SELECT $1, $20::bigint, '`+KeyPrefix+`' || $20::bigint, $2, $3, $4, $5, $6, $7,
-			       $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 0, 0, false
+			       $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 0, 0, false,
+			       CASE WHEN $21::text IS NULL THEN NULL ELSE 'pending' END, $21::text, $22::date
 			RETURNING `+reportCols,
 			workspaceID, strings.TrimSpace(n.Title), nullable(n.Body),
 			firstNonEmpty(n.IssueType, "bug"), status, state, firstNonEmpty(n.Priority, "medium"),
 			nullable(n.Route), nullable(n.PageURL), nullable(n.Selector), nullable(n.Screenshot),
 			nullable(n.ConsoleLog), nullable(n.NetworkLog), nullable(n.UserAgent), nullable(n.Viewport),
 			nullable(n.ReporterID), nullable(n.ProjectID), firstNonEmpty(n.Source, "app"), closed, num,
+			nullable(n.RequestKind), nullable(n.DesiredOn),
 		))
 		var pg *pgconn.PgError
 		if errors.As(err, &pg) && pg.Code == "23505" {
@@ -234,7 +312,7 @@ func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*
 // they must never come from input.
 var updatable = map[string]bool{
 	"status": true, "state": true, "priority": true, "issue_type": true, "resolution": true, "title": true,
-	"body": true, "closed_at": true, "started_at": true, "finished_at": true, "agent_seconds": true, "sort_order": true,
+	"body": true, "human_only": true, "ai_model": true, "ai_effort": true, "agent": true, "skill": true, "closed_at": true, "started_at": true, "finished_at": true, "agent_seconds": true, "sort_order": true,
 }
 
 // Update sets fields (allowlisted columns) on one report in its workspace.

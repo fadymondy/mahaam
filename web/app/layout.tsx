@@ -1,13 +1,33 @@
 import { headers } from "next/headers"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 
 import "./globals.css"
 import { Providers } from "@/components/providers"
+import { PwaRegister } from "@/components/pwa-register"
+import { brandName } from "@/lib/brand-name"
 import { dirForLocale, isLocale, type Locale } from "@/lib/i18n-locale"
 
-export const metadata: Metadata = {
-  title: "Managy",
-  description: "Project management and time tracking.",
+// The product name in the page's language (مهام on /ar); proxy.ts forwards the locale on x-locale.
+export async function generateMetadata(): Promise<Metadata> {
+  const raw = (await headers()).get("x-locale")
+  const ar = raw === "ar"
+  return {
+    title: brandName(raw),
+    applicationName: brandName(raw),
+    description: ar ? "إدارة المشاريع وتتبّع الوقت." : "Project management and time tracking.",
+    // The console is behind a login: the product home (mahaam.app) is what search engines index.
+    robots: { index: false, follow: false },
+    // Installed on iOS: full-screen, with the brand name under the home-screen icon.
+    appleWebApp: { capable: true, title: brandName(raw), statusBarStyle: "default" },
+  }
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f10" },
+  ],
+  viewportFit: "cover",
 }
 
 // The locale lives in the URL (/en/..., /ar/...). A root layout cannot read route params, so
@@ -20,12 +40,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={locale}
       dir={dirForLocale(locale)}
-      data-brand="managy"
+      data-brand="mahaam"
       className="grid-surface"
       suppressHydrationWarning
     >
       <body className="min-h-dvh" suppressHydrationWarning>
         <Providers locale={locale}>{children}</Providers>
+        <PwaRegister />
       </body>
     </html>
   )

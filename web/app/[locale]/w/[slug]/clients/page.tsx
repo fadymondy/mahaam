@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { PlusIcon } from "lucide-react"
+import { PlusIcon, UploadIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
+import { ClientImportDialog } from "@/components/work/client-import-dialog"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { money } from "@/lib/format"
@@ -28,9 +29,25 @@ export default function ClientsPage() {
   useDocumentTitle(`${t("nav.clients")} · ${ws.summary.name}`)
   const [archived, setArchived] = useState(false)
   const [editing, setEditing] = useState<Client | "new" | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [googleSession, setGoogleSession] = useState<string | null>(null)
   const clients = useClients(ws.id, archived, ws.can("clients:read"))
   const canWrite = ws.can("clients:write")
   const list = clients.data?.clients ?? []
+
+  // Back from the Google Contacts consent screen: ?import=google&session=… (or &error=…).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get("import") !== "google") return
+    const session = q.get("session")
+    const err = q.get("error")
+    window.history.replaceState(null, "", window.location.pathname)
+    if (err) toast.error(err)
+    if (session) {
+      setGoogleSession(session)
+      setImporting(true)
+    }
+  }, [])
 
   if (ws.current && !ws.can("clients:read")) return <p className="px-6 py-6 text-sm text-grid-muted">{t("clients.noPermission")}</p>
 
@@ -52,10 +69,16 @@ export default function ClientsPage() {
         description={t("clients.hint")}
         action={
           canWrite ? (
-            <Button onClick={() => setEditing("new")}>
-              <PlusIcon />
-              {t("clients.new")}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImporting(true)} data-client-import-open>
+                <UploadIcon />
+                {t("clientImport.button")}
+              </Button>
+              <Button onClick={() => setEditing("new")}>
+                <PlusIcon />
+                {t("clients.new")}
+              </Button>
+            </div>
           ) : null
         }
       />
@@ -129,6 +152,18 @@ export default function ClientsPage() {
         </div>
       )}
 
+      {canWrite ? (
+        <ClientImportDialog
+          open={importing}
+          onOpenChange={(o) => {
+            setImporting(o)
+            if (!o) setGoogleSession(null)
+          }}
+          googleSession={googleSession}
+          onImported={() => void clients.mutate()}
+        />
+      ) : null}
+
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -157,6 +192,7 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
     name: client?.name ?? "",
     email: client?.email ?? "",
     phone: client?.phone ?? "",
+    company: client?.company ?? "",
     country: client?.country ?? "",
     currency: client?.currency ?? "",
     rate: client?.default_rate_minor != null ? String(client.default_rate_minor / 100) : "",
@@ -177,6 +213,7 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
       name: v.name,
       email: v.email,
       phone: v.phone,
+      company: v.company,
       country: v.country.toUpperCase(),
       notes: v.notes,
       default_rate_minor: rate,
@@ -211,6 +248,10 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
           <Field>
             <FieldLabel htmlFor="c-phone">{t("clients.phone")}</FieldLabel>
             <Input id="c-phone" dir="ltr" value={v.phone} onChange={(e) => set("phone", e.target.value)} />
+          </Field>
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor="c-company">{t("clients.company")}</FieldLabel>
+            <Input id="c-company" value={v.company} onChange={(e) => set("company", e.target.value)} />
           </Field>
           <Field>
             <FieldLabel htmlFor="c-country">{t("clients.country")}</FieldLabel>

@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -16,8 +17,9 @@ import (
 	"github.com/togo-framework/ratelimit"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*
@@ -30,7 +32,7 @@ shared packages/feedback-sdk can post here unchanged once it exists. Accepts
 multipart/form-data (the SDK's shape, with a screenshot) or JSON.
 
 Signed-in only (server/guard.go). Reports land in the PLATFORM workspace — they
-are about Managy itself, not about the reporter's workspace — so the reporter
+are about Mahaam itself, not about the reporter's workspace — so the reporter
 cannot read them back through their own workspace; the admin MCP triages them.
 */
 func MountFeedback(k *togo.Kernel, a *app.App) {
@@ -147,7 +149,7 @@ func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
 	// Where the report lands: the reporter's CURRENT workspace when the request
 	// names one (X-Workspace-ID) and the reporter is a member of it — so a
 	// workspace's own "Report a problem" intake is triaged inside that workspace.
-	// With no workspace named (Managy's own-platform bug reports, and the
+	// With no workspace named (Mahaam's own-platform bug reports, and the
 	// feedback-sdk's default), it lands in the platform workspace as before.
 	target, err := PlatformID(r.Context(), a)
 	if err != nil {
@@ -207,4 +209,30 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// intakePreflight checks the workspace's plan before anything is stored: one more issue (total and
+// this month) and, with a screenshot, the storage quota. Create re-checks the issue quotas; this
+// runs first so a refused report leaves no orphaned screenshot behind.
+func intakePreflight(ctx context.Context, workspaceID string, shotBytes int) error {
+	if err := limits.Check(ctx, workspaceID, limits.Issues, 1); err != nil {
+		return err
+	}
+	if err := limits.Check(ctx, workspaceID, limits.IssuesMonth, 1); err != nil {
+		return err
+	}
+	if shotBytes > 0 {
+		return limits.CheckStorage(ctx, workspaceID, int64(shotBytes))
+	}
+	return nil
+}
+
+// writeRefusal answers a plan refusal (402 / 429 with its code) and reports whether err was one.
+func writeRefusal(w http.ResponseWriter, err error) bool {
+	x, ok := limits.As(err)
+	if !ok {
+		return false
+	}
+	writeJSON(w, x.Status, map[string]string{"error": x.Msg, "code": x.Code})
+	return true
 }

@@ -32,7 +32,18 @@ export default function MembersPage() {
 
   return (
     <>
-      <SectionHeader micro={ws.summary.name} title={t("nav.members")} description={t("members.hint")} />
+      <SectionHeader
+        micro={ws.summary.name}
+        title={t("nav.members")}
+        description={t("members.hint")}
+        action={
+          ws.can("kpi:all") ? (
+            <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
+              {t("kpi.teamTitle")}
+            </Button>
+          ) : null
+        }
+      />
 
       {members.error ? (
         <ErrorState error={members.error} />

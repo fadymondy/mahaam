@@ -8,7 +8,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/mahaam/internal/app"
 )
 
 /*
@@ -35,6 +35,11 @@ func Register(api huma.API, a *app.App) {
 	r.reports()       // P5: reports, exports, budgets, saved views, notification settings
 	r.invoices()      // P6: invoices from unbilled time, status, payments, export, print
 	r.portal()        // P7: feedback-widget keys, client-portal contact links, client invoice view
+	r.vault()         // project vault: secrets + memory
+	r.access()        // label / task access grants, project labels
+	r.clientImport()  // customer import (CSV/XLSX/vCard/Google/WhatsApp) + the project report document
+	r.billing()       // AI usage + project subscriptions (billed on invoices)
+	r.kpi()           // employee KPI, manager reviews, per-user GitHub accounts
 }
 
 type routes struct {

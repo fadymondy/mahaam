@@ -14,7 +14,7 @@ const TYPES = ["bug", "feature", "task"] as const
 
 /**
  * The host adapter: the SDK owns the dialog, screenshot, element picker and console/network
- * capture; this file owns the transport (CSRF via lib/api), the Managy issue types and `meta`.
+ * capture; this file owns the transport (CSRF via lib/api), the Mahaam issue types and `meta`.
  */
 export function ReportProblemDialog({
   open,
@@ -71,7 +71,7 @@ export function ReportProblemDialog({
       types={TYPES}
       defaultType="bug"
       typeLabels={{ bug: t("feedback.type.bug"), feature: t("feedback.type.feature"), task: t("feedback.type.task") }}
-      idPrefix="managy-feedback"
+      idPrefix="mahaam-feedback"
     />
   )
 }

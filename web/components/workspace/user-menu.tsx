@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useSWRConfig } from "swr"
-import { LogOutIcon, MessageSquarePlusIcon, UserIcon } from "lucide-react"
+import { CircleUserIcon, LogOutIcon, MessageSquarePlusIcon, ShieldIcon, UserIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -15,13 +15,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { usePlatform } from "@/lib/admin"
 import { api, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 
-export function UserMenu({ email, onReport }: { email: string; onReport?: () => void }) {
+export function UserMenu({ email, onReport, profileHref }: { email: string; onReport?: () => void; profileHref?: string }) {
   const { t, locale } = useTranslations()
   const router = useRouter()
   const { mutate } = useSWRConfig()
+  // The admin panel link is shown only to platform admins (the API 404s everyone else).
+  const platform = usePlatform()
 
   async function signOut() {
     try {
@@ -51,6 +54,18 @@ export function UserMenu({ email, onReport }: { email: string; onReport?: () => 
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        {profileHref ? (
+          <DropdownMenuItem onClick={() => router.push(profileHref)}>
+            <CircleUserIcon />
+            {t("kpi.profile")}
+          </DropdownMenuItem>
+        ) : null}
+        {platform.data?.is_admin ? (
+          <DropdownMenuItem onClick={() => router.push(`/${locale}/admin`)} data-admin-link>
+            <ShieldIcon />
+            {t("admin.panel")}
+          </DropdownMenuItem>
+        ) : null}
         {onReport ? (
           <DropdownMenuItem onClick={onReport}>
             <MessageSquarePlusIcon />

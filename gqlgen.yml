@@ -13,7 +13,7 @@ model:
 # generates the executable schema + input models. GraphQL types autobind to the
 # sqlc models in internal/db/gen.
 autobind:
-  - "github.com/fadymondy/managy/internal/db/gen"
+  - "github.com/fadymondy/mahaam/internal/db/gen"
 
 models:
   Time:

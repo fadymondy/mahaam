@@ -71,8 +71,12 @@ type ExportTable struct {
 	Rows    []map[string]any
 }
 
-// TimeReportTable renders a time report as the page's table.
+// TimeReportTable renders a time report as the page's table (spreadsheet-safe cells).
 func TimeReportTable(rep *TimeReport, lang string) ExportTable {
+	return timeReportTable(rep, lang, safeCell)
+}
+
+func timeReportTable(rep *TimeReport, lang string, safeCell func(string) string) ExportTable {
 	h := headers(lang)
 	cols := []string{h[rep.GroupBy], h["tracked"], h["rounded"], h["hours"], h["billable"], h["entries"]}
 	if rep.Finance {
@@ -100,6 +104,10 @@ func TimeReportTable(rep *TimeReport, lang string) ExportTable {
 
 // ProfitabilityTable renders the per-project (or per-client) profitability table.
 func ProfitabilityTable(p *Profitability, by, lang string) ExportTable {
+	return profitabilityTable(p, by, lang, safeCell)
+}
+
+func profitabilityTable(p *Profitability, by, lang string, safeCell func(string) string) ExportTable {
 	h := headers(lang)
 	cols := []string{h[by], h["rounded"], h["billable"], h["billable_value"] + " (" + p.Currency + ")", h["cost_value"] + " (" + p.Currency + ")",
 		h["profit"] + " (" + p.Currency + ")", h["margin"]}
@@ -133,15 +141,26 @@ type ExportFile struct {
 	Data              []byte
 }
 
-// ExportReport renders kind (time | profitability) as format (csv | xlsx).
+func plainCell(s string) string { return s }
+
+// ExportReport renders kind (time | profitability) as format (csv | xlsx | pdf | md). CSV/XLSX go
+// through togo import-export; PDF and Markdown render the same table (cell for cell, without the
+// spreadsheet formula guard, which only applies to spreadsheets) plus the report's context,
+// through report_doc.go.
 func (sv *Service) ExportReport(ctx context.Context, kind, format, lang, by string, q ReportQuery) (*ExportFile, error) {
 	if format == "" {
 		format = "csv"
 	}
-	if err := oneOf("format", format, "csv", "xlsx"); err != nil {
+	if err := oneOf("format", format, "csv", "xlsx", "pdf", "md"); err != nil {
 		return nil, err
 	}
+	doc := format == "pdf" || format == "md"
+	cell := safeCell
+	if doc {
+		cell = plainCell
+	}
 	var t ExportTable
+	var d *Doc
 	var from, to string
 	switch kind {
 	case "", "time":
@@ -150,8 +169,11 @@ func (sv *Service) ExportReport(ctx context.Context, kind, format, lang, by stri
 		if err != nil {
 			return nil, err
 		}
-		t, from, to = TimeReportTable(rep, lang), rep.From, rep.To
+		t, from, to = timeReportTable(rep, lang, cell), rep.From, rep.To
 		kind += "-by-" + rep.GroupBy
+		if doc {
+			d = TimeReportDoc(rep, lang)
+		}
 	case "profitability":
 		if by == "" {
 			by = "project"
@@ -163,10 +185,17 @@ func (sv *Service) ExportReport(ctx context.Context, kind, format, lang, by stri
 		if err != nil {
 			return nil, err
 		}
-		t, from, to = ProfitabilityTable(p, by, lang), p.From, p.To
+		t, from, to = profitabilityTable(p, by, lang, cell), p.From, p.To
 		kind += "-by-" + by
+		if doc {
+			d = ProfitabilityDoc(p, by, lang)
+		}
 	default:
 		return nil, invalid("kind must be time or profitability")
+	}
+	name := fmt.Sprintf("mahaam-%s-%s-%s.%s", kind, from, to, format)
+	if doc {
+		return renderDoc(d, name, format)
 	}
 	ie := sv.Sheet
 	if ie == nil {
@@ -176,8 +205,7 @@ func (sv *Service) ExportReport(ctx context.Context, kind, format, lang, by stri
 	if err != nil {
 		return nil, err
 	}
-	f := &ExportFile{Name: fmt.Sprintf("managy-%s-%s-%s.%s", kind, from, to, format), Data: data,
-		ContentType: "text/csv; charset=utf-8"}
+	f := &ExportFile{Name: name, Data: data, ContentType: "text/csv; charset=utf-8"}
 	if format == "xlsx" {
 		f.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	} else {
@@ -185,4 +213,15 @@ func (sv *Service) ExportReport(ctx context.Context, kind, format, lang, by stri
 		f.Data = append([]byte("\xEF\xBB\xBF"), data...)
 	}
 	return f, nil
+}
+
+func renderDoc(d *Doc, name, format string) (*ExportFile, error) {
+	if format == "pdf" {
+		data, err := d.PDF()
+		if err != nil {
+			return nil, err
+		}
+		return &ExportFile{Name: name, ContentType: "application/pdf", Data: data}, nil
+	}
+	return &ExportFile{Name: name, ContentType: "text/markdown; charset=utf-8", Data: []byte(d.Markdown())}, nil
 }

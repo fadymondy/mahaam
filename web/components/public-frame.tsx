@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import type { ReactNode } from "react"
+import { brandName } from "@/lib/brand-name"
 
 import { cn } from "@/lib/utils"
 import { CubeMark } from "@/components/brand/cube-mark"
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls"
-import { MANAGY_MARK } from "@/lib/brand/mark"
+import { MAHAAM_MARK } from "@/lib/brand/mark"
 import { useTranslations } from "@/lib/i18n"
 
 /*
@@ -37,10 +38,10 @@ export function PublicFrame({
     <div className="relative isolate flex min-h-dvh flex-col overflow-x-clip">
       <header className="sticky top-0 z-50 bg-background px-2">
         <div className="grid-screen-line-top grid-screen-line-bottom mx-auto flex h-14 max-w-[860px] items-center gap-2 border-x border-line ps-4 pe-2">
-          <Link href={`/${locale}`} className="flex items-center gap-2.5" aria-label="Managy">
-            <CubeMark mark={MANAGY_MARK} size={22} />
+          <Link href={`/${locale}`} className="flex items-center gap-2.5" aria-label={brandName(locale)}>
+            <CubeMark mark={MAHAAM_MARK} size={22} />
             <span className="text-[15px] font-medium" dir="ltr">
-              Managy
+              {brandName(locale)}
             </span>
           </Link>
           <div className="flex-1" />
@@ -75,7 +76,7 @@ export function PublicFrame({
           </div>
           <div className="grid-screen-line-bottom flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm">
             <span className="grid-mono font-medium" dir="ltr">
-              Managy
+              {brandName(locale)}
             </span>
             <span className="text-grid-muted">{t("footer.tagline")}</span>
           </div>
@@ -92,8 +93,8 @@ export function PublicFrame({
             <FooterCell label={t("footer.languages")}>English · العربية</FooterCell>
           </dl>
           <div className="grid-screen-line-top grid-screen-line-bottom mt-4 flex items-center px-4 py-3 text-grid-muted">
-            <Link href={`/${locale}`} aria-label="Managy">
-              <CubeMark mark={MANAGY_MARK} size={16} />
+            <Link href={`/${locale}`} aria-label={brandName(locale)}>
+              <CubeMark mark={MAHAAM_MARK} size={16} />
             </Link>
           </div>
         </div>

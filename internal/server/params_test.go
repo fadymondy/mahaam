@@ -17,7 +17,7 @@ bind to an input field.
 
 Huma v2.27 silently skips any field promoted through an UNEXPORTED embedded struct: the path
 parameter is never bound, there is no registration error and no 422 — the handler just
-receives "", which in Managy reads as "not found". It shipped once in P1 (every /api/w/*
+receives "", which in Mahaam reads as "not found". It shipped once in P1 (every /api/w/*
 input embedded lower-case `ws` / `taskRef` types) and was caught by the isolation sweep's
 fixtures; this guard catches it at build time for every route, P0 included. (P0's embedded
 `wsHeader` has the same defect for its X-Workspace-ID header parameter — harmless, the guard
@@ -25,7 +25,7 @@ middleware reads the raw header — so only the OpenAPI docs miss it.)
 */
 func TestEveryPathParamIsBound(t *testing.T) {
 	router := chi.NewMux()
-	api := humachi.New(router, huma.DefaultConfig("Managy API", "0.1.0"))
+	api := humachi.New(router, huma.DefaultConfig("Mahaam API", "0.1.0"))
 	registerREST(api, nil)
 
 	brace := regexp.MustCompile(`\{([^}]+)\}`)

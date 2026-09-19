@@ -1,15 +1,36 @@
-# Managy
+# Mahaam — مهام
 
-Project management and time tracking — a rebuild of `fadymondy/3x1projects` on
-[ToGO](https://github.com/togo-framework) (Go: chi + Huma + gqlgen + sqlc + Postgres)
-and Next.js 16 on the fadymondy.com grid. Plan: `fadymondy.com-v2/.setup/plans/imanage.md`
-(renamed iManage → Managy on 2026-09-14).
+**Mahaam** (Arabic مهام, "tasks") is a project-management system (PMS) for agencies and product
+teams: projects and issues, time tracking on every device, invoices, a customer portal, an
+embeddable Feedback SDK, and AI agents that work the issue board over MCP.
 
-**Status: P5 — local development (public preview at https://managy-app.fadymondy.com via a tunnel to the dev servers).** No deploy, no DNS. P0 (tenancy, RLS, MCP, feedback)
-plus P1: clients, projects, teams, per-project statuses, tasks with board/list, checklist,
-subtasks, labels, comments with @mentions, attachments and the activity feed; P2: time tracking —
-the timer, timesheets, rates, realtime sync and reminders; P3: MCP rate limits and report tools; P5: reports,
-budgets, profitability, exports, saved views, notification events, email and the daily digest.
+- **Product home:** https://mahaam.app (the landing is served by the fadymondy.com-v2 site)
+- **App / console:** https://console.mahaam.app (login, REST `/api`, GraphQL, MCP `/api/mcp`,
+  the widget at `/embed/v1.js`). The old host `managy-app.fadymondy.com` still serves the same stack.
+- **Stack:** [ToGO](https://github.com/togo-framework) (Go: chi + Huma + gqlgen + sqlc + Postgres
+  with RLS) and Next.js 16 on the fadymondy.com grid. Clients in `apps/`: an Electron tray app,
+  a Chrome extension and the Expo mobile apps (Mahaam Team, Mahaam Client). SDKs in `sdk/`.
+
+**Status: live** on Proxmox LXC 116 (`/opt/mahaam`, containers `mahaam-api` / `mahaam-web`,
+database `mahaam` on pg-shared). Built so far:
+
+| Phase | What |
+|---|---|
+| P0 | Tenancy, RLS, user + admin MCP, feedback intake |
+| P1 | Clients, projects, teams, statuses, tasks (board/list), checklists, labels, comments, attachments, activity |
+| P2 | Timer, timesheets, rates, realtime sync, reminders |
+| P3 / P5 | MCP rate limits and report tools; reports, budgets, profitability, exports, saved views, notifications, email + digest |
+| P6 / P7 | Invoices from time; client portal and the embeddable widget |
+| P8 | Feedback SDK + issue tracker + `/issues` agent loop, GitHub / Jira / Linear, project vault, customer import + PDF/Markdown reports, customer portal with requests, label/team/task access, AI usage + subscriptions on invoices, employee KPIs, native clients |
+
+**History.** A rebuild of `fadymondy/3x1projects` (plan: `fadymondy.com-v2/.setup/plans/imanage.md`),
+renamed iManage → Managy (2026-09-14) → **Mahaam** (2026-09-19). Renamed everywhere: the repo
+(`fadymondy/mahaam`), the Go module, databases and roles (`mahaam`, `mahaam_app`), containers,
+SDK packages (`@mahaam/feedback`, `mahaam/feedback`, `mahaam-feedback`), token prefixes (new
+`mhm_` / `mha_`; old `mgy_` / `mga_` still accepted) and issue keys (new `MH-n`; old `MG-n` still
+resolve). Kept on purpose: `MANAGY_*` env vars as fallbacks for `MAHAAM_*` (production's sealing key
+is `MANAGY_SECRET_KEY` — never change it without rotation), scheduler job names, the secretbox
+key-derivation constants, and old-name aliases in the SDKs and widget (`window.ManagyFeedback`, …).
 
 ## Ports (local dev)
 
@@ -17,12 +38,12 @@ budgets, profitability, exports, saved views, notification events, email and the
 |---|---|
 | API (Go) | **8110** — REST `/api`, GraphQL `/graphql`, docs `/docs`, MCP `/api/mcp`, admin MCP `/api/admin/mcp` |
 | Web (Next dev) | **3010** — proxies `/api/*` and `/graphql` to 8110 |
-| Postgres (docker compose, container `managy-postgres`) | **55460** — databases `managy`, `managy_test` |
+| Postgres (docker compose, container `mahaam-postgres`) | **55460** — databases `mahaam`, `mahaam_test` |
 
 ## Run it
 
 ```bash
-cp .env.example .env           # set the managy_app password and AUTH_SECRET
+cp .env.example .env           # set the mahaam_app password and AUTH_SECRET
 make db                        # Postgres on :55460
 make migrate                   # schema, app role, FKs, RLS (idempotent)
 make api                       # :8110
@@ -34,8 +55,8 @@ Open http://localhost:3010 → register → create a workspace.
 Admin MCP bootstrap (after registering in the UI):
 
 ```bash
-go run ./cmd/managy-admin promote you@example.com
-go run ./cmd/managy-admin token you@example.com -name "claude" -scopes admin:issues:read,admin:issues:write
+go run ./cmd/mahaam-admin promote you@example.com
+go run ./cmd/mahaam-admin token you@example.com -name "claude" -scopes admin:issues:read,admin:issues:write
 ```
 
 User MCP tokens are minted in the app: Workspace → MCP tokens.
@@ -45,7 +66,7 @@ User MCP tokens are minted in the app: Workspace → MCP tokens.
 ```bash
 make test       # unit + CI guards: every MCP tool has a scope; every sqlc query on a
                 # tenant table carries workspace_id = $n; authz matrix; slugs
-make test-e2e   # boots the real stack on managy_test: the route sweep, TestTimeTracking, TestReports, TestMCPSession; sweeps EVERY route as
+make test-e2e   # boots the real stack on mahaam_test: the route sweep, TestTimeTracking, TestReports, TestMCPSession; sweeps EVERY route as
                 # anonymous / non-member / other-workspace member (+ MCP checks)
 make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
 ```
@@ -64,7 +85,7 @@ make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
 - **Integrity in the database**: every reference between tenant rows is a composite foreign key
   on `(workspace_id, ref)` (`internal/db/post/11_p1_constraints.sql`), so no row can point into
   another workspace whatever the code does. RLS covers every P1 table (`21_rls_p1.sql`).
-- **Activity** (`activity_logs`): written by Managy in the transaction of the change; the actor
+- **Activity** (`activity_logs`): written by Mahaam in the transaction of the change; the actor
   is the session user or the MCP token's user (`actor_via = mcp`, token id recorded), the IP is
   `RemoteAddr`. Never togo `audit`, which takes the causer from `X-User-Id`. Append-only (RLS has
   SELECT + INSERT policies only).
@@ -78,7 +99,7 @@ make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
   Settings, the task side-over on `?task=MG-12`, `/clients`, `/teams`, `/settings/labels`.
   The board is `@shadcnspace/kanban-application-01` (dnd-kit) adapted; attachments use
   `@shadcnspace/file-upload-02` (react-dropzone). P1 strings live in `web/lang/work.{en,ar}.json`;
-  user colours are palette keys mapped to `app/styles/managy-palette.css`.
+  user colours are palette keys mapped to `app/styles/mahaam-palette.css`.
 
 Browser check (headless Chrome, fresh profile; counts animation frames first): with the API and
 web running, `cd web && node e2e/p1-verify.mjs` — drag-and-drop persists across reload, the
@@ -128,7 +149,7 @@ Verification: `make test-e2e` runs the sweep and `TestTimeTracking` (50 parallel
 timer and no overlaps; the same entry split in Africa/Cairo and America/New_York; rate snapshot after a
 rate edit; locked/invoiced refusals; MCP round-trip; realtime isolation; reminders). Browser:
 `cd web && node e2e/p2-verify.mjs` (tab A → tab B realtime, ⌘K, side-over and card timers, MCP on the open
-timesheet, a 23:00–01:00 manual entry, en/ar × light/dark at 1440 and 390; `WEB_ORIGIN=https://managy-app.fadymondy.com`
+timesheet, a 23:00–01:00 manual entry, en/ar × light/dark at 1440 and 390; `WEB_ORIGIN=https://console.mahaam.app`
 for the public preview) and `node e2e/ui-tour.mjs` (every page, both widths, both languages and themes).
 The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a request open.
 
@@ -141,7 +162,7 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   manager+); `update_feedback_status` (`feedback:write`).
 - **Owner decision 11 is open**: tokens carry explicit scopes only, owners included (no `*`).
 - Exit check: `TestMCPSession` (in `make test-e2e`), and against a running stack
-  `cd web && node e2e/p3-mcp.mjs` (`WEB_ORIGIN=https://managy-app.fadymondy.com` for the preview; on this machine Node
+  `cd web && node e2e/p3-mcp.mjs` (`WEB_ORIGIN=https://console.mahaam.app` for the preview; on this machine Node
   needs `--dns-result-order=ipv4first --network-family-autoselection-attempt-timeout=5000` to reach Cloudflare).
 
 ## P5 — reports and notifications
@@ -171,6 +192,288 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   `cd web && node e2e/p5-verify.mjs`.
 - **Next (not built)**: timesheet submit/approve (`locked_at`), Toggl/Clockify CSV import (`source=import`).
 
+## P8.1 — Feedback SDK and the agent issue loop
+
+- **Widget** (`embed/src/widget.ts` → `make embed` → `/embed/v1.js`): the feedback-sdk ReportDialog anatomy
+  (title · type + priority · details · Attach: Screenshot / Select element / Image · selector · preview) in a Shadow
+  DOM on the grid tokens and the Mahaam brand. Lusail comes from the widget's origin, light/dark follows the host
+  (`data-theme` overrides it), and it works in en/ar with RTL. A floating launcher (`data-position`, `data-launcher="false"` +
+  `window.MahaamFeedback.open()`) and a "Powered by Mahaam" footer. Capture, picker and diagnostics are the shared
+  `web/lib/feedback/core`. The intake now takes `priority`.
+- **Server SDKs** (`sdk/`): `laravel` (`mahaam/feedback`: `@mahaamFeedback`, `MahaamFeedback::report()`), `node`
+  (`@mahaam/feedback`: Express middleware, exception hook, `@mahaam/feedback/react`), `go`
+  (`github.com/fadymondy/mahaam/sdk/go`: middleware, `Recover`), `python` (`mahaam-feedback`: Django middleware + tag,
+  Flask `init_app`). All read `MAHAAM_URL`, `MAHAAM_FEEDBACK_KEY`, `MAHAAM_APP_URL` (server reports send it as `page_url`, which
+  must be on the key's allowed origins). None of them is published to a registry yet.
+- **Connect in one step**: `GET /api/w/projects/{project}/feedback-install` and MCP `get_feedback_install {project, stack}`
+  return the env vars and the install steps per stack, and `stack=agent` returns a full prompt for a coding agent working in the
+  client's repo. The project settings show the same text as tabs, with a "Copy agent prompt" button.
+- **Issue MCP** (user, `issues:read|write`): `list_issues` (project, state; `human_only` hidden), `get_issue`,
+  `list_mentions` (`@agent`/`@claude`/`@ai` with no agent reply since), `create_issue`, `comment_issue` (`as_agent`),
+  `update_issue` (incl. `human_only`), `reorder_issue`, and the lifecycle in `internal/reports/lifecycle.go`:
+  `start_issue {plan}` (refused without a plan or on `human_only`; the plan is posted as a comment), `review_issue {note}`,
+  `request_approval {question}`, `finish_issue`. The lifecycle tools bank `agent_seconds` and clear `started_at`.
+- **`/issues` skill** (`.claude/skills/issues`): fadymondy.com-v2's loop on Mahaam's MCP, with a run strategy
+  (`sequential` · `parallel` (≤3 unrelated) · `mentions` · `drain` · `triage`) and the issue's own agent/skill/model.
+- **Launcher look and behaviour**: each key has a `widget` look (colour, text colour, icon, text, shape
+  pill/circle/square/tab, starting position, dialog theme and language). You set it in the project settings, with
+  `PATCH /api/w/feedback-keys/{key}` `{widget}`, or with MCP `set_feedback_widget`. The widget reads it from the public
+  `GET /api/feedback/embed/config?key=`, where an unknown key gets the default look. Attributes on the `<script>` tag override it.
+  Visitors can drag the launcher anywhere and right-click it (long-press on touch) to dock it to the edge, move it to a
+  corner, reset it, hide it for now or hide it on the site. These choices are kept in their browser, and Ctrl/⌘+Shift+F or
+  `MahaamFeedback.show()` brings it back.
+- Verification: `TestIssueLoop` (in `make test-e2e`).
+
+## P8.3 — project vault (secrets + memory)
+
+- One table, `project_vault_items`, holds two kinds of item. **memory** items are markdown notes that members+ on a visible
+  project read and write. They are searchable with Postgres full-text (`simple` config, so Arabic and English both work) and
+  `…/vault/recall?q=` ranks them. **secret** items are sealed with `internal/secretbox` (AES-256-GCM, `MAHAAM_SECRET_KEY`,
+  rotatable). A list or a search never returns a secret's value. Only managers+ or the project lead can store, change or
+  reveal a secret, and every reveal is written to the activity feed as `vault.secret_revealed`.
+- **REST**: `/api/w/projects/{project}/vault` (GET with kind/q/tag, POST), `…/vault/recall`, `/api/w/vault/{item}`
+  (GET/PATCH/DELETE), `/api/w/vault/{item}/reveal`. **MCP**: `vault_recall`, `vault_list` (`vault:read`);
+  `vault_remember`, `vault_update`, `vault_forget` (`vault:write`); `vault_store_secret`, `vault_reveal_secret`
+  (`vault:secrets`, manager+). **UI**: the project's Vault tab. Clients never see the vault.
+- Verification: `TestVault`.
+
+## P8.6 — roles and access (label → project → task)
+
+- **Roles** are the existing workspace roles, renamed in the UI: admin (owner/admin), project manager (manager), employee
+  (member) and customer (client). Managers+ see every project.
+- An **employee** sees a project in any of these cases:
+  - it is workspace-visible;
+  - they are on it (`project_members`);
+  - a team of theirs is attached (`project_teams`). Adding a team adds everyone in it, now and later;
+  - they or a team of theirs hold a **label grant**, and the project carries that label (`project_labels`, set in the
+    project's settings);
+  - they or a team of theirs hold a **task grant** on one of its tasks, or are assigned one. In that case they see the
+    project with only those tasks, and they cannot add tasks.
+- The SQL lives in `internal/work/projects.go` (`visibleClause`, `fullAccessSQL`, `taskClause`). A trigger deletes a grant
+  together with its label, task, team or membership (`18a_access_constraints.sql`).
+- **REST** (manager+, `access:manage`): `/api/w/access-grants` (GET, POST), `/api/w/access-grants/{grant}` (DELETE),
+  `/api/w/projects/{project}/project-labels` (GET, PUT). **MCP**: `list_access`, `grant_access`, `revoke_access`,
+  `set_project_labels`. **UI**: Settings → Access, and the Labels section in project settings.
+- Verification: `TestAccess`, and the sweep.
+
+## P8.9 / P8.11 — AI consumption and project subscriptions (billed on invoices)
+
+- **AI usage** (`ai_usage`) is stored per project, day, provider, model and source. Each row holds tokens (input, output,
+  cache read and write), requests, what it cost us, and a billable flag. Agents or scripts push it daily with MCP
+  `record_ai_usage` or `POST /api/w/projects/{project}/ai-usage` (`ai:record`, member+). A re-push of the same key replaces
+  that day's numbers, unless the day is already invoiced, in which case it is refused.
+- `GET /api/w/ai-usage` and MCP `ai_usage_summary` group usage by day, model, project or source, and show cost, billed
+  amount and unbilled amount (manager+). Each project has a markup (`ai_markup_bp`) set with `PUT …/ai-markup` or
+  `set_ai_markup`.
+- **Subscriptions** (`project_subscriptions`) record what a customer project runs on through us: infrastructure, AI,
+  marketing tools, domains, software, support. Each holds our cost and the billed price per month, quarter, year or
+  one-off. Endpoints: `/api/w/subscriptions`, `/api/w/projects/{project}/subscriptions`,
+  `/api/w/subscriptions/{subscription}`. MCP: `list_subscriptions`, `add_subscription`, `update_subscription` (manager+).
+  A billed subscription cannot be deleted; deactivate it instead.
+- **Invoices**: `draft_invoice_from_time` / `POST /api/w/invoices/from-time` bills three things:
+  - the time, as before;
+  - unbilled AI usage up to the end date, at cost + markup, one line per project and model. Those rows are then locked;
+  - every due subscription period up to the end date, one `subscription_charges` row per period (unique per period).
+  - Turn the last two off with `include_ai` / `include_subscriptions`. Voiding or deleting the invoice releases all three.
+- **UI**: the project's Billing tab shows AI usage with a daily cost chart, the markup, and the subscriptions.
+- Verification: `TestBilling`.
+
+## P8.4 — customer import and report documents
+
+- **Customer import** (`internal/work/client_import*.go`, manager+ / `clients:write`) into the workspace's
+  clients (`name, email, phone, company, notes`; `company` added by `internal/db/post/19_client_import.sql`).
+  Sources: CSV / XLSX upload (header row detected in the first five lines, Arabic and English headers,
+  headerless files guessed from content, delimiter `, ; tab` sniffed, BOM dropped), a Google Contacts CSV
+  export (both layouts map with no input), a vCard file (WhatsApp / phone contacts export; 2.1 quoted-
+  printable, folded lines), Google Contacts over OAuth, and an optional WhatsApp Business / Evolution API.
+- **Two steps, one plan**: `POST /api/w/clients/import/preview` writes nothing; `…/commit` re-parses and
+  re-plans (never trusts the preview) and applies in one transaction with a savepoint per row — an invalid
+  row is reported (`{row, column, message}`, row = the file line / card number) and the rest import.
+  Every created / updated client gets its `client.created` / `client.updated` entry (`source: import:<source>`).
+- **Dedupe**: email (case-insensitive) or phone (digits only, leading `00` dropped); email wins. A match
+  **fills in** what the client lacks (email, phone, company; notes appended) — an import never overwrites or
+  renames. Nothing new → skip ("already up to date"); `update_existing: false` skips every match; a repeat
+  of an earlier row in the same file is skipped. Commits are serialised per workspace (advisory lock).
+- **Google**: `POST /api/w/clients/import/google/start` → consent URL (`contacts.readonly`) with a state
+  signed by `secretbox` (workspace, user, expiry, nonce) and the nonce in an HttpOnly cookie scoped to the
+  callback. `GET /api/integrations/google/callback` is **PUBLIC** (exact path in the guard): state + cookie
+  verified, code exchanged, `people/me/connections` paged, token dropped. Contacts wait in an **in-process**
+  session (30 min, bound to user + workspace, used once) — several API replicas need sticky routing.
+- **Env**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (`GOOGLE_REDIRECT_URL` optional);
+  `WHATSAPP_API_URL`, `WHATSAPP_API_TOKEN`, `WHATSAPP_INSTANCE`. Unset → 503 "not configured".
+- **Report documents** (`internal/work/report_doc.go`): the time / profitability export takes
+  `format=pdf|md` besides `csv|xlsx`; `GET /api/w/projects/{project}/report?format=pdf|md|json` is the
+  project report (summary, tasks by status + % done, budget burn, time by member and by week, open issues,
+  recent activity). Every number comes from the function the UI uses (`GetProject`, `ProjectBudget`,
+  `TimeReport`, `ProjectActivity`); needs `reports:read` (clients 403; a member's time is their own).
+- **PDF** is pure Go (`go-pdf/fpdf`) with Vazirmatn embedded (SIL OFL, `internal/work/fonts/OFL.txt`).
+  fpdf has no OpenType shaping, so `pdf_shape.go` shapes Arabic into presentation forms (lam-alef
+  ligatures included) and runs a simplified bidi pass; Arabic documents lay out right-to-left. Limits:
+  harakat are not positioned, explicit bidi controls / nested embeddings are ignored. **Markdown is the
+  exact path for Arabic.**
+- **MCP**: `import_clients_preview`, `import_clients_commit` (`clients:write`; CSV / vCard text),
+  `export_time_report`, `export_project_report` (`reports:read`; Markdown).
+- **UI**: Clients → Import (CSV/XLSX, Google, WhatsApp tabs → mapping → preview → commit); PDF / Markdown
+  next to CSV / XLSX on the reports pages; "Download report" on the project Overview.
+- Verification: `TestClientImport` (DB), unit tests in `internal/work` (mapping, dedupe, vCard, Google /
+  WhatsApp mapping, state signing, Markdown, shaping, PDF).
+
+## P8.5 — customer portal and request portal
+
+- **Customer panel** (`/w/{slug}/portal`, `/portal/projects/{id}`): per project, AGGREGATES only — task counts
+  todo/doing/done and % done, status and dates, hours used vs the hours budget, hours per week (12 weeks, workspace
+  timezone, totals, no names), and counts of tasks completed in 7/30 days. Never task rows, time entries, rates, people
+  or the money budget. Money appears only on sent invoices (drafts hidden), to the client's own contacts or to invoice
+  readers. The customer sees ALL issues of their projects (slim: no logs, agent fields or author ids).
+  `internal/work/portal_panel.go`, `internal/reports/portal_panel.go`. Actions `portal:read` / `portal:write` (Client+)
+  on top of project visibility (404 otherwise).
+- **Customer issue control**: `PATCH /api/w/portal/issues/{key}` allows exactly accept (in_review → done), reopen
+  (done | in_review → todo) and priority; `POST …/comments` replies. The general `PATCH /api/w/issues/{key}` is unchanged.
+- **Requests**: a reports row with `request_state` (`pending | accepted | declined | converted`), `request_kind`
+  (feature/change/bug), `request_reply`, `desired_on` (`19b_portal_requests.sql`). `reports.List` (the board,
+  `/api/w/issues`, MCP `list_issues`) shows only `request_state IS NULL OR 'accepted'`. Customers file with
+  `POST /api/w/portal/requests` (multipart, the feedback parser) and see them at `GET /api/w/portal/requests`. The
+  **Requests inbox** (`requests:manage`, manager+): `GET /api/w/requests?state=`, `POST /api/w/requests/{key}/accept`
+  `{status?, priority?, issue_type?, reply?}`, `/decline {reason}` (required; the customer reads it),
+  `/convert-to-task {project?}` (a task via `internal/work`, a linking comment, state `converted`). Triage is only
+  from `pending` (409 otherwise). Inbox notifications: `request.created` → managers+, `request.accepted|declined|converted`
+  → the requester (`work.NotifyUsers`).
+- **MCP**: `portal_projects`, `portal_project` (`portal:read`), `request_feature` (`portal:write`); `list_requests`,
+  `accept_request`, `decline_request`, `convert_request` (`requests:manage`).
+- **Request cycle fix (owner feedback)**: the inbox listed only `pending` and had no detail view, so a request vanished
+  once triaged and could not be opened again (the `?key=` in the notification URL was ignored too). Now
+  `GET /api/w/requests/{key}` answers in EVERY state: body, requester e-mail, history, thread, `task_key` +
+  `task_project_id`. The inbox (`?state=` + `counts`) opens a side panel (`/requests?key=MG-n`) with "Convert to issue"
+  (type / priority / column), "Convert to task", "Decline", and for handled requests `POST …/reopen {note?}` →
+  pending (manager+; a task it became is kept). `19c_portal_share.sql` adds `request_history` (jsonb, appended on every
+  decision), `request_task_key`, `request_decided_at/_by` (backfilled from the reply). The staff issue page shows a
+  banner for request rows (`request_state` on `IssueDetail`). Screenshots are served (never publicly) at
+  `GET /api/w/issues/{key}/screenshot` (feedback:read) and `/api/w/portal/issues/{key}/screenshot` (visible project).
+- **Share with customer** (per project, `projects.share_board` on, `share_team` on, `share_money` off; `PATCH
+  /api/w/projects/{id}`, project settings, manager/lead). The panel adds `share`, `team` (display names + initials,
+  staff only, no ids/e-mails/rates), `columns` (status counts) and `budget_amount_minor` (money only when shared).
+  Dedicated read-only endpoints with explicit whitelists (`internal/work/portal_share.go`):
+  `GET /api/w/portal/projects/{project}/tasks` (board), `…/tasks/{task}` (description + checklist, never
+  task_comments), `…/time` (total, weeks, by task when the board is shared), `…/activity` (task created/moved/completed
+  when the board is shared, issue/request lifecycle). Board off → 404. Clients still get 403/404 on every staff task route.
+- **Customer MCP**: clients mint their own `mgy_` token (`portal:read`, `portal:write`) from the "Connect your AI" card
+  on the portal (or the MCP tokens page, which shows a client only the scopes their role may hold). `tools/list` now
+  lists only the tools whose scope the caller's role may hold. Tools: `portal_projects`, `portal_project`,
+  `portal_board`, `portal_task`, `portal_issues`, `portal_issue`, `portal_update_issue`, `portal_comment_issue`,
+  `request_feature`, `portal_requests`, `portal_invoices`, `portal_time`; staff: `get_request`, `reopen_request`.
+- **UI**: the shadcn `Tabs` root used `data-horizontal:` variants that never matched Base UI's `data-orientation`
+  (tabs rendered beside the content — the tall box in RTL); fixed in `components/ui/tabs.tsx`. The portal uses
+  `ScrollTabs` (horizontal, scrollable, RTL-safe): Overview · Board · Issues · Requests · Time · Invoices · Activity.
+- Verification: `TestCustomerPortal` (incl. the reopen-after-action regression, board/task/time/activity, share
+  settings, client MCP), and the sweep (`portal`, `requests`, `issues` segments). Screenshots `web/e2e/shots/portal-*.png`.
+
+## P8.10 — employee KPI, manager reviews and per-user GitHub accounts
+
+- **KPI** (`internal/work/kpi.go`): raw facts about one member over local days (workspace timezone), never a score.
+  Time comes from ended `time_entries`, cut at local midnight, by project and week. Tasks are the assigned ones completed in
+  range (and late), open and overdue now. Issues are the agent loop, attributed via `report_comments` with `author_kind='agent'`
+  and `author_id` = the token's user (plans, reviews, approvals, finishes, the `agent_seconds` of the issues worked, and
+  `@agent` mentions answered). AI is `ai_usage.user_id` (tokens always, cost only for `ai_usage:read`). GitHub is
+  `github_events` matched to the member's `user_github_accounts` login (case-insensitive) or e-mails **at query time**, so a
+  new mapping covers history and no event row is rewritten. MCP is `activity_logs` with `actor_via='mcp'`. Reviews are the
+  `member_reviews` whose period overlaps the range.
+- **Access** (authz): `kpi:read` (member+): your own KPI, GitHub account and reviews. `kpi:all` (manager+): anyone's, the
+  team table and mapping someone's GitHub. `kpi:review` (manager+): write and delete reviews, never of yourself. A user
+  who isn't an active non-client member is a 404.
+- **GitHub accounts**: members connect themselves with the GitHub App's user authorization (`GITHUB_APP_CLIENT_ID/SECRET`).
+  `GET /api/w/me/github/connect` returns the authorize URL with a secretbox-signed state (`github-user:` purpose
+  prefix; workspace, user, slug, locale, nonce, 15-minute expiry) and sets the nonce as an HttpOnly cookie scoped to the
+  callback. The PUBLIC `GET /api/integrations/github/user-callback` (guard allowlist) checks both, exchanges the code,
+  reads `/user` and `/user/emails`, keeps only verified addresses plus `<id>+<login>@users.noreply.github.com`, seals
+  the user token, and redirects to `/{locale}/w/{slug}/me`. Managers can map someone by hand with
+  `PUT /api/w/members/{user}/github {login, emails}`. A login maps to one member per workspace.
+- **REST**: `/api/w/me/github` (GET, DELETE), `/api/w/me/github/connect`, `/api/w/members/{user}/github` (GET, PUT, DELETE),
+  `/api/w/members/{user}/kpi`, `…/kpi/dossier` (markdown + the AI prompt), `/api/w/members/{user}/reviews` (GET, POST),
+  `/api/w/reviews/{review}` (DELETE), `/api/w/kpi/team`. `{user}` accepts an id, an e-mail or `me`.
+- **MCP**: `employee_kpi {user, from, to}` returns the markdown dossier: sections, tables and raw facts, and it says
+  where data is missing. `team_kpi`, `list_member_reviews` (`kpi:read`); `add_member_review` (`kpi:review`).
+- **UI**: `/{locale}/w/{slug}/me` (the "My profile" item in the user menu) has the Connect GitHub card and your own
+  dashboard. The member detail page carries the dashboard: date range, tiles, hours by week and project, GitHub by
+  project, AI, reviews with "Add review", "Map GitHub", and "Copy AI prompt". `/members/kpi` is the team table (manager+).
+- Verification: `TestKPI` (with a fake GitHub for the OAuth flow), the unit tests in `internal/work/kpi_test.go`, and the
+  sweep (`members`, `reviews`, `kpi` segments).
+
+## Platform admin and plans
+
+- **Who**: platform admins are users whose `users.roles` contains `admin` (`go run ./cmd/mahaam-admin promote <email>`).
+  The role is read from the database on every call (10-second in-process cache; changes made through the panel apply
+  at once).
+- **Admin panel** `/[locale]/admin` (Dashboard, Users, Workspaces, Plans, Issues, Audit log), linked from the user menu
+  only when `GET /api/me/platform` says `is_admin`. REST: `/api/admin/*` (`internal/admin`), a guard tier of its own —
+  session + CSRF + platform admin, and **404 to everyone else, anonymous included** (the isolation sweep checks every
+  `/api/admin/*` route as anonymous and as a non-admin). Issues: platform admins act in the `platform` workspace as
+  workspace admins without a membership row (`tenant.Resolve`), so the panel reuses `/w/platform/issues`.
+- **Plans** (`plans`, platform table, owner pool only): names/descriptions/price labels en+ar, currency, base fee, and
+  `limits` jsonb keyed by `internal/limits/catalog.go` — counts `members` (active staff + pending staff invitations;
+  customers are free), `projects` (not archived), `clients`, `tasks`, `issues`, `teams`, `feedback_keys`,
+  `mcp_tokens`; data `storage_mb` (attachments + issue/request screenshots); monthly `issues_per_month`,
+  `tasks_per_month`, `api_calls_per_month` (UTC months); rate `api_rate_per_minute`. A rule is
+  `{limit (null = unlimited), policy, unit_price_minor, unit_size}`: **block** refuses with 402 ("Your plan (Free)
+  allows 2 projects — upgrade in Settings → Plan"); **overage** lets it through and bills whole `unit_size` blocks over
+  the limit (count/storage limits on the month's peak). Features `ai_usage_tracking`, `integrations`
+  (github/jira/linear), `customer_portal`, `vault`, `kpi` (402 `plan_feature`). Seeded: `free`, `pro`, `business`,
+  `unlimited` (no limits, all features).
+- **Per workspace**: `workspaces.plan_overrides` (a rule per key replaces the plan's; features merge per key),
+  `status` active|suspended + `suspended_reason`. Suspended workspace → **403** `workspace_suspended` for members
+  (REST + MCP), embed refuses; platform admins still see it. Suspended **account** (`platform_users.suspended_at`) →
+  403 `account_suspended` everywhere, sign-in refused, MCP tokens refused. "Sign out everywhere" sets
+  `sessions_valid_after` (older session JWTs → 401; MCP tokens are not sessions). **Password reset**: the auth plugin
+  has no reset flow, so the panel cannot send one — not done.
+- **Enforcement**: one helper, `internal/limits` (`Check`, `CheckStorage`, `Feature`, `Integration`, `CountCall`),
+  called in the domain functions REST and MCP share: invitations/accept, `CreateProject`, `CreateClient` + client
+  import, `CreateTeam`, `CreateTask`, `reports.Create` (every issue: app, portal, requests, embed, MCP, integration
+  imports), MCP tokens, feedback keys, attachments and screenshots, and the vault / KPI / AI usage / customer portal /
+  integration entry points. The public embed answers 402 `quota_exceeded`; the widget shows "not available".
+  Admin actions (admin MCP `add_member`) are not limited.
+- **Metering**: `workspace_usage` (per workspace per month): `issues_created`/`tasks_created` from SECURITY DEFINER
+  triggers; `api_calls` counted in memory (guard workspace tier + user MCP) and flushed every minute; `peaks`. The
+  per-minute rate is per process. Report: `GET /api/w/plan` (owner/admin), the admin panel, MCP `workspace_usage` /
+  `estimate_bill`: usage vs quota and estimate = base fee + overage.
+- **Migrations**: `internal/db/schema/platform.sql`, `internal/db/post/19d_platform.sql`, `19e_billing.sql`, run by
+  `go run ./cmd/migrate` as the owner role — no superuser needed. **Existing workspaces move to `unlimited` once**
+  (marker `platform_meta.plans_grandfathered`); new ones get `PLAN_DEFAULT` (default `free`). The platform workspace
+  is always `unlimited`.
+- **Audit**: every admin change is appended to `admin_audit` in the same transaction (`via` rest / mcp / webhook).
+- **Admin MCP** (new scopes `admin:users:write`, `admin:plans:read`, `admin:plans:write`, `admin:stats:read`):
+  `platform_stats`, `list_plans`, `update_plan`, `set_workspace_plan`, `suspend_workspace`, `suspend_user`,
+  `workspace_usage`, `estimate_bill`, `billing_status`; `update_workspace` changes plans through the same audited path.
+- Verification: `TestPlatformAdmin`, `TestPolarBilling`, `internal/limits` and `internal/billing/polar` unit tests,
+  the isolation sweep.
+
+## Billing (Polar)
+
+Polar (polar.sh, merchant of record, org `3x1io`) sells the paid plans (`internal/billing/polar`). Env only:
+`POLAR_ACCESS_TOKEN`, `POLAR_API_URL`, `POLAR_WEBHOOK_SECRET`, `POLAR_SUCCESS_URL`. Everything Mahaam creates is
+named "Mahaam …" and tagged `metadata {"app":"mahaam", …}`; the org's other products, meters and webhooks are never
+treated as Mahaam's or changed.
+
+- **Sync** (`go run ./cmd/mahaam-admin polar-sync [--dry-run]`, or Admin → Plans → Sync to Polar): one meter per
+  overage-billed limit key (event `mahaam.usage`, filter `app=mahaam` + `key=<limit>`, sum of `units`) and one product
+  per paid plan (monthly fixed base price + a metered price per overage key, `unit_price_minor` per billing unit). Ids
+  go to `plans.polar_product_id` / `polar_price_ids` and `polar_meters`. Idempotent; a dry run calls no write endpoint.
+- **Checkout**: Settings → Plan → Upgrade → `POST /api/w/billing/checkout {plan}` (owner/admin) → Polar checkout
+  (`external_customer_id` = workspace id, owner email, metadata) → redirect. "Manage billing" → `POST
+  /api/w/billing/portal`.
+- **Webhook** `POST /api/billing/polar/webhook` (public, exact path in the guard): Standard Webhooks signature,
+  5-minute window, deduplicated in `polar_webhook_events`. `subscription.*` / `order.paid` set the plan and
+  `billing_status`; canceled keeps the plan until `billing_period_end` (then the job moves it to `free`); revoked →
+  `free` at once.
+- **Usage**: job `mahaam.billing.polar` (every 15 min) pushes overage billing units per workspace/month/key to
+  `/v1/events/ingest` as deltas against `polar_usage_sent`; `external_id` carries the cumulative total, so a retry is
+  deduplicated by Polar.
+- **One-time setup**: 1) `go run ./cmd/migrate`; 2) `go run ./cmd/mahaam-admin polar-sync --dry-run`, review, then
+  `polar-sync`; 3) create the webhook in the Polar dashboard for `https://console.mahaam.app/api/billing/polar/webhook`
+  (subscription.created/active/updated/canceled/uncanceled/revoked, order.paid) — or run
+  `polar-sync --webhook https://console.mahaam.app/api/billing/polar/webhook`, which prints the secret once;
+  4) set `POLAR_WEBHOOK_SECRET` and restart the API.
+- Tested against a fake Polar server only. The meter filter property names and the customer-session endpoint follow
+  Polar's docs; check them on the first dry run / sync.
+
 ## Tenancy
 
 - `workspaces`, `workspace_members` (owner/admin/manager/member/client), `invitations`;
@@ -181,7 +484,7 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   (`internal/authz/can.go`), which is itself default-deny per table. Tenancy tables are
   read-only through generated CRUD; membership changes go through `/api/w/*` and `/api/me/*`.
 - **RLS**: two pools. `DATABASE_URL` = owner (migrations, auth, tenant resolution, admin MCP,
-  explicit predicates everywhere). `APP_DATABASE_URL` = `managy_app` (no superuser, no
+  explicit predicates everywhere). `APP_DATABASE_URL` = `mahaam_app` (no superuser, no
   BYPASSRLS, owns nothing, no grant on `users`/`admin_mcp_tokens`). Every ORM/generated query
   runs on the app pool, whose connection wrapper (`internal/tenant/rlsdb.go`) runs
   `set_config('app.workspace_id', …)` before each statement. Boot refuses to start if the app
@@ -278,11 +581,109 @@ Found building P2:
 Found building P3/P5:
 
 18. togo `ratelimit`'s `Middleware` answers `text/plain` "rate limit exceeded" (an MCP client cannot parse it) and
-    its in-memory store never evicts keys. Managy calls `Allow` and writes a JSON-RPC 429 itself.
+    its in-memory store never evicts keys. Mahaam calls `Allow` and writes a JSON-RPC 429 itself.
 19. togo `import-export` mounts `GET /api/export/{resource}` and `POST /api/import/{resource}` with no auth over a
     process-global registry (blocked in the guard); it writes every XLSX cell as text and does nothing about
     spreadsheet formula injection.
-20. togo `mail`'s `log` driver records only recipient and subject, so nothing can be checked — Managy registers a
+20. togo `mail`'s `log` driver records only recipient and subject, so nothing can be checked — Mahaam registers a
     `file` driver (`internal/mailer`).
 21. `make:resource` types a nullable `date` field as `String!` in GraphQL and a non-pointer `time.Time` in the
     resource and handler (retyped).
+
+## Clients — mobile apps
+
+`apps/mobile` is one Expo codebase (SDK 57, expo-router, TypeScript strict) that ships as two store apps. `APP_VARIANT`
+chooses the app name, bundle id, icon, splash and which navigation tree gets mounted (`app.config.ts`):
+
+| Variant | App | Bundle id | Who |
+|---|---|---|---|
+| `team` | Mahaam Team | `com.fadymondy.mahaam.team` | Staff. Screens: Today (timer with start/stop/switch), Tasks (my tasks in board order plus open issues, start a timer, task detail with checklist and comments), Log time, Timesheet, Inbox. A local reminder fires when a timer has run longer than the workspace's `reminder_running_hours`. |
+| `client` | Mahaam Client | `com.fadymondy.mahaam.client` | Customers. Screens: projects with progress and hours, project page (issues with accept/reopen, requests, invoices), report an issue or make a request with a photo, invoices. |
+
+```bash
+cd apps/mobile && npm install        # standalone package; not part of the apps/ npm workspaces
+npm run start:team                   # or start:client. API = EXPO_PUBLIC_API_URL, default http://<metro host>:8120
+npm run typecheck && npm test        # jest-expo: API client auth dance, SSE parser, time/board logic, hooks
+npm run export:web:team && npm run serve:web -- team      # web QA build on :8091, /api proxied to :8120
+npm run export:web:client && npm run serve:web -- client  # :8092
+npm run icons                        # regenerate icons and splash from the mark
+```
+
+- **Auth**: `POST /api/auth/login` with the double-submit CSRF token (`togo_csrf` cookie + `X-CSRF-Token`). After that,
+  every call sends `Authorization: Bearer <jwt>` and `X-Workspace-ID`. The email and password are kept in
+  expo-secure-store. On a 401, or when the JWT is about to expire, the client signs in again silently. Concurrent
+  requests share a single re-login, and if that re-login fails the session is dropped. Login is rate-limited
+  server-side, and a 429 does not sign the user out.
+- **Web target**: the API's CORS list only names the Next app, and a browser can't set a cross-site CSRF cookie. So the
+  web build must be served same-origin with `/api`, which is what `scripts/serve-web.mjs` does.
+- **Realtime**: `/api/w/events` is streamed with fetch (`expo/fetch` on devices). When the stream is down, screens poll
+  every 30 s. TanStack Query with an AsyncStorage persister keeps the last data available offline.
+- **Portal**: the richer endpoints (`/api/w/portal/projects…`, `/requests`) are feature-detected. On a 404 the app
+  falls back to `/api/w/projects` and the issue intake. `GET /api/w/invoices/{id}/print` answers 403 to customers, so
+  the invoice screen shows the details in the app instead.
+- **Build with EAS** (`eas.json`): the profiles are `team-development|preview|production` and
+  `client-development|preview|production`, e.g. `eas build -p ios --profile team-production`. Set `EAS_PROJECT_ID` and
+  check `EXPO_PUBLIC_API_URL` per profile before the first build.
+- **Not done yet**: device builds, store submission and remote push notifications. Reminders are local notifications
+  only. The apps use the system font because Lusail ships in the repo only as woff2, with no licence file.
+
+## Clients — tray app and Chrome extension
+
+`apps/` is an npm workspace with the employee clients. They use the same REST API as the web app
+(no new endpoints):
+
+- `apps/shared` (`@mahaam/client`) is a typed fetch client. Its types are generated from the OpenAPI
+  spec with `npm run gen:types`, which reads a running API on :8120 by default or `MAHAAM_OPENAPI`.
+  It also holds the SSE parser, the brand tokens and mark, and the shared React panel (en/ar,
+  light/dark).
+- `apps/tray` is the Electron menu-bar/tray app. It has a popover with sign-in, workspace picker,
+  running timer, Next up with one-click start, quick log, today's entries and notifications. The
+  timer shows in the tray title on macOS and in the tooltip on Windows, and there is a global
+  shortcut (`Ctrl/⌘+Alt+Shift+M`) plus open-at-login.
+- `apps/extension` is the Chrome MV3 extension. It has the same popup, a toolbar badge with the
+  running timer's minutes, and a page context menu ("File an issue" / "Log time") that pre-fills an
+  issue with the page URL.
+
+```bash
+cd apps && npm install
+npm test                      # client + SSE parser unit tests (vitest)
+npm run typecheck
+npm run dev:tray              # Vite + Electron; sign-in defaults to MAHAAM_API_URL (dev: http://localhost:8120)
+npm run build:tray            # renderer + main/preload + build/icon.png
+npm run package:tray          # electron-builder installers for the current OS (dmg/zip, nsis, AppImage/deb)
+npm run dev:extension         # popup in a normal tab (chrome.* shim, /api proxied to MAHAAM_DEV_API)
+npm run build:extension       # dist/ → chrome://extensions → Load unpacked
+MAHAAM_API_URL=http://localhost:8120 npm run build:extension   # default server + its host permission
+npm run e2e:tray              # E2E_EMAIL/E2E_PASSWORD, built app, real API
+npm run e2e:extension         # needs Chromium or Chrome for Testing (branded Chrome ignores --load-extension)
+```
+
+**Auth.** Native clients call `POST /api/auth/login` and then use `Authorization: Bearer <jwt>` +
+`X-Workspace-ID`. Bearer requests skip CSRF, but the login POST does not. The tray's main process
+sends a random value as both `Cookie: togo_csrf` and `X-CSRF-Token`. The extension can't set
+`Cookie`, so it calls `GET /api/auth/csrf` with credentials first and echoes the token back. The
+JWT lasts 24h.
+- **Tray:** "Keep me signed in" stores the password in the OS keychain (Electron `safeStorage`).
+  The client then logs in again silently when the token is about to expire or gets a 401. On Linux
+  with no keyring nothing secret is stored.
+- **Extension:** only the token is stored, in `chrome.storage.local`. A 401 sends you back to
+  sign-in.
+
+**Realtime.** Realtime uses `/api/w/events` read through fetch streaming, because EventSource
+can't send the Bearer header.
+- **Tray:** the main process keeps the stream open.
+- **Extension:** the popup streams while it is open. The service worker polls
+  `/api/w/time/running` once a minute (`chrome.alarms`) to keep the badge current.
+
+**API limits.** Issues have no assignee in the API, so Next up shows my open tasks (in progress
+first, in board order) followed by open issues I reported or that are in progress. A timer can't
+target an issue directly, so starting one on an issue uses the issue's project with the issue key
+as its description.
+
+**Security.**
+- **Tray:** the renderer is sandboxed with `contextIsolation` and no `nodeIntegration`. It makes
+  no network calls: everything goes through a preload bridge with a fixed channel list to the main
+  process. Production CSP is `default-src 'none'`.
+- **Extension:** permissions are `storage`, `alarms` and `contextMenus`, plus a host permission
+  for the configured API origin only. Other origins are optional and requested at sign-in or in
+  the options page.

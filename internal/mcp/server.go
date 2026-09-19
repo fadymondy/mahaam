@@ -26,7 +26,8 @@ import (
 	"github.com/togo-framework/ratelimit"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // protocolVersion is the default MCP revision. Newer clients that ask for a
@@ -146,8 +147,8 @@ func clientHost(r *http.Request) string {
 // Mount registers both MCP endpoints on the kernel router, rate-limited when the ratelimit plugin
 // is installed (it is: togo.yaml, plugins.gen.go).
 func Mount(k *togo.Kernel, a *app.App) {
-	user := &server{name: "managy-mcp", tools: UserTools(), auth: authUser}
-	admin := &server{name: "managy-admin-mcp", tools: AdminTools(), auth: authAdmin}
+	user := &server{name: "mahaam-mcp", tools: UserTools(), auth: authUser}
+	admin := &server{name: "mahaam-admin-mcp", tools: AdminTools(), auth: authAdmin}
 	if rl, ok := ratelimit.FromKernel(k); ok {
 		user.limit = newLimiter(rl, "mcp")
 		admin.limit = newLimiter(rl, "admin-mcp")
@@ -186,6 +187,11 @@ func (s *server) handler(a *app.App) http.Handler {
 			w.Header().Set("WWW-Authenticate", `Bearer realm="`+s.name+`"`)
 			writeRPC(w, http.StatusUnauthorized, rpcResponse{JSONRPC: "2.0",
 				Error: &rpcError{Code: -32001, Message: "invalid or missing MCP token"}})
+			return
+		}
+
+		if d, ok := denied(ctx); ok {
+			writeRPC(w, d.status, rpcResponse{JSONRPC: "2.0", Error: &rpcError{Code: rpcRefused, Message: d.msg}})
 			return
 		}
 
@@ -235,7 +241,7 @@ func (s *server) dispatch(ctx context.Context, a *app.App, scopes []string, rpc 
 	case "ping", "notifications/initialized":
 		return reply(map[string]any{})
 	case "tools/list":
-		return reply(map[string]any{"tools": s.schemas()})
+		return reply(map[string]any{"tools": s.schemas(ctx)})
 	case "tools/call":
 		var params struct {
 			Name      string          `json:"name"`
@@ -274,9 +280,18 @@ func (s *server) tool(name string) (Tool, bool) {
 	return Tool{}, false
 }
 
-func (s *server) schemas() []map[string]any {
+func (s *server) schemas(ctx context.Context) []map[string]any {
+	// A workspace user sees only the tools their CURRENT role may ever hold a scope for (a client
+	// lists the portal tools, not list_tasks). The admin server has no workspace role: all tools.
+	role := ""
+	if sc, ok := tenant.From(ctx); ok {
+		role = sc.Role
+	}
 	out := make([]map[string]any, 0, len(s.tools))
 	for _, t := range s.tools {
+		if role != "" && !RoleMayHold(role, t.Scope) {
+			continue
+		}
 		out = append(out, map[string]any{
 			"name":        t.Name,
 			"description": t.Description + " (scope: " + t.Scope + ")",
@@ -367,3 +382,24 @@ func prop(typ, desc string) map[string]any {
 	}
 	return p
 }
+
+// deny is an authenticated caller who may not act right now: a suspended workspace or account
+// (403), or a plan quota / rate refusal (402 / 429). The token was valid, so this is not a 401.
+type deny struct {
+	status int
+	msg    string
+}
+
+type denyKey struct{}
+
+func withDeny(ctx context.Context, status int, msg string) context.Context {
+	return context.WithValue(ctx, denyKey{}, deny{status: status, msg: msg})
+}
+
+func denied(ctx context.Context) (deny, bool) {
+	d, ok := ctx.Value(denyKey{}).(deny)
+	return d, ok
+}
+
+// rpcRefused is the JSON-RPC error code of a denied call.
+const rpcRefused = -32003

@@ -1,0 +1,36 @@
+{
+  "name": "@mahaam/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Typed Mahaam API client, SSE parser, brand tokens and the shared employee panel UI.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./brand": "./src/brand/index.ts",
+    "./brand/png": "./src/brand/png.ts",
+    "./tokens.css": "./src/brand/tokens.css",
+    "./panel.css": "./src/ui/panel.css"
+  },
+  "scripts": {
+    "gen:types": "node scripts/gen-types.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.5",
+    "@types/react": "^19.3.0",
+    "openapi-typescript": "^7.13.0",
+    "react": "^19.3.0",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  }
+}

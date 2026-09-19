@@ -17,9 +17,9 @@ import (
 	// this app's go.mod or app.go (microkernel: drivers are plugins).
 	_ "modernc.org/sqlite"
 
-	db "github.com/fadymondy/managy/internal/db/gen"
-	"github.com/fadymondy/managy/internal/live"
-	"github.com/fadymondy/managy/internal/tenant"
+	db "github.com/fadymondy/mahaam/internal/db/gen"
+	"github.com/fadymondy/mahaam/internal/live"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // App holds the shared services handed to controllers, resolvers, actions, seeders.

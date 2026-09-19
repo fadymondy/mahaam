@@ -1,17 +1,14 @@
 {
   "dev.now": "الحسابات ومساحات العمل والأعضاء ورموز MCP، والمشاريع واللوحات والمهام، وتتبّع الوقت — والآن التقارير والميزانيات وإعدادات الإشعارات.",
   "dev.next": "الفواتير في المرحلة القادمة.",
-  "nav.comingNext": "الفواتير في المرحلة القادمة.",
   "nav.reports": "التقارير",
   "nav.notifications": "الإشعارات",
-
   "reports.title": "التقارير",
   "reports.hint": "الوقت المسجّل لأي فترة، مجمّعًا بالطريقة التي تحتاجها، وبالأرقام نفسها التي تصدّرها.",
   "reports.tab.time": "الوقت",
   "reports.tab.budgets": "الميزانيات",
   "reports.tab.profitability": "الربحية",
   "reports.noPermission": "دورك لا يتيح لك فتح التقارير في مساحة العمل هذه.",
-
   "reports.filters": "عوامل التصفية",
   "reports.range": "الفترة",
   "reports.from": "من",
@@ -47,7 +44,6 @@
   "reports.rounding.minutes": "{n} دقيقة",
   "reports.reset": "إعادة ضبط التصفية",
   "reports.ownOnly": "تظهر لك ساعاتك أنت فقط.",
-
   "reports.col.tracked": "المسجّل",
   "reports.col.rounded": "بعد التقريب",
   "reports.col.hours": "الساعات",
@@ -75,14 +71,12 @@
   "reports.summary.billable": "قابل للفوترة",
   "reports.summary.billableValue": "القيمة القابلة للفوترة",
   "reports.summary.profit": "الربح",
-
   "reports.chart.title": "الساعات يوميًا",
   "reports.chart.billable": "قابلة للفوترة",
   "reports.chart.nonBillable": "غير قابلة للفوترة",
   "reports.chart.breakdown": "التوزيع حسب {group}",
   "reports.chart.hours": "الساعات",
   "reports.chart.label": "أعمدة متراكبة للساعات القابلة وغير القابلة للفوترة في كل يوم",
-
   "reports.export": "تصدير",
   "reports.exportCsv": "CSV",
   "reports.exportXlsx": "Excel",
@@ -91,7 +85,6 @@
   "reports.print": "طباعة",
   "reports.printedAt": "أُنشئ في {date}",
   "reports.printMeta": "{from} – {to} · مجمّع حسب {group} · {tz}",
-
   "saved.title": "طرق العرض المحفوظة",
   "saved.open": "طرق العرض المحفوظة",
   "saved.empty": "لا توجد طرق عرض محفوظة بعد. اضبط عوامل التصفية ثم احفظها من هنا.",
@@ -119,7 +112,6 @@
   "saved.kind.budget": "الميزانيات",
   "saved.kind.profitability": "الربحية",
   "saved.nameRequired": "اكتب اسمًا لطريقة العرض.",
-
   "budget.title": "الميزانية",
   "budget.allTitle": "استهلاك الميزانيات",
   "budget.allHint": "كل مشروع له ميزانية: الساعات المستهلكة مقابل ميزانية الساعات{money}.",
@@ -143,7 +135,6 @@
   "budget.levels": "المستويات: ضمن الحدود دون ٨٠٪، يقترب من الحد من ٨٠٪، وتجاوز الميزانية من ١٠٠٪.",
   "budget.spentLabel": "المستهلك",
   "budget.status": "الحالة",
-
   "profit.title": "الربحية",
   "profit.hint": "القيمة القابلة للفوترة مطروحًا منها التكلفة خلال الفترة، لكل مشروع ولكل عميل.",
   "profit.noPermission": "الربحية متاحة للمديرين ومن فوقهم.",
@@ -152,7 +143,6 @@
   "profit.empty": "لا توجد قيمة قابلة للفوترة أو تكلفة في هذه الفترة.",
   "profit.exportProjects": "المشاريع",
   "profit.exportClients": "العملاء",
-
   "nset.title": "الإشعارات",
   "nset.hint": "ما يصل إلى صندوقك في مساحة العمل هذه، وما يُرسل إليك بالبريد.",
   "nset.email": "البريد الإلكتروني",
@@ -174,7 +164,6 @@
   "nset.kind.budget.threshold": "بلوغ مشروع ٨٠٪ أو ١٠٠٪ من ميزانيته",
   "nset.kind.timer.long_running": "مؤقّتك يعمل منذ وقت طويل",
   "nset.kind.time.missing_day": "لم يُسجَّل وقت حتى نهاية يوم العمل",
-
   "notify.task.assigned": "أسند إليك {actor} المهمة {task_key}",
   "notify.task.assigned.body": "{task_title}",
   "notify.task.mentioned": "أشار إليك {actor} في {task_key}",
@@ -187,5 +176,7 @@
   "notify.metric.money": "المال",
   "notify.someone": "شخص ما",
   "saved.notFound": "طريقة العرض المحفوظة غير موجودة",
-  "saved.notFoundBody": "ربما حُذفت، أو أنها غير مشاركة معك."
+  "saved.notFoundBody": "ربما حُذفت، أو أنها غير مشاركة معك.",
+  "reports.exportPdf": "PDF",
+  "reports.exportMd": "Markdown"
 }

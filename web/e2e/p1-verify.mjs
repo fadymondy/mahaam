@@ -1,4 +1,4 @@
-// Managy P1 — real-browser verification (exit criteria).
+// Mahaam P1 — real-browser verification (exit criteria).
 //
 //   node e2e/p1-verify.mjs            (API :8110 and web :3010 running; system Chrome)
 //
@@ -31,7 +31,7 @@ function assert(cond, msg) {
   console.log("✓", msg)
 }
 
-const profile = mkdtempSync(path.join(tmpdir(), "managy-p1-"))
+const profile = mkdtempSync(path.join(tmpdir(), "mahaam-p1-"))
 const ctx = await chromium.launchPersistentContext(profile, {
   executablePath: CHROME,
   headless: true,

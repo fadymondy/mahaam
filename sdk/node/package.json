@@ -1,0 +1,32 @@
+{
+  "name": "@mahaam/feedback",
+  "version": "0.1.0",
+  "description": "Mahaam Feedback widget: script tag helper, server-side report(), Express middleware and a React component.",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/esm/index.d.ts", "default": "./dist/esm/index.js" },
+      "require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" }
+    },
+    "./react": {
+      "import": { "types": "./dist/esm/react.d.ts", "default": "./dist/esm/react.js" },
+      "require": { "types": "./dist/cjs/react.d.ts", "default": "./dist/cjs/react.js" }
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/pkg-types.mjs",
+    "test": "npm run build && node --test test/feedback.test.mjs"
+  },
+  "peerDependencies": { "react": ">=17" },
+  "peerDependenciesMeta": { "react": { "optional": true } },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "typescript": "^5.4.0"
+  }
+}

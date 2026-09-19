@@ -13,7 +13,7 @@
 // `togo install` rewrites this file and drops this note (and ignores --dry-run):
 // re-add it after every install. README, framework note 14.
 //
-// P5 added mail (notification email + digest; Managy registers a "file" driver,
+// P5 added mail (notification email + digest; Mahaam registers a "file" driver,
 // internal/mailer) and import-export (report CSV/XLSX). import-export mounts
 // unauthenticated /api/export/{resource} and /api/import/{resource} over a
 // global registry; the guard blocks both (README, framework note 19).

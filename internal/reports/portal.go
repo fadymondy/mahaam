@@ -8,9 +8,9 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/tenant"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 /*
@@ -65,6 +65,13 @@ func portalFile(w http.ResponseWriter, r *http.Request, a *app.App) {
 		title = title[:200]
 	}
 	issueType := normType(fields["issue_type"])
+	if err := intakePreflight(r.Context(), s.WorkspaceID, len(shot)); err != nil {
+		if !writeRefusal(w, err) {
+			a.Log.Error("portal issue", "err", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not file the issue"})
+		}
+		return
+	}
 	rep, err := Create(r.Context(), a.SQLDB, s.WorkspaceID, NewReport{
 		Title: title, IssueType: issueType, Body: strings.TrimSpace(fields["body"]),
 		Route: fields["route"], PageURL: fields["page_url"], Selector: fields["selector"],
@@ -74,6 +81,9 @@ func portalFile(w http.ResponseWriter, r *http.Request, a *app.App) {
 		ReporterID: s.UserID, ProjectID: proj.ID, Source: "portal",
 	})
 	if err != nil {
+		if writeRefusal(w, err) {
+			return
+		}
 		a.Log.Error("portal issue", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not file the issue"})
 		return

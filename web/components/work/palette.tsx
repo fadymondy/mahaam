@@ -1,7 +1,7 @@
 "use client"
 
 // User-chosen colours are palette KEYS (the API stores "teal", never a colour). These helpers map a
-// key to the theme tokens in app/styles/managy-palette.css, so light/dark come for free.
+// key to the theme tokens in app/styles/mahaam-palette.css, so light/dark come for free.
 import { CheckIcon } from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
 

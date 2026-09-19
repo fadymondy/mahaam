@@ -1,6 +1,6 @@
 package mcp
 
-import "github.com/fadymondy/managy/internal/authz"
+import "github.com/fadymondy/mahaam/internal/authz"
 
 // ScopeDef is one grantable scope and the lowest workspace role that may hold it.
 type ScopeDef struct {
@@ -26,6 +26,7 @@ var UserScopes = []ScopeDef{
 	{"projects:write", "Create, change and archive projects", authz.Manager},
 	{"tasks:read", "Read tasks", authz.Member},
 	{"tasks:write", "Create, move, assign and comment on tasks", authz.Member},
+	{"teams:write", "Create teams and change their members", authz.Manager},
 	{"time:read", "Read your own time entries and running timer", authz.Member},
 	{"time:write", "Start/stop timers and log your own time", authz.Member},
 	{"time:manage", "Change other members' time", authz.Manager},
@@ -39,6 +40,21 @@ var UserScopes = []ScopeDef{
 	{"feedback:write", "Comment on and update feedback issues", authz.Member},
 	{"issues:read", "Read the workspace's own issues (its \"Report a problem\" intake)", authz.Member},
 	{"issues:write", "Comment on and triage the workspace's own issues", authz.Member},
+	{"vault:read", "Recall a project's memory and list its vault (never secret values)", authz.Member},
+	{"vault:write", "Write a project's memory notes", authz.Member},
+	{"vault:secrets", "Store and reveal a project's secrets (every reveal is recorded)", authz.Manager},
+	{"access:manage", "Grant employees and teams access by label or task, and set project labels", authz.Manager},
+	{"integrations:read", "See a project's integrations and its GitHub commits, pull requests and runs", authz.Member},
+	{"integrations:write", "Sync a project's GitHub / Jira / Linear integration now", authz.Manager},
+	{"portal:read", "The customer panel of your projects: progress, hours, issues and requests (aggregates only)", authz.Client},
+	{"portal:write", "File requests, and accept, reopen or re-prioritise the issues of your projects", authz.Client},
+	{"requests:manage", "Triage customer requests: accept onto the board, decline with a reason, or convert to a task", authz.Manager},
+	{"github:write", "File GitHub issues from Mahaam issues; trigger deploys (deploys need manager+)", authz.Member},
+	{"ai:record", "Push a project's daily AI usage (tokens and cost)", authz.Member},
+	{"ai:read", "AI usage, cost and billed amounts; set a project's AI markup", authz.Manager},
+	{"subscriptions:manage", "A project's subscriptions (infrastructure, AI, marketing tools…) billed on invoices", authz.Manager},
+	{"kpi:read", "Employee KPI dossiers and reviews: your own, or everyone's and the team table as a manager", authz.Member},
+	{"kpi:review", "Write manager reviews of employees (they appear in the KPI dossier)", authz.Manager},
 }
 
 // AdminScopes is the closed list for the platform admin MCP. Admin tokens are
@@ -50,6 +66,10 @@ var AdminScopes = []ScopeDef{
 	{"admin:workspaces:read", "List and inspect workspaces", authz.None},
 	{"admin:workspaces:write", "Rename workspaces, change plans, add/remove members and roles", authz.None},
 	{"admin:users:read", "List and inspect users", authz.None},
+	{"admin:users:write", "Suspend and reactivate accounts", authz.None},
+	{"admin:plans:read", "List plans with their quotas, overage prices and features", authz.None},
+	{"admin:plans:write", "Change plan quotas, overage prices and base fees", authz.None},
+	{"admin:stats:read", "Platform stats: users, workspaces, activity, usage, signups", authz.None},
 }
 
 func userScope(name string) (ScopeDef, bool) {

@@ -60,13 +60,13 @@ func (r routes) reports() {
 	})
 	huma.Register(r.api, huma.Operation{
 		OperationID: "w-export-report", Method: http.MethodGet, Path: "/api/w/report/export",
-		Summary: "The report table as CSV or XLSX (togo import-export)", Tags: []string{tag},
+		Summary: "The report table as CSV, XLSX (togo import-export), PDF or Markdown", Tags: []string{tag},
 	}, func(ctx context.Context, in *struct {
 		WS
 		ReportParams
 		Kind   string `query:"kind" enum:"time,profitability," doc:"Default time"`
 		By     string `query:"by" enum:"project,client," doc:"Profitability rows (default project)"`
-		Format string `query:"format" enum:"csv,xlsx," doc:"Default csv"`
+		Format string `query:"format" enum:"csv,xlsx,pdf,md," doc:"Default csv. pdf and md add the report context; md is exact for Arabic"`
 		Lang   string `query:"lang" enum:"en,ar," doc:"Column headers (default en)"`
 	}) (*exportOut, error) {
 		f, err := r.sv.ExportReport(ctx, in.Kind, in.Format, in.Lang, in.By, in.Query())

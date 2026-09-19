@@ -1,5 +1,5 @@
 // UI tour: every page at 1440 and 390, en/ar x light/dark, headless Chrome on a fresh profile.
-//   WEB_ORIGIN=https://managy-app.fadymondy.com node e2e/ui-tour.mjs [--quick]
+//   WEB_ORIGIN=https://console.mahaam.app node e2e/ui-tour.mjs [--quick]
 // Counts frames first, seeds a workspace through the session API, then screenshots each route and
 // asserts no horizontal overflow and (desktop) that content uses the width.
 import { chromium } from "playwright-core"
@@ -18,7 +18,7 @@ mkdirSync(SHOTS, { recursive: true })
 let failures = 0
 const check = (ok, msg) => { console.log(ok ? "✓" : "✗", msg); if (!ok) failures++ }
 
-const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "managy-ui-")), {
+const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "mahaam-ui-")), {
   executablePath: process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe",
   headless: true, viewport: { width: 1440, height: 900 }, args: ["--disable-extensions", "--no-first-run"],
 })

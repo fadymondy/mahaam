@@ -287,7 +287,12 @@ export const exportPath = (query: string) => `/api/w/report/export?${query}`
   and saved from a blob under the server's Content-Disposition file name.
 */
 export async function downloadExport(ws: string, query: string): Promise<string> {
-  const res = await fetch(exportPath(query), {
+  return downloadFile(ws, exportPath(query))
+}
+
+/** Fetch a workspace-scoped download (any path) and save it under its Content-Disposition name. */
+export async function downloadFile(ws: string, path: string): Promise<string> {
+  const res = await fetch(path, {
     headers: { "X-Workspace-ID": ws },
     credentials: "same-origin",
     cache: "no-store",
@@ -302,7 +307,7 @@ export async function downloadExport(ws: string, query: string): Promise<string>
   const cd = res.headers.get("content-disposition") ?? ""
   const star = /filename\*=UTF-8''([^;]+)/i.exec(cd)
   const plain = /filename="?([^";]+)"?/i.exec(cd)
-  const name = star ? decodeURIComponent(star[1]) : (plain?.[1] ?? "managy-report")
+  const name = star ? decodeURIComponent(star[1]) : (plain?.[1] ?? "mahaam-report")
   const url = URL.createObjectURL(await res.blob())
   const a = document.createElement("a")
   a.href = url

@@ -3,6 +3,7 @@
 import { Progress } from "@/components/ui/progress"
 import { Ltr } from "@/components/copy-field"
 import { ProjectBudgetPanel } from "@/components/reports/project-budget-panel"
+import { ProjectReportMenu } from "@/components/reports/project-report-menu"
 import { ActivityFeed } from "@/components/work/activity-feed"
 import { AvatarStack, useDirectory } from "@/components/work/people"
 import { useProjectCtx } from "@/components/work/project-context"
@@ -52,6 +53,7 @@ export default function ProjectOverviewPage() {
         <span className="text-sm text-grid-muted">
           <Ltr>{pct}%</Ltr> {t("project.done")}
         </span>
+        {ws.can("reports:read") ? <ProjectReportMenu projectId={p.id} className="ms-auto" /> : null}
       </div>
 
       <ProjectBudgetPanel projectId={p.id} canManage={p.can_manage} settingsHref={`${base}/settings`} />

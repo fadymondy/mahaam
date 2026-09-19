@@ -8,8 +8,8 @@ package models
 import (
 	"github.com/togo-framework/orm"
 
-	"github.com/fadymondy/managy/internal/app"
-	db "github.com/fadymondy/managy/internal/db/gen"
+	"github.com/fadymondy/mahaam/internal/app"
+	db "github.com/fadymondy/mahaam/internal/db/gen"
 )
 
 // NotificationPrefs starts a query against the notification_prefs table.

@@ -1,6 +1,6 @@
 "use client";
 
-// The task side-over: everything about one task (?task=MG-12 on any project tab). Every field
+// The task side-over: everything about one task (?task=MH-12 on any project tab). Every field
 // saves on its own; the board and lists revalidate through onChanged.
 import {
   Fragment,

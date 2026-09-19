@@ -13,7 +13,7 @@ import (
 
 	importexport "github.com/togo-framework/import-export"
 
-	"github.com/fadymondy/managy/internal/authz"
+	"github.com/fadymondy/mahaam/internal/authz"
 )
 
 /*
@@ -33,23 +33,23 @@ Recording payments that cover the total flips a sent invoice to paid.
 
 // Invoice is one invoice as the API lists it (without its lines/payments; GetInvoice adds those).
 type Invoice struct {
-	ID            string     `json:"id"`
-	Number        string     `json:"number"`
-	ClientID      string     `json:"client_id"`
-	ClientName    *string    `json:"client_name"`
-	Status        string     `json:"status" doc:"draft, sent, paid or void"`
-	Currency      string     `json:"currency"`
-	IssueDate     string     `json:"issue_date" doc:"YYYY-MM-DD"`
-	DueDate       *string    `json:"due_date" doc:"YYYY-MM-DD or null"`
-	SubtotalMinor int64      `json:"subtotal_minor"`
-	TaxRate       string     `json:"tax_rate" doc:"A fraction, e.g. \"0.14\" for 14%"`
-	TaxMinor      int64      `json:"tax_minor"`
-	TotalMinor    int64      `json:"total_minor"`
-	PaidMinor     int64      `json:"paid_minor" doc:"Sum of recorded payments, minor units"`
-	Notes         *string    `json:"notes"`
-	CreatedBy     string     `json:"created_by"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID            string    `json:"id"`
+	Number        string    `json:"number"`
+	ClientID      string    `json:"client_id"`
+	ClientName    *string   `json:"client_name"`
+	Status        string    `json:"status" doc:"draft, sent, paid or void"`
+	Currency      string    `json:"currency"`
+	IssueDate     string    `json:"issue_date" doc:"YYYY-MM-DD"`
+	DueDate       *string   `json:"due_date" doc:"YYYY-MM-DD or null"`
+	SubtotalMinor int64     `json:"subtotal_minor"`
+	TaxRate       string    `json:"tax_rate" doc:"A fraction, e.g. \"0.14\" for 14%"`
+	TaxMinor      int64     `json:"tax_minor"`
+	TotalMinor    int64     `json:"total_minor"`
+	PaidMinor     int64     `json:"paid_minor" doc:"Sum of recorded payments, minor units"`
+	Notes         *string   `json:"notes"`
+	CreatedBy     string    `json:"created_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // InvoiceLine is one line of an invoice.
@@ -266,12 +266,21 @@ func (sv *Service) GetInvoice(ctx context.Context, ref string) (*InvoiceDetail, 
 	if err != nil {
 		return nil, err
 	}
-	if err := require(s, authz.InvoicesRead); err != nil {
-		return nil, err
+	// Staff with invoices:read see any invoice. A customer (a portal contact) sees only their
+	// own client's invoices that were sent (never drafts) — anything else does not exist for them.
+	staff := authz.Can(s.Role, authz.InvoicesRead)
+	contactOf := ""
+	if !staff {
+		if contactOf, err = sv.portalClientID(ctx, s); err != nil {
+			return nil, notFound("invoice")
+		}
 	}
 	iv, err := findInvoice(ctx, sv.DB, s.WorkspaceID, ref)
 	if err != nil {
 		return nil, err
+	}
+	if !staff && (iv.ClientID != contactOf || iv.Status == "draft") {
+		return nil, notFound("invoice")
 	}
 	lines, err := sv.loadLines(ctx, s.WorkspaceID, iv.ID)
 	if err != nil {
@@ -296,6 +305,10 @@ type DraftInput struct {
 	TaxRate    *string  `json:"tax_rate,omitempty" doc:"VAT as a fraction, e.g. 0.14; default 0"`
 	DueDate    string   `json:"due_date,omitempty" doc:"YYYY-MM-DD"`
 	Notes      string   `json:"notes,omitempty" maxLength:"4000"`
+	// Besides time, bill the client's unbilled AI usage and due subscription periods up to
+	// the end date (both default true). See billing_sources.go.
+	IncludeAI            *bool `json:"include_ai,omitempty" doc:"Bill unbilled AI usage (default true)"`
+	IncludeSubscriptions *bool `json:"include_subscriptions,omitempty" doc:"Bill due subscription periods (default true)"`
 }
 
 type gatheredEntry struct {
@@ -445,8 +458,23 @@ func (sv *Service) DraftFromTime(ctx context.Context, in DraftInput) (*InvoiceDe
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	if len(gathered) == 0 {
-		return nil, invalid("there is no unbilled billable time for %s in that range and currency", cl.Name)
+	untilDay := time.Now().In(conf.Loc)
+	if to != nil {
+		untilDay = *to
+	}
+	untilDay = time.Date(untilDay.Year(), untilDay.Month(), untilDay.Day(), 0, 0, 0, 0, time.UTC)
+	var fromDay *time.Time
+	if from != nil {
+		f := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+		fromDay = &f
+	}
+	extras, err := sv.gatherExtras(ctx, sv.DB, s.WorkspaceID, cl.ID, currency, projIDs, fromDay, untilDay,
+		in.IncludeAI == nil || *in.IncludeAI, in.IncludeSubscriptions == nil || *in.IncludeSubscriptions)
+	if err != nil {
+		return nil, err
+	}
+	if len(gathered) == 0 && len(extras) == 0 {
+		return nil, invalid("there is nothing unbilled for %s in that range and currency (time, AI usage or subscriptions)", cl.Name)
 	}
 
 	type lineAgg struct {
@@ -525,6 +553,18 @@ func (sv *Service) DraftFromTime(ctx context.Context, in DraftInput) (*InvoiceDe
 			}
 			pos++
 		}
+		for _, x := range extras {
+			subtotal += x.amount
+			if _, err := tx.ExecContext(ctx, `INSERT INTO invoice_lines
+				(workspace_id, invoice_id, description, quantity, unit_minor, amount_minor, position)
+				VALUES ($1, $2, $3, 1, $4, $4, $5)`, s.WorkspaceID, invID, truncate(x.desc, 2000), x.amount, pos); err != nil {
+				return err
+			}
+			pos++
+		}
+		if err := lockExtras(ctx, tx, s.WorkspaceID, invID, currency, extras); err != nil {
+			return err
+		}
 		tax := taxMinorFromScaled(subtotal, rateScaled)
 		total := subtotal + tax
 		if _, err := tx.ExecContext(ctx, `UPDATE invoices SET subtotal_minor = $3, tax_minor = $4, total_minor = $5, updated_at = now()
@@ -547,7 +587,7 @@ func (sv *Service) DraftFromTime(ctx context.Context, in DraftInput) (*InvoiceDe
 			return conflict("some of that time was billed or locked while the invoice was being drafted — try again")
 		}
 		return record(ctx, tx, s, entry{Action: "invoice.drafted", SubjectType: "invoice", SubjectID: invID,
-			Changes: map[string]any{"number": number, "client": cl.Name, "total_minor": total, "currency": currency, "entries": len(ids)}})
+			Changes: map[string]any{"number": number, "client": cl.Name, "total_minor": total, "currency": currency, "entries": len(ids), "extra_lines": len(extras)}})
 	})
 	if err != nil {
 		return nil, err
@@ -600,6 +640,9 @@ func (sv *Service) SetInvoiceStatus(ctx context.Context, ref, status string) (*I
 		if status == "void" {
 			if _, err := tx.ExecContext(ctx, `UPDATE time_entries SET invoice_id = NULL, locked_at = NULL, updated_at = now()
 				WHERE workspace_id = $1 AND invoice_id = $2`, s.WorkspaceID, iv.ID); err != nil {
+				return err
+			}
+			if err := releaseExtras(ctx, tx, s.WorkspaceID, iv.ID); err != nil {
 				return err
 			}
 		}
@@ -700,6 +743,9 @@ func (sv *Service) DeleteInvoice(ctx context.Context, ref string) error {
 	return sv.tx(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, `UPDATE time_entries SET invoice_id = NULL, locked_at = NULL, updated_at = now()
 			WHERE workspace_id = $1 AND invoice_id = $2`, s.WorkspaceID, iv.ID); err != nil {
+			return err
+		}
+		if err := releaseExtras(ctx, tx, s.WorkspaceID, iv.ID); err != nil {
 			return err
 		}
 		// invoice_lines and invoice_payments cascade on the composite FK.

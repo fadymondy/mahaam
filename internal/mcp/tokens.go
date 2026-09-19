@@ -1,6 +1,8 @@
 package mcp
 
 import (
+	"slices"
+
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -8,23 +10,40 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/fadymondy/mahaam/internal/work"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/platform"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // Token prefixes. Distinct, so neither server can be handed the other's token
-// and so a leaked token is recognisable in a log or a secret scanner.
+// and so a leaked token is recognisable in a log or a secret scanner. New tokens
+// carry the Mahaam prefixes; the Managy ones are still accepted, so every token
+// minted before the rename keeps working (hasPrefix below checks both).
 const (
-	UserPrefix  = "mgy_"
-	AdminPrefix = "mga_"
+	UserPrefix  = "mhm_"
+	AdminPrefix = "mha_"
+	// Legacy (Managy) prefixes, accepted forever.
+	oldUserPrefix  = "mgy_"
+	oldAdminPrefix = "mga_"
 )
+
+// isUserToken / isAdminToken accept the current prefix and the legacy one.
+func isUserToken(t string) bool {
+	return strings.HasPrefix(t, UserPrefix) || strings.HasPrefix(t, oldUserPrefix)
+}
+
+func isAdminToken(t string) bool {
+	return strings.HasPrefix(t, AdminPrefix) || strings.HasPrefix(t, oldAdminPrefix)
+}
 
 // HashToken is the only form a token is stored in.
 func HashToken(plain string) string {
@@ -52,28 +71,44 @@ func parseScopes(raw string) []string {
 // gets — workspace, user, current role — so the tools run under the same authz
 // and the same RLS. The token's stored scopes are narrowed by the role.
 func authUser(r *http.Request, a *app.App, token string) (context.Context, []string, bool) {
-	if !strings.HasPrefix(token, UserPrefix) {
+	if !isUserToken(token) {
 		return nil, nil, false
 	}
 	ctx := r.Context()
-	var id, workspaceID, userID, rawScopes string
+	var id, workspaceID, userID, rawScopes, rawProjects string
 	var expires, revoked *time.Time
 	err := a.SysDB.QueryRowContext(ctx, `
-		SELECT id, workspace_id, user_id, scopes, expires_at, revoked_at
+		SELECT id, workspace_id, user_id, scopes, project_ids, expires_at, revoked_at
 		FROM mcp_tokens WHERE token_hash = $1`, HashToken(token),
-	).Scan(&id, &workspaceID, &userID, &rawScopes, &expires, &revoked)
+	).Scan(&id, &workspaceID, &userID, &rawScopes, &rawProjects, &expires, &revoked)
 	if err != nil || revoked != nil || (expires != nil && time.Now().After(*expires)) {
 		return nil, nil, false
 	}
 	// Membership is re-checked on every call: a removed member's token dies with
 	// the membership, a demoted one's scopes shrink.
 	s, err := tenant.Resolve(ctx, a.SysDB, userID, workspaceID)
+	var susp *tenant.SuspendedError
+	if errors.As(err, &susp) {
+		return withDeny(ctx, http.StatusForbidden, susp.Error()), nil, true
+	}
 	if err != nil {
 		return nil, nil, false
+	}
+	// A suspended account's tokens stop with it.
+	if u, err := platform.Load(ctx, a.SysDB, userID); err != nil {
+		return nil, nil, false
+	} else if u.Suspended() {
+		return withDeny(ctx, http.StatusForbidden, u.SuspendedMessage()), nil, true
+	}
+	// The plan's API quotas (internal/limits): per-minute rate and a block-policy monthly quota.
+	if x, refused := limits.As(limits.CountCall(ctx, workspaceID)); refused {
+		return withDeny(ctx, x.Status, x.Msg), nil, true
 	}
 	s.Via = "mcp"
 	s.TokenID = id
 	s.Scopes = Effective(s.Role, parseScopes(rawScopes))
+	// A project-scoped token sees only its projects (and their issues); see tenant.Scope.
+	s.ProjectIDs = parseScopes(rawProjects)
 
 	_, _ = a.SysDB.ExecContext(ctx, `UPDATE mcp_tokens SET last_used_at = now() WHERE id = $1`, id)
 	return tenant.With(ctx, s), s.Scopes, true
@@ -86,6 +121,7 @@ type tokenOut struct {
 	Name       string     `json:"name"`
 	Prefix     string     `json:"prefix"`
 	Scopes     []string   `json:"scopes"`
+	ProjectIDs []string   `json:"project_ids" doc:"Projects the token is limited to; empty = every project you can see"`
 	ExpiresAt  *time.Time `json:"expires_at"`
 	LastUsedAt *time.Time `json:"last_used_at"`
 	RevokedAt  *time.Time `json:"revoked_at"`
@@ -119,7 +155,7 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 			return nil, huma.Error404NotFound("workspace not found")
 		}
 		rows, err := a.SQLDB.QueryContext(ctx, `
-			SELECT id, name, prefix, scopes, expires_at, last_used_at, revoked_at, created_at
+			SELECT id, name, prefix, scopes, project_ids, expires_at, last_used_at, revoked_at, created_at
 			FROM mcp_tokens WHERE workspace_id = $1 AND user_id = $2 ORDER BY created_at DESC`,
 			s.WorkspaceID, s.UserID)
 		if err != nil {
@@ -135,11 +171,12 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 		out.Body.Tokens = []tokenOut{}
 		for rows.Next() {
 			var t tokenOut
-			var raw string
-			if err := rows.Scan(&t.ID, &t.Name, &t.Prefix, &raw, &t.ExpiresAt, &t.LastUsedAt, &t.RevokedAt, &t.CreatedAt); err != nil {
+			var raw, rawProjects string
+			if err := rows.Scan(&t.ID, &t.Name, &t.Prefix, &raw, &rawProjects, &t.ExpiresAt, &t.LastUsedAt, &t.RevokedAt, &t.CreatedAt); err != nil {
 				return nil, huma.Error500InternalServerError("could not list tokens")
 			}
 			t.Scopes = parseScopes(raw)
+			t.ProjectIDs = parseScopes(rawProjects)
 			out.Body.Tokens = append(out.Body.Tokens, t)
 		}
 		for _, d := range UserScopes {
@@ -159,6 +196,7 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 		Body struct {
 			Name          string   `json:"name" minLength:"1" maxLength:"80"`
 			Scopes        []string `json:"scopes" minItems:"1"`
+			Projects      []string `json:"projects,omitempty" maxItems:"50" doc:"Limit the token to these projects (ids or exact names). Omit for every project you can see."`
 			ExpiresInDays int      `json:"expires_in_days,omitempty" minimum:"0" maximum:"365" doc:"0 = never"`
 		}
 	}) (*struct {
@@ -173,6 +211,9 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 		}
 		if !authz.Can(s.Role, authz.TokensManageOwn) {
 			return nil, huma.Error403Forbidden("your role cannot create MCP tokens")
+		}
+		if err := limits.Check(ctx, s.WorkspaceID, limits.MCPTokens, 1); err != nil {
+			return nil, limitErr(err)
 		}
 		name := strings.TrimSpace(in.Body.Name)
 		if name == "" {
@@ -204,6 +245,20 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 		}
 		plain, visible := NewToken(UserPrefix)
 		rawScopes, _ := json.Marshal(scopes)
+		projectIDs := []string{}
+		for _, ref := range in.Body.Projects {
+			if strings.TrimSpace(ref) == "" {
+				continue
+			}
+			p, err := work.New(a).FindProject(ctx, ref)
+			if err != nil {
+				return nil, huma.Error422UnprocessableEntity("unknown project: " + ref)
+			}
+			if !slices.Contains(projectIDs, p.ID) {
+				projectIDs = append(projectIDs, p.ID)
+			}
+		}
+		rawProjects, _ := json.Marshal(projectIDs)
 
 		out := &struct {
 			Body struct {
@@ -213,15 +268,16 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 		}{}
 		t := &out.Body.Token
 		err := a.SQLDB.QueryRowContext(ctx, `
-			INSERT INTO mcp_tokens (workspace_id, user_id, name, token_hash, prefix, scopes, expires_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			INSERT INTO mcp_tokens (workspace_id, user_id, name, token_hash, prefix, scopes, expires_at, project_ids)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING id, name, prefix, expires_at, last_used_at, revoked_at, created_at`,
-			s.WorkspaceID, s.UserID, name, HashToken(plain), visible, string(rawScopes), expires,
+			s.WorkspaceID, s.UserID, name, HashToken(plain), visible, string(rawScopes), expires, string(rawProjects),
 		).Scan(&t.ID, &t.Name, &t.Prefix, &t.ExpiresAt, &t.LastUsedAt, &t.RevokedAt, &t.CreatedAt)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("could not create the token")
 		}
 		t.Scopes = scopes
+		t.ProjectIDs = projectIDs
 		out.Body.Plaintext = plain
 		return out, nil
 	})
@@ -257,3 +313,11 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 var errNotFound = errors.New("not found")
 
 var _ = sql.ErrNoRows
+
+// limitErr turns a plan refusal (internal/limits) into its HTTP error; anything else is a 500.
+func limitErr(err error) error {
+	if x, ok := limits.As(err); ok {
+		return huma.NewError(x.Status, x.Msg)
+	}
+	return huma.Error500InternalServerError("could not check the plan")
+}

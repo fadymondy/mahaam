@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*

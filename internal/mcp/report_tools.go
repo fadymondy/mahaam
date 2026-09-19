@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/reports"
-	"github.com/fadymondy/managy/internal/tenant"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/reports"
+	"github.com/fadymondy/mahaam/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 /*

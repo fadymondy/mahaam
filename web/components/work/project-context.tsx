@@ -8,7 +8,7 @@ export type ProjectCtx = {
   project: ProjectDetail
   /** Revalidate the project (and everything that hangs off it). */
   reload: () => void
-  /** Open the task side-over (?task=MG-12). */
+  /** Open the task side-over (?task=MH-12). */
   openTask: (key: string) => void
   /** /<locale>/w/<slug>/projects/<id> */
   base: string

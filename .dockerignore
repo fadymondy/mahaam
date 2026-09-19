@@ -1,0 +1,12 @@
+.git
+web
+storage/logs
+storage/mail
+storage/attachments
+**/*.log
+.env
+.env.prod
+bin
+apps
+sdk
+**/node_modules

@@ -11,8 +11,8 @@ import (
 
 	"github.com/togo-framework/mail"
 
-	"github.com/fadymondy/managy/internal/mailer"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/mailer"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*
@@ -208,10 +208,10 @@ func link(locale, path string) string {
 }
 
 var mailText = map[string]map[string]string{
-	"en": {"open": "Open in Managy", "settings": "You get this because email notifications are on. Change it in Managy → Settings → Notifications.",
-		"digest": "Your Managy summary for %s", "unread": "Unread notifications", "yesterday": "Tracked yesterday", "running": "A timer is running"},
-	"ar": {"open": "افتح في Managy", "settings": "تصلك هذه الرسالة لأن إشعارات البريد مفعّلة. غيّر ذلك من Managy ← الإعدادات ← الإشعارات.",
-		"digest": "ملخّص Managy الخاص بك في %s", "unread": "إشعارات غير مقروءة", "yesterday": "الوقت المسجّل أمس", "running": "هناك مؤقّت يعمل"},
+	"en": {"open": "Open in Mahaam", "settings": "You get this because email notifications are on. Change it in Mahaam → Settings → Notifications.",
+		"digest": "Your Mahaam summary for %s", "unread": "Unread notifications", "yesterday": "Tracked yesterday", "running": "A timer is running"},
+	"ar": {"open": "افتح في مهام", "settings": "تصلك هذه الرسالة لأن إشعارات البريد مفعّلة. غيّر ذلك من مهام ← الإعدادات ← الإشعارات.",
+		"digest": "ملخّص مهام الخاص بك في %s", "unread": "إشعارات غير مقروءة", "yesterday": "الوقت المسجّل أمس", "running": "هناك مؤقّت يعمل"},
 }
 
 func mailWords(locale string) map[string]string {

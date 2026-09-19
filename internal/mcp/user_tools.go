@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/reports"
-	"github.com/fadymondy/managy/internal/tenant"
-	"github.com/fadymondy/managy/internal/work"
-	"github.com/fadymondy/managy/internal/workspaces"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/reports"
+	"github.com/fadymondy/mahaam/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/work"
+	"github.com/fadymondy/mahaam/internal/workspaces"
 )
 
 /*
@@ -25,7 +25,7 @@ Every tool reads its workspace from the token (tenant.Scope on ctx), never
 from an argument, and the feedback tools go through the RLS app pool.
 */
 func UserTools() []Tool {
-	return append(append(append(append(append(append(contextTools(), WorkTools()...), TimeTools()...), ReportTools()...), IssueTools()...), InvoiceTools()...), FeedbackKeyTools()...)
+	return append(append(append(append(append(append(append(append(append(append(append(append(append(append(contextTools(), WorkTools()...), TimeTools()...), ReportTools()...), IssueTools()...), InvoiceTools()...), FeedbackKeyTools()...), VaultTools()...), IntegrationTools()...), AccessTools()...), BillingTools()...), WorkspaceTools()...), PortalTools()...), ImportExportTools()...), KPITools()...)
 }
 
 func contextTools() []Tool {

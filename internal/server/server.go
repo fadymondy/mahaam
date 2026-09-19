@@ -6,6 +6,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/fadymondy/mahaam/internal/push"
 	"net/http"
 	"runtime/debug"
 
@@ -16,16 +17,20 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
-	graphgen "github.com/fadymondy/managy/internal/graph/gen"
-	"github.com/fadymondy/managy/internal/graph/resolvers"
-	"github.com/fadymondy/managy/internal/mcp"
-	_ "github.com/fadymondy/managy/internal/plugins" // blank-imports installed plugins (togo install)
-	"github.com/fadymondy/managy/internal/reports"
-	"github.com/fadymondy/managy/internal/rest"
-	"github.com/fadymondy/managy/internal/tenant"
-	"github.com/fadymondy/managy/internal/work"
-	"github.com/fadymondy/managy/internal/workspaces"
+	"github.com/fadymondy/mahaam/internal/admin"
+	"github.com/fadymondy/mahaam/internal/app"
+	graphgen "github.com/fadymondy/mahaam/internal/graph/gen"
+	"github.com/fadymondy/mahaam/internal/graph/resolvers"
+	"github.com/fadymondy/mahaam/internal/integrations"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/mcp"
+	_ "github.com/fadymondy/mahaam/internal/plugins" // blank-imports installed plugins (togo install)
+	"github.com/fadymondy/mahaam/internal/reports"
+	"github.com/fadymondy/mahaam/internal/rest"
+	"github.com/fadymondy/mahaam/internal/secretbox"
+	"github.com/fadymondy/mahaam/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/work"
+	"github.com/fadymondy/mahaam/internal/workspaces"
 )
 
 // Boot builds the kernel + app and mounts REST, GraphQL, MCP and health on the
@@ -38,21 +43,28 @@ func Boot() *app.App {
 	// Fail closed: without the RLS-enforced app pool, generated CRUD would run
 	// on the owner pool with no tenant isolation at all.
 	if a.SysDB == nil || a.SQLDB == nil {
-		panic("managy: DATABASE_URL (owner) and APP_DATABASE_URL (app role) are both required — see README")
+		panic("mahaam: DATABASE_URL (owner) and APP_DATABASE_URL (app role) are both required — see README")
+	}
+	// Secrets at rest (integration credentials): refuse to boot in production without MAHAAM_SECRET_KEY.
+	if err := secretbox.Init(k.Log); err != nil {
+		panic(err)
 	}
 	if err := tenant.VerifyAppRole(ctx, a.SQLDB); err != nil {
 		panic(err)
 	}
 	if _, err := reports.EnsurePlatform(ctx, a); err != nil {
-		panic(fmt.Errorf("managy: platform workspace: %w", err))
+		panic(fmt.Errorf("mahaam: platform workspace: %w", err))
 	}
+
+	// Plans and quotas (internal/limits): the owner pool, plus the minute flusher of the API meter.
+	limits.Init(ctx, a.SysDB, a.Log)
 
 	installErrors()
 	installGuard(k, a)
 	// Client address + user agent for activity entries (RemoteAddr, never forwarding headers).
 	k.UseMiddleware(work.MetaMiddleware)
 
-	api := humachi.New(k.Router, huma.DefaultConfig("Managy API", "0.1.0"))
+	api := humachi.New(k.Router, huma.DefaultConfig("Mahaam API", "0.1.0"))
 	registerREST(api, a)
 
 	mcp.Mount(k, a)
@@ -61,19 +73,27 @@ func Boot() *app.App {
 	// caller's own events (internal/live). The scaffold's global /events stays unmounted.
 	k.Router.Get("/api/w/events", work.New(a).Events())
 	installReminders(k, a)
+	installBilling(k, a)      // Polar: PUBLIC webhook + the 15-minute usage push
+	installIntegrations(k, a) // GitHub webhook + install callback (PUBLIC), Jira/Linear re-sync, GitHub mirror
+	// Customer import: the Google Contacts OAuth redirect (PUBLIC, guard allowlist; signed state + nonce cookie).
+	k.Router.Get(work.GoogleCallbackPath, work.New(a).GoogleCallback())
+	// "Connect GitHub" for a member: the GitHub OAuth redirect (PUBLIC, guard allowlist; signed state + nonce cookie).
+	k.Router.Get(work.GitHubUserCallbackPath, work.New(a).GitHubUserCallback())
 	reports.MountFeedback(k, a)
-	reports.MountEmbed(k, a)       // P7: PUBLIC per-project embed intake + the /embed/v1.js loader
-	reports.MountPortalFile(k, a)  // P7: the client portal's multipart issue intake
+	reports.MountEmbed(k, a)             // P7: PUBLIC per-project embed intake + the /embed/v1.js loader
+	reports.MountPortalFile(k, a)        // P7: the client portal's multipart issue intake
+	reports.MountPortalRequestFile(k, a) // roadmap 5: a customer files a request (multipart)
+	reports.MountScreenshots(k, a)       // P8.5: an issue / request screenshot (staff, or the project's customer)
 
 	gql := handler.NewDefaultServer(graphgen.NewExecutableSchema(graphgen.Config{
 		Resolvers: &resolvers.Resolver{App: a},
 	}))
 	k.Router.Handle(k.Config.GraphQLPath, gql)
-	k.Router.Handle("/graphql/play", playground.Handler("Managy GraphQL", k.Config.GraphQLPath))
+	k.Router.Handle("/graphql/play", playground.Handler("Mahaam GraphQL", k.Config.GraphQLPath))
 
 	k.Router.Get("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `{"status":"ok","service":"managy","togo":%q}`, togoVersion())
+		_, _ = fmt.Fprintf(w, `{"status":"ok","service":"mahaam","togo":%q}`, togoVersion())
 	})
 
 	// Deliberately NOT mounted from the scaffold:
@@ -87,9 +107,13 @@ func registerREST(api huma.API, a *app.App) {
 	rest.RegisterRoutes(api, a) // generated CRUD — behind the guard's workspace tier
 	workspaces.Register(api, a)
 	mcp.RegisterTokenRoutes(api, a)
-	work.Register(api, a)         // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
-	reports.RegisterIssues(api, a)      // per-workspace issues — /api/w/issues/*
+	work.Register(api, a)                // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
+	reports.RegisterIssues(api, a)       // per-workspace issues — /api/w/issues/*
 	reports.RegisterPortalIssues(api, a) // P7: the client's own filed issues — GET /api/w/portal/issues
+	reports.RegisterPortalPanel(api, a)  // roadmap 5: customer panel + staff Requests inbox
+	integrations.Register(api, a)        // /api/w/projects/{project}/integrations*, /github/*
+	registerPush(api, a)                 // /api/me/push: Web Push for the installed app (PWA)
+	admin.Register(api, a)               // /api/admin/* (platform admins), /api/me/platform, /api/w/plan
 }
 
 // togoVersion reports the togo framework version this app is built against.
@@ -108,7 +132,15 @@ func togoVersion() string {
 func OpenAPI() ([]byte, error) {
 	router := chi.NewMux()
 	installErrors()
-	api := humachi.New(router, huma.DefaultConfig("Managy API", "0.1.0"))
+	api := humachi.New(router, huma.DefaultConfig("Mahaam API", "0.1.0"))
 	registerREST(api, nil)
 	return api.OpenAPI().YAML()
+}
+
+func registerPush(api huma.API, a *app.App) {
+	if a == nil {
+		push.Register(api, push.New(nil, nil))
+		return
+	}
+	push.Register(api, push.New(a.SysDB, a.Log))
 }

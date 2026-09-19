@@ -1,10 +1,12 @@
-// The one fetch wrapper for the Managy API. Same origin (next.config.mjs proxies /api), session
+// The one fetch wrapper for the Mahaam API. Same origin (next.config.mjs proxies /api), session
 // cookie `togo_session`, CSRF token on every mutating request, X-Workspace-ID when scoped.
 
 export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** The API's machine-readable `code` (e.g. "workspace_suspended"), when it sent one. */
+    public code?: string,
   ) {
     super(message)
     this.name = "ApiError"
@@ -51,6 +53,21 @@ async function errorMessage(res: Response): Promise<string> {
   }
 }
 
+async function errorCode(res: Response): Promise<string | undefined> {
+  try {
+    const data = (await res.json()) as { code?: unknown }
+    return typeof data.code === "string" ? data.code : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** A 403 that means the whole account or workspace is suspended (not a missing permission). */
+export function suspensionCode(err: unknown): "workspace_suspended" | "account_suspended" | null {
+  if (err instanceof ApiError && (err.code === "workspace_suspended" || err.code === "account_suspended")) return err.code
+  return null
+}
+
 export type ApiOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
   /** JSON body. */
@@ -88,7 +105,10 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
     if (/csrf/i.test(msg)) res = await send(true)
   }
 
-  if (!res.ok) throw new ApiError(res.status, await errorMessage(res))
+  if (!res.ok) {
+    const code = await errorCode(res.clone())
+    throw new ApiError(res.status, await errorMessage(res), code)
+  }
   if (res.status === 204) return undefined as T
   const type = res.headers.get("content-type") ?? ""
   return (type.includes("json") ? await res.json() : await res.text()) as T
@@ -126,6 +146,7 @@ export type McpToken = {
   name: string
   prefix: string
   scopes: string[]
+  project_ids?: string[] | null
   expires_at: string | null
   last_used_at: string | null
   revoked_at: string | null

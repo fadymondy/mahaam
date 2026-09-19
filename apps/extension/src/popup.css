@@ -1,0 +1,20 @@
+/* Chrome popups size to content (max 800×600). */
+body.mgy-popup {
+  width: 380px;
+  min-height: 520px;
+}
+body.mgy-popup .mgy-panel {
+  min-height: 520px;
+}
+body.mgy-options {
+  max-width: 520px;
+  padding: 16px;
+}
+.mgy-options form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+body.mgy-popup {
+  overflow-x: hidden;
+}

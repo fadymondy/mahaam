@@ -1,4 +1,4 @@
-// Package work is Managy's project-management domain: clients, teams, projects (members,
+// Package work is Mahaam's project-management domain: clients, teams, projects (members,
 // attached teams, statuses), tasks (assignees, labels, checklist, subtasks), comments with
 // @mentions, attachments and the activity feed.
 //
@@ -17,6 +17,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/fadymondy/mahaam/internal/push"
 	"log/slog"
 	"net"
 	"net/http"
@@ -29,11 +30,12 @@ import (
 	importexport "github.com/togo-framework/import-export"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/live"
-	"github.com/fadymondy/managy/internal/mailer"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/live"
+	"github.com/fadymondy/mahaam/internal/mailer"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // Service carries the handles the domain needs. Build it with New.
@@ -45,6 +47,7 @@ type Service struct {
 	Live  *live.Hub             // per-user realtime events (nil in the OpenAPI export)
 	Mail  mailer.Sender         // togo mail (nil when absent): notification email and the digest
 	Sheet *importexport.Service // togo import-export: report CSV/XLSX
+	Push  *push.Service         // Web Push to installed apps (nil-safe; off without VAPID keys)
 }
 
 // New builds the service from the app container. a may be nil (OpenAPI export).
@@ -52,7 +55,7 @@ func New(a *app.App) *Service {
 	if a == nil {
 		return &Service{}
 	}
-	sv := &Service{DB: a.SQLDB, Sys: a.SysDB, Store: a.Storage, Log: a.Log, Live: a.Live, Mail: mailer.FromKernel(a.Kernel)}
+	sv := &Service{DB: a.SQLDB, Sys: a.SysDB, Store: a.Storage, Log: a.Log, Live: a.Live, Mail: mailer.FromKernel(a.Kernel), Push: push.New(a.SysDB, a.Log)}
 	if a.Kernel != nil {
 		sv.Sheet, _ = importexport.FromKernel(a.Kernel)
 	}
@@ -83,6 +86,9 @@ func AsError(err error) (*Error, bool) {
 	var e *Error
 	if errors.As(err, &e) {
 		return e, true
+	}
+	if x, ok := limits.As(err); ok { // a plan quota or feature gate (internal/limits)
+		return &Error{x.Status, x.Msg}, true
 	}
 	if errors.Is(err, sql.ErrNoRows) {
 		return &Error{http.StatusNotFound, "not found"}, true
@@ -300,8 +306,9 @@ func truncate(s string, n int) string {
 
 // ---- keys ---------------------------------------------------------------------
 
-// KeyPrefix is the task/issue key prefix: MG-123.
-const KeyPrefix = "MG-"
+// KeyPrefix is the task/issue key prefix: MH-123. Keys minted as MG-123 before the
+// rename are still resolved (keyRe accepts both), so old links keep working.
+const KeyPrefix = "MH-"
 
 // NextNumber allocates the next MG-<n> of a workspace. One sequence is shared by tasks and
 // reports so a key always names exactly one thing. The first call seeds the counter from
@@ -319,7 +326,7 @@ func NextNumber(ctx context.Context, q querier, workspaceID string) (int64, erro
 	return n, err
 }
 
-var keyRe = regexp.MustCompile(`(?i)^MG-(\d+)$`)
+var keyRe = regexp.MustCompile(`(?i)^(?:MH|MG)-(\d+)$`)
 
 // parseRef splits a task reference: "MG-12" or "12" → number; anything else → id.
 func parseRef(ref string) (id string, number int64) {
@@ -356,4 +363,25 @@ func between(list []float64, index int) (float64, bool) {
 		return 0, false
 	}
 	return (a + b) / 2, true
+}
+
+// ---- plan quotas and feature gates (internal/limits) -------------------------------------------
+
+// quota refuses adding n of a limited thing when the workspace's plan caps it (block policy).
+func quota(ctx context.Context, s *tenant.Scope, key string, n int64) error {
+	return limits.Check(ctx, s.WorkspaceID, key, n)
+}
+
+// feature refuses when the workspace's plan does not include a feature.
+func feature(ctx context.Context, s *tenant.Scope, key string) error {
+	return limits.Feature(ctx, s.WorkspaceID, key)
+}
+
+// RequireFeature is feature for other packages (internal/reports, internal/integrations).
+func RequireFeature(ctx context.Context, key string) error {
+	s, err := caller(ctx)
+	if err != nil {
+		return err
+	}
+	return feature(ctx, s, key)
 }

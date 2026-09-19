@@ -8,8 +8,8 @@ package models
 import (
 	"github.com/togo-framework/orm"
 
-	"github.com/fadymondy/managy/internal/app"
-	db "github.com/fadymondy/managy/internal/db/gen"
+	"github.com/fadymondy/mahaam/internal/app"
+	db "github.com/fadymondy/mahaam/internal/db/gen"
 )
 
 // SavedReports starts a query against the saved_reports table.

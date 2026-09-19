@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/fadymondy/mahaam/internal/push"
 	"strings"
 	"time"
 	_ "time/tzdata" // the IANA database inside the binary: any workspace timezone, on any host
 
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*
@@ -103,6 +104,17 @@ func public(e *TimeEntry) *TimeEntry {
 func (sv *Service) publish(workspace, user, event string, data any) {
 	if sv.Live != nil {
 		sv.Live.Publish(workspace, user, event, data)
+	}
+	// Every inbox notification also goes to the user's installed apps and browsers (internal/push).
+	if n, ok := data.(*Notification); ok && event == "notification.created" {
+		m := push.Message{Title: n.Title, Tag: n.Kind}
+		if n.Body != nil {
+			m.Body = *n.Body
+		}
+		if n.URL != nil {
+			m.URL = *n.URL
+		}
+		sv.Push.Notify(user, m)
 	}
 }
 

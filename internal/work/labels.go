@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/fadymondy/managy/internal/authz"
+	"github.com/fadymondy/mahaam/internal/authz"
 )
 
 // Label is a workspace-wide tag for tasks.

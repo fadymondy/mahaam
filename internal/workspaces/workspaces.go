@@ -23,9 +23,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/togo-framework/auth"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // InviteTTL is how long an invitation link stays valid.
@@ -266,6 +267,9 @@ func Register(api huma.API, a *app.App) {
 			return nil, huma.Error404NotFound("this invitation is no longer valid")
 		case errors.Is(err, errInviteEmail):
 			return nil, huma.Error403Forbidden("this invitation was sent to a different email address")
+		case err != nil && isLimit(err):
+			x, _ := limits.As(err)
+			return nil, huma.NewError(x.Status, x.Msg)
 		case err != nil:
 			return nil, huma.Error500InternalServerError("could not accept the invitation")
 		}
@@ -435,6 +439,14 @@ func Register(api huma.API, a *app.App) {
 		if already {
 			return nil, huma.Error409Conflict("that person is already a member")
 		}
+		if in.Body.Role != string(authz.Client) { // customers do not take a seat
+			if err := limits.Check(ctx, s.WorkspaceID, limits.Members, 1); err != nil {
+				if x, ok := limits.As(err); ok {
+					return nil, huma.NewError(x.Status, x.Msg)
+				}
+				return nil, huma.Error500InternalServerError("could not check the plan")
+			}
+		}
 
 		token := newToken()
 		out := &struct {
@@ -489,7 +501,15 @@ func MyWorkspaces(ctx context.Context, sys *sql.DB, userID string) ([]WorkspaceO
 		SELECT w.id, w.slug, w.name, m.role, w.locale
 		FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
 		WHERE m.user_id = $1 AND m.status = 'active'
-		ORDER BY lower(w.name)`, userID)
+		UNION ALL
+		-- The platform workspace ("Report a problem" lands there): platform admins act in it as
+		-- admins without a membership row (tenant.Resolve), so list it for them — the web shell
+		-- only opens workspaces this list returns.
+		SELECT w.id, w.slug, w.name, 'admin', w.locale
+		FROM workspaces w JOIN users u ON u.id = $1
+		WHERE w.slug = 'platform' AND ',' || replace(u.roles, ' ', '') || ',' LIKE '%,admin,%'
+		  AND NOT EXISTS (SELECT 1 FROM workspace_members m2 WHERE m2.workspace_id = w.id AND m2.user_id = $1 AND m2.status = 'active')
+		ORDER BY 3`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -517,8 +537,8 @@ func Create(ctx context.Context, sys *sql.DB, userID, name, slug, locale string)
 	defer tx.Rollback() //nolint:errcheck
 	ws := &WorkspaceOut{Name: name, Slug: slug, Role: string(authz.Owner)}
 	if err := tx.QueryRowContext(ctx,
-		`INSERT INTO workspaces (slug, name, created_by, locale) VALUES ($1, $2, $3, $4) RETURNING id, locale`,
-		slug, name, userID, locale,
+		`INSERT INTO workspaces (slug, name, created_by, locale, plan) VALUES ($1, $2, $3, $4, $5) RETURNING id, locale`,
+		slug, name, userID, locale, limits.DefaultPlan(ctx, sys),
 	).Scan(&ws.ID, &ws.Locale); err != nil {
 		return nil, err
 	}
@@ -588,6 +608,13 @@ func Accept(ctx context.Context, sys *sql.DB, userID, userEmail, token string) (
 	if !strings.EqualFold(email, userEmail) {
 		return nil, errInviteEmail
 	}
+	// The pending invitation already counts as a seat, so accepting must not push usage past the
+	// plan (n = 0) — it can only fail if the limit was lowered after the invitation was sent.
+	if role != string(authz.Client) {
+		if err := limits.Check(ctx, wsID, limits.Members, 0); err != nil {
+			return nil, err
+		}
+	}
 	// Already a member keeps their current role — an invite never demotes.
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO workspace_members (workspace_id, user_id, role, status) VALUES ($1, $2, $3, 'active')
@@ -608,4 +635,9 @@ func Accept(ctx context.Context, sys *sql.DB, userID, userEmail, token string) (
 		return nil, err
 	}
 	return ws, tx.Commit()
+}
+
+func isLimit(err error) bool {
+	_, ok := limits.As(err)
+	return ok
 }

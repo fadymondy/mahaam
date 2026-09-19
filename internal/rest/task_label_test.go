@@ -9,7 +9,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/humatest"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/mahaam/internal/app"
 )
 
 // TestTaskLabelAPI exercises the task_labels endpoints. Set

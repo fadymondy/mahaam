@@ -49,9 +49,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/db/migrate"
-	"github.com/fadymondy/managy/internal/mcp"
-	_ "github.com/fadymondy/managy/internal/plugins"
+	"github.com/fadymondy/mahaam/internal/db/migrate"
+	"github.com/fadymondy/mahaam/internal/mcp"
+	_ "github.com/fadymondy/mahaam/internal/plugins"
 )
 
 func rnd() string {
@@ -188,6 +188,8 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	t.Setenv("DB_DRIVER", "pgx")
 	t.Setenv("AUTH_SECRET", "isolation-test-secret-isolation-test-secret-0123")
 	t.Setenv("STORAGE_DIR", t.TempDir())
+	// Workspaces created by these tests start unlimited (the plan tests move them explicitly).
+	t.Setenv("PLAN_DEFAULT", "unlimited")
 
 	// Migrate the test database exactly as `togo migrate` would.
 	k0 := togo.New()
@@ -306,15 +308,58 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 
 	// P6 row: a billable hour today (rateID set alice's bill rate above) drafted into an invoice,
 	// which locks that entry. The invoice's client_name carries the marker.
-	today := time.Now().UTC().Format("2006-01-02")
+	today := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02") // yesterday: a 60-minute block "today" is in the future just after midnight UTC
 	alice.must("POST", "/api/w/time/entries", map[string]any{"project": prID, "description": marker + " billable", "date": today, "minutes": 60, "billable": true}, 201)
 	invoiceID := alice.must("POST", "/api/w/invoices/from-time", map[string]any{"client_id": clID, "tax_rate": "0.1"}, 201)["id"].(string)
 
 	// P7: a per-project public feedback key, for /api/w/feedback-keys/{key}.
 	fkID := alice.must("POST", "/api/w/projects/"+prID+"/feedback-keys", map[string]any{"name": marker + " key", "allowed_origins": []string{"https://example.com"}}, 201)["id"].(string)
 
+	// Integrations: a Linear import connected through the real endpoint (the sealed key never
+	// comes back), plus a GitHub link and a logged commit inserted directly (no GitHub here).
+	// Every integration route is /api/w/projects/{project}/... (segment "projects", mapped below).
+	intID := alice.must("PUT", "/api/w/projects/"+prID+"/integrations/linear", map[string]any{"team_id": marker, "api_key": marker + "-key"}, 200)["id"].(string)
+	var ghEvID string
+	if _, err := a.SysDB.Exec(`INSERT INTO project_integrations (workspace_id, project_id, provider, status, config, created_by)
+		VALUES ($1, $2, 'github', 'active', jsonb_build_object('installation_id', '1', 'repo', $3::text), $4)`, aID, prID, "acme/"+marker, aliceID); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.SysDB.QueryRow(`INSERT INTO github_events (workspace_id, project_id, kind, external_id, title) VALUES ($1, $2, 'commit', $3, $3) RETURNING id`,
+		aID, prID, marker).Scan(&ghEvID); err != nil {
+		t.Fatal(err)
+	}
+
+	// Project vault: a secret (sealed) for /api/w/vault/{item}[/reveal].
+	vaultID := alice.must("POST", "/api/w/projects/"+prID+"/vault", map[string]any{"kind": "secret", "title": marker + " vault", "value": marker + "-secret"}, 201)["id"].(string)
+
+	// Access: a label grant to alice's team, for /api/w/access-grants/{grant}.
+	grantID := alice.must("POST", "/api/w/access-grants", map[string]any{"subject_type": "team", "subject": teamID, "scope_type": "label", "scope": lbID}, 201)["id"].(string)
+
+	// Billing sources: a subscription on A's project (for /api/w/subscriptions/{subscription}) and
+	// a day of AI usage (listed by /api/w/ai-usage, which must stay inside workspace A).
+	subID := alice.must("POST", "/api/w/projects/"+prID+"/subscriptions", map[string]any{"name": marker + " sub", "price": "10.00"}, 201)["id"].(string)
+	aiRows := alice.must("POST", "/api/w/projects/"+prID+"/ai-usage", map[string]any{"rows": []map[string]any{
+		{"day": today, "model": marker, "cost": "1.00"}}}, 200)["rows"].([]any)
+	aiID := aiRows[0].(map[string]any)["id"].(string)
+
+	// Roadmap 5: a pending customer request in A's project, for /api/w/requests/{key}/*. Its row
+	// id (not its MG-n key, which B has too) fills the path.
+	reqKey := alice.must("POST", "/api/w/portal/requests", map[string]any{"project_id": prID, "title": marker + " request", "kind": "feature"}, 201)["key"].(string)
+	reqID := rowID(`SELECT id FROM reports WHERE workspace_id = $1 AND request_state = 'pending' AND key = '` + reqKey + `'`)
+
+	// Employee KPI: a manual GitHub mapping for alice and a review of her (inserted directly: nobody
+	// reviews themself through the API), for /api/w/members/{user}/{kpi,github,reviews} and
+	// /api/w/reviews/{review}. GET /api/w/kpi/team is unparameterised (below).
+	alice.must("PUT", "/api/w/members/"+aliceID+"/github", map[string]any{"login": "iso-a-" + rnd(), "emails": []string{"a-" + rnd() + "@example.test"}}, 200)
+	ughID := rowID(`SELECT id FROM user_github_accounts WHERE workspace_id = $1 LIMIT 1`)
+	var reviewID string
+	if err := a.SysDB.QueryRow(`INSERT INTO member_reviews (workspace_id, user_id, author_id, period_start, period_end, rating, body)
+		VALUES ($1, $2, $2, current_date, current_date, 3, $3) RETURNING id`, aID, aliceID, marker+" review").Scan(&reviewID); err != nil {
+		t.Fatal(err)
+	}
+
 	aIDs := []string{aID, invID, tokID, repID, comID, memberID, clID, teamID, prID, stTodo, stDone, lbID, tkID,
-		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID, savedID, prefID, invoiceID, fkID}
+		ckID, cmID, atID, pmID, tmID, ptID, taID, tlID, acID, teID, rateID, noteID, savedID, prefID, invoiceID, fkID, intID, ghEvID, vaultID, grantID, subID, aiID, reqID, ughID, reviewID}
 
 	// idFor names the A row a route's path parameters are filled with, by the route's first
 	// segment after /api/ (or /api/w/). A guarded route whose segment is missing here fails.
@@ -323,7 +368,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"workspaces": aID, "workspace_members": memberID, "invitations": invID, "mcp_tokens": tokID,
 		"reports": repID, "report_comments": comID,
 		// hand-written /api/w/issues/{key} and /api/w/issues/{key}/comments
-		"issues": repID,
+		"issues":  repID,
 		"clients": clID, "projects": prID, "project_members": pmID, "teams": teamID, "team_members": tmID,
 		"project_teams": ptID, "task_statuses": stTodo, "tasks": tkID, "task_assignees": taID,
 		"task_checklist_items": ckID, "labels": lbID, "task_labels": tlID, "task_comments": cmID,
@@ -342,17 +387,38 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		// P7: /api/w/feedback-keys/{key}[/revoke]. The client-portal contact routes
 		// /api/w/clients/{client}/contacts[/{user}] use segment "clients" (mapped above).
 		"feedback-keys": fkID,
+		// /api/w/vault/{item}[/reveal]; /api/w/projects/{project}/vault* use "projects".
+		"vault": vaultID,
+		// /api/w/access-grants/{grant}; /api/w/projects/{project}/project-labels use "projects".
+		"access-grants": grantID,
+		// /api/w/subscriptions/{subscription}; …/ai-usage, …/ai-markup and …/subscriptions under
+		// "projects". GET /api/w/ai-usage is unparameterised (below).
+		"subscriptions": subID,
+		// Roadmap 5: /api/w/portal/projects/{project} and /api/w/portal/issues/{key}[/comments]
+		// (one fixture per segment: A's project id — an unknown issue ref is a 404 all the same),
+		// and the staff inbox /api/w/requests/{key}/{accept,decline,convert-to-task}.
+		"portal":   prID,
+		"requests": reqID,
+		// Employee KPI: /api/w/members/{user}/{kpi[/dossier],github,reviews} (A's member alice — a user
+		// outside B is a 404 there) and /api/w/reviews/{review}. /api/w/me/github* use "me".
+		"members": aliceID,
+		"reviews": reviewID,
 	}
 	// Guarded routes without path parameters, by segment. Anything else is unknown.
 	unparameterised := map[string]bool{
-		"current": true, "members": true, "activity": true, "me": true, "graphql": true,
+		"workspace": true, // DELETE /api/w/workspace — the owner deletes their own workspace (slug-confirmed)
+		"ai-usage": true, // the workspace AI usage summary (manager+)
+		"current":  true, "members": true, "activity": true, "me": true, "graphql": true,
 		"feedback": true, // the signed-in "Report a problem" intake (reports land in the platform workspace)
 		"events":   true, // P2: the per-user realtime stream (read with a timeout, see send)
 		// P5: /api/w/report/{time,export,budgets,profitability}, /api/w/notification-settings
 		"report": true, "notification-settings": true,
 		// P7: the client's own portal reads/writes (GET issues|invoices, POST issues) —
 		// collection routes scoped to the caller, no path parameter.
-		"portal": true,
+		"portal":  true,
+		"kpi":     true, // GET /api/w/kpi/team (manager+, the caller's workspace)
+		"plan":    true, // GET /api/w/plan: the workspace's plan and usage (admin+)
+		"billing": true, // GET /api/w/billing, POST /api/w/billing/{checkout,portal} (admin+)
 	}
 
 	leaks := func(b []byte) string {
@@ -387,6 +453,31 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		probe.URL.Path = rt.pattern
 		if classify(probe) == tierPublic || classify(probe) == tierBlocked {
 			continue // the allowlist is reviewed in guard.go; MCP is swept below
+		}
+		// The platform admin panel (/api/admin/*, not the admin MCP): not discoverable — anonymous
+		// and a signed-in non-admin (bob, in either workspace) both get 404, with A's ids in the
+		// path, on every method. Admins are exercised in TestPlatformAdmin.
+		if classify(probe) == tierAdmin {
+			path := strings.NewReplacer("{workspace}", aID, "{user}", aliceID, "{plan}", "free").Replace(rt.pattern)
+			if param.MatchString(path) {
+				t.Errorf("UNKNOWN ADMIN ROUTE %s %s: map its parameter in the sweep", rt.method, rt.pattern)
+				continue
+			}
+			swept++
+			if code, b := anon.do(rt.method, path, map[string]any{}); code != http.StatusNotFound {
+				t.Errorf("%s %s anonymous: got %d, want 404: %s", rt.method, rt.pattern, code, b)
+			}
+			for _, ws := range []string{aID, bID} {
+				bob.ws = ws
+				code, b := bob.do(rt.method, path, map[string]any{})
+				if code != http.StatusNotFound {
+					t.Errorf("%s %s as a non-admin: got %d, want 404: %s", rt.method, rt.pattern, code, b)
+				}
+				if what := leaks(b); what != "" {
+					t.Errorf("%s %s as a non-admin leaked A's %s", rt.method, rt.pattern, what)
+				}
+			}
+			continue
 		}
 		segs := strings.Split(strings.TrimPrefix(rt.pattern, "/api/"), "/")
 		table := segs[0]
@@ -530,7 +621,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"/api/w/clients/" + clID:          marker,
 		"/api/w/time/entries/" + teID:     marker,
 		"/api/w/saved-reports/" + savedID: marker,
-		"/api/w/invoices/" + invoiceID:        marker, // the invoice's client_name carries the marker
+		"/api/w/invoices/" + invoiceID:    marker, // the invoice's client_name carries the marker
 	} {
 		if code, b := alice.do("GET", path, nil); code != 200 || !strings.Contains(string(b), want) {
 			t.Errorf("A's row at %s was damaged from B: %d %s", path, code, b)
@@ -540,9 +631,14 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		t.Errorf("A's invitation was removed from B: %d %s", code, b)
 	}
 	var planted int
-	_ = a.SysDB.QueryRow(`SELECT count(*) FROM reports WHERE workspace_id = $1`, aID).Scan(&planted)
+	_ = a.SysDB.QueryRow(`SELECT count(*) FROM reports WHERE workspace_id = $1 AND request_state IS NULL`, aID).Scan(&planted)
 	if planted != 1 {
 		t.Errorf("A should have exactly 1 report, has %d", planted)
+	}
+	// ...and its one customer request is still pending (B could not accept, decline or convert it).
+	_ = a.SysDB.QueryRow(`SELECT count(*) FROM reports WHERE workspace_id = $1 AND request_state = 'pending'`, aID).Scan(&planted)
+	if planted != 1 {
+		t.Errorf("A's request should still be pending, found %d pending", planted)
 	}
 	var aTasks int
 	_ = a.SysDB.QueryRow(`SELECT count(*) FROM tasks WHERE workspace_id = $1`, aID).Scan(&aTasks)
@@ -623,7 +719,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	_, text, isErr := mcpCall(aliceMCP, "/api/mcp", "create_task", map[string]any{
 		"project": marker + " project", "title": "Filed by Claude", "assignees": []string{"me"}, "labels": []string{marker + "-label"}, "priority": "urgent",
 	})
-	key := regexp.MustCompile(`MG-\d+`).FindString(text)
+	key := regexp.MustCompile(`M[HG]-\d+`).FindString(text)
 	if isErr || key == "" {
 		t.Fatalf("create_task over MCP: %v %q", isErr, text)
 	}

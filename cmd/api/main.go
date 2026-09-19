@@ -1,4 +1,4 @@
-// Command api is the managy HTTP entrypoint. It boots the shared togo stack
+// Command api is the mahaam HTTP entrypoint. It boots the shared togo stack
 // (Huma REST + OpenAPI and gqlgen GraphQL on the kernel) and serves it.
 package main
 
@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fadymondy/managy/internal/envfile"
-	"github.com/fadymondy/managy/internal/server"
+	"github.com/fadymondy/mahaam/internal/envfile"
+	"github.com/fadymondy/mahaam/internal/server"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	a := server.Boot()
 	defer a.Kernel.Close()
 	k := a.Kernel
-	fmt.Printf("→ managy listening on %s  (GraphQL %s · REST %s · docs %s)\n",
+	fmt.Printf("→ mahaam listening on %s  (GraphQL %s · REST %s · docs %s)\n",
 		k.Config.Addr, k.Config.GraphQLPath, k.Config.RESTPath, k.Config.DocsPath)
 	if err := k.Serve(context.Background()); err != nil {
 		panic(err)

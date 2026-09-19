@@ -4,7 +4,7 @@ package rest
 import (
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/mahaam/internal/app"
 )
 
 // RegisterRoutes mounts every generated resource's REST routes. Regenerated from

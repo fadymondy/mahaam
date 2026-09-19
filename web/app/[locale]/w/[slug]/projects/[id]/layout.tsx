@@ -19,7 +19,7 @@ import { ApiError } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useProject } from "@/lib/work"
 
-const TABS = ["overview", "board", "list", "settings"] as const
+const TABS = ["overview", "board", "list", "issues", "github", "vault", "billing", "settings"] as const
 
 function ProjectShell({ children }: { children: ReactNode }) {
   const { id } = useParams<{ id: string }>()
@@ -95,7 +95,7 @@ function ProjectShell({ children }: { children: ReactNode }) {
         <div className="mt-4 border-b border-line px-6">
           <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
             <TabsList variant="line">
-              {TABS.map((x) => (
+              {TABS.filter((x) => (x !== "vault" || ws.can("vault:read")) && (x !== "github" || ws.can("integrations:read")) && (x !== "billing" || ws.can("subscriptions:manage"))).map((x) => (
                 <TabsTrigger key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
                   {t(`projectTab.${x}`)}
                 </TabsTrigger>

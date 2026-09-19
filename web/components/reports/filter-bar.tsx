@@ -3,7 +3,7 @@
 // The report filter bar and the URL-backed filter state shared by the Time and Profitability tabs.
 import { useMemo, useState, type ReactNode } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { FileSpreadsheetIcon, FileTextIcon, LoaderIcon, PrinterIcon, RotateCcwIcon } from "lucide-react"
+import { FileCodeIcon, FileSpreadsheetIcon, FileTextIcon, FileTypeIcon, LoaderIcon, PrinterIcon, RotateCcwIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -198,12 +198,12 @@ export function ResetButton({ onReset }: { onReset: () => void }) {
   )
 }
 
-/** CSV + XLSX of the current table. `query` is the full export query minus format. */
+/** CSV, XLSX, PDF and Markdown of the current table. `query` is the full export query minus format. */
 export function ExportButtons({ query, label, id }: { query: string; label?: string; id?: string }) {
   const { t } = useTranslations()
   const ws = useWorkspace()
   const [busy, setBusy] = useState<string | null>(null)
-  async function run(format: "csv" | "xlsx") {
+  async function run(format: ExportFormat) {
     setBusy(format)
     try {
       const name = await downloadExport(ws.id, `${query}&format=${format}`)
@@ -217,15 +217,23 @@ export function ExportButtons({ query, label, id }: { query: string; label?: str
   return (
     <div className="flex items-center gap-1" role="group" aria-label={label ? `${t("reports.export")} · ${label}` : t("reports.export")}>
       {label ? <span className="me-1 text-xs text-grid-muted">{label}</span> : null}
-      {(["csv", "xlsx"] as const).map((f) => (
-        <Button key={f} variant="outline" disabled={!!busy} onClick={() => run(f)} data-export={f} data-export-id={id}>
-          {busy === f ? <LoaderIcon className="animate-spin" /> : f === "csv" ? <FileTextIcon /> : <FileSpreadsheetIcon />}
-          {t(f === "csv" ? "reports.exportCsv" : "reports.exportXlsx")}
-        </Button>
-      ))}
+      {EXPORT_FORMATS.map((f) => {
+        const Icon = EXPORT_ICONS[f]
+        return (
+          <Button key={f} variant="outline" disabled={!!busy} onClick={() => run(f)} data-export={f} data-export-id={id}>
+            {busy === f ? <LoaderIcon className="animate-spin" /> : <Icon />}
+            {t(EXPORT_LABELS[f])}
+          </Button>
+        )
+      })}
     </div>
   )
 }
+
+type ExportFormat = "csv" | "xlsx" | "pdf" | "md"
+const EXPORT_FORMATS: ExportFormat[] = ["csv", "xlsx", "pdf", "md"]
+const EXPORT_ICONS = { csv: FileTextIcon, xlsx: FileSpreadsheetIcon, pdf: FileTypeIcon, md: FileCodeIcon } as const
+const EXPORT_LABELS = { csv: "reports.exportCsv", xlsx: "reports.exportXlsx", pdf: "reports.exportPdf", md: "reports.exportMd" } as const
 
 export function PrintButton() {
   const { t } = useTranslations()

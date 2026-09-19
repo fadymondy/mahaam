@@ -1,0 +1,60 @@
+# Mahaam PRODUCTION — persistent local containers on think-station, replacing the
+# dev servers (`go run ./cmd/api`, `next dev`) on the SAME ports so the reverse SSH
+# tunnel + NPM host 60 + Cloudflare path (managy-app.fadymondy.com) is untouched.
+#
+#   web  127.0.0.1:3010  <- tunnel target (10.10.10.1:4620)
+#   api  127.0.0.1:8110  <- reachable by the owner on the host; web proxies to it in-network
+#   db   the EXISTING external mahaam-postgres container (host :55460) — NOT recreated here.
+#
+# restart: unless-stopped so a Docker/engine restart or a crash self-recovers; Docker
+# Desktop autostarts on login, so the app survives a full reboot.
+name: mahaam-prod
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: mahaam-api
+    container_name: mahaam-api
+    volumes:
+      # Attachments, feedback screenshots and mail (.eml) — STORAGE_DIR=storage under /app.
+      # A named volume, so a redeploy (force-recreate) never loses uploaded files.
+      - mahaam-storage:/app/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8110/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    env_file: .env.prod
+    ports:
+      - "127.0.0.1:8110:8110"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: mahaam-web
+    container_name: mahaam-web
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3010/en/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    environment:
+      NODE_ENV: production
+      API_ORIGIN: http://api:8110
+    ports:
+      - "127.0.0.1:3010:3010"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mahaam-storage:

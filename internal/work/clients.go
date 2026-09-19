@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
 )
 
 // Client is a customer of the workspace. No ledger: billing arrives with invoices (P6).
@@ -19,6 +20,7 @@ type Client struct {
 	Name             string     `json:"name"`
 	Email            *string    `json:"email"`
 	Phone            *string    `json:"phone"`
+	Company          *string    `json:"company"`
 	Country          *string    `json:"country" doc:"ISO 3166-1 alpha-2"`
 	Currency         string     `json:"currency" doc:"ISO 4217"`
 	DefaultRateMinor *int64     `json:"default_rate_minor" doc:"Hourly rate in minor units"`
@@ -28,13 +30,13 @@ type Client struct {
 	CreatedAt        time.Time  `json:"created_at"`
 }
 
-const clientCols = `c.id, c.name, c.email, c.phone, c.country, c.currency, c.default_rate_minor, c.notes,
+const clientCols = `c.id, c.name, c.email, c.phone, c.company, c.country, c.currency, c.default_rate_minor, c.notes,
 	c.archived_at, c.created_at,
 	(SELECT count(*) FROM projects p WHERE p.workspace_id = c.workspace_id AND p.client_id = c.id AND p.archived_at IS NULL)`
 
 func scanClient(r scanner) (*Client, error) {
 	c := &Client{}
-	err := r.Scan(&c.ID, &c.Name, &c.Email, &c.Phone, &c.Country, &c.Currency, &c.DefaultRateMinor, &c.Notes,
+	err := r.Scan(&c.ID, &c.Name, &c.Email, &c.Phone, &c.Company, &c.Country, &c.Currency, &c.DefaultRateMinor, &c.Notes,
 		&c.ArchivedAt, &c.CreatedAt, &c.ProjectCount)
 	return c, err
 }
@@ -45,6 +47,7 @@ type ClientInput struct {
 	Name             *string `json:"name,omitempty" maxLength:"120"`
 	Email            *string `json:"email,omitempty"`
 	Phone            *string `json:"phone,omitempty" maxLength:"40"`
+	Company          *string `json:"company,omitempty" maxLength:"160"`
 	Country          *string `json:"country,omitempty" doc:"ISO 3166-1 alpha-2, e.g. EG"`
 	Currency         *string `json:"currency,omitempty" doc:"ISO 4217, e.g. USD"`
 	DefaultRateMinor *int64  `json:"default_rate_minor,omitempty" doc:"Minor units per hour; negative clears"`
@@ -145,6 +148,9 @@ func clientValues(in ClientInput, p *patch) error {
 	if v, ok := trimmed(in.Phone); ok {
 		p.set("phone", nullIfEmpty(v))
 	}
+	if v, ok := trimmed(in.Company); ok {
+		p.set("company", nullIfEmpty(v))
+	}
 	if v, ok := trimmed(in.Country); ok {
 		v = strings.ToUpper(v)
 		if v != "" && !countryRe.MatchString(v) {
@@ -179,6 +185,9 @@ func (sv *Service) CreateClient(ctx context.Context, in ClientInput) (*Client, e
 		return nil, err
 	}
 	if err := require(s, authz.ClientsWrite); err != nil {
+		return nil, err
+	}
+	if err := quota(ctx, s, limits.Clients, 1); err != nil {
 		return nil, err
 	}
 	if v, _ := trimmed(in.Name); v == "" {

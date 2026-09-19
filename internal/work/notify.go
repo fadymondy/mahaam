@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*

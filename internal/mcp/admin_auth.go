@@ -3,10 +3,11 @@ package mcp
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/app"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/platform"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // adminCaller is who an admin MCP call acts as.
@@ -26,7 +27,7 @@ func callerFrom(ctx context.Context) adminCaller {
 // (users.roles contains "admin"). Losing the role kills every admin token the
 // user holds. A user MCP token (mgy_) is refused here outright.
 func authAdmin(r *http.Request, a *app.App, token string) (context.Context, []string, bool) {
-	if !strings.HasPrefix(token, AdminPrefix) {
+	if !isAdminToken(token) {
 		return nil, nil, false
 	}
 	ctx := r.Context()
@@ -43,6 +44,9 @@ func authAdmin(r *http.Request, a *app.App, token string) (context.Context, []st
 	if !IsPlatformAdmin(roles) {
 		return nil, nil, false
 	}
+	if u, err := platform.Load(ctx, a.SysDB, userID); err != nil || u.Suspended() {
+		return nil, nil, false
+	}
 	scopes := []string{}
 	for _, s := range parseScopes(rawScopes) {
 		if adminScope(s) {
@@ -54,11 +58,4 @@ func authAdmin(r *http.Request, a *app.App, token string) (context.Context, []st
 }
 
 // IsPlatformAdmin reads the auth plugin's CSV roles column.
-func IsPlatformAdmin(csv string) bool {
-	for _, r := range strings.Split(csv, ",") {
-		if strings.TrimSpace(r) == "admin" {
-			return true
-		}
-	}
-	return false
-}
+func IsPlatformAdmin(csv string) bool { return tenant.IsPlatformAdmin(csv) }

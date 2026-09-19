@@ -26,6 +26,7 @@ import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError, type McpScope, type McpToken } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useMcpTokens } from "@/lib/queries"
+import { useProjects } from "@/lib/work"
 import { useDocumentTitle } from "@/lib/title"
 
 const MCP_ORIGIN = process.env.NEXT_PUBLIC_MCP_ORIGIN ?? "http://localhost:8110"
@@ -97,7 +98,8 @@ export default function McpTokensPage() {
         <CreateTokenDialog
           open={creating}
           onOpenChange={setCreating}
-          scopes={tokens.data.scopes ?? []}
+          // A customer sees only the scopes their role can hold (portal:read / portal:write, projects:read).
+          scopes={(tokens.data.scopes ?? []).filter((s) => s.allowed || ws.can("members:read"))}
           onCreated={() => tokens.mutate()}
         />
       ) : null}
@@ -165,6 +167,9 @@ function CreateTokenDialog({
   const ws = useWorkspace()
   const [name, setName] = useState("")
   const [chosen, setChosen] = useState<string[]>([])
+  // Empty = every project the user can see; otherwise the token is limited to these.
+  const [projectIds, setProjectIds] = useState<string[]>([])
+  const projects = useProjects(ws.id)
   const [expiry, setExpiry] = useState<string>("90")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -175,6 +180,7 @@ function CreateTokenDialog({
   function reset() {
     setName("")
     setChosen([])
+    setProjectIds([])
     setExpiry("90")
     setError(null)
     setPlaintext(null)
@@ -200,6 +206,7 @@ function CreateTokenDialog({
     try {
       const body: Record<string, unknown> = { name: name.trim(), scopes: chosen }
       if (expiry !== "never") body.expires_in_days = Number(expiry)
+      if (projectIds.length > 0) body.projects = projectIds
       const res = await api<{ token: McpToken; plaintext: string }>("/api/w/mcp_tokens", { json: body, workspaceId: ws.id })
       setPlaintext(res.plaintext)
       onCreated()
@@ -230,7 +237,7 @@ function CreateTokenDialog({
             <div className="space-y-1.5">
               <p className="grid-micro">{t("mcp.claudeCode")}</p>
               <CopyField
-                value={`claude mcp add --transport http managy ${MCP_ORIGIN}/api/mcp --header "Authorization: Bearer ${plaintext}"`}
+                value={`claude mcp add --transport http mahaam ${MCP_ORIGIN}/api/mcp --header "Authorization: Bearer ${plaintext}"`}
                 label={t("mcp.claudeCode")}
               />
             </div>
@@ -294,6 +301,46 @@ function CreateTokenDialog({
                     })}
                   </ul>
                 )}
+              </FieldSet>
+
+              <FieldSet>
+                <FieldLegend variant="label">{t("mcp.projects")}</FieldLegend>
+                <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
+                <ul className="max-h-48 divide-y divide-line overflow-y-auto border border-line">
+                  <li>
+                    <label htmlFor="proj-all" className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
+                      <input
+                        id="proj-all"
+                        type="checkbox"
+                        className="size-4 shrink-0 accent-(--grid-action)"
+                        checked={projectIds.length === 0}
+                        onChange={() => setProjectIds([])}
+                      />
+                      <span className="text-sm text-grid-fg">{t("mcp.allProjects")}</span>
+                    </label>
+                  </li>
+                  {(projects.data?.projects ?? []).map((p) => {
+                    const id = `proj-${p.id}`
+                    return (
+                      <li key={p.id}>
+                        <label htmlFor={id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
+                          <input
+                            id={id}
+                            type="checkbox"
+                            className="size-4 shrink-0 accent-(--grid-action)"
+                            checked={projectIds.includes(p.id)}
+                            onChange={(e) =>
+                              setProjectIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)))
+                            }
+                          />
+                          <span className="truncate text-sm text-grid-body" dir="auto">
+                            {p.name}
+                          </span>
+                        </label>
+                      </li>
+                    )
+                  })}
+                </ul>
               </FieldSet>
 
               <Field>

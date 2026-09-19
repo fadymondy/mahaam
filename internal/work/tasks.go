@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // Task is a task as shown on the board and in lists.
@@ -70,7 +71,7 @@ func loadTask(ctx context.Context, q querier, s *tenant.Scope, ref string) (*Tas
 		return nil, notFound("task")
 	}
 	args := []any{s.WorkspaceID, id, number}
-	clause := visibleClause(s, &args)
+	clause := taskClause(s, &args)
 	t, err := scanTask(q.QueryRowContext(ctx, `SELECT `+taskCols+` FROM tasks t
 		JOIN projects p ON p.workspace_id = t.workspace_id AND p.id = t.project_id
 		WHERE t.workspace_id = $1 AND ((t.id = $2 AND $2 <> '') OR t.number = $3) AND `+clause, args...))
@@ -107,7 +108,7 @@ func (sv *Service) ListTasks(ctx context.Context, f TaskFilter) ([]Task, error) 
 		return nil, err
 	}
 	args := []any{s.WorkspaceID}
-	where := "t.workspace_id = $1 AND " + visibleClause(s, &args)
+	where := "t.workspace_id = $1 AND " + taskClause(s, &args)
 	add := func(cond string, v any) {
 		args = append(args, v)
 		where += fmt.Sprintf(" AND "+cond, len(args))
@@ -451,10 +452,20 @@ func (sv *Service) CreateTask(ctx context.Context, projectID string, in TaskInpu
 	if err := requireWritable(s, p); err != nil {
 		return nil, err
 	}
+	// Someone who sees the project only through task grants cannot add tasks to it.
+	if !hasFullAccess(ctx, sv.DB, s, p.ID) {
+		return nil, forbidden("you only have access to specific tasks in this project")
+	}
 	if v, _ := trimmed(in.Title); v == "" {
 		return nil, invalid("a task needs a title")
 	}
 	pt := newPatch()
+	if err := quota(ctx, s, limits.Tasks, 1); err != nil {
+		return nil, err
+	}
+	if err := quota(ctx, s, limits.TasksMonth, 1); err != nil {
+		return nil, err
+	}
 	if err := taskValues(ctx, sv.DB, s, p.ID, "", in, pt); err != nil {
 		return nil, err
 	}

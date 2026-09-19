@@ -20,14 +20,26 @@ import reportsAr from "@/lang/reports.ar.json"
 
 import invoicesEn from "@/lang/invoices.en.json"
 import invoicesAr from "@/lang/invoices.ar.json"
+// Integrations (GitHub / Jira / Linear) and the project GitHub tab.
+import integrationsEn from "@/lang/integrations.en.json"
+import integrationsAr from "@/lang/integrations.ar.json"
+// Roadmap 5: the customer portal, the request portal and the staff Requests inbox.
+import portalEn from "@/lang/portal.en.json"
+import portalAr from "@/lang/portal.ar.json"
+// Roadmap 10: the employee KPI, manager reviews and per-user GitHub accounts.
+import kpiEn from "@/lang/kpi.en.json"
+import kpiAr from "@/lang/kpi.ar.json"
+// The platform admin panel, Settings → Plan & usage and the suspension states.
+import adminEn from "@/lang/admin.en.json"
+import adminAr from "@/lang/admin.ar.json"
 
 export { LOCALES, dirForLocale, isLocale } from "@/lib/i18n-locale"
 export type { Locale } from "@/lib/i18n-locale"
 
 type Dict = Record<string, string>
 const DICTIONARIES: Record<Locale, Dict> = {
-  en: { ...en, ...workEn, ...timeEn, ...reportsEn, ...invoicesEn },
-  ar: { ...ar, ...workAr, ...timeAr, ...reportsAr, ...invoicesAr },
+  en: { ...en, ...workEn, ...timeEn, ...reportsEn, ...invoicesEn, ...integrationsEn, ...portalEn, ...kpiEn, ...adminEn },
+  ar: { ...ar, ...workAr, ...timeAr, ...reportsAr, ...invoicesAr, ...integrationsAr, ...portalAr, ...kpiAr, ...adminAr },
 }
 
 /** Non-reactive lookup — for use outside React. */

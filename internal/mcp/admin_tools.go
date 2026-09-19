@@ -9,24 +9,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/reports"
-	"github.com/fadymondy/managy/internal/workspaces"
+	"github.com/fadymondy/mahaam/internal/admin"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/reports"
+	"github.com/fadymondy/mahaam/internal/work"
+	"github.com/fadymondy/mahaam/internal/workspaces"
 )
 
 /*
 AdminTools is the platform admin MCP registry (/api/admin/mcp).
 
 Issues: the triage set of fadymondy.com-v2's internal/mcp/tools.go
-(list/get/create/update/comment/start/finish), over Managy's own reports table
+(list/get/create/update/comment/start/finish), over Mahaam's own reports table
 in the platform workspace. Workspaces and users: inspection and membership
 management.
 
 All of these run on the owner pool (they are cross-tenant by definition), so
 every query names its workspace or user explicitly.
 */
-func AdminTools() []Tool {
+func adminCoreTools() []Tool {
 	statusEnum := map[string]any{"type": "string", "enum": reports.Statuses}
 	priorityEnum := map[string]any{"type": "string", "enum": []string{"lowest", "low", "medium", "high", "highest"}}
 	typeEnum := map[string]any{"type": "string", "enum": []string{"bug", "task", "story", "epic", "feature"}}
@@ -49,7 +51,7 @@ func AdminTools() []Tool {
 		// ---- issues --------------------------------------------------------
 		{
 			Name:        "list_issues",
-			Description: "List Managy's own issues (bug reports and tasks filed in the platform workspace). Filter by status, state, issue_type or a title search.",
+			Description: "List Mahaam's own issues (bug reports and tasks filed in the platform workspace). Filter by status, state, issue_type or a title search.",
 			Scope:       "admin:issues:read",
 			InputSchema: schema(nil, map[string]any{
 				"status": statusEnum, "state": prop("string", "open or closed"), "issue_type": typeEnum,
@@ -87,7 +89,7 @@ func AdminTools() []Tool {
 		},
 		{
 			Name:        "create_issue",
-			Description: "Open an issue on Managy's own tracker. Returns the assigned key (MG-n). Use it to file work discovered while building.",
+			Description: "Open an issue on Mahaam's own tracker. Returns the assigned key (MG-n). Use it to file work discovered while building.",
 			Scope:       "admin:issues:write",
 			InputSchema: schema([]string{"title"}, map[string]any{
 				"title": prop("string", ""), "body": prop("string", "Markdown"),
@@ -300,8 +302,15 @@ func AdminTools() []Tool {
 				}
 				name, plan := firstNonEmpty(str(args, "name"), w.name), firstNonEmpty(str(args, "plan"), w.plan)
 				if _, err := a.SysDB.ExecContext(ctx,
-					`UPDATE workspaces SET name = $2, plan = $3, updated_at = now() WHERE id = $1`, w.id, name, plan); err != nil {
+					`UPDATE workspaces SET name = $2, updated_at = now() WHERE id = $1`, w.id, name); err != nil {
 					return "", err
+				}
+				// A plan change goes through the admin domain: validated, cache invalidated, audited.
+				if plan != w.plan {
+					c := callerFrom(ctx)
+					if _, err := (&admin.Service{DB: a.SysDB}).SetPlan(ctx, admin.Actor{ID: c.UserID, Email: c.Email, IP: work.MetaFrom(ctx).IP, Via: "mcp"}, w.id, plan); err != nil {
+						return "", err
+					}
 				}
 				return fmt.Sprintf("Updated %s: name=%q plan=%s.", w.slug, name, plan), nil
 			},
@@ -506,3 +515,7 @@ func lastOwner(ctx context.Context, db *sql.DB, workspaceID string) bool {
 		`SELECT count(*) FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND status = 'active'`, workspaceID).Scan(&owners)
 	return owners <= 1
 }
+
+// AdminTools is the full admin MCP registry: issues, workspaces and users (above) plus plans,
+// quotas, suspension and stats (admin_plan_tools.go).
+func AdminTools() []Tool { return append(adminCoreTools(), adminPlanTools()...) }

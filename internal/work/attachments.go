@@ -10,7 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/fadymondy/managy/internal/authz"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
 )
 
 // MaxAttachment is the largest file a task accepts.
@@ -119,6 +120,9 @@ func (sv *Service) AddAttachment(ctx context.Context, ref, name, contentType str
 	contentType = strings.TrimSpace(strings.ToLower(contentType))
 	if contentType == "" || contentType == "application/octet-stream" {
 		contentType = http.DetectContentType(data)
+	}
+	if err := limits.CheckStorage(ctx, s.WorkspaceID, int64(len(data))); err != nil {
+		return nil, err
 	}
 	id := newID()
 	path := "attachments/" + s.WorkspaceID + "/" + id

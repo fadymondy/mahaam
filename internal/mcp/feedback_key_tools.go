@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 /*
@@ -70,6 +70,61 @@ func FeedbackKeyTools() []Tool {
 				}
 				return fmt.Sprintf("Minted %s for project %s.\n  origins: %s\n  id: %s",
 					k.PublicKey, k.ProjectID, strings.Join(k.AllowedOrigins, ", "), k.ID), nil
+			},
+		},
+		{
+			Name:        "set_feedback_widget",
+			Description: "Customise how a feedback key's launcher looks on the customer's site: colour, text colour, icon, text, shape, initial position, theme and language. Replaces the stored look; omit a field for the Mahaam default.",
+			Scope:       "projects:write",
+			InputSchema: schema([]string{"key"}, map[string]any{
+				"key":        prop("string", "The feedback key id"),
+				"color":      prop("string", "#rrggbb launcher background"),
+				"text_color": prop("string", "#rrggbb launcher text and icon"),
+				"icon":       map[string]any{"type": "string", "enum": []string{"bug", "message", "help", "lightbulb", "megaphone", "sparkles", "none"}},
+				"text":       prop("string", "Launcher label, up to 40 characters"),
+				"shape":      map[string]any{"type": "string", "enum": []string{"pill", "circle", "square", "tab"}},
+				"position":   map[string]any{"type": "string", "enum": []string{"bottom-end", "bottom-start", "top-end", "top-start", "middle-end", "middle-start"}},
+				"theme":      map[string]any{"type": "string", "enum": []string{"auto", "light", "dark"}},
+				"locale":     map[string]any{"type": "string", "enum": []string{"auto", "en", "ar"}},
+			}),
+			Run: func(ctx context.Context, a *app.App, raw json.RawMessage) (string, error) {
+				args := decodeArgs(raw)
+				cfg := work.WidgetConfig{
+					Color: str(args, "color"), TextColor: str(args, "text_color"), Icon: str(args, "icon"), Text: str(args, "text"),
+					Shape: str(args, "shape"), Position: str(args, "position"), Theme: str(args, "theme"), Locale: str(args, "locale"),
+				}
+				k, err := work.New(a).UpdateFeedbackKey(ctx, str(args, "key"), nil, nil, nil, &cfg)
+				if err != nil {
+					return "", toolErr(err)
+				}
+				b, _ := json.Marshal(k.Widget)
+				return fmt.Sprintf("Widget for %s is now %s.", k.PublicKey, b), nil
+			},
+		},
+		{
+			Name:        "get_feedback_install",
+			Description: "Everything needed to connect a project's Feedback SDK: the key, env vars and install steps for a stack (laravel, node, next, go, python, html), or stack=agent for a complete prompt to hand to a coding agent working in the target repo.",
+			Scope:       "projects:read",
+			InputSchema: schema([]string{"project"}, map[string]any{
+				"project": prop("string", "Project id or exact name"),
+				"stack":   map[string]any{"type": "string", "enum": work.FeedbackStacks, "description": "Default agent"},
+				"key":     prop("string", "Key id or pfk_…; default the newest active key"),
+			}),
+			Run: func(ctx context.Context, a *app.App, raw json.RawMessage) (string, error) {
+				args := decodeArgs(raw)
+				inst, err := work.New(a).GetFeedbackInstall(ctx, str(args, "project"), str(args, "key"))
+				if err != nil {
+					return "", toolErr(err)
+				}
+				stack := str(args, "stack")
+				if stack == "" {
+					stack = "agent"
+				}
+				g, ok := inst.Guides[stack]
+				if !ok {
+					return "", fmt.Errorf("unknown stack %q (use one of: %s)", stack, strings.Join(work.FeedbackStacks, ", "))
+				}
+				return g, nil
 			},
 		},
 		{

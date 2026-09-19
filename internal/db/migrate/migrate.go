@@ -1,4 +1,4 @@
-// Package migrate applies Managy's schema to Postgres. Shared by cmd/migrate
+// Package migrate applies Mahaam's schema to Postgres. Shared by cmd/migrate
 // (`togo migrate`) and the DB-backed tests, so both build the exact same
 // database — including the app role and RLS, which the tests exist to check.
 package migrate
@@ -32,6 +32,16 @@ var TenantTables = []string{
 	"invoices", "invoice_lines", "invoice_payments", "invoice_counters",
 	// P7
 	"client_contacts", "project_feedback_keys",
+	// Integrations (GitHub / Jira / Linear)
+	"project_integrations", "github_events",
+	// Project vault (secrets + memory)
+	"project_vault_items",
+	// Access grants (label / task) and project labels
+	"project_labels", "access_grants",
+	// AI usage and project subscriptions (billed on invoices)
+	"ai_usage", "project_subscriptions", "subscription_charges",
+	// Employee KPI: GitHub account mapping and manager reviews
+	"user_github_accounts", "member_reviews",
 }
 
 var roleName = regexp.MustCompile(`^[a-z_][a-z0-9_]{0,62}$`)
@@ -92,7 +102,7 @@ func ensureAppRole(ctx context.Context, db *sql.DB, appURL string, logf func(str
 		fmt.Sprintf(`DO $$ BEGIN EXECUTE format('GRANT CONNECT ON DATABASE %%I TO %s', current_database()); END $$`, role),
 		fmt.Sprintf(`GRANT USAGE ON SCHEMA public TO %s`, role),
 		fmt.Sprintf(`GRANT SELECT, INSERT, UPDATE, DELETE ON %s TO %s`, strings.Join(TenantTables, ", "), role),
-		fmt.Sprintf(`REVOKE ALL ON users, admin_mcp_tokens FROM %s`, role),
+		fmt.Sprintf(`REVOKE ALL ON users, admin_mcp_tokens, plans, workspace_usage, platform_users, admin_audit, platform_meta FROM %s`, role),
 	}
 	for _, s := range stmts {
 		if _, err := db.ExecContext(ctx, s); err != nil {

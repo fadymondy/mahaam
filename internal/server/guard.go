@@ -1,16 +1,22 @@
 package server
 
 import (
+	"bytes"
 	"crypto/subtle"
+	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"strings"
 
 	"github.com/togo-framework/auth"
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/authz"
-	"github.com/fadymondy/managy/internal/tenant"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/platform"
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 /*
@@ -19,9 +25,11 @@ including routes plugins mount (auth, auth-oauth).
 
 Tiers, decided by path before any handler runs:
 
-	blocked    — plugin routes Managy does not offer; answered 404
+	blocked    — plugin routes Mahaam does not offer; answered 404
 	public     — anonymous; enumerated below
 	signed-in  — any session; enumerated below (account-level, no workspace)
+	admin      — /api/admin/* (not the admin MCP): session + platform admin; 404 to
+	             everyone else (anonymous included), so the panel is not discoverable
 	workspace  — EVERYTHING else under /api and /graphql: session + membership
 	             of X-Workspace-ID (404 otherwise) + authz for generated CRUD
 
@@ -37,6 +45,7 @@ const (
 	tierPublic
 	tierSignedIn
 	tierBlocked
+	tierAdmin
 )
 
 func classify(r *http.Request) tier {
@@ -63,7 +72,7 @@ func classify(r *http.Request) tier {
 		"/api/settings",
 		// togo-framework/import-export mounts GET /api/export/{resource} and POST
 		// /api/import/{resource} with no authentication, over a process-global resource registry
-		// with no tenant. Managy registers no resources there and exports through
+		// with no tenant. Mahaam registers no resources there and exports through
 		// /api/w/report/export (session + membership + the report's own checks).
 		"/api/export/",
 		"/api/import/",
@@ -87,8 +96,32 @@ func classify(r *http.Request) tier {
 		// with a per-project public key and an Origin allowlist, never a session or a
 		// workspace header (internal/reports/embed.go). It is CORS-guarded and
 		// rate-limited there.
-		"/api/feedback/embed":
+		"/api/feedback/embed",
+		// The widget's look (colour, icon, text, shape) for a key: not a secret, read
+		// before the launcher renders.
+		"/api/feedback/embed/config",
+		// GitHub integration (internal/integrations): the webhook authenticates with the
+		// X-Hub-Signature-256 HMAC (GITHUB_WEBHOOK_SECRET) and nothing else; the App's setup
+		// callback carries a state signed with MAHAAM_SECRET_KEY (plus, with the App's OAuth
+		// credentials, proof the GitHub user can access the installation). Exact matches.
+		"/api/integrations/github/webhook",
+		"/api/integrations/github/callback",
+		// Customer import from Google Contacts (internal/work/client_import_sources.go): the OAuth
+		// redirect. It trusts only a state signed with MAHAAM_SECRET_KEY (workspace, user, expiry)
+		// plus a matching HttpOnly nonce cookie set when that user started the import. Exact match.
+		"/api/integrations/google/callback",
+		// "Connect GitHub" for the signed-in member (internal/work/github_accounts.go): the OAuth
+		// redirect. Same model as the Google one: a state signed with MAHAAM_SECRET_KEY (workspace,
+		// user, expiry) plus a matching HttpOnly nonce cookie. Exact match.
+		// Polar billing webhooks (internal/billing/polar): Standard Webhooks HMAC signature
+		// (POLAR_WEBHOOK_SECRET), 5-minute timestamp window, deduplicated by webhook-id. Exact match.
+		"/api/billing/polar/webhook",
+		"/api/integrations/github/user-callback":
 		return tierPublic
+	}
+	// The platform admin panel's REST surface (internal/admin). The admin MCP is matched above.
+	if strings.HasPrefix(path, "/api/admin/") {
+		return tierAdmin
 	}
 	if strings.HasPrefix(path, "/api/auth/") {
 		return tierPublic // the auth plugin guards its own routes
@@ -111,18 +144,36 @@ func installGuard(k *togo.Kernel, a *app.App) {
 		panic("guard: auth service not registered")
 	}
 
+	trusted := trustedProxies()
 	k.UseMiddleware(func(next http.Handler) http.Handler {
-		signedIn := svc.Middleware(csrf(next))
-		workspace := svc.Middleware(csrf(tenant.Require(a.SysDB)(generatedAuthz(next))))
+		gate := accountGate(a)
+		signedIn := svc.Middleware(csrf(gate(next)))
+		workspace := svc.Middleware(csrf(gate(tenant.Require(a.SysDB)(meter(generatedAuthz(next))))))
+		admin := hideUnauthorized(svc.Middleware(csrf(gate(requirePlatformAdmin(a, next)))))
+		me := svc.Middleware(gate(next))
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			stripUntrustedForwarding(trusted, r) // proxies.go: forwarding headers are client-settable
 			switch classify(r) {
 			case tierBlocked:
 				writeError(w, http.StatusNotFound, "not found")
 			case tierPublic:
+				switch {
+				case r.URL.Path == "/api/auth/login" && r.Method == http.MethodPost:
+					// A suspended account cannot sign in (the plugin's handler knows nothing of it).
+					if refuseSuspendedLogin(w, r, a) {
+						return
+					}
+				case r.URL.Path == "/api/auth/me":
+					// The session probe: a suspended or signed-out-by-an-admin session fails here too.
+					me.ServeHTTP(w, r)
+					return
+				}
 				next.ServeHTTP(w, r)
 			case tierSignedIn:
 				signedIn.ServeHTTP(w, r)
+			case tierAdmin:
+				admin.ServeHTTP(w, r)
 			default:
 				workspace.ServeHTTP(w, r)
 			}
@@ -130,7 +181,129 @@ func installGuard(k *togo.Kernel, a *app.App) {
 	})
 }
 
-// csrf applies the auth plugin's double-submit rule to Managy's own routes:
+// accountGate runs after the auth plugin verified the session: a suspended account gets 403 on
+// every call, a session issued before an admin's "sign out everywhere" gets 401, and activity is
+// recorded for the platform stats.
+func accountGate(a *app.App) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			id, ok := auth.IdentityFrom(r.Context())
+			if !ok || id == nil {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			u, err := platform.Load(r.Context(), a.SysDB, id.ID)
+			if errors.Is(err, platform.ErrNoUser) {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "could not load the account")
+				return
+			}
+			if u.Suspended() {
+				writeCoded(w, http.StatusForbidden, u.SuspendedMessage(), "account_suspended")
+				return
+			}
+			if platform.SessionRevoked(r.Context(), a.SysDB, u, r) {
+				writeCoded(w, http.StatusUnauthorized, "your session was ended — sign in again", "session_revoked")
+				return
+			}
+			platform.TouchSeen(r.Context(), a.SysDB, u.ID)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// refuseSuspendedLogin answers 403 for a suspended account's sign-in and reports whether it did.
+// The body is read and put back for the plugin.
+func refuseSuspendedLogin(w http.ResponseWriter, r *http.Request, a *app.App) bool {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))
+	if err != nil {
+		return false
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	var c struct {
+		Email string `json:"email"`
+	}
+	if json.Unmarshal(body, &c) != nil || c.Email == "" {
+		return false
+	}
+	if u, suspended := platform.SuspendedByEmail(r.Context(), a.SysDB, c.Email); suspended {
+		writeCoded(w, http.StatusForbidden, u.SuspendedMessage(), "account_suspended")
+		return true
+	}
+	return false
+}
+
+// meter counts every workspace-tier call against the plan's API quotas (internal/limits): the
+// per-minute rate (429) and a block-policy monthly quota (402).
+func meter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s, ok := tenant.From(r.Context()); ok {
+			if x, refused := limits.As(limits.CountCall(r.Context(), s.WorkspaceID)); refused {
+				writeCoded(w, x.Status, x.Msg, x.Code)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// requirePlatformAdmin lets only platform admins (users.roles contains admin, read fresh) through;
+// everyone else gets the same 404 as an unknown route.
+func requirePlatformAdmin(a *app.App, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, _ := auth.IdentityFrom(r.Context())
+		if id == nil {
+			writeError(w, http.StatusNotFound, "not found")
+			return
+		}
+		u, err := platform.Load(r.Context(), a.SysDB, id.ID)
+		if err != nil || !u.Admin {
+			writeError(w, http.StatusNotFound, "not found")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// hideUnauthorized turns the auth plugin's 401 into a 404, so /api/admin/* looks like any unknown
+// route to an anonymous caller.
+func hideUnauthorized(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(&notFoundOn401{ResponseWriter: w}, r)
+	})
+}
+
+type notFoundOn401 struct {
+	http.ResponseWriter
+	hidden bool
+}
+
+func (n *notFoundOn401) WriteHeader(code int) {
+	if code == http.StatusUnauthorized {
+		n.hidden = true
+		writeError(n.ResponseWriter, http.StatusNotFound, "not found")
+		return
+	}
+	n.ResponseWriter.WriteHeader(code)
+}
+
+func (n *notFoundOn401) Write(b []byte) (int, error) {
+	if n.hidden {
+		return len(b), nil
+	}
+	return n.ResponseWriter.Write(b)
+}
+
+func writeCoded(w http.ResponseWriter, status int, msg, code string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg, "code": code})
+}
+
+// csrf applies the auth plugin's double-submit rule to Mahaam's own routes:
 // a cookie-authenticated unsafe request must echo the togo_csrf cookie in
 // X-CSRF-Token. Bearer requests carry no ambient credential and are exempt.
 func csrf(next http.Handler) http.Handler {

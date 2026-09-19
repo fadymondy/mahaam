@@ -21,7 +21,7 @@ mkdirSync(SHOTS, { recursive: true })
 
 const assert = (c, m) => { if (!c) throw new Error(m); console.log("✓", m) }
 
-const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "managy-p8e-")), {
+const ctx = await chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "mahaam-p8e-")), {
   executablePath: process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe",
   headless: true,
   viewport: { width: 1280, height: 800 },

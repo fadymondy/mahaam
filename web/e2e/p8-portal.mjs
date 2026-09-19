@@ -2,7 +2,7 @@
 // and the project feedback-widget settings — en/ar x light/dark x 1440/390.
 //
 //   cd web && node e2e/p8-portal.mjs          (local: WEB_ORIGIN defaults to :3010)
-//   WEB_ORIGIN=https://managy-app.fadymondy.com node e2e/p8-portal.mjs   (public)
+//   WEB_ORIGIN=https://console.mahaam.app node e2e/p8-portal.mjs   (public)
 //
 // A real painting Chrome (headless=true but the system Chrome binary) so
 // requestAnimationFrame runs and Base UI clears its starting styles.
@@ -40,7 +40,7 @@ process.on("uncaughtException", dump)
 
 const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe"
 const launch = () =>
-  chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "managy-p8-")), {
+  chromium.launchPersistentContext(mkdtempSync(path.join(tmpdir(), "mahaam-p8-")), {
     executablePath: CHROME,
     headless: true,
     viewport: { width: 1440, height: 900 },

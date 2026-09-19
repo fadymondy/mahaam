@@ -1,8 +1,8 @@
-// Managy P6 — real-browser verification of the new DETAIL pages (task, client, member, team,
+// Mahaam P6 — real-browser verification of the new DETAIL pages (task, client, member, team,
 // issues board + issue detail, saved-report permalink).
 //
 //   node e2e/p6-verify.mjs            (API :8110 and web :3010 running; system Chrome)
-//   WEB_ORIGIN=https://managy-app.fadymondy.com node e2e/p6-verify.mjs   (the public preview)
+//   WEB_ORIGIN=https://console.mahaam.app node e2e/p6-verify.mjs   (the public preview)
 //
 // Headless Chrome on a fresh profile via playwright-core. Frames are counted first: a page that
 // reports "visible" but paints no frames proves nothing. Then every new page is opened, a couple
@@ -29,7 +29,7 @@ function assert(cond, msg) {
   console.log("✓", msg)
 }
 
-const profile = mkdtempSync(path.join(tmpdir(), "managy-p6-"))
+const profile = mkdtempSync(path.join(tmpdir(), "mahaam-p6-"))
 const ctx = await chromium.launchPersistentContext(profile, {
   executablePath: CHROME,
   headless: true,

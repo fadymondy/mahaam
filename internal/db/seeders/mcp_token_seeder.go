@@ -4,8 +4,8 @@ package seeders
 import (
 	"context"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/factories"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/factories"
 )
 
 // SeedMcpToken inserts fake McpTokens via the factory.

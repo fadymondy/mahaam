@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-electron/
+release/
+*.tsbuildinfo
+e2e-shots/
+extension/public/icons/
+tray/build/icon.png
+extension/node_modules/.cache/

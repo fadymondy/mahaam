@@ -1,4 +1,4 @@
-module github.com/fadymondy/managy
+module github.com/fadymondy/mahaam
 
 go 1.26.4
 
@@ -36,9 +36,11 @@ require (
 )
 
 require (
+	github.com/SherClockHolmes/webpush-go v1.4.0 // indirect
 	github.com/agnivade/levenshtein v1.2.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/go-pdf/fpdf v0.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect

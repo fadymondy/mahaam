@@ -4,7 +4,7 @@
 // in-band; a burst must be rate limited with a JSON-RPC 429.
 //
 //   node e2e/p3-mcp.mjs                                          (http://localhost:3010)
-//   WEB_ORIGIN=https://managy-app.fadymondy.com node e2e/p3-mcp.mjs
+//   WEB_ORIGIN=https://console.mahaam.app node e2e/p3-mcp.mjs
 const ORIGIN = process.env.WEB_ORIGIN || "http://localhost:3010"
 const BURST = Number(process.env.BURST || 130)
 let cookie = ""

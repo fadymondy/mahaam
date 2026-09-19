@@ -1,6 +1,8 @@
 "use client"
 
+import { useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { BriefcaseIcon, FolderKanbanIcon, KeyRoundIcon, UsersIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -8,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
 import { ActivityFeed } from "@/components/work/activity-feed"
+import { MyWork } from "@/components/work/my-work"
 import { useDirectory } from "@/components/work/people"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -25,25 +28,19 @@ export default function OverviewPage() {
   const dir = useDirectory(me.data ? String(me.data.id) : undefined)
   const canFeed = ws.can("activity:read")
   const activity = useWorkspaceActivity(ws.id, canFeed)
+  const router = useRouter()
+  // A customer's home is their portal, not the staff overview.
+  const isCustomer = ws.summary.role === "client"
+  useEffect(() => {
+    if (isCustomer) router.replace(`${base}/portal`)
+  }, [isCustomer, base, router])
+  if (isCustomer) return null
 
   return (
     <>
       <SectionHeader micro={t("nav.overview")} title={ws.summary.name} action={<Badge variant="outline">{t(`role.${ws.summary.role}`)}</Badge>} />
 
-      {/* The "In development" notice: a hairline-framed hatched band with the message on the card. */}
-      <div className="border-y border-line p-3 hatch-band" role="status">
-        <div className="border border-line bg-grid-card px-5 py-4">
-          <p className="grid-micro mb-2 text-grid-brand">{t("dev.badge")}</p>
-          <p className="text-base font-medium text-grid-fg">{t("dev.title")}</p>
-          <p className="grid-body mt-1 text-sm">
-            <span className="font-medium text-grid-fg">
-              <Ltr>P1</Ltr>:
-            </span>{" "}
-            {t("dev.now")}
-          </p>
-          <p className="grid-body text-sm">{t("dev.next")}</p>
-        </div>
-      </div>
+      <MyWork meId={me.data ? String(me.data.id) : undefined} />
 
       <div className="flex flex-wrap gap-2 px-6 py-6">
         <Button nativeButton={false} render={<Link href={`${base}/projects`} />}>

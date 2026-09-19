@@ -6,7 +6,7 @@
 // togo-framework/authz was evaluated for P0 and not adopted: it is a
 // permission-string checker over Identity.Permissions (the global users.roles /
 // users.permissions CSV columns), with no notion of a per-workspace role, which
-// is the only role Managy has.
+// is the only role Mahaam has.
 package authz
 
 import "net/http"
@@ -95,6 +95,49 @@ const (
 	ClientContactsManage = "client_contacts:manage"
 	FeedbackKeysRead     = "feedback_keys:read"
 	FeedbackKeysManage   = "feedback_keys:manage"
+
+	// Integrations (GitHub App, Jira import, Linear import) per project. Connecting,
+	// disconnecting and syncing are project configuration: manager+. Reading the status and the
+	// linked repository's commits / pull requests / runs is for anyone working on the project
+	// (members+, on a project they can see). Filing a GitHub issue from a Mahaam issue is an
+	// issue write (member+); triggering a deploy (workflow_dispatch) is manager+.
+	IntegrationsRead   = "integrations:read"
+	IntegrationsManage = "integrations:manage"
+	GitHubIssueWrite   = "github:issues"
+	GitHubDeploy       = "github:deploy"
+
+	// Project vault. Memory (notes about the project) is read and written by anyone working
+	// on it (members+, on a project they can see). Secrets: members see that a secret exists
+	// (title + hint), but only managers+ (or the project lead) store, change or reveal one,
+	// and every reveal is recorded. Clients never see the vault.
+	VaultRead    = "vault:read"
+	VaultWrite   = "vault:write"
+	VaultSecrets = "vault:secrets"
+
+	// Access grants (label / task, to a user or a team) and the labels a project carries:
+	// who sees what is a workspace-configuration decision, manager+.
+	AccessManage = "access:manage"
+
+	// Customer portal (roadmap 5). PortalRead: a project's customer panel (aggregates only —
+	// never task rows, rates or people) on a project the caller can see; clients included.
+	// PortalWrite: file requests and accept/reopen/re-prioritise/comment on the issues of
+	// their own projects. RequestsManage: the staff Requests inbox (accept, decline, convert).
+	PortalRead     = "portal:read"
+	PortalWrite    = "portal:write"
+	RequestsManage = "requests:manage"
+
+	// AI consumption and project subscriptions (billed on invoices). Anyone working on a project
+	// records their agents' usage; costs, markup and subscriptions are finance: manager+.
+	AIUsageRecord       = "ai_usage:record"
+	AIUsageRead         = "ai_usage:read"
+	SubscriptionsManage = "subscriptions:manage"
+
+	// Employee KPI (internal/work/kpi.go). KPIRead: your own KPI dossier and GitHub account
+	// (member+); KPIAll: anyone's, the team table, and mapping a member's GitHub account;
+	// KPIReview: write reviews of employees. Employees read their own reviews via KPIRead.
+	KPIRead   = "kpi:read"
+	KPIAll    = "kpi:all"
+	KPIReview = "kpi:review"
 )
 
 // Matrix is the minimum role per action.
@@ -114,9 +157,9 @@ var Matrix = map[string]Role{
 	// it to people who could make the same changes in the UI.
 	GraphQL: Admin,
 
-	ProjectsRead:     Client, // clients: only the projects of the client they are a portal contact of (internal/work)
-	ProjectsCreate:   Manager,
-	ProjectsManage:   Manager, // or the project's lead
+	ProjectsRead:   Client, // clients: only the projects of the client they are a portal contact of (internal/work)
+	ProjectsCreate: Manager,
+	ProjectsManage: Manager, // or the project's lead
 	// A client never reads tasks: the portal shows their projects, the issues they
 	// filed and their invoices — never the internal task board (P7). Members up.
 	TasksRead:        Member,
@@ -146,6 +189,29 @@ var Matrix = map[string]Role{
 	ClientContactsManage: Manager,
 	FeedbackKeysRead:     Manager,
 	FeedbackKeysManage:   Manager,
+
+	IntegrationsRead:   Member,
+	IntegrationsManage: Manager,
+	GitHubIssueWrite:   Member,
+	GitHubDeploy:       Manager,
+
+	VaultRead:    Member,
+	VaultWrite:   Member,
+	VaultSecrets: Manager, // or the project's lead (internal/work/vault.go)
+
+	AccessManage: Manager,
+
+	AIUsageRecord:       Member,
+	AIUsageRead:         Manager,
+	SubscriptionsManage: Manager,
+
+	KPIRead:   Member,
+	KPIAll:    Manager,
+	KPIReview: Manager,
+
+	PortalRead:     Client,
+	PortalWrite:    Client,
+	RequestsManage: Manager,
 }
 
 // Can reports whether role may perform action. Unknown actions are denied.
@@ -243,6 +309,12 @@ var Generated = map[string]TablePolicy{
 	// key is not a secret, but the generic list handler knows nothing of project visibility.
 	"client_contacts":       {Read: Manager, Write: None},
 	"project_feedback_keys": {Read: Manager, Write: None},
+
+	// Integrations. The config rows carry sealed credentials and the event log is per project;
+	// the generic handlers can protect neither: closed. Everything goes through
+	// /api/w/projects/{project}/integrations* and /github/* (internal/integrations).
+	"project_integrations": {Read: None, Write: None},
+	"github_events":        {Read: None, Write: None},
 }
 
 // CanTable reports whether role may perform an HTTP method on a generated table.

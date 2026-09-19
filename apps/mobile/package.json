@@ -1,0 +1,78 @@
+{
+  "name": "@mahaam/mobile",
+  "main": "expo-router/entry",
+  "version": "1.0.0",
+  "dependencies": {
+    "@expo/ui": "~57.0.19",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@tanstack/query-async-storage-persister": "^5.103.1",
+    "@tanstack/react-query": "^5.103.1",
+    "@tanstack/react-query-persist-client": "^5.103.1",
+    "expo": "~57.0.24",
+    "expo-constants": "~57.0.19",
+    "expo-dev-client": "~57.0.19",
+    "expo-device": "~57.0.2",
+    "expo-font": "~57.0.4",
+    "expo-glass-effect": "~57.0.3",
+    "expo-haptics": "~57.0.3",
+    "expo-image": "~57.0.5",
+    "expo-image-picker": "~57.0.19",
+    "expo-linking": "~57.0.10",
+    "expo-localization": "~57.0.2",
+    "expo-notifications": "~57.0.20",
+    "expo-print": "~57.0.2",
+    "expo-router": "~57.0.22",
+    "expo-secure-store": "~57.0.4",
+    "expo-splash-screen": "~57.0.9",
+    "expo-status-bar": "~57.0.1",
+    "expo-symbols": "~57.0.3",
+    "expo-system-ui": "~57.0.4",
+    "expo-web-browser": "~57.0.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.10.1"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^29.5.14",
+    "@types/react": "~19.2.2",
+    "cross-env": "^10.1.0",
+    "jest": "^29.7.0",
+    "jest-expo": "^57.0.5",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "start:team": "cross-env APP_VARIANT=team EXPO_PUBLIC_APP_VARIANT=team expo start",
+    "start:client": "cross-env APP_VARIANT=client EXPO_PUBLIC_APP_VARIANT=client expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "icons": "node scripts/make-icons.mjs",
+    "export:web:team": "cross-env APP_VARIANT=team EXPO_PUBLIC_APP_VARIANT=team expo export --platform web --clear --output-dir dist/team",
+    "export:web:client": "cross-env APP_VARIANT=client EXPO_PUBLIC_APP_VARIANT=client expo export --platform web --clear --output-dir dist/client",
+    "serve:web": "node scripts/serve-web.mjs",
+    "doctor": "expo-doctor",
+    "lint": "expo lint"
+  },
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "testMatch": [
+      "**/__tests__/**/*.test.ts?(x)"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@tanstack/.*|react-native-svg)"
+    ]
+  }
+}

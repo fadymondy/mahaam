@@ -1,17 +1,14 @@
 {
   "dev.now": "accounts, workspaces, members and MCP tokens, projects, boards and tasks, time tracking — and now reports, budgets and notification settings.",
   "dev.next": "Invoices come next.",
-  "nav.comingNext": "Invoices arrive in the next phase.",
   "nav.reports": "Reports",
   "nav.notifications": "Notifications",
-
   "reports.title": "Reports",
   "reports.hint": "Tracked time for any range, grouped the way you need, with the same numbers you export.",
   "reports.tab.time": "Time",
   "reports.tab.budgets": "Budgets",
   "reports.tab.profitability": "Profitability",
   "reports.noPermission": "Your role cannot open reports in this workspace.",
-
   "reports.filters": "Filters",
   "reports.range": "Range",
   "reports.from": "From",
@@ -47,7 +44,6 @@
   "reports.rounding.minutes": "{n} min",
   "reports.reset": "Reset filters",
   "reports.ownOnly": "You see your own time only.",
-
   "reports.col.tracked": "Tracked",
   "reports.col.rounded": "Rounded",
   "reports.col.hours": "Hours",
@@ -75,14 +71,12 @@
   "reports.summary.billable": "Billable",
   "reports.summary.billableValue": "Billable value",
   "reports.summary.profit": "Profit",
-
   "reports.chart.title": "Hours per day",
   "reports.chart.billable": "Billable",
   "reports.chart.nonBillable": "Non-billable",
   "reports.chart.breakdown": "Breakdown by {group}",
   "reports.chart.hours": "Hours",
   "reports.chart.label": "Stacked bars of billable and non-billable hours per day",
-
   "reports.export": "Export",
   "reports.exportCsv": "CSV",
   "reports.exportXlsx": "Excel",
@@ -91,7 +85,6 @@
   "reports.print": "Print",
   "reports.printedAt": "Generated {date}",
   "reports.printMeta": "{from} – {to} · grouped by {group} · {tz}",
-
   "saved.title": "Saved views",
   "saved.open": "Saved views",
   "saved.empty": "No saved views yet. Set the filters, then save them here.",
@@ -119,7 +112,6 @@
   "saved.kind.budget": "Budgets",
   "saved.kind.profitability": "Profitability",
   "saved.nameRequired": "Give the view a name.",
-
   "budget.title": "Budget",
   "budget.allTitle": "Budget burn",
   "budget.allHint": "Every project with a budget: hours spent against the hours budget{money}.",
@@ -143,7 +135,6 @@
   "budget.levels": "Levels: on track below 80%, near the limit from 80%, over budget from 100%.",
   "budget.spentLabel": "Spent",
   "budget.status": "Status",
-
   "profit.title": "Profitability",
   "profit.hint": "Billable value minus cost for the range, by project and by client.",
   "profit.noPermission": "Profitability is visible to managers and above.",
@@ -152,7 +143,6 @@
   "profit.empty": "Nothing billable or costed in this range.",
   "profit.exportProjects": "Projects",
   "profit.exportClients": "Clients",
-
   "nset.title": "Notifications",
   "nset.hint": "What reaches your inbox in this workspace, and what is emailed to you.",
   "nset.email": "Email",
@@ -174,7 +164,6 @@
   "nset.kind.budget.threshold": "A project reaches 80% or 100% of its budget",
   "nset.kind.timer.long_running": "Your timer has been running for a long time",
   "nset.kind.time.missing_day": "No time logged by the end of a workday",
-
   "notify.task.assigned": "{actor} assigned you {task_key}",
   "notify.task.assigned.body": "{task_title}",
   "notify.task.mentioned": "{actor} mentioned you on {task_key}",
@@ -187,5 +176,7 @@
   "notify.metric.money": "money",
   "notify.someone": "Someone",
   "saved.notFound": "Saved view not found",
-  "saved.notFoundBody": "It may have been deleted, or it's not shared with you."
+  "saved.notFoundBody": "It may have been deleted, or it's not shared with you.",
+  "reports.exportPdf": "PDF",
+  "reports.exportMd": "Markdown"
 }

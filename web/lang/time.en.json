@@ -1,12 +1,10 @@
 {
   "dev.now": "accounts, workspaces, members and MCP tokens, projects, boards and tasks — and now time tracking: the timer, timesheets, rates and reminders.",
   "dev.next": "Reports, budgets and invoices come next.",
-  "nav.comingNext": "Reports, budgets and invoices arrive in the next phases.",
   "nav.time": "My time",
   "nav.teamTime": "Team time",
   "nav.timeSettings": "Time",
   "nav.rates": "Rates",
-
   "timer.start": "Start timer",
   "timer.stopTimer": "Stop timer",
   "timer.running": "Timer running",
@@ -30,7 +28,6 @@
   "timer.live.open": "Live",
   "timer.live.connecting": "Reconnecting…",
   "timer.archived": "This project is archived — restore it to track time on it.",
-
   "time.title": "My time",
   "time.titleOf": "{name}'s time",
   "time.hint": "Your week, cut at midnight in the workspace timezone ({tz}).",
@@ -83,7 +80,6 @@
   "time.when": "When",
   "time.duration": "Duration",
   "time.source": "Source",
-
   "team.title": "Team time",
   "team.hint": "Everyone's week, cut at midnight in {tz}.",
   "team.member": "Member",
@@ -91,7 +87,6 @@
   "team.open": "Open",
   "team.runningNow": "Timer running",
   "team.noPermission": "Team timesheets are for managers and up.",
-
   "timeSettings.title": "Time settings",
   "timeSettings.hint": "How days, weeks and totals are counted in this workspace, and what it charges by default.",
   "timeSettings.timezone": "Timezone",
@@ -116,7 +111,6 @@
   "timeSettings.remindersHint": "Reminders appear under the bell in the header. Email delivery isn't wired yet — it comes with notifications in a later phase.",
   "timeSettings.readOnly": "Only admins can change these settings.",
   "timeSettings.saved": "Settings saved",
-
   "rates.title": "Rates",
   "rates.hint": "Hourly rates per member, from a date. A new entry copies the rate in force; entries already logged never change.",
   "rates.member": "Member",
@@ -143,7 +137,6 @@
   "rates.upcoming": "from {day}",
   "rates.perHour": "/h",
   "rates.saved": "Rate saved",
-
   "notify.title": "Notifications",
   "notify.empty": "You're all caught up.",
   "notify.markAll": "Mark all read",
@@ -153,7 +146,6 @@
   "notify.timer.long_running.body": "Still on it? Stop it, or fix the entry in your timesheet.",
   "notify.time.missing_day": "No time logged today",
   "notify.time.missing_day.body": "It's past 18:00 on {date} and your timesheet for today is empty.",
-
   "activity.time.started": "started a timer",
   "activity.time.stopped": "stopped a timer",
   "activity.time.logged": "logged time",

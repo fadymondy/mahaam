@@ -1,0 +1,30 @@
+{
+  "name": "mahaam-apps",
+  "private": true,
+  "description": "Mahaam employee clients: the tray app and the Chrome extension, plus the shared API client.",
+  "workspaces": [
+    "shared",
+    "tray",
+    "extension"
+  ],
+  "scripts": {
+    "dev:tray": "npm run dev -w @mahaam/tray",
+    "build:tray": "npm run build -w @mahaam/tray",
+    "package:tray": "npm run package -w @mahaam/tray",
+    "dev:extension": "npm run dev -w @mahaam/extension",
+    "build:extension": "npm run build -w @mahaam/extension",
+    "gen:types": "npm run gen:types -w @mahaam/client",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm test -w @mahaam/client",
+    "e2e:tray": "npm run e2e -w @mahaam/tray",
+    "e2e:extension": "npm run e2e -w @mahaam/extension"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "electron-winstaller@5.4.0": true,
+    "electron@44.4.3": true
+  }
+}

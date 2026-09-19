@@ -1,0 +1,30 @@
+# Mahaam Go API — production image. Compiled static binary (pgx is pure Go, so
+# CGO is off), not `go run`. Built and run by docker-compose.prod.yml.
+FROM golang:1.26 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /out/api ./cmd/api \
+ && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /out/migrate ./cmd/migrate \
+ && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /out/mahaam-admin ./cmd/mahaam-admin
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates tzdata && adduser -D -u 10001 app
+WORKDIR /app
+COPY --from=build /out/api /app/api
+# cmd/migrate applies internal/db/{schema,post} relative to /app: `docker compose run --rm api /app/migrate`
+COPY --from=build /out/migrate /app/migrate
+# Platform ops on the server: promote/demote, admin tokens, polar-sync, mail-test
+# (`docker compose exec api /app/mahaam-admin …`).
+COPY --from=build /out/mahaam-admin /app/mahaam-admin
+COPY internal/db/schema ./internal/db/schema
+COPY internal/db/post ./internal/db/post
+# The embeddable Feedback widget (make embed), served at /embed/v1.js (EMBED_DIR default embed/dist).
+COPY embed/dist ./embed/dist
+COPY lang ./lang
+COPY togo.yaml ./togo.yaml
+RUN mkdir -p storage/mail storage/logs storage/attachments && chown -R app:app /app
+USER app
+EXPOSE 8110
+CMD ["/app/api"]

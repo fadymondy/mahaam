@@ -9,10 +9,10 @@
 @import "./styles/grid-tokens.css";
 @import "./styles/grid.css";
 @import "./styles/grid-tailwind.css";
-/* Repo-owned until data-brand="managy" lands upstream in grid-tokens.css. */
-@import "./styles/managy-brand.css";
+/* Repo-owned until data-brand="mahaam" lands upstream in grid-tokens.css. */
+@import "./styles/mahaam-brand.css";
 /* Repo-owned: tokens for user-chosen colours (projects, teams, statuses, labels). */
-@import "./styles/managy-palette.css";
+@import "./styles/mahaam-palette.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

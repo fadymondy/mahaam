@@ -1,4 +1,4 @@
-// Command migrate applies Managy's Postgres schema (internal/db/schema), the
+// Command migrate applies Mahaam's Postgres schema (internal/db/schema), the
 // app role and its grants, then constraints and RLS (internal/db/post).
 // Run with `togo migrate` (or `go run ./cmd/migrate`). Idempotent.
 package main
@@ -10,9 +10,9 @@ import (
 
 	"github.com/togo-framework/togo"
 
-	"github.com/fadymondy/managy/internal/db/migrate"
-	"github.com/fadymondy/managy/internal/envfile"
-	_ "github.com/fadymondy/managy/internal/plugins" // registers the pgx driver (db-postgres)
+	"github.com/fadymondy/mahaam/internal/db/migrate"
+	"github.com/fadymondy/mahaam/internal/envfile"
+	_ "github.com/fadymondy/mahaam/internal/plugins" // registers the pgx driver (db-postgres)
 )
 
 func main() {

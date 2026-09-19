@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/work"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/work"
 )
 
 /*
@@ -65,23 +65,33 @@ func InvoiceTools() []Tool {
 			Name: "draft_invoice_from_time",
 			Description: "Draft an invoice from a client's unbilled, billable time. Gathers finished entries (in the client " +
 				"currency) with no invoice yet, groups them into lines by project (or task), snapshots the rate on each entry, " +
-				"and locks those entries onto the draft (they become immutable). VAT is a rate (e.g. 0.14).",
+				"and locks those entries onto the draft (they become immutable). It also bills the client's unbilled AI usage " +
+				"(at cost + the project's AI markup) and every due subscription period, unless include_ai / include_subscriptions " +
+				"is false. VAT is a rate (e.g. 0.14).",
 			Scope: "invoices:write",
 			InputSchema: schema([]string{"client"}, map[string]any{
-				"client":      prop("string", "Client id or exact name"),
-				"from":        prop("string", "YYYY-MM-DD (workspace timezone); default no lower bound"),
-				"to":          prop("string", "YYYY-MM-DD (workspace timezone); default today"),
-				"project_ids": arrProp("Limit to these projects (ids or names)"),
-				"group_by":    prop("string", "project (default) or task"),
-				"tax_rate":    prop("string", "VAT as a fraction, e.g. 0.14; default 0"),
-				"due_date":    prop("string", "YYYY-MM-DD"),
-				"notes":       prop("string", "Notes on the invoice"),
+				"client":                prop("string", "Client id or exact name"),
+				"from":                  prop("string", "YYYY-MM-DD (workspace timezone); default no lower bound"),
+				"to":                    prop("string", "YYYY-MM-DD (workspace timezone); default today"),
+				"project_ids":           arrProp("Limit to these projects (ids or names)"),
+				"group_by":              prop("string", "project (default) or task"),
+				"tax_rate":              prop("string", "VAT as a fraction, e.g. 0.14; default 0"),
+				"due_date":              prop("string", "YYYY-MM-DD"),
+				"notes":                 prop("string", "Notes on the invoice"),
+				"include_ai":            prop("boolean", "Bill unbilled AI usage (default true)"),
+				"include_subscriptions": prop("boolean", "Bill due subscription periods (default true)"),
 			}),
 			Run: func(ctx context.Context, a *app.App, raw json.RawMessage) (string, error) {
 				args := decodeArgs(raw)
 				in := work.DraftInput{ClientID: str(args, "client"), From: str(args, "from"), To: str(args, "to"),
 					ProjectIDs: strList(args, "project_ids"), GroupBy: str(args, "group_by"),
 					TaxRate: optStr(args, "tax_rate"), DueDate: str(args, "due_date"), Notes: str(args, "notes")}
+				for k, dst := range map[string]**bool{"include_ai": &in.IncludeAI, "include_subscriptions": &in.IncludeSubscriptions} {
+					if v, ok := args[k].(bool); ok {
+						v := v
+						*dst = &v
+					}
+				}
 				iv, err := work.New(a).DraftFromTime(ctx, in)
 				if err != nil {
 					return "", toolErr(err)

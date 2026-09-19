@@ -8,9 +8,9 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/togo-framework/validation"
 
-	"github.com/fadymondy/managy/internal/app"
-	"github.com/fadymondy/managy/internal/models"
-	"github.com/fadymondy/managy/internal/resources"
+	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/models"
+	"github.com/fadymondy/mahaam/internal/resources"
 )
 
 // RegisterProjectMemberRoutes mounts CRUD endpoints for project_members.
