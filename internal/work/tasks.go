@@ -46,6 +46,7 @@ type Task struct {
 
 // TaskIssue is what a card that is an issue carries beyond a task.
 type TaskIssue struct {
+	FromBoard    bool    `json:"from_board" doc:"The issue only mirrors this card (made on the board); false = a real issue from the SDK, portal, MCP or an import"`
 	Type         string  `json:"type" doc:"bug, feature, task, story or epic"`
 	Source       string  `json:"source" doc:"app, embed (feedback SDK), portal, mcp, github, jira, linear"`
 	Screenshot   bool    `json:"screenshot" doc:"A screenshot is attached"`
@@ -65,21 +66,22 @@ const taskCols = `t.id, t.key, t.number, t.project_id, t.status_id, t.title, t.d
 	(SELECT count(*) FROM attachments f WHERE f.workspace_id = t.workspace_id AND f.task_id = t.id),
 	(SELECT count(*) FROM tasks x WHERE x.workspace_id = t.workspace_id AND x.parent_id = t.id),
 	(SELECT count(*) FROM tasks x WHERE x.workspace_id = t.workspace_id AND x.parent_id = t.id AND x.completed_at IS NOT NULL),
-	ri.issue_type, ri.source, ri.screenshot IS NOT NULL AND ri.screenshot <> '',
+	ri.issue_type, ri.source, COALESCE(ri.from_board, false), ri.screenshot IS NOT NULL AND ri.screenshot <> '',
 	COALESCE(length(ri.console_log), 0) + COALESCE(length(ri.network_log), 0) > 0, ri.request_state`
 
 func scanTask(r scanner) (*Task, error) {
 	t := &Task{}
 	var assignees, labels string
 	var iType, iSource *string
+	var iBoard bool
 	var iShot, iDiag *bool
 	var iReq *string
 	err := r.Scan(&t.ID, &t.Key, &t.Number, &t.ProjectID, &t.StatusID, &t.Title, &t.Description, &t.Position, &t.DueAt,
 		&t.EstimateMinutes, &t.Priority, &t.ParentID, &t.CreatedBy, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt,
 		&assignees, &labels, &t.ChecklistDone, &t.ChecklistTotal, &t.CommentCount, &t.AttachmentCount, &t.SubtaskCount, &t.SubtaskDone,
-		&iType, &iSource, &iShot, &iDiag, &iReq)
+		&iType, &iSource, &iBoard, &iShot, &iDiag, &iReq)
 	if iType != nil {
-		t.Issue = &TaskIssue{Type: *iType, RequestState: iReq}
+		t.Issue = &TaskIssue{Type: *iType, RequestState: iReq, FromBoard: iBoard}
 		if iSource != nil {
 			t.Issue.Source = *iSource
 		}

@@ -1,7 +1,7 @@
 "use client"
 
 // Issues live inside their project: an issue IS its project's card (same key). Old links —
-// notifications, e-mails, MCP answers, bookmarks — land here and continue to the card.
+// notifications, e-mails, MCP answers, bookmarks — land here and continue to the issue inside its project.
 import { useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 
@@ -21,7 +21,7 @@ export default function IssueRedirectPage() {
   const pid = issue.data?.project_id
 
   useEffect(() => {
-    if (pid) router.replace(`/${locale}/w/${ws.slug}/projects/${pid}/tasks/${encodeURIComponent(key)}`)
+    if (pid) router.replace(`/${locale}/w/${ws.slug}/projects/${pid}/issues/${encodeURIComponent(key)}`)
   }, [pid, key, locale, ws.slug, router])
 
   if (issue.error) {

@@ -93,6 +93,8 @@ export type Task = {
 }
 
 export type TaskIssue = {
+  /** true = the issue row only mirrors this card (made on the board); false = a real issue (SDK, portal, MCP…). */
+  from_board: boolean
   type: string
   source: string
   screenshot: boolean
@@ -278,10 +280,10 @@ export const useClient = (ws: string, id: string | null, enabled = true) =>
 export const useTeams = (ws: string, enabled = true) => useW<{ teams: Team[] }>(enabled ? "/api/w/teams" : null, ws)
 export const useLabels = (ws: string) => useW<{ labels: Label[] }>("/api/w/labels", ws)
 
-export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string; project?: string; state?: string }
+export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string; project?: string; state?: string; include_board?: string }
 function issueQs(q: IssueQuery) {
   const s = new URLSearchParams()
-  for (const k of ["status", "priority", "type", "q", "project", "state"] as const) if (q[k]) s.set(k, q[k]!)
+  for (const k of ["status", "priority", "type", "q", "project", "state", "include_board"] as const) if (q[k]) s.set(k, q[k]!)
   const str = s.toString()
   return str ? `?${str}` : ""
 }

@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { IssueSourceChip } from "@/components/work/issues/issue-bits";
-import { CardIssueFields, CardIssueThread } from "@/components/work/issues/issue-detail";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -248,7 +247,16 @@ export function TaskBody({
       <Ltr mono>{d.key}</Ltr>
       <span aria-hidden>·</span>
       <span className="truncate">{d.project.name}</span>
-      {d.issue ? <IssueSourceChip issue={d.issue} /> : null}
+      {d.issue && !d.issue.from_board ? (
+        <Link
+          href={`/${locale}/w/${ws.slug}/projects/${d.project.id}/issues/${d.key}`}
+          className="inline-flex items-center gap-1 text-grid-action hover:underline"
+          title={t("task.issueReportHint")}
+        >
+          <IssueSourceChip issue={d.issue} />
+          {t("task.issueReport")}
+        </Link>
+      ) : null}
       {d.completed_at ? (
         <Badge variant="outline" className="gap-1">
           <CheckCircle2Icon />
@@ -384,7 +392,6 @@ export function TaskBody({
           </div>
         </Row>
       </div>
-      {d.issue ? <CardIssueFields taskKey={d.key} /> : null}
 
       <Section title={t("task.description")}>
         <div className="px-6 pb-4">
@@ -405,8 +412,7 @@ export function TaskBody({
       <Checklist d={d} can={can} call={call} />
       <Subtasks d={d} can={can} call={call} onOpen={onOpen} />
       <Attachments d={d} can={can} dir={dir} onChanged={onChanged} />
-      {/* One conversation: the issue thread (comments, @agent hand-offs, agent notes). */}
-      {d.issue ? <CardIssueThread taskKey={d.key} /> : <Comments d={d} can={can} dir={dir} onChanged={onChanged} />}
+      <Comments d={d} can={can} dir={dir} onChanged={onChanged} />
 
       <Section title={t("activity.title")}>
         <TaskActivity taskId={d.id} dir={dir} />
@@ -1012,5 +1018,125 @@ function Comments({
         </div>
       ) : null}
     </Section>
+  );
+}
+
+// ── The card's own work, inside the issue sheet / page ──────────────────────────────────────
+// An issue and its card are one item (same key). The issue sheet (fadymondy style) is the one
+// detail view; these add what reports and time tracking are built on: assignees, labels, due,
+// estimate and the timer (left column), checklist, subtasks and attachments (main column).
+
+function useCard(taskKey: string) {
+  const { t } = useTranslations();
+  const ws = useWorkspace();
+  const task = useTask(ws.id, taskKey);
+  const call = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+      void task.mutate();
+      return true;
+    } catch (err) {
+      toast.error(errorText(err, t("common.networkError")));
+      void task.mutate();
+      return false;
+    }
+  };
+  return { ws, task, call };
+}
+
+function MicroLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="font-mono text-[11px] tracking-wider text-grid-muted uppercase">{children}</span>
+  );
+}
+
+/** Left column: assignees, labels, due, estimate, timer. */
+export function CardPlanning({ taskKey }: { taskKey: string }) {
+  const { t } = useTranslations();
+  const { ws, task, call } = useCard(taskKey);
+  const me = useMe();
+  const dir = useDirectory(me.data ? String(me.data.id) : undefined);
+  const labels = useLabels(ws.id);
+  const d = task.data;
+  const [estimate, setEstimate] = useState("");
+  useEffect(() => setEstimate(d?.estimate_minutes ? String(d.estimate_minutes) : ""), [d?.estimate_minutes]);
+  if (!d) return null;
+  const can = d.can_write;
+  const patch = (body: Record<string, unknown>) => call(() => w.patch(ws.id, `/api/w/tasks/${d.id}`, body));
+  const overdue = isOverdue(d.due_at, d.completed_at);
+  const createLabel = async (name: string): Promise<Label> => {
+    const l = await w.post<Label>(ws.id, "/api/w/labels", { name, color: "slate" });
+    void labels.mutate();
+    return l;
+  };
+  return (
+    <div className="flex flex-col gap-4 border-t border-line pt-4">
+      {!d.project.archived ? <StartTimerButton task={{ id: d.id, key: d.key, title: d.title }} /> : null}
+      <div className="flex flex-col gap-1.5">
+        <MicroLabel>{t("task.assignees")}</MicroLabel>
+        <MemberPicker
+          dir={dir}
+          selected={d.assignee_ids}
+          disabled={!can}
+          onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/assignees`, { user_ids: ids }))}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <MicroLabel>{t("task.labels")}</MicroLabel>
+        <LabelPicker
+          labels={labels.data?.labels ?? []}
+          selected={d.label_ids}
+          disabled={!can}
+          onCreate={ws.can("labels:create") ? createLabel : undefined}
+          onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/labels`, { label_ids: ids }))}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <MicroLabel>{t("task.due")}</MicroLabel>
+        <DateField
+          id={`due-${d.id}`}
+          value={dayKey(d.due_at)}
+          disabled={!can}
+          tone={overdue ? "danger" : undefined}
+          onChange={(v) => void patch({ due_at: v ?? "" })}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <MicroLabel>{t("task.estimate")}</MicroLabel>
+        <div className="flex items-center gap-2">
+          <Input
+            dir="ltr"
+            inputMode="numeric"
+            className="h-8 w-24"
+            disabled={!can}
+            value={estimate}
+            placeholder="0"
+            aria-label={t("task.estimate")}
+            onChange={(e) => setEstimate(e.target.value.replace(/[^0-9]/g, ""))}
+            onBlur={() => {
+              const n = Number(estimate || 0);
+              if (n !== (d.estimate_minutes ?? 0)) void patch({ estimate_minutes: n });
+            }}
+          />
+          <span className="text-xs text-grid-muted">{t("task.minutes")}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Main column: checklist, subtasks, attachments. */
+export function CardExtras({ taskKey, onOpen }: { taskKey: string; onOpen?: (key: string) => void }) {
+  const { task, call } = useCard(taskKey);
+  const me = useMe();
+  const dir = useDirectory(me.data ? String(me.data.id) : undefined);
+  const d = task.data;
+  if (!d) return null;
+  return (
+    <div className="-mx-4 mt-6">
+      <Checklist d={d} can={d.can_write} call={call} />
+      <Subtasks d={d} can={d.can_write} call={call} onOpen={onOpen ?? (() => {})} />
+      <Attachments d={d} can={d.can_write} dir={dir} onChanged={() => void task.mutate()} />
+    </div>
   );
 }

@@ -19,7 +19,7 @@ import { ApiError } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useProject } from "@/lib/work"
 
-const TABS = ["overview", "board", "list", "github", "vault", "billing", "settings"] as const
+const TABS = ["overview", "board", "github", "vault", "billing", "settings"] as const
 
 function ProjectShell({ children }: { children: ReactNode }) {
   const { id } = useParams<{ id: string }>()
@@ -66,7 +66,9 @@ function ProjectShell({ children }: { children: ReactNode }) {
     )
   }
   const p = project.data
-  const tab = TABS.find((x) => pathname.endsWith(`/${x}`)) ?? "overview"
+  const rest = pathname.slice(base.length)
+  // An item's page (/issues/MH-3) belongs to the board: issues and cards are one thing.
+  const tab = /^\/issues(\/|$)/.test(rest) ? "board" : (TABS.find((x) => rest.includes(`/${x}/`) || rest.endsWith(`/${x}`)) ?? "overview")
   // A task detail page (/projects/{id}/tasks/{key}) nests under this layout: keep the
   // project breadcrumb and context (statuses) but drop the project tabs, which don't apply.
   const isTaskRoute = pathname.includes(`/projects/${id}/tasks/`)

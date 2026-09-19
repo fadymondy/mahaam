@@ -183,6 +183,7 @@ func (h *issueRoutes) mount() {
 		Q                string `query:"q" doc:"Title contains"`
 		Project          string `query:"project" doc:"Project id or name (must be visible to you)"`
 		IncludeHumanOnly bool   `query:"include_human_only" default:"true" doc:"Include issues marked human-only"`
+		IncludeBoard     bool   `query:"include_board" doc:"Also list items created on the project board (the board shows everything; the issue queue only what was filed as an issue)"`
 	}) (*work.Resp[IssueList], error) {
 		s, err := h.reader(ctx)
 		if err != nil {
@@ -194,7 +195,7 @@ func (h *issueRoutes) mount() {
 		}
 		rows, err := List(ctx, h.db, s.WorkspaceID, Filter{
 			Status: in.Status, State: in.State, IssueType: in.Type, Q: in.Q,
-			ProjectID: projectID, HideHumanOnly: !in.IncludeHumanOnly, Limit: 500,
+			ProjectID: projectID, HideHumanOnly: !in.IncludeHumanOnly, IncludeBoard: in.IncludeBoard, Limit: 500,
 		})
 		if err != nil {
 			return nil, h.fail(err)

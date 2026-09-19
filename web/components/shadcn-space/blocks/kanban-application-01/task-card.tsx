@@ -37,7 +37,7 @@ export function TaskCardBody({
       <div className="flex items-center gap-2 text-xs text-grid-muted">
         <Ltr mono>{task.key}</Ltr>
         {task.priority !== "none" ? <PriorityIcon priority={task.priority} /> : null}
-        {task.issue && (task.issue.type !== "task" || task.issue.source !== "app" || task.issue.screenshot || task.issue.diagnostics) ? (
+        {task.issue && !task.issue.from_board ? (
           <IssueSourceChip issue={task.issue} />
         ) : null}
         {task.parent_id ? (

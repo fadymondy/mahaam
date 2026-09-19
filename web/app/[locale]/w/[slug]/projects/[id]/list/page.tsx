@@ -1,25 +1,18 @@
 "use client"
 
-import { ErrorState, LoadingRows } from "@/components/states"
-import { useDirectory } from "@/components/work/people"
-import { useProjectCtx } from "@/components/work/project-context"
-import { TaskList } from "@/components/work/task-list"
-import { useWorkspace } from "@/components/workspace/workspace-context"
-import { useTranslations } from "@/lib/i18n"
-import { useMe } from "@/lib/queries"
-import { useDocumentTitle } from "@/lib/title"
-import { useBoard, useLabels } from "@/lib/work"
+// One board per project (issues and cards are the same items): the old list view goes to it.
+import { useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
 
-export default function ListPage() {
-  const { t } = useTranslations()
-  const ws = useWorkspace()
-  const { project, openTask } = useProjectCtx()
-  useDocumentTitle(`${t("projectTab.list")} · ${project.name}`)
-  const me = useMe()
-  const dir = useDirectory(me.data ? String(me.data.id) : undefined)
-  const board = useBoard(ws.id, project.id)
-  const labels = useLabels(ws.id)
-  if (board.error) return <ErrorState error={board.error} />
-  if (!board.data) return <LoadingRows rows={5} />
-  return <TaskList board={board.data} labels={labels.data?.labels ?? []} dir={dir} onOpen={openTask} />
+import { LoadingRows } from "@/components/states"
+import { useProjectCtx } from "@/components/work/project-context"
+
+export default function ProjectListPage() {
+  const { base } = useProjectCtx()
+  const params = useParams<{ taskKey?: string }>()
+  const router = useRouter()
+  useEffect(() => {
+    router.replace(`${base}/board`)
+  }, [router, base, params.taskKey])
+  return <LoadingRows rows={3} />
 }
