@@ -17,7 +17,7 @@ const PLATFORM_SLUG = "platform"
 export default function AdminIssuesPage() {
   const { t, locale } = useTranslations()
   const router = useRouter()
-  const href = `/${locale}/w/${PLATFORM_SLUG}/issues`
+  const href = `/${locale}/w/${PLATFORM_SLUG}/projects`
   useDocumentTitle(`${t("admin.nav.issues")} · ${t("admin.title")}`)
   useEffect(() => {
     router.replace(href)

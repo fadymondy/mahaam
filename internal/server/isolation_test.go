@@ -631,7 +631,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		t.Errorf("A's invitation was removed from B: %d %s", code, b)
 	}
 	var planted int
-	_ = a.SysDB.QueryRow(`SELECT count(*) FROM reports WHERE workspace_id = $1 AND request_state IS NULL`, aID).Scan(&planted)
+	_ = a.SysDB.QueryRow(`SELECT count(*) FROM reports WHERE workspace_id = $1 AND request_state IS NULL AND NOT from_board`, aID).Scan(&planted)
 	if planted != 1 {
 		t.Errorf("A should have exactly 1 report, has %d", planted)
 	}
@@ -641,7 +641,8 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		t.Errorf("A's request should still be pending, found %d pending", planted)
 	}
 	var aTasks int
-	_ = a.SysDB.QueryRow(`SELECT count(*) FROM tasks WHERE workspace_id = $1`, aID).Scan(&aTasks)
+	_ = a.SysDB.QueryRow(`SELECT count(*) FROM tasks t WHERE workspace_id = $1
+		AND NOT EXISTS (SELECT 1 FROM reports r WHERE r.task_id = t.id AND NOT r.from_board)`, aID).Scan(&aTasks) // issue cards aside
 	if aTasks != 2 {
 		t.Errorf("A should have exactly 2 tasks, has %d", aTasks)
 	}

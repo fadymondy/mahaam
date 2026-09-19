@@ -88,6 +88,16 @@ export type Task = {
   attachment_count: number
   subtask_count: number
   subtask_done: number
+  /** Set when the card is an issue (SDK, portal, MCP, in-app or imported): the same MH-n item. */
+  issue?: TaskIssue | null
+}
+
+export type TaskIssue = {
+  type: string
+  source: string
+  screenshot: boolean
+  diagnostics: boolean
+  request_state: string | null
 }
 
 export type TaskBrief = { id: string; key: string; title: string; status_id: string; done: boolean }

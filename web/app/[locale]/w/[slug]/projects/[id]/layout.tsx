@@ -19,7 +19,7 @@ import { ApiError } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useProject } from "@/lib/work"
 
-const TABS = ["overview", "board", "list", "issues", "github", "vault", "billing", "settings"] as const
+const TABS = ["overview", "board", "list", "github", "vault", "billing", "settings"] as const
 
 function ProjectShell({ children }: { children: ReactNode }) {
   const { id } = useParams<{ id: string }>()

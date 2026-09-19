@@ -416,9 +416,6 @@ function ShellNav({
       <L href={`${base}/members`} icon={<UsersIcon />}>
         {t("nav.members")}
       </L>
-      <L href={`${base}/issues`} icon={<MessageSquarePlusIcon />}>
-        {t("nav.issues")}
-      </L>
       {can.includes("requests:manage") ? (
         <L href={`${base}/requests`} icon={<InboxIcon />}>
           {t("nav.requests")}

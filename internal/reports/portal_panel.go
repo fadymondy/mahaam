@@ -101,7 +101,7 @@ func PortalProject(ctx context.Context, a *app.App, ref string) (*PortalProjectP
 		return nil, err
 	}
 	s, _ := tenant.From(ctx)
-	rows, err := List(ctx, a.SQLDB, s.WorkspaceID, Filter{ProjectID: d.ID, Limit: 500})
+	rows, err := List(ctx, a.SQLDB, s.WorkspaceID, Filter{ProjectID: d.ID, Limit: 500, CustomerView: true})
 	if err != nil {
 		return nil, err
 	}

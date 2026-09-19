@@ -39,6 +39,18 @@ type Task struct {
 	AttachmentCount int        `json:"attachment_count"`
 	SubtaskCount    int        `json:"subtask_count"`
 	SubtaskDone     int        `json:"subtask_done"`
+	// Issue is set when the card is an issue (SDK, portal, MCP, in-app or imported report): the
+	// same item as /issues/{key}, kept in step by the database (post/19g_issues_on_board.sql).
+	Issue *TaskIssue `json:"issue,omitempty"`
+}
+
+// TaskIssue is what a card that is an issue carries beyond a task.
+type TaskIssue struct {
+	Type         string  `json:"type" doc:"bug, feature, task, story or epic"`
+	Source       string  `json:"source" doc:"app, embed (feedback SDK), portal, mcp, github, jira, linear"`
+	Screenshot   bool    `json:"screenshot" doc:"A screenshot is attached"`
+	Diagnostics  bool    `json:"diagnostics" doc:"Console or network logs were captured"`
+	RequestState *string `json:"request_state" doc:"A customer request's state, if it is one"`
 }
 
 const taskCols = `t.id, t.key, t.number, t.project_id, t.status_id, t.title, t.description, t.position, t.due_at,
@@ -52,14 +64,28 @@ const taskCols = `t.id, t.key, t.number, t.project_id, t.status_id, t.title, t.d
 	(SELECT count(*) FROM task_comments c WHERE c.workspace_id = t.workspace_id AND c.task_id = t.id),
 	(SELECT count(*) FROM attachments f WHERE f.workspace_id = t.workspace_id AND f.task_id = t.id),
 	(SELECT count(*) FROM tasks x WHERE x.workspace_id = t.workspace_id AND x.parent_id = t.id),
-	(SELECT count(*) FROM tasks x WHERE x.workspace_id = t.workspace_id AND x.parent_id = t.id AND x.completed_at IS NOT NULL)`
+	(SELECT count(*) FROM tasks x WHERE x.workspace_id = t.workspace_id AND x.parent_id = t.id AND x.completed_at IS NOT NULL),
+	ri.issue_type, ri.source, ri.screenshot IS NOT NULL AND ri.screenshot <> '',
+	COALESCE(length(ri.console_log), 0) + COALESCE(length(ri.network_log), 0) > 0, ri.request_state`
 
 func scanTask(r scanner) (*Task, error) {
 	t := &Task{}
 	var assignees, labels string
+	var iType, iSource *string
+	var iShot, iDiag *bool
+	var iReq *string
 	err := r.Scan(&t.ID, &t.Key, &t.Number, &t.ProjectID, &t.StatusID, &t.Title, &t.Description, &t.Position, &t.DueAt,
 		&t.EstimateMinutes, &t.Priority, &t.ParentID, &t.CreatedBy, &t.CompletedAt, &t.CreatedAt, &t.UpdatedAt,
-		&assignees, &labels, &t.ChecklistDone, &t.ChecklistTotal, &t.CommentCount, &t.AttachmentCount, &t.SubtaskCount, &t.SubtaskDone)
+		&assignees, &labels, &t.ChecklistDone, &t.ChecklistTotal, &t.CommentCount, &t.AttachmentCount, &t.SubtaskCount, &t.SubtaskDone,
+		&iType, &iSource, &iShot, &iDiag, &iReq)
+	if iType != nil {
+		t.Issue = &TaskIssue{Type: *iType, RequestState: iReq}
+		if iSource != nil {
+			t.Issue.Source = *iSource
+		}
+		t.Issue.Screenshot = iShot != nil && *iShot
+		t.Issue.Diagnostics = iDiag != nil && *iDiag
+	}
 	t.AssigneeIDs, t.LabelIDs = splitIDs(assignees), splitIDs(labels)
 	return t, err
 }
@@ -73,6 +99,7 @@ func loadTask(ctx context.Context, q querier, s *tenant.Scope, ref string) (*Tas
 	args := []any{s.WorkspaceID, id, number}
 	clause := taskClause(s, &args)
 	t, err := scanTask(q.QueryRowContext(ctx, `SELECT `+taskCols+` FROM tasks t
+		LEFT JOIN reports ri ON ri.workspace_id = t.workspace_id AND ri.task_id = t.id
 		JOIN projects p ON p.workspace_id = t.workspace_id AND p.id = t.project_id
 		WHERE t.workspace_id = $1 AND ((t.id = $2 AND $2 <> '') OR t.number = $3) AND `+clause, args...))
 	if errors.Is(err, sql.ErrNoRows) {
@@ -139,6 +166,7 @@ func (sv *Service) ListTasks(ctx context.Context, f TaskFilter) ([]Task, error) 
 	}
 	args = append(args, limit)
 	rows, err := sv.DB.QueryContext(ctx, `SELECT `+taskCols+` FROM tasks t
+		LEFT JOIN reports ri ON ri.workspace_id = t.workspace_id AND ri.task_id = t.id
 		JOIN projects p ON p.workspace_id = t.workspace_id AND p.id = t.project_id
 		JOIN task_statuses st ON st.workspace_id = t.workspace_id AND st.id = t.status_id
 		WHERE `+where+` ORDER BY p.name, st.position, t.position, t.created_at LIMIT $`+fmt.Sprint(len(args)), args...)

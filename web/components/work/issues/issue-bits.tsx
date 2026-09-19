@@ -16,8 +16,7 @@ import {
   SparklesIcon,
   UserIcon,
   ZapIcon,
-  type LucideIcon,
-} from "lucide-react"
+  type LucideIcon, ImageIcon, TerminalIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Ltr } from "@/components/copy-field"
@@ -108,5 +107,24 @@ export function AuthorKindBadge({ kind }: { kind: string }) {
       <Icon className="size-3" aria-hidden />
       {t(`issues.kind.${kind in KIND_ICON ? kind : "user"}`)}
     </Badge>
+  )
+}
+
+/**
+ * On a board card or task panel: this card is an issue — its type, where it came from (SDK,
+ * portal, MCP, GitHub…), and whether a screenshot or console/network logs are attached.
+ */
+export function IssueSourceChip({ issue }: { issue: { type: string; source: string; screenshot: boolean; diagnostics: boolean } }) {
+  const { t } = useTranslations()
+  const known = ["app", "portal", "embed", "mcp", "github", "jira", "linear"]
+  return (
+    <span className="inline-flex items-center gap-1" data-issue-source={issue.source}>
+      <IssueTypeIcon type={issue.type} />
+      <span className="rounded-sm border border-line px-1 text-[10px] uppercase tracking-wide">
+        {known.includes(issue.source) ? t(`issues.source.${issue.source}`) : issue.source}
+      </span>
+      {issue.screenshot ? <ImageIcon className="size-3" aria-label={t("issues.hasScreenshot")} role="img" /> : null}
+      {issue.diagnostics ? <TerminalIcon className="size-3" aria-label={t("issues.hasLogs")} role="img" /> : null}
+    </span>
   )
 }

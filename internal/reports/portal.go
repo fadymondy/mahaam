@@ -119,7 +119,7 @@ func RegisterPortalIssues(api huma.API, a *app.App) {
 		if !ok || s.WorkspaceID == "" || s.UserID == "" {
 			return nil, huma.Error404NotFound("workspace not found")
 		}
-		rows, err := List(ctx, h.db, s.WorkspaceID, Filter{ReporterID: s.UserID, ProjectID: strings.TrimSpace(in.Project)})
+		rows, err := List(ctx, h.db, s.WorkspaceID, Filter{ReporterID: s.UserID, ProjectID: strings.TrimSpace(in.Project), CustomerView: true})
 		if err != nil {
 			return nil, h.fail(err)
 		}

@@ -106,7 +106,7 @@ func (sv *Service) fillPortalCounts(ctx context.Context, ws string, ps []PortalP
 	rows, err = sv.DB.QueryContext(ctx, `SELECT project_id,
 			count(*) FILTER (WHERE state = 'open' AND (request_state IS NULL OR request_state = 'accepted')),
 			count(*) FILTER (WHERE request_state = 'pending')
-		FROM reports WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id`, ws, ids)
+		FROM reports WHERE workspace_id = $1 AND project_id = ANY($2) AND NOT from_board GROUP BY project_id`, ws, ids)
 	if err != nil {
 		return err
 	}

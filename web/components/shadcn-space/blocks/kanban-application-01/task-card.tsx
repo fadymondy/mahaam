@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Ltr } from "@/components/copy-field";
+import { IssueSourceChip } from "@/components/work/issues/issue-bits";
 import { LabelChips, PriorityIcon } from "@/components/work/fields";
 import { StartTimerButton } from "@/components/time/start-timer-button";
 import { AvatarStack, type Directory } from "@/components/work/people";
@@ -36,6 +37,9 @@ export function TaskCardBody({
       <div className="flex items-center gap-2 text-xs text-grid-muted">
         <Ltr mono>{task.key}</Ltr>
         {task.priority !== "none" ? <PriorityIcon priority={task.priority} /> : null}
+        {task.issue && (task.issue.type !== "task" || task.issue.source !== "app" || task.issue.screenshot || task.issue.diagnostics) ? (
+          <IssueSourceChip issue={task.issue} />
+        ) : null}
         {task.parent_id ? (
           <GitBranchIcon className="size-3" aria-label={t("task.subtask")} />
         ) : null}

@@ -588,5 +588,14 @@
   "clientImport.back": "Start over",
   "clientImport.commit": "Import {n}",
   "clientImport.done": "Imported: {create} new, {update} updated, {invalid} with errors.",
-  "projectTab.issues": "Issues"
+  "projectTab.issues": "Issues",
+  "issues.source.mcp": "MCP",
+  "issues.source.github": "GitHub",
+  "issues.source.jira": "Jira",
+  "issues.source.linear": "Linear",
+  "issues.hasScreenshot": "Screenshot attached",
+  "issues.hasLogs": "Console / network logs captured",
+  "issues.openOnBoard": "Open on the board",
+  "task.issueReport": "Issue report",
+  "task.issueReportHint": "The report behind this card: page, screenshot, console and network logs, agent loop"
 }

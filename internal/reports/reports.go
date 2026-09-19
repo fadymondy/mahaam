@@ -123,7 +123,10 @@ type Filter struct {
 	// pending, declined or converted. Off by default: the board and list_issues show
 	// normal issues and ACCEPTED requests only (requests.go).
 	IncludeRequests bool
-	Limit           int
+	// CustomerView drops issues born from board cards (internal work): the portal and the
+	// customer MCP only ever list issues that were filed as issues.
+	CustomerView bool
+	Limit        int
 }
 
 // List returns a workspace's reports, board order first.
@@ -154,6 +157,9 @@ func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Rep
 	}
 	if ids := scopedProjects(ctx); len(ids) > 0 {
 		add("project_id = ANY($%d::text[])", ids)
+	}
+	if f.CustomerView {
+		q += " AND NOT from_board"
 	}
 	if f.HideHumanOnly {
 		q += " AND NOT human_only"

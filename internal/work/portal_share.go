@@ -544,9 +544,9 @@ func (sv *Service) PortalActivity(ctx context.Context, ref string) ([]PortalActi
 	}
 	rows, err := sv.DB.QueryContext(ctx, `
 		SELECT CASE WHEN request_state IS NULL OR request_state = 'accepted' THEN 'issue.created' ELSE 'request.filed' END,
-			key, title, created_at FROM reports WHERE workspace_id = $1 AND project_id = $2
+			key, title, created_at FROM reports WHERE workspace_id = $1 AND project_id = $2 AND NOT from_board
 		UNION ALL
-		SELECT 'issue.closed', key, title, closed_at FROM reports WHERE workspace_id = $1 AND project_id = $2
+		SELECT 'issue.closed', key, title, closed_at FROM reports WHERE workspace_id = $1 AND project_id = $2 AND NOT from_board
 			AND closed_at IS NOT NULL AND (request_state IS NULL OR request_state = 'accepted')
 		ORDER BY 4 DESC LIMIT 60`, s.WorkspaceID, p.ID)
 	if err != nil {

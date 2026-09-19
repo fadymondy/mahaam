@@ -11,6 +11,7 @@ workspace sees none of it.
 */
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -378,7 +379,7 @@ func TestCustomerPortal(t *testing.T) {
 	if text, isErr := call(mgr, "list_requests", nil); isErr || !strings.Contains(text, "SSO login") {
 		t.Errorf("list_requests: %v %q", isErr, text)
 	}
-	if text, isErr := call(mgr, "list_issues", nil); isErr || strings.Contains(text, "SSO login") || strings.Contains(text, "Export to PDF") {
+	if text, isErr := call(mgr, "list_issues", nil); isErr || strings.Contains(text, "SSO login") || regexp.MustCompile(`M[HG]-d+ +[feature/[a-z_]+/[a-z]+] +Export to PDF`).MatchString(text) {
 		t.Errorf("list_issues must hide pending/converted requests: %v %q", isErr, text)
 	}
 

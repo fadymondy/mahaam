@@ -22,6 +22,8 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
+import { IssueSourceChip } from "@/components/work/issues/issue-bits";
+import { CardIssueFields, CardIssueThread } from "@/components/work/issues/issue-detail";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -246,6 +248,7 @@ export function TaskBody({
       <Ltr mono>{d.key}</Ltr>
       <span aria-hidden>·</span>
       <span className="truncate">{d.project.name}</span>
+      {d.issue ? <IssueSourceChip issue={d.issue} /> : null}
       {d.completed_at ? (
         <Badge variant="outline" className="gap-1">
           <CheckCircle2Icon />
@@ -381,6 +384,7 @@ export function TaskBody({
           </div>
         </Row>
       </div>
+      {d.issue ? <CardIssueFields taskKey={d.key} /> : null}
 
       <Section title={t("task.description")}>
         <div className="px-6 pb-4">
@@ -401,7 +405,8 @@ export function TaskBody({
       <Checklist d={d} can={can} call={call} />
       <Subtasks d={d} can={can} call={call} onOpen={onOpen} />
       <Attachments d={d} can={can} dir={dir} onChanged={onChanged} />
-      <Comments d={d} can={can} dir={dir} onChanged={onChanged} />
+      {/* One conversation: the issue thread (comments, @agent hand-offs, agent notes). */}
+      {d.issue ? <CardIssueThread taskKey={d.key} /> : <Comments d={d} can={can} dir={dir} onChanged={onChanged} />}
 
       <Section title={t("activity.title")}>
         <TaskActivity taskId={d.id} dir={dir} />
