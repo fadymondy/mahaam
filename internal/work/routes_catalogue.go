@@ -41,6 +41,16 @@ func (r routes) catalogue() {
 		}) error {
 			return r.sv.DeleteCatalogueItem(ctx, in.Project, in.ID)
 		})
+	none(r, http.MethodPut, "/api/w/projects/{project}/avatar", "w-set-project-avatar",
+		"Set a project's avatar (a small data: URL image; \"\" clears it)", "Projects", func(ctx context.Context, in *struct {
+			WS
+			ProjectRef
+			Body struct {
+				Avatar string `json:"avatar" maxLength:"300000" doc:"data:image/png|jpeg|webp;base64,… or empty to clear"`
+			}
+		}) error {
+			return r.sv.SetProjectAvatar(ctx, in.Project, in.Body.Avatar)
+		})
 	do(r, http.MethodPut, "/api/w/projects/{project}/catalogue/sync", "w-sync-catalogue",
 		"Sync a repo's .claude/ agents and skills into the project (replace: drop synced items missing from the payload)", tag, 0, func(ctx context.Context, in *struct {
 			WS

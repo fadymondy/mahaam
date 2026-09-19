@@ -35,6 +35,7 @@ import { ColorDot, ColorPicker, PALETTE } from "@/components/work/palette"
 import { useDirectory } from "@/components/work/people"
 import { useProjectCtx } from "@/components/work/project-context"
 import { ProjectForm } from "@/components/work/project-form"
+import { ProjectAvatarField } from "@/components/work/project-avatar"
 import { FeedbackWidgetSection } from "@/components/work/feedback-widget"
 import { IntegrationsSection } from "@/components/work/integrations-section"
 import { ProjectLabelsSection } from "@/components/work/project-labels-section"
@@ -141,6 +142,9 @@ export default function ProjectSettingsPage() {
         </Link>
       </div>
       <Section id="details" title={t("settings.details")}>
+        <div className="px-6 pb-6">
+          <ProjectAvatarField project={p} onChanged={reload} />
+        </div>
         <div className="px-6 pb-6">
           <ProjectForm key={p.updated_at} project={p} onSaved={() => { toast.success(t("common.saved")); reload() }} />
         </div>

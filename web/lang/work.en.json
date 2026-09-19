@@ -657,5 +657,10 @@
   "clients.allClients": "All clients",
   "clients.withProjects": "With projects",
   "clients.withoutProjects": "Without projects",
-  "clients.noMatch": "No client matches these filters."
+  "clients.noMatch": "No client matches these filters.",
+  "project.avatarUpload": "Upload avatar",
+  "project.avatarChange": "Change avatar",
+  "project.avatarRemove": "Remove",
+  "project.avatarHint": "A square image works best. Without one, the project shows its initials in its colour.",
+  "project.avatarBad": "That file could not be read as an image."
 }

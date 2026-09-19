@@ -250,3 +250,27 @@ func (sv *Service) SyncCatalogue(ctx context.Context, projectRef string, agents,
 	}
 	return listCatalogue(ctx, sv.DB, s.WorkspaceID, p.ID)
 }
+
+var avatarRe = regexp.MustCompile(`^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$`)
+
+// SetProjectAvatar stores (or, with "", clears) a project's avatar. Managers or the project's lead.
+func (sv *Service) SetProjectAvatar(ctx context.Context, projectRef, dataURL string) error {
+	s, p, err := sv.catalogueProject(ctx, projectRef, true)
+	if err != nil {
+		return err
+	}
+	var v any
+	if dataURL = strings.TrimSpace(dataURL); dataURL != "" {
+		if len(dataURL) > 300000 || !avatarRe.MatchString(dataURL) {
+			return invalid("the avatar must be a PNG, JPEG or WebP image under 200 KB")
+		}
+		v = dataURL
+	}
+	return sv.tx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `UPDATE projects SET avatar = $3, updated_at = now() WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, p.ID, v); err != nil {
+			return err
+		}
+		return record(ctx, tx, s, entry{ProjectID: p.ID, Action: "project.updated", SubjectType: "project", SubjectID: p.ID,
+			Changes: map[string]any{"avatar": v != nil}})
+	})
+}

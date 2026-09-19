@@ -28,6 +28,8 @@ export type Project = {
   updated_at: string
   tasks: TaskCounts
   member_count: number
+  /** data: URL of the project's image; null = coloured initials. */
+  avatar?: string | null
   /** Items per issue status (lists only). */
   issues?: Record<string, number> | null
   share_board: boolean

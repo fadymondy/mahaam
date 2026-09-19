@@ -18,6 +18,7 @@ import { useWorkspace } from "@/components/workspace/workspace-context"
 import { ApiError } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useProject } from "@/lib/work"
+import { ProjectAvatar } from "@/components/work/project-avatar"
 
 const TABS = ["overview", "board", "github", "vault", "billing", "settings"] as const
 
@@ -81,7 +82,7 @@ function ProjectShell({ children }: { children: ReactNode }) {
           {t("nav.projects")}
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <ColorDot color={p.color} className="size-3" />
+          <ProjectAvatar project={p} className="size-9 text-xs" />
           <h1 className="grid-title min-w-0 truncate text-2xl">{p.name}</h1>
           <Badge variant="outline">{t(`projectStatus.${p.status}`)}</Badge>
           {p.archived_at ? (

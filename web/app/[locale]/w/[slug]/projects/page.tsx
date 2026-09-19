@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
-import { soft, solid } from "@/components/work/palette"
+import { ProjectAvatar } from "@/components/work/project-avatar"
 import { formatDay } from "@/lib/format"
 import { ProjectForm } from "@/components/work/project-form"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -31,11 +31,6 @@ const STATUS_TONE: Record<string, string> = {
   waiting_approval: "var(--pal-orange)",
   in_review: "var(--pal-amber)",
   done: "var(--pal-green)",
-}
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? parts[0]?.[1] ?? "")).toUpperCase() || "?"
 }
 
 function FilterSelect({ value, onChange, items, label }: { value: string; onChange: (v: string) => void; items: { value: string; label: string }[]; label: string }) {
@@ -147,13 +142,7 @@ export default function ProjectsPage() {
             return (
               <li key={p.id} data-project={p.id}>
                 <Link href={`${base}/${p.id}/board`} className="flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-4 transition-colors hover:bg-grid-soft">
-                  <span
-                    aria-hidden
-                    className="flex size-10 shrink-0 items-center justify-center text-sm font-semibold uppercase"
-                    style={{ background: soft(p.color), color: solid(p.color), boxShadow: `inset 0 0 0 1px ${solid(p.color)}` }}
-                  >
-                    {initials(p.name)}
-                  </span>
+                  <ProjectAvatar project={p} />
 
                   <span className="min-w-48 flex-1">
                     <span className="flex flex-wrap items-center gap-2">

@@ -146,6 +146,7 @@ type Project struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 	Tasks         TaskCounts `json:"tasks"`
 	MemberCount   int        `json:"member_count"`
+	Avatar        *string    `json:"avatar" doc:"data: URL of the project's image; null = coloured initials"`
 	// Issues counts the project's items by issue status (the board's columns); only in lists.
 	Issues map[string]int `json:"issues,omitempty" doc:"Items per status: backlog, todo, in_progress, waiting_approval, in_review, done"`
 	// What the project's customer sees in the portal (19c_portal_share.sql).
@@ -171,7 +172,7 @@ var projectCols = `p.id, p.name, p.description, p.color, p.status, p.billing_mod
 	(SELECT c.name FROM clients c WHERE c.workspace_id = p.workspace_id AND c.id = p.client_id),
 	p.created_by, p.created_at, p.updated_at, ` + countBy("todo") + `, ` + countBy("doing") + `, ` + countBy("done") + `,
 	(SELECT count(*) FROM project_members pm WHERE pm.workspace_id = p.workspace_id AND pm.project_id = p.id),
-	p.share_board, p.share_team, p.share_money`
+	p.share_board, p.share_team, p.share_money, p.avatar`
 
 func scanProject(r scanner) (*Project, error) {
 	p := &Project{}
@@ -179,7 +180,7 @@ func scanProject(r scanner) (*Project, error) {
 	err := r.Scan(&p.ID, &p.Name, &p.Description, &p.Color, &p.Status, &p.BillingMode, &p.BudgetMinutes, &p.BudgetMinor,
 		&p.Currency, &p.Visibility, &starts, &ends, &p.ArchivedAt, &p.ClientID, &p.ClientName,
 		&p.CreatedBy, &p.CreatedAt, &p.UpdatedAt, &p.Tasks.Todo, &p.Tasks.Doing, &p.Tasks.Done, &p.MemberCount,
-		&p.ShareBoard, &p.ShareTeam, &p.ShareMoney)
+		&p.ShareBoard, &p.ShareTeam, &p.ShareMoney, &p.Avatar)
 	p.StartsOn, p.EndsOn = dayString(starts), dayString(ends)
 	return p, err
 }

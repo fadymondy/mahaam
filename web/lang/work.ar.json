@@ -657,5 +657,10 @@
   "clients.allClients": "كل العملاء",
   "clients.withProjects": "لديهم مشاريع",
   "clients.withoutProjects": "بلا مشاريع",
-  "clients.noMatch": "لا يوجد عميل يطابق هذه المرشحات."
+  "clients.noMatch": "لا يوجد عميل يطابق هذه المرشحات.",
+  "project.avatarUpload": "رفع صورة",
+  "project.avatarChange": "تغيير الصورة",
+  "project.avatarRemove": "إزالة",
+  "project.avatarHint": "الصورة المربعة هي الأنسب. بدون صورة يظهر المشروع بأحرفه الأولى بلونه.",
+  "project.avatarBad": "تعذّر قراءة هذا الملف كصورة."
 }
