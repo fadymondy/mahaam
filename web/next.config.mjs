@@ -23,6 +23,9 @@ const nextConfig = {
       { source: "/embed/:path*", destination: `${API_ORIGIN}/embed/:path*` },
       // MCP OAuth discovery metadata (RFC 8414/9728) — served by the Go API, not a Next.js page.
       { source: "/.well-known/:path*", destination: `${API_ORIGIN}/.well-known/:path*` },
+      // The shadcn registry (npx shadcn add @mahaam/feedback) is built in the mahaam-feedback
+      // repo and published to GitHub Pages; proxy it so the install URL is on the brand domain.
+      { source: "/r/:path*", destination: "https://fadymondy.github.io/mahaam-feedback/r/:path*" },
     ];
   },
 

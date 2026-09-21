@@ -44,7 +44,7 @@ var TenantTables = []string{
 	"user_github_accounts", "member_reviews",
 	// Per-project catalogue of agents and skills
 	"project_catalogue",
-	// Backend error-monitoring DSN keys (sdk/go et al.)
+	// Backend error-monitoring DSN keys (github.com/fadymondy/mahaam-go et al.)
 	"project_monitor_keys",
 }
 

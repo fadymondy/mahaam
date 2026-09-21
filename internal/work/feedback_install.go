@@ -9,15 +9,25 @@ import (
 )
 
 /*
-Install guides for the Feedback SDK: the same text for the settings page (REST)
+Install guides for the Feedback widget: the same text for the settings page (REST)
 and for an agent (MCP get_feedback_install), so "connect this project" is one
-copy-paste for a human and one tool call for an AI. The packages live in sdk/
-(laravel, node, go, python); the browser widget is /embed/v1.js served by the API.
+copy-paste for a human and one tool call for an AI.
+
+Feedback is the FRONTEND product: a browser widget authenticated with a public
+pfk_ key. The UI ships as a shadcn registry item (so it borrows the host app's own
+ui/* and matches its theme) and the logic as @mahaam/feedback-core; a plain script
+tag covers everything that is neither React nor Vue. Server-side error reporting is
+a different product with a different key — see monitor_install.go.
+
 The base URL is WEB_URL (the public host that proxies /embed and /api).
 */
 
 // FeedbackStacks are the install targets, in the order the UI shows them.
-var FeedbackStacks = []string{"agent", "html", "laravel", "node", "next", "go", "python"}
+var FeedbackStacks = []string{"agent", "html", "react", "next", "vue"}
+
+// registryURL is where `npx shadcn add` fetches the component from. mahaam.app/r/*
+// proxies to the mahaam-feedback repo's GitHub Pages build.
+const registryURL = "https://mahaam.app/r"
 
 // FeedbackInstall is every stack's guide for one key.
 type FeedbackInstall struct {
@@ -65,46 +75,106 @@ func (sv *Service) GetFeedbackInstall(ctx context.Context, projectRef, keyRef st
 }
 
 func feedbackGuides(base, key string, origins []string) map[string]string {
-	env := fmt.Sprintf("MAHAAM_URL=%s\nMAHAAM_FEEDBACK_KEY=%s\nMAHAAM_APP_URL=https://your-app.example.com   # an allowed origin, used by server-side reports", base, key)
+	endpoint := base + "/api/feedback/embed"
 	tag := fmt.Sprintf(`<script src="%s/embed/v1.js" data-key="%s" defer></script>`, base, key)
+
 	originNote := "Allowed origins: " + strings.Join(origins, ", ")
 	if len(origins) == 0 {
 		originNote = "No allowed origins yet: add the site's origin (https://example.com) on the key, or every report is refused."
 	}
+
 	g := map[string]string{
-		"html":    fmt.Sprintf("Paste before </body> on every page:\n\n%s\n\nOptional: data-locale=\"ar\", data-theme=\"light|dark\", data-position=\"start\", data-launcher=\"false\" (then call window.MahaamFeedback.open()).\n\n%s", tag, originNote),
-		"laravel": fmt.Sprintf("composer require mahaam/feedback\n\n# .env\n%s\n\n{{-- resources/views/layouts/app.blade.php, before </body> --}}\n@mahaamFeedback\n\n// report a backend exception (bootstrap/app.php → withExceptions)\n$exceptions->report(fn (Throwable $e) => MahaamFeedback::reportException($e));", env),
-		"node":    fmt.Sprintf("npm i @mahaam/feedback\n\n# .env\n%s\n\n// Express\nimport { expressMiddleware, installExceptionHook } from \"@mahaam/feedback\"\napp.use(expressMiddleware())   // injects the widget into HTML responses\ninstallExceptionHook()          // files uncaught errors as issues", env),
-		"next":    fmt.Sprintf("npm i @mahaam/feedback\n\n# .env\n%s\nNEXT_PUBLIC_MAHAAM_FEEDBACK_KEY=%s\n\n// app/layout.tsx, inside <body>\nimport { MahaamFeedback } from \"@mahaam/feedback/react\"\n<MahaamFeedback publicKey={process.env.NEXT_PUBLIC_MAHAAM_FEEDBACK_KEY!} baseUrl=\"%s\" />", env, key, base),
-		"go":      fmt.Sprintf("go get github.com/fadymondy/mahaam/sdk/go\n\n# env\n%s\n\nimport feedback \"github.com/fadymondy/mahaam/sdk/go\"\n\nfb := feedback.New(feedback.Config{})           // reads the env vars above\nhandler = fb.Recover(fb.Middleware(handler))   // widget in HTML + panics filed as issues\n// or pass fb.ScriptTag() to an html/template and render it before </body>", env),
-		"python":  fmt.Sprintf("pip install mahaam-feedback\n\n# env\n%s\n\n# Django: settings.MIDDLEWARE += [\"mahaam_feedback.django.FeedbackMiddleware\"]\n#         templates: {%% load mahaam_feedback %%}{%% mahaam_feedback %%}\n# Flask:  from mahaam_feedback.flask import init_app; init_app(app)  → {{ mahaam_feedback() }}", env),
+		"html": fmt.Sprintf(`Paste before </body> on every page:
+
+%s
+
+Optional: data-locale="ar", data-theme="light|dark", data-position="start",
+data-launcher="false" (then call window.MahaamFeedback.open()).
+
+%s`, tag, originNote),
+
+		"react": fmt.Sprintf(`# The UI installs into your project, so it uses your own ui/* and matches your theme.
+npx shadcn@latest add %s/feedback.json
+npm i @mahaam/feedback-core
+
+// Peers pulled from your shadcn kit: button, dialog, field, input, select, textarea.
+
+// .env
+NEXT_PUBLIC_MAHAAM_FEEDBACK_KEY=%s
+
+// Render it once, anywhere in your app:
+import { FeedbackLauncher } from "@/components/mahaam/feedback-launcher"
+
+<FeedbackLauncher
+  target="%s"
+  submitOptions={{ headers: { "X-Mahaam-Key": process.env.NEXT_PUBLIC_MAHAAM_FEEDBACK_KEY! } }}
+  locale="en"
+/>
+
+%s`, registryURL, key, endpoint, originNote),
+
+		"next": fmt.Sprintf(`npx shadcn@latest add %s/feedback.json
+npm i @mahaam/feedback-core
+
+# .env
+NEXT_PUBLIC_MAHAAM_FEEDBACK_KEY=%s
+
+// app/layout.tsx — FeedbackLauncher is a client component ("use client" is already
+// in the file the CLI copied in), so render it inside <body>.
+import { FeedbackLauncher } from "@/components/mahaam/feedback-launcher"
+
+<FeedbackLauncher
+  target="%s"
+  submitOptions={{ headers: { "X-Mahaam-Key": process.env.NEXT_PUBLIC_MAHAAM_FEEDBACK_KEY! } }}
+/>
+
+%s`, registryURL, key, endpoint, originNote),
+
+		"vue": fmt.Sprintf(`npx shadcn-vue@latest add %s/feedback-vue.json
+npm i @mahaam/feedback-core
+
+// Peers pulled from your shadcn-vue kit: button, dialog, input, label, select, textarea.
+
+<script setup lang="ts">
+import { FeedbackLauncher } from "@/components/mahaam"
+</script>
+
+<template>
+  <FeedbackLauncher
+    target="%s"
+    :submit-options="{ headers: { 'X-Mahaam-Key': '%s' } }"
+  />
+</template>
+
+%s`, registryURL, endpoint, key, originNote),
 	}
-	g["agent"] = fmt.Sprintf(`Install the Mahaam Feedback SDK in this project.
 
-1. Detect the stack (Laravel, Node/Express, Next.js, Go, Python/Django/Flask, or plain HTML).
-2. Add these environment variables (never commit real .env files):
-%s
-3. Follow the matching guide below: install the package, render the widget on every HTML page, and hook backend exceptions so they are filed as issues.
-4. Verify: open a page, click the floating "Report a problem" button, send a test report, and confirm the response carries an issue key (MG-n). Then report that key.
-%s
+	g["agent"] = fmt.Sprintf(`Add the Mahaam Feedback widget to this project.
 
----- Laravel ----
-%s
+Feedback is a frontend-only product: a browser widget that reports to Mahaam with a
+public key. Do NOT look for a server-side feedback package — backend error reporting
+is a separate product (the Mahaam SDK, DSN-based).
 
----- Node / Express ----
+1. Detect the stack: Next.js, React, Vue, or anything else (static HTML, Rails, PHP…).
+2. Public key (public-safe, but still put it in env rather than in code): %s
+   Intake endpoint: %s
+   %s
+3. Follow the matching guide below.
+4. Verify: load a page, open the reporter, send a test report, and confirm the
+   response carries an issue key (MG-n). Then delete the test issue.
+
+---- React (shadcn) ----
 %s
 
 ---- Next.js ----
 %s
 
----- Go ----
+---- Vue (shadcn-vue) ----
 %s
 
----- Python ----
-%s
+---- Anything else: plain script tag ----
+%s`, key, endpoint, originNote, g["react"], g["next"], g["vue"], g["html"])
 
----- Plain HTML ----
-%s`, indent(env), originNote, g["laravel"], g["node"], g["next"], g["go"], g["python"], g["html"])
 	return g
 }
 

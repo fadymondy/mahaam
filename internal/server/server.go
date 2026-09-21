@@ -82,7 +82,7 @@ func Boot() *app.App {
 	k.Router.Get(work.GitHubUserCallbackPath, work.New(a).GitHubUserCallback())
 	reports.MountFeedback(k, a)
 	reports.MountEmbed(k, a)             // P7: PUBLIC per-project embed intake + the /embed/v1.js loader
-	reports.MountMonitor(k, a)           // PUBLIC backend error-monitoring intake (DSN, sdk/go et al.)
+	reports.MountMonitor(k, a)           // PUBLIC backend error-monitoring intake (DSN, github.com/fadymondy/mahaam-go et al.)
 	reports.MountPortalFile(k, a)        // P7: the client portal's multipart issue intake
 	reports.MountPortalRequestFile(k, a) // roadmap 5: a customer files a request (multipart)
 	reports.MountScreenshots(k, a)       // P8.5: an issue / request screenshot (staff, or the project's customer)

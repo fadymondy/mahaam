@@ -39,6 +39,14 @@ func (r routes) monitorKeys() {
 		}) (*MonitorKey, error) {
 			return r.sv.CreateMonitorKey(ctx, in.Project, in.Body.Name)
 		})
+	do(r, http.MethodGet, "/api/w/projects/{project}/monitor-install", "w-monitor-install",
+		"Install guides for the Mahaam SDK (go, node, python, php, and an AI-agent prompt)", tag, 0, func(ctx context.Context, in *struct {
+			WS
+			ProjectRef
+			Key string `query:"key" doc:"Monitor key id; default the newest live key"`
+		}) (*MonitorInstall, error) {
+			return r.sv.GetMonitorInstall(ctx, in.Project, in.Key)
+		})
 	none(r, http.MethodDelete, "/api/w/projects/{project}/monitor-keys/{key}", "w-revoke-monitor-key",
 		"Revoke a monitor DSN (the envelope endpoint refuses it afterwards)", tag, func(ctx context.Context, in *struct {
 			WS

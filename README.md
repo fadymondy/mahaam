@@ -200,11 +200,11 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   (`data-theme` overrides it), and it works in en/ar with RTL. A floating launcher (`data-position`, `data-launcher="false"` +
   `window.MahaamFeedback.open()`) and a "Powered by Mahaam" footer. Capture, picker and diagnostics are the shared
   `web/lib/feedback/core`. The intake now takes `priority`.
-- **Server SDKs** (`sdk/`): `laravel` (`mahaam/feedback`: `@mahaamFeedback`, `MahaamFeedback::report()`), `node`
-  (`@mahaam/feedback`: Express middleware, exception hook, `@mahaam/feedback/react`), `go`
-  (`github.com/fadymondy/mahaam/sdk/go`: middleware, `Recover`), `python` (`mahaam-feedback`: Django middleware + tag,
-  Flask `init_app`). All read `MAHAAM_URL`, `MAHAAM_FEEDBACK_KEY`, `MAHAAM_APP_URL` (server reports send it as `page_url`, which
-  must be on the key's allowed origins). None of them is published to a registry yet.
+- **SDKs** (their own public repos; `sdk/` was retired): two separate products. *Feedback* is frontend-only —
+  `@mahaam/feedback-core` plus shadcn registry items for React and Vue (`mahaam-feedback`), keyed by `pfk_`.
+  *Mahaam SDK* is backend error monitoring, keyed by a DSN — `github.com/fadymondy/mahaam-go`, `@mahaam/sdk`,
+  `mahaam-sdk`, `mahaam/sdk`. The server-side feedback helpers that used to live in `sdk/` are gone: server errors
+  belong to the DSN product now.
 - **Connect in one step**: `GET /api/w/projects/{project}/feedback-install` and MCP `get_feedback_install {project, stack}`
   return the env vars and the install steps per stack, and `stack=agent` returns a full prompt for a coding agent working in the
   client's repo. The project settings show the same text as tabs, with a "Copy agent prompt" button.

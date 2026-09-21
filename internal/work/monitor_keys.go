@@ -13,8 +13,9 @@ import (
 )
 
 /*
-Per-project DSN keys for the backend error-monitoring SDKs (sdk/go, sdk/node, sdk/laravel,
-sdk/python — see sdk/AGENT.md), distinct from project_feedback_keys: this key is never meant to
+Per-project DSN keys for the Mahaam SDK, the backend error-monitoring packages published as
+github.com/fadymondy/mahaam-go, @mahaam/sdk, mahaam-sdk and mahaam/sdk. Distinct from
+project_feedback_keys: this key is never meant to
 reach a browser, so there is no allowed-origins/CORS concept for it — the boundary is that it can
 only file into the one project it belongs to, and it is revocable. Same manager+ permissions as
 feedback keys (feedback_keys:read / :manage) — both are "configure this project's intake" in the

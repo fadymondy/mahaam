@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { BotIcon, CopyIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
+import { BotIcon, CopyIcon, EyeIcon, EyeOffIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
 import { toast } from "sonner"
 import useSWR from "swr"
 
@@ -13,13 +13,21 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ConfirmButton } from "@/components/confirm-button"
 import { useWorkspace } from "@/components/workspace/workspace-context"
+import { useTranslations } from "@/lib/i18n"
 import { errorText, w } from "@/lib/work"
 
 /*
-The project-settings "Client access & feedback widget" section (P7): share the
-project's client with a portal contact, mint / rotate / revoke the per-project
-public feedback keys, set their allowed origins, and copy the <script> snippet a
-client pastes onto their site. Manager+ only (the endpoints enforce it too).
+The project-settings "Client access & SDKs" section (P7). Two distinct products live
+here and the UI must keep them apart:
+
+  - Feedback  — the *frontend* browser widget. Public key `pfk_…`, safe in client-side
+                code; reports what a human chose to report.
+  - Mahaam SDK — *backend* error monitoring, Sentry-shaped. Keyed by a DSN
+                (`https://mdsn_…@host/monitor/<project>`); reports crashes from the
+                server, no UI. The DSN is a server-side credential.
+
+Plus portal contacts (the client's login to the portal). Manager+ only; the endpoints
+enforce it too. Every string goes through work.{en,ar}.json under the `sdk.*` namespace.
 */
 
 type FeedbackKey = {
@@ -30,6 +38,17 @@ type FeedbackKey = {
   active: boolean
   allowed_origins: string[]
   widget: WidgetLook
+  last_used_at: string | null
+  revoked_at: string | null
+  created_at: string
+}
+
+type MonitorKey = {
+  id: string
+  project_id: string
+  name: string
+  public_key: string
+  dsn: string
   last_used_at: string | null
   revoked_at: string | null
   created_at: string
@@ -48,6 +67,9 @@ type WidgetLook = {
 
 type Contact = { id: string; client_id: string; user_id: string; email: string | null; created_at: string }
 
+type Run = (fn: () => Promise<unknown>, ok?: string) => Promise<void>
+type Copy = (text: string, label: string) => void
+
 export function FeedbackWidgetSection({
   projectId,
   clientId,
@@ -56,10 +78,16 @@ export function FeedbackWidgetSection({
   clientId: string | null
 }) {
   const ws = useWorkspace()
+  const { t } = useTranslations()
   const canManage = ws.can("feedback_keys:manage")
 
   const keys = useSWR<{ keys: FeedbackKey[] | null }>(
     [`/api/w/projects/${projectId}/feedback-keys`, ws.id],
+    ([p, id]: [string, string]) => api(p, { workspaceId: id }),
+    { shouldRetryOnError: false, revalidateOnFocus: false },
+  )
+  const monitorKeys = useSWR<{ keys: MonitorKey[] | null }>(
+    [`/api/w/projects/${projectId}/monitor-keys`, ws.id],
     ([p, id]: [string, string]) => api(p, { workspaceId: id }),
     { shouldRetryOnError: false, revalidateOnFocus: false },
   )
@@ -70,34 +98,36 @@ export function FeedbackWidgetSection({
   )
 
   const [busy, setBusy] = useState(false)
-  const run = async (fn: () => Promise<unknown>, ok?: string) => {
+  const run: Run = async (fn, ok) => {
     setBusy(true)
     try {
       await fn()
       if (ok) toast.success(ok)
     } catch (err) {
-      toast.error(errorText(err, "Something went wrong"))
+      toast.error(errorText(err, t("sdk.error.generic")))
     } finally {
       setBusy(false)
     }
   }
 
+  const copy: Copy = (text, label) => {
+    navigator.clipboard?.writeText(text).then(
+      () => toast.success(t("sdk.copied", { label })),
+      () => toast.error(t("common.copyFailed")),
+    )
+  }
+
   return (
     <section className="border-b border-line">
       <div className="px-6 pt-6 pb-3">
-        <h2 className="text-base font-medium">Client access &amp; feedback widget</h2>
-        <p className="mt-1 text-sm text-grid-muted">
-          Give this project&apos;s client a login to the portal, and let their end-users file issues from
-          their own website with an embeddable widget.
-        </p>
+        <h2 className="text-base font-medium">{t("sdk.section.title")}</h2>
+        <p className="mt-1 text-sm text-grid-muted">{t("sdk.section.desc")}</p>
       </div>
 
       <div className="px-6 pb-5">
-        <h3 className="text-sm font-medium mb-2">Portal contacts</h3>
+        <h3 className="text-sm font-medium mb-2">{t("sdk.contacts.title")}</h3>
         {!clientId ? (
-          <p className="text-sm text-grid-muted">
-            Assign a client to this project first — portal access follows the client.
-          </p>
+          <p className="text-sm text-grid-muted">{t("sdk.contacts.needClient")}</p>
         ) : (
           <ContactManager
             clientId={clientId}
@@ -110,8 +140,12 @@ export function FeedbackWidgetSection({
         )}
       </div>
 
-      <div className="px-6 pb-6">
-        <h3 className="text-sm font-medium mb-2">Feedback keys</h3>
+      <div className="px-6 pb-5">
+        <ProductHeader
+          badge={t("sdk.feedback.badge")}
+          title={t("sdk.feedback.title")}
+          desc={t("sdk.feedback.desc")}
+        />
         <KeyManager
           projectId={projectId}
           keys={keys.data?.keys ?? []}
@@ -119,9 +153,52 @@ export function FeedbackWidgetSection({
           busy={busy}
           onChange={() => keys.mutate()}
           run={run}
+          copy={copy}
+        />
+      </div>
+
+      <div className="px-6 pb-6">
+        <ProductHeader
+          badge={t("sdk.monitor.badge")}
+          title={t("sdk.monitor.title")}
+          desc={t("sdk.monitor.desc")}
+          tone="monitor"
+        />
+        <MonitorKeyManager
+          projectId={projectId}
+          keys={monitorKeys.data?.keys ?? []}
+          canManage={canManage}
+          busy={busy}
+          onChange={() => monitorKeys.mutate()}
+          run={run}
+          copy={copy}
         />
       </div>
     </section>
+  )
+}
+
+// The two products sit in one page, so each gets its own labelled header: a badge that
+// says where the code runs (browser vs server) and one line on what it reports.
+function ProductHeader({
+  badge,
+  title,
+  desc,
+  tone = "feedback",
+}: {
+  badge: string
+  title: string
+  desc: string
+  tone?: "feedback" | "monitor"
+}) {
+  return (
+    <div className="mb-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-sm font-medium">{title}</h3>
+        <Badge variant={tone === "monitor" ? "outline" : "secondary"}>{badge}</Badge>
+      </div>
+      <p className="mt-1 text-xs text-grid-muted">{desc}</p>
+    </div>
   )
 }
 
@@ -138,14 +215,15 @@ function ContactManager({
   canManage: boolean
   busy: boolean
   onChange: () => void
-  run: (fn: () => Promise<unknown>, ok?: string) => Promise<void>
+  run: Run
 }) {
   const ws = useWorkspace()
+  const { t } = useTranslations()
   const [email, setEmail] = useState("")
   return (
     <div className="space-y-2">
       {contacts.length === 0 ? (
-        <p className="text-sm text-grid-muted">No portal contacts yet.</p>
+        <p className="text-sm text-grid-muted">{t("sdk.contacts.empty")}</p>
       ) : (
         <ul className="divide-y divide-line rounded-md border border-line">
           {contacts.map((c) => (
@@ -153,14 +231,14 @@ function ContactManager({
               <span className="text-sm">{c.email ?? c.user_id}</span>
               {canManage ? (
                 <ConfirmButton
-                  label="Remove"
-                  title="Remove portal contact?"
-                  description="They will lose access to this client's portal."
-                  confirmLabel="Remove"
+                  label={t("common.remove")}
+                  title={t("sdk.contacts.removeTitle")}
+                  description={t("sdk.contacts.removeDesc")}
+                  confirmLabel={t("common.remove")}
                   onConfirm={() =>
                     run(
                       () => w.del(ws.id, `/api/w/clients/${clientId}/contacts/${encodeURIComponent(c.user_id)}`),
-                      "Removed",
+                      t("sdk.contacts.removed"),
                     ).then(onChange)
                   }
                 />
@@ -178,7 +256,7 @@ function ContactManager({
             if (!value) return
             run(
               () => w.put(ws.id, `/api/w/clients/${clientId}/contacts/${encodeURIComponent(value)}`),
-              "Shared",
+              t("sdk.contacts.shared"),
             ).then(() => {
               setEmail("")
               onChange()
@@ -186,11 +264,15 @@ function ContactManager({
           }}
         >
           <Field className="flex-1">
-            <FieldLabel>Add a contact (member email)</FieldLabel>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@example.com" />
+            <FieldLabel>{t("sdk.contacts.addLabel")}</FieldLabel>
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("sdk.contacts.addPlaceholder")}
+            />
           </Field>
           <Button type="submit" disabled={busy || !email.trim()}>
-            <PlusIcon /> Add
+            <PlusIcon /> {t("common.add")}
           </Button>
         </form>
       ) : null}
@@ -205,23 +287,35 @@ function KeyManager({
   busy,
   onChange,
   run,
+  copy,
 }: {
   projectId: string
   keys: FeedbackKey[]
   canManage: boolean
   busy: boolean
   onChange: () => void
-  run: (fn: () => Promise<unknown>, ok?: string) => Promise<void>
+  run: Run
+  copy: Copy
 }) {
   const ws = useWorkspace()
+  const { t } = useTranslations()
   const origin = typeof window !== "undefined" ? window.location.origin : ""
   return (
     <div className="space-y-3">
       {keys.length === 0 ? (
-        <p className="text-sm text-grid-muted">No feedback keys yet.</p>
+        <p className="text-sm text-grid-muted">{t("sdk.feedback.empty")}</p>
       ) : (
         keys.map((k) => (
-          <KeyRow key={k.id} k={k} origin={origin} canManage={canManage} busy={busy} run={run} onChange={onChange} />
+          <KeyRow
+            key={k.id}
+            k={k}
+            origin={origin}
+            canManage={canManage}
+            busy={busy}
+            run={run}
+            onChange={onChange}
+            copy={copy}
+          />
         ))
       )}
       {canManage ? (
@@ -230,12 +324,16 @@ function KeyManager({
           disabled={busy}
           onClick={() =>
             run(
-              () => w.post(ws.id, `/api/w/projects/${projectId}/feedback-keys`, { name: "Website widget", allowed_origins: [] }),
-              "Key minted — add the client's origin below",
+              () =>
+                w.post(ws.id, `/api/w/projects/${projectId}/feedback-keys`, {
+                  name: t("sdk.feedback.defaultName"),
+                  allowed_origins: [],
+                }),
+              t("sdk.feedback.minted"),
             ).then(onChange)
           }
         >
-          <PlusIcon /> Mint a key
+          <PlusIcon /> {t("sdk.feedback.mint")}
         </Button>
       ) : null}
     </div>
@@ -249,59 +347,62 @@ function KeyRow({
   busy,
   run,
   onChange,
+  copy,
 }: {
   k: FeedbackKey
   origin: string
   canManage: boolean
   busy: boolean
-  run: (fn: () => Promise<unknown>, ok?: string) => Promise<void>
+  run: Run
   onChange: () => void
+  copy: Copy
 }) {
   const ws = useWorkspace()
+  const { t } = useTranslations()
   const [origins, setOrigins] = useState(k.allowed_origins.join("\n"))
   const snippet = useMemo(
     () => `<script src="${origin}/embed/v1.js" data-key="${k.public_key}" defer></script>`,
     [origin, k.public_key],
   )
-  const copy = (text: string, label: string) => {
-    navigator.clipboard?.writeText(text).then(
-      () => toast.success(`${label} copied`),
-      () => toast.error("Could not copy"),
-    )
-  }
   return (
     <div className="rounded-md border border-line p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <code className="truncate text-xs font-mono" dir="ltr">
+          <code className="truncate text-xs font-mono" dir="ltr" aria-label={t("sdk.feedback.publicKeyAria")}>
             {k.public_key}
           </code>
-          <Badge variant={k.active ? "default" : "secondary"}>{k.active ? "active" : "revoked"}</Badge>
+          <Badge variant={k.active ? "default" : "secondary"}>
+            {k.active ? t("sdk.feedback.statusActive") : t("sdk.feedback.statusRevoked")}
+          </Badge>
         </div>
         {canManage && k.active ? (
           <ConfirmButton
             label={
               <>
-                <RotateCcwIcon /> Revoke
+                <RotateCcwIcon /> {t("common.revoke")}
               </>
             }
-            title="Revoke this feedback key?"
-            description="The embed widget using it will stop working immediately."
-            confirmLabel="Revoke"
-            onConfirm={() => run(() => w.post(ws.id, `/api/w/feedback-keys/${k.id}/revoke`), "Revoked").then(onChange)}
+            title={t("sdk.feedback.revokeTitle")}
+            description={t("sdk.feedback.revokeDesc")}
+            confirmLabel={t("common.revoke")}
+            onConfirm={() =>
+              run(() => w.post(ws.id, `/api/w/feedback-keys/${k.id}/revoke`), t("sdk.feedback.revoked")).then(onChange)
+            }
           />
         ) : null}
       </div>
+      <p className="text-xs text-grid-muted">{t("sdk.feedback.publicSafe")}</p>
 
       <Field>
-        <FieldLabel>Allowed origins (one per line)</FieldLabel>
+        <FieldLabel>{t("sdk.feedback.originsLabel")}</FieldLabel>
         <textarea
           className="min-h-[64px] w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm"
           dir="ltr"
           value={origins}
           disabled={!canManage || busy}
           onChange={(e) => setOrigins(e.target.value)}
-          placeholder="https://client.example.com"
+          placeholder={t("sdk.feedback.originsPlaceholder")}
+          aria-label={t("sdk.feedback.originsLabel")}
         />
       </Field>
       {canManage ? (
@@ -318,34 +419,190 @@ function KeyRow({
                     .map((s) => s.trim())
                     .filter(Boolean),
                 }),
-              "Origins saved",
+              t("sdk.feedback.originsSaved"),
             ).then(onChange)
           }
         >
-          Save origins
+          {t("sdk.feedback.saveOrigins")}
         </Button>
       ) : null}
 
       <Field>
-        <FieldLabel>Embed snippet</FieldLabel>
+        <FieldLabel>{t("sdk.feedback.snippet")}</FieldLabel>
         <div className="flex items-center gap-2">
           <code className="flex-1 truncate rounded bg-grid-muted/10 px-2 py-1 text-xs" dir="ltr">
             {snippet}
           </code>
-          <Button size="sm" variant="ghost" onClick={() => copy(snippet, "Snippet")}>
-            <CopyIcon /> Copy
+          <Button size="sm" variant="ghost" onClick={() => copy(snippet, t("sdk.feedback.snippetLabel"))}>
+            <CopyIcon /> {t("common.copy")}
           </Button>
         </div>
       </Field>
       {k.active && canManage ? <WidgetLookEditor k={k} busy={busy} run={run} onChange={onChange} /> : null}
-      {k.active ? <InstallGuides projectId={k.project_id} keyId={k.id} copy={copy} /> : null}
+      {k.active ? (
+        <InstallGuides
+          path={`/api/w/projects/${k.project_id}/feedback-install?key=${encodeURIComponent(k.id)}`}
+          stacks={FEEDBACK_STACKS}
+          copy={copy}
+          mcpHint={"get_feedback_install { project, stack }"}
+        />
+      ) : null}
     </div>
   )
 }
 
+/* ------------------------------------------------------------------ monitoring */
+
+function MonitorKeyManager({
+  projectId,
+  keys,
+  canManage,
+  busy,
+  onChange,
+  run,
+  copy,
+}: {
+  projectId: string
+  keys: MonitorKey[]
+  canManage: boolean
+  busy: boolean
+  onChange: () => void
+  run: Run
+  copy: Copy
+}) {
+  const ws = useWorkspace()
+  const { t } = useTranslations()
+  return (
+    <div className="space-y-3">
+      {keys.length === 0 ? (
+        <p className="text-sm text-grid-muted">{t("sdk.monitor.empty")}</p>
+      ) : (
+        keys.map((k) => (
+          <MonitorKeyRow
+            key={k.id}
+            k={k}
+            projectId={projectId}
+            canManage={canManage}
+            busy={busy}
+            run={run}
+            onChange={onChange}
+            copy={copy}
+          />
+        ))
+      )}
+      {canManage ? (
+        <Button
+          variant="outline"
+          disabled={busy}
+          onClick={() =>
+            run(
+              () =>
+                w.post(ws.id, `/api/w/projects/${projectId}/monitor-keys`, { name: t("sdk.monitor.defaultName") }),
+              t("sdk.monitor.created"),
+            ).then(onChange)
+          }
+        >
+          <PlusIcon /> {t("sdk.monitor.create")}
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+// A monitor key is live while revoked_at is null (there is no `active` flag here).
+function MonitorKeyRow({
+  k,
+  projectId,
+  canManage,
+  busy,
+  run,
+  onChange,
+  copy,
+}: {
+  k: MonitorKey
+  projectId: string
+  canManage: boolean
+  busy: boolean
+  run: Run
+  onChange: () => void
+  copy: Copy
+}) {
+  const ws = useWorkspace()
+  const { t } = useTranslations()
+  const [shown, setShown] = useState(false)
+  const live = k.revoked_at === null
+  return (
+    <div className="rounded-md border border-line p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="truncate text-sm">{k.name}</span>
+          <Badge variant={live ? "default" : "secondary"}>
+            {live ? t("sdk.monitor.statusLive") : t("sdk.monitor.statusRevoked")}
+          </Badge>
+        </div>
+        {canManage && live ? (
+          <ConfirmButton
+            label={
+              <>
+                <RotateCcwIcon /> {t("common.revoke")}
+              </>
+            }
+            title={t("sdk.monitor.revokeTitle")}
+            description={t("sdk.monitor.revokeDesc")}
+            confirmLabel={t("common.revoke")}
+            onConfirm={() =>
+              run(
+                () => w.del(ws.id, `/api/w/projects/${projectId}/monitor-keys/${encodeURIComponent(k.id)}`),
+                t("sdk.monitor.revoked"),
+              ).then(onChange)
+            }
+          />
+        ) : null}
+      </div>
+
+      <Field>
+        <FieldLabel>{t("sdk.monitor.dsnLabel")}</FieldLabel>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 truncate rounded bg-grid-muted/10 px-2 py-1 text-xs font-mono" dir="ltr">
+            {shown ? k.dsn : t("sdk.monitor.dsnHidden")}
+          </code>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={shown ? t("sdk.monitor.hide") : t("sdk.monitor.show")}
+            onClick={() => setShown((s) => !s)}
+          >
+            {shown ? <EyeOffIcon /> : <EyeIcon />} {shown ? t("sdk.monitor.hide") : t("sdk.monitor.show")}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => copy(k.dsn, t("sdk.monitor.dsnLabel"))}>
+            <CopyIcon /> {t("common.copy")}
+          </Button>
+        </div>
+      </Field>
+      <p className="text-xs text-grid-danger-text">{t("sdk.monitor.secret")}</p>
+
+      {live ? (
+        <InstallGuides
+          path={`/api/w/projects/${projectId}/monitor-install?key=${encodeURIComponent(k.id)}`}
+          stacks={MONITOR_STACKS}
+          copy={copy}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------- launcher */
+
 const ICONS = ["bug", "message", "help", "lightbulb", "megaphone", "sparkles", "none"]
 const SHAPES = ["pill", "circle", "square", "tab"]
 const POSITIONS = ["bottom-end", "bottom-start", "top-end", "top-start", "middle-end", "middle-start"]
+const THEMES = ["auto", "light", "dark"]
+const LOCALES = ["auto", "en", "ar"]
+
+// Option values are stored verbatim (bottom-end, …) but shown translated.
+const optionKey = (group: string, value: string) =>
+  `sdk.look.${group}.${value.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())}`
 
 // How this key's launcher looks on the customer's site (GET /api/feedback/embed/config).
 // Visitors can still drag it, dock it to the edge or hide it from its right-click menu.
@@ -357,25 +614,27 @@ function WidgetLookEditor({
 }: {
   k: FeedbackKey
   busy: boolean
-  run: (fn: () => Promise<unknown>, ok?: string) => Promise<void>
+  run: Run
   onChange: () => void
 }) {
   const ws = useWorkspace()
+  const { t } = useTranslations()
   const [look, setLook] = useState<WidgetLook>(k.widget ?? {})
   const set = (f: keyof WidgetLook, v: string) => setLook((l) => ({ ...l, [f]: v === "default" ? undefined : v }))
-  const sel = (f: keyof WidgetLook, label: string, options: string[]) => (
+  const sel = (f: keyof WidgetLook, label: string, group: string, options: string[]) => (
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <select
         className="h-8 w-full rounded-lg border border-line bg-transparent px-2 text-sm"
         value={look[f] ?? "default"}
         disabled={busy}
+        aria-label={label}
         onChange={(e) => set(f, e.target.value)}
       >
-        <option value="default">Default</option>
+        <option value="default">{t("sdk.look.default")}</option>
         {options.map((o) => (
           <option key={o} value={o}>
-            {o}
+            {t(optionKey(group, o))}
           </option>
         ))}
       </select>
@@ -386,28 +645,48 @@ function WidgetLookEditor({
   const iconOnly = look.shape === "circle" || look.shape === "square"
   return (
     <Field>
-      <FieldLabel>Launcher look</FieldLabel>
+      <FieldLabel>{t("sdk.look.title")}</FieldLabel>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field>
-          <FieldLabel>Text</FieldLabel>
-          <Input maxLength={40} value={look.text ?? ""} placeholder="Report a problem" disabled={busy} onChange={(e) => set("text", e.target.value)} />
+          <FieldLabel>{t("sdk.look.text")}</FieldLabel>
+          <Input
+            maxLength={40}
+            value={look.text ?? ""}
+            placeholder={t("sdk.look.textPlaceholder")}
+            disabled={busy}
+            onChange={(e) => set("text", e.target.value)}
+          />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field>
-            <FieldLabel>Colour</FieldLabel>
-            <input type="color" className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent" value={bg} disabled={busy} onChange={(e) => set("color", e.target.value)} />
+            <FieldLabel>{t("sdk.look.color")}</FieldLabel>
+            <input
+              type="color"
+              className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent"
+              value={bg}
+              disabled={busy}
+              aria-label={t("sdk.look.color")}
+              onChange={(e) => set("color", e.target.value)}
+            />
           </Field>
           <Field>
-            <FieldLabel>Text colour</FieldLabel>
-            <input type="color" className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent" value={fg} disabled={busy} onChange={(e) => set("text_color", e.target.value)} />
+            <FieldLabel>{t("sdk.look.textColor")}</FieldLabel>
+            <input
+              type="color"
+              className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent"
+              value={fg}
+              disabled={busy}
+              aria-label={t("sdk.look.textColor")}
+              onChange={(e) => set("text_color", e.target.value)}
+            />
           </Field>
         </div>
-        {sel("icon", "Icon", ICONS)}
-        {sel("shape", "Shape", SHAPES)}
-        {sel("position", "Starting position", POSITIONS)}
+        {sel("icon", t("sdk.look.icon"), "icon", ICONS)}
+        {sel("shape", t("sdk.look.shape"), "shape", SHAPES)}
+        {sel("position", t("sdk.look.position"), "position", POSITIONS)}
         <div className="grid grid-cols-2 gap-3">
-          {sel("theme", "Dialog theme", ["auto", "light", "dark"])}
-          {sel("locale", "Language", ["auto", "en", "ar"])}
+          {sel("theme", t("sdk.look.theme"), "theme", THEMES)}
+          {sel("locale", t("sdk.look.language"), "locale", LOCALES)}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -421,70 +700,78 @@ function WidgetLookEditor({
           style={{ background: bg, color: fg }}
         >
           {look.icon === "none" ? null : <span className="text-xs">●</span>}
-          {iconOnly ? null : look.text || "Report a problem"}
+          {iconOnly ? null : look.text || t("sdk.look.textPlaceholder")}
         </span>
         <Button
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => run(() => w.patch(ws.id, `/api/w/feedback-keys/${k.id}`, { widget: look }), "Launcher saved").then(onChange)}
+          onClick={() =>
+            run(() => w.patch(ws.id, `/api/w/feedback-keys/${k.id}`, { widget: look }), t("sdk.look.saved")).then(
+              onChange,
+            )
+          }
         >
-          Save look
+          {t("sdk.look.save")}
         </Button>
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => setLook({})}>
-          Reset
+          {t("sdk.look.reset")}
         </Button>
       </div>
     </Field>
   )
 }
 
-const STACK_LABELS: Record<string, string> = {
-  agent: "AI agent",
-  html: "HTML",
-  laravel: "Laravel",
-  node: "Node",
-  next: "Next.js",
-  go: "Go",
-  python: "Python",
-}
+/* --------------------------------------------------------------------- guides */
 
-// The same guides the MCP tool get_feedback_install returns: one tab per stack, and
-// "AI agent" is a complete prompt to paste into a coding agent in the client's repo.
+// Must match internal/work/feedback_install.go FeedbackStacks (frontend only now —
+// the server-side feedback packages were retired) and monitor_install.go MonitorStacks.
+const FEEDBACK_STACKS = ["agent", "html", "react", "next", "vue"]
+const MONITOR_STACKS = ["agent", "go", "node", "python", "php"]
+
+// One tab per stack; "AI agent" is a complete prompt to paste into a coding agent in
+// the target repo. Serves both /feedback-install and /monitor-install — same shape.
 function InstallGuides({
-  projectId,
-  keyId,
+  path,
+  stacks,
   copy,
+  mcpHint,
 }: {
-  projectId: string
-  keyId: string
-  copy: (text: string, label: string) => void
+  path: string
+  stacks: string[]
+  copy: Copy
+  mcpHint?: string
 }) {
   const ws = useWorkspace()
+  const { t } = useTranslations()
   const { data } = useSWR<{ guides: Record<string, string> }>(
-    [`/api/w/projects/${projectId}/feedback-install?key=${encodeURIComponent(keyId)}`, ws.id],
+    [path, ws.id],
     ([p, id]: [string, string]) => api(p, { workspaceId: id }),
     { shouldRetryOnError: false, revalidateOnFocus: false },
   )
   if (!data?.guides) return null
-  const stacks = Object.keys(STACK_LABELS).filter((s) => data.guides[s])
+  const available = stacks.filter((s) => data.guides[s])
+  if (available.length === 0) return null
+  const label = (s: string) => t(`sdk.stack.${s}`)
   return (
     <Field>
       <div className="flex items-center justify-between gap-2">
-        <FieldLabel>Install</FieldLabel>
-        <Button size="sm" variant="outline" onClick={() => copy(data.guides.agent, "Agent prompt")}>
-          <BotIcon /> Copy agent prompt
-        </Button>
+        <FieldLabel>{t("sdk.install.label")}</FieldLabel>
+        {data.guides.agent ? (
+          <Button size="sm" variant="outline" onClick={() => copy(data.guides.agent, t("sdk.install.agentLabel"))}>
+            <BotIcon /> {t("sdk.install.copyAgent")}
+          </Button>
+        ) : null}
       </div>
-      <Tabs defaultValue="agent">
+      <Tabs defaultValue={available[0]}>
         <TabsList className="flex-wrap">
-          {stacks.map((s) => (
+          {available.map((s) => (
             <TabsTrigger key={s} value={s}>
-              {STACK_LABELS[s]}
+              {label(s)}
             </TabsTrigger>
           ))}
         </TabsList>
-        {stacks.map((s) => (
+        {available.map((s) => (
           <TabsContent key={s} value={s} className="relative">
             <pre
               dir="ltr"
@@ -496,16 +783,19 @@ function InstallGuides({
               size="sm"
               variant="ghost"
               className="absolute top-1.5 end-1.5"
-              onClick={() => copy(data.guides[s], STACK_LABELS[s])}
+              aria-label={t("common.copy")}
+              onClick={() => copy(data.guides[s], label(s))}
             >
-              <CopyIcon /> Copy
+              <CopyIcon /> {t("common.copy")}
             </Button>
           </TabsContent>
         ))}
       </Tabs>
-      <p className="text-xs text-grid-muted">
-        Or from any MCP client: <code dir="ltr">get_feedback_install {"{"} project, stack {"}"}</code>
-      </p>
+      {mcpHint ? (
+        <p className="text-xs text-grid-muted">
+          {t("sdk.install.mcpHint")} <code dir="ltr">{mcpHint}</code>
+        </p>
+      ) : null}
     </Field>
   )
 }
