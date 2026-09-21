@@ -10,7 +10,8 @@
     "./brand": "./src/brand/index.ts",
     "./brand/png": "./src/brand/png.ts",
     "./tokens.css": "./src/brand/tokens.css",
-    "./panel.css": "./src/ui/panel.css"
+    "./panel.css": "./src/ui/panel.css",
+    "./grid.css": "./src/ui/grid.css"
   },
   "scripts": {
     "gen:types": "node scripts/gen-types.mjs",

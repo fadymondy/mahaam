@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { DEFAULT_API_URL, normalizeApiUrl } from "@mahaam/client";
 import { Mark } from "@mahaam/client/ui";
+import "@mahaam/client/grid.css";
 import "@mahaam/client/tokens.css";
 import "@mahaam/client/panel.css";
 import "./popup.css";

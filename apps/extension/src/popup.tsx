@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { liveStream, normalizeApiUrl, type MahaamClient, type TimeEntry, type Workspace } from "@mahaam/client";
 import { Panel, type PanelApi, type PanelHost, type Session } from "@mahaam/client/ui";
+import "@mahaam/client/grid.css";
 import "@mahaam/client/tokens.css";
 import "@mahaam/client/panel.css";
 import "./popup.css";

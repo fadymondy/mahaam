@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwind from "@tailwindcss/vite";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -26,7 +27,7 @@ function manifest(): Plugin {
 // Plain multi-entry build: popup + options pages and the module service worker, with fixed names
 // so manifest.json can point at them.
 export default defineConfig({
-  plugins: [react(), manifest()],
+  plugins: [react(), tailwind(), manifest()],
   base: "",
   define: { __MAHAAM_API__: JSON.stringify(API) },
   build: {

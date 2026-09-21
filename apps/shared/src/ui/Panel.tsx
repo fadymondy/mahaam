@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Button } from "./components/button"
 import { clock, duration, elapsedSeconds, entryLabel } from "../format";
 import type { Inbox, NextItem, TimeEntry, Workspace } from "../types";
 import type { LiveStatus, PanelHost, Session } from "./host";
@@ -196,9 +197,9 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
           <input type="url" dir="ltr" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} placeholder={host.defaultApiUrl} />
         </label>
       )}
-      <button className="mgy-btn mgy-btn-primary mgy-btn-block" disabled={busy}>
+      <Button type="submit" className="w-full" disabled={busy}>
         {busy ? t.signingIn : t.signIn}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -231,7 +232,7 @@ function WorkspacePicker({ host, t, session, onPicked, onSignOut }: { host: Pane
       {list?.length === 0 && (
         <div className="mgy-pad">
           <p className="mgy-muted">{t.noWorkspaces}</p>
-          <button className="mgy-btn" onClick={() => host.openUrl(session.apiUrl)}>{t.openWeb}</button>
+          <Button variant="outline" onClick={() => host.openUrl(session.apiUrl)}>{t.openWeb}</Button>
         </div>
       )}
       <ul className="mgy-list">
@@ -449,11 +450,11 @@ function Home({
                     </span>
                   </span>
                   {isRunning ? (
-                    <button className="mgy-btn mgy-btn-sm mgy-btn-stop" onClick={stop}>{t.stop}</button>
+                    <Button variant="destructive" size="sm" onClick={stop}>{t.stop}</Button>
                   ) : (
-                    <button className="mgy-btn mgy-btn-sm" onClick={() => start(item)} title={t.startTimer}>
+                    <Button variant="outline" size="sm" onClick={() => start(item)} title={t.startTimer}>
                       <PlayIcon /> {running ? t.switchTo : t.start}
-                    </button>
+                    </Button>
                   )}
                 </li>
               );
@@ -488,9 +489,9 @@ function TimerCard({ t, running, now, onStop, onStart, onDescribe }: { t: String
       >
         <span className="mgy-clock mgy-mono mgy-muted">0:00</span>
         <input className="mgy-input" placeholder={t.whatAreYouDoing} value={free} onChange={(e) => setFree(e.target.value)} aria-label={t.whatAreYouDoing} />
-        <button className="mgy-btn mgy-btn-primary">
+        <Button type="submit">
           <PlayIcon /> {t.start}
-        </button>
+        </Button>
       </form>
     );
   const label = entryLabel(running) || t.noTask;
@@ -515,9 +516,9 @@ function TimerCard({ t, running, now, onStop, onStart, onDescribe }: { t: String
           onBlur={() => desc !== running.description && onDescribe(running.id, desc)}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
         />
-        <button className="mgy-btn mgy-btn-stop" onClick={onStop}>
+        <Button variant="destructive" onClick={onStop}>
           <StopIcon /> {t.stop}
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -562,7 +563,7 @@ function QuickLog({ t, next, onLog }: { t: Strings; next: NextItem[] | null; onL
             ))}
           </select>
           <input className="mgy-input mgy-log-desc" placeholder={t.description} value={desc} onChange={(e) => setDesc(e.target.value)} />
-          <button className="mgy-btn">{done ? t.logged : t.log}</button>
+          <Button type="submit" variant="outline">{done ? t.logged : t.log}</Button>
         </form>
       )}
     </section>
@@ -660,7 +661,7 @@ function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: 
         )}
         <div className="mgy-foot-actions">
           <button type="button" className="mgy-link" onClick={onDone}>{t.back}</button>
-          {ok ? <span className="mgy-ok">{ok}</span> : <button className="mgy-btn mgy-btn-primary">{mode === "issue" ? t.fileIssue : t.log}</button>}
+          {ok ? <span className="mgy-ok">{ok}</span> : <Button type="submit">{mode === "issue" ? t.fileIssue : t.log}</Button>}
         </div>
       </form>
     </section>
@@ -708,7 +709,7 @@ function Settings({ host, t, prefs, session, onBack, onSwitchWorkspace, onSignOu
       <div className="mgy-settings">
         <div className="mgy-setting">
           <span>{t.workspace}</span>
-          <button className="mgy-btn mgy-btn-sm" onClick={onSwitchWorkspace}>{session.workspace?.name}</button>
+          <Button variant="outline" size="sm" onClick={onSwitchWorkspace}>{session.workspace?.name}</Button>
         </div>
         <div className="mgy-setting">
           <span>{t.language}</span>
@@ -751,8 +752,8 @@ function Settings({ host, t, prefs, session, onBack, onSwitchWorkspace, onSignOu
           <span className="mgy-muted mgy-small" dir="ltr">{session.email} · {session.apiUrl.replace(/^https?:\/\//, "")}</span>
         </div>
         <div className="mgy-foot-actions">
-          <button className="mgy-btn" onClick={onSignOut}>{t.signOut}</button>
-          {host.quit && <button className="mgy-btn" onClick={host.quit}>{t.quit}</button>}
+          <Button variant="outline" onClick={onSignOut}>{t.signOut}</Button>
+          {host.quit && <Button variant="outline" onClick={host.quit}>{t.quit}</Button>}
         </div>
       </div>
     </div>
