@@ -10,7 +10,7 @@ const nextConfig = {
   // started on, so a page opened on 127.0.0.1 while the server was started as localhost never
   // hydrates — the SSR shell renders and nothing client-side runs. List both loopback names.
   // console.mahaam.app (and the old managy-app.fadymondy.com) is the progress preview: Cloudflare → NPM → SSH reverse tunnel → this dev server.
-  allowedDevOrigins: ["127.0.0.1", "localhost", "console.mahaam.app", "managy-app.fadymondy.com"],
+  allowedDevOrigins: ["127.0.0.1", "localhost", "dev.mahaam.app", "console.mahaam.app", "managy-app.fadymondy.com"],
 
   // The Go API and this app feel like one origin: /api and /graphql are proxied to the API, so
   // the togo_session cookie and the CSRF cookie are first-party. Realtime (/events) is not in P0.

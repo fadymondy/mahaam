@@ -52,6 +52,40 @@ make web                       # :3010  (first time: cd web && npm install)
 
 Open http://localhost:3010 → register → create a workspace.
 
+### dev.mahaam.app — the local dev server on a public host
+
+A preview of the *local* Next dev server, so UI changes are visible to other people without a
+deploy. Cloudflare → nginx on LXC 100 → an SSH reverse tunnel bound to the host's LAN address →
+this machine.
+
+```bash
+# 1. reach production Postgres (it is not publicly exposed)
+ssh -f -N -L 55470:10.10.10.102:5432 pve-3x1
+
+# 2. run the API against it — credentials come from .env.prod, never a repo file.
+#    Inline env wins: envfile.Load only sets variables that are unset.
+#    Keep them out of git; .devrun/ is ignored.
+DATABASE_URL=... APP_DATABASE_URL=... go run ./cmd/api
+
+# 3. the dev server, and the tunnel nginx proxies to
+cd web && npm run dev
+ssh -f -N -R 10.10.10.1:3099:localhost:3010 pve-3x1
+```
+
+**This points local code at the live database.** Anything done through that UI is real: real
+workspaces, real time entries, real invoices. Two things make it survivable —
+
+- `cmd/api` does **not** migrate. Migrations are `cmd/migrate`, so booting against production
+  cannot alter the live schema. Never run `make migrate` with these variables set.
+- Boot refuses to start if the app role can bypass RLS, so tenancy still holds.
+
+For UI-only work prefer `API_ORIGIN=https://console.mahaam.app npm run dev`: the same live data,
+reached through the deployed API, with no local process touching the database.
+
+The tunnel is per-session — when it stops, dev.mahaam.app returns 502. That is the developer's
+machine being offline, not a production fault. `dev.mahaam.app` is in `allowedDevOrigins`
+(`web/next.config.mjs`); without it Next 16 serves the page but never hydrates (note 13).
+
 Admin MCP bootstrap (after registering in the UI):
 
 ```bash

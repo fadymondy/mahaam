@@ -19,3 +19,4 @@ deploy/lxc/.env.prod
 # Production env (secrets) — never committed
 .env.prod
 *.tgz
+.devrun/
