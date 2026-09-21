@@ -30,3 +30,27 @@ Steps:
 4. **Locale.** If the app is multilingual (en/ar), pass the current locale (`data-locale` / `locale` option).
 5. **Verify.** Load a page and confirm a "Report a problem" button appears. The browser console must show no 403, because a 403 means the page origin isn't on the key's allowlist. Then run one server-side report (for example `report("SDK install check", type="task")`) and confirm it returns a key like `MG-12`. A 403 there means `MAHAAM_APP_URL` isn't an allowed origin. Delete the test issue afterwards.
 6. Don't commit real keys into tracked `.env` files. Only the example file gets placeholders.
+
+---
+
+# Install Mahaam Error Monitoring (Go — a separate product from the Feedback widget above)
+
+This is Sentry-shaped, not the feedback widget: a DSN (from a project's Settings → Monitoring),
+reporting unhandled errors to Mahaam's issue board directly, with no browser widget involved.
+Only the Go SDK has this today (`sdk/go/monitor`); Node/Laravel/Python are coming.
+
+1. `go get github.com/fadymondy/mahaam/sdk/go`
+2. Add `MAHAAM_DSN=<DSN>` to `.env` / `.env.example` and the deploy config.
+3. Wrap the root HTTP handler:
+   ```go
+   import "github.com/fadymondy/mahaam/sdk/go/monitor"
+
+   mon := monitor.New(monitor.Config{Environment: "production"}) // reads MAHAAM_DSN
+   http.ListenAndServe(":8080", mon.Recover(handler))
+   ```
+   For a non-HTTP process (worker, cron job), use `defer mon.LogUnhandled()` at the top of `main`
+   instead of `Recover`.
+4. **Verify.** Trigger a deliberate panic (a debug-only route works well) and confirm it appears
+   as a new issue on the project's board with source "monitor" in Mahaam. Trigger the same panic
+   again and confirm it bumps the SAME issue's occurrence count rather than creating a second one.
+5. Don't commit a real DSN into a tracked `.env` file. Only the example file gets a placeholder.
