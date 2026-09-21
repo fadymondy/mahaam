@@ -27,6 +27,10 @@ transaction, as planned).
 */
 
 import (
+	"os"
+	"strconv"
+	"time"
+
 	"context"
 	"database/sql"
 	"database/sql/driver"
@@ -38,14 +42,57 @@ import (
 
 const setScopeSQL = "SELECT set_config('app.workspace_id', $1, false)"
 
-// OpenRLS opens the app pool: pgx connections that scope every statement to
-// the workspace on its context.
+/*
+OpenRLS opens the app pool: pgx connections that scope every statement to the
+workspace on its context.
+
+The pool is BOUNDED, and the bound is the point (MH-250). Without one, fifty
+parallel requests open fifty connections, and Postgres — which is shared with
+every other product on this server — answers "sorry, too many clients already".
+Every one of those requests then fails with a 500 and the work it was doing is
+simply lost, which is how fifty timer starts became forty-four time entries.
+
+A bounded pool makes the fifty-first request WAIT for a connection instead of
+demanding a new one. Waiting is slower; running out is an outage, and not only
+for this app.
+
+DB_MAX_CONNS overrides the default for a deployment with its own Postgres.
+*/
 func OpenRLS(url string) (*sql.DB, error) {
 	cfg, err := pgx.ParseConfig(url)
 	if err != nil {
 		return nil, err
 	}
-	return sql.OpenDB(connector{base: stdlib.GetConnector(*cfg)}), nil
+	db := sql.OpenDB(connector{base: stdlib.GetConnector(*cfg)})
+	Tune(db)
+	return db, nil
+}
+
+// DefaultMaxConns is deliberately modest: this app shares one Postgres with
+// several others, and its own share has to leave room for them.
+const DefaultMaxConns = 20
+
+// Tune bounds a pool. Exported so the owner pool gets the same treatment — it
+// is smaller, but "unbounded" is the wrong answer for both.
+func Tune(db *sql.DB) {
+	max := DefaultMaxConns
+	if v := os.Getenv("DB_MAX_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			max = n
+		}
+	}
+	db.SetMaxOpenConns(max)
+	// Idle connections are kept, but not all of them: a burst should not leave
+	// twenty sockets open against a shared server for the rest of the day.
+	idle := max / 4
+	if idle < 2 {
+		idle = 2
+	}
+	db.SetMaxIdleConns(idle)
+	// A connection that has lived an hour is recycled, so a failover or a
+	// restarted Postgres is not waited out by a pool full of dead handles.
+	db.SetConnMaxLifetime(time.Hour)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 }
 
 type connector struct{ base driver.Connector }
