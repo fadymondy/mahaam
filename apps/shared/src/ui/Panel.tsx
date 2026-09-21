@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import { DEFAULT_POMODORO, pomodoroState } from "../pomodoro";
 import { Button } from "./components/button"
 import { Input } from "./components/input"
+import { Palette } from "./components/palette"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select"
 import { Textarea } from "./components/textarea"
 import { clock, duration, elapsedSeconds, entryLabel } from "../format";
@@ -305,6 +306,7 @@ function Home({
   const api = host.api;
   const [running, setRunning] = useState<TimeEntry | null | undefined>(undefined);
   const [next, setNext] = useState<NextItem[] | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [today, setToday] = useState<TimeEntry[] | null>(null);
   const [inbox, setInbox] = useState<Inbox | null>(null);
   const [live, setLive] = useState<LiveStatus>("reconnecting");
@@ -341,6 +343,18 @@ function Home({
     api.notifications(20).then(setInbox, () => setInbox(null));
   }, [api, fail, loadToday, setTimer]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "k" || !(e.metaKey || e.ctrlKey)) return;
+      const el = document.activeElement;
+      const typing = el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if (typing) return;
+      e.preventDefault();
+      setPaletteOpen((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   useEffect(() => {
     loadAll();
     host.pageContext?.().then(setPage, () => null);
@@ -448,6 +462,17 @@ function Home({
         </p>
       )}
 
+      {paletteOpen && (
+        <Palette
+          items={next ?? []}
+          strings={{ placeholder: t.palettePlaceholder, empty: t.paletteEmpty, hint: t.paletteHint }}
+          onClose={() => setPaletteOpen(false)}
+          onPick={(item) => {
+            setPaletteOpen(false);
+            start(item);
+          }}
+        />
+      )}
       <TimerCard t={t} pomodoro={prefs.pomodoro} running={running} now={now} onStop={stop} onStart={startFree} onDescribe={(id, d) => act(async () => setTimer(await api.updateEntry(id, { description: d })))} />
 
       {page && <PageCard t={t} host={host} page={page} next={next} onDone={() => { setPage(null); loadToday(); }} onError={fail} />}

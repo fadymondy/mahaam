@@ -558,3 +558,52 @@ kbd {
   text-transform: none;
   letter-spacing: 0;
 }
+
+/* ── command palette ───────────────────────────────────────────────────── */
+.mgy-palette-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  padding-top: 48px;
+  background: color-mix(in srgb, var(--grid-bg) 70%, transparent);
+}
+.mgy-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(340px, calc(100% - 32px));
+  max-height: 70%;
+  padding: 10px;
+  border: 1px solid var(--grid-line);
+  border-radius: var(--grid-radius-control);
+  background: var(--grid-card);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.22);
+}
+.mgy-palette-list {
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mgy-palette-row {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--grid-radius-control);
+  background: none;
+  color: var(--grid-fg);
+  cursor: pointer;
+  text-align: start;
+}
+.mgy-palette-row-active {
+  background: var(--grid-elevated-hover);
+}
+.mgy-palette-empty,
+.mgy-palette-hint {
+  margin: 0;
+  padding: 2px 4px;
+  font-size: 12px;
+}
