@@ -164,7 +164,17 @@ activity work, and board + side-over are screenshotted in en/ar × light/dark (`
   workspace, the channel taken from the session, never named by the client. Events: `timer.state`
   (sent first), `timer.started`, `timer.stopped`, `entry.changed`, `notification.*`. togo realtime is not
   used: its SSE broker broadcasts to every client, and realtime-ws lets any ticket holder subscribe to any
-  `private-` channel by name. Fan-out is in-process (one API instance; several need LISTEN/NOTIFY).
+  `private-` channel by name.
+  Fan-out is in-process, and `internal/live/bus.go` carries events between API instances over a
+  Postgres `LISTEN/NOTIFY` channel (`mahaam_live`), so a person connected to one instance still hears
+  what another published. Each instance tags its announcements with a random id and ignores its own,
+  or it would deliver every local event twice. There is no replay and no delivery guarantee, which
+  matches the hub — it already drops events for a stream 32 behind and relies on the `hello` frame to
+  make a client right on reconnect; a bus promising more than the thing it feeds would be a false
+  comfort. An event over Postgres's 8000-byte `NOTIFY` limit is replaced by a `resync` marker rather
+  than dropped. Without `DATABASE_URL` there is no bus and the hub is single-instance, which is the
+  development case and is correct. Covered by `internal/live/bus_test.go`, which runs two hubs
+  against one database — what two instances behind a balancer actually are.
 - **Reminders**: togo `scheduler`, every five minutes, idempotent (`notifications.dedupe_key`): timers running
   longer than `reminder_running_hours`; no time by 18:00 local on the five workdays from `week_start`, for
   members with an entry in the last 30 days. **In-app only** — email delivery waits for P5.

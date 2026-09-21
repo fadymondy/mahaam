@@ -10,8 +10,9 @@
 // from that resolved tenant.Scope: a connection can only ever receive its own person's events in
 // its own workspace. The scaffold's global /events stays unmounted.
 //
-// Fan-out is in-process: correct for one API instance. Several instances behind one balancer need a
-// shared bus (Postgres LISTEN/NOTIFY) first.
+// Fan-out is in-process, and a Bus (bus.go) carries events between instances over Postgres
+// LISTEN/NOTIFY, so a person connected to one instance still hears what another published. Without
+// a Bus the hub is single-instance, which is the development case.
 package live
 
 import (
@@ -30,6 +31,8 @@ type key struct{ workspace, user string }
 type Hub struct {
 	mu   sync.RWMutex
 	subs map[key]map[chan []byte]struct{}
+	// bus, when set, carries events to the other API instances. Nil is the single-instance case.
+	bus *Bus
 }
 
 // New returns an empty hub.
@@ -61,11 +64,24 @@ func (h *Hub) Subscribe(workspace, user string) (<-chan []byte, func()) {
 // Publish sends an event to every open stream of one person in one workspace. It never blocks: a
 // stream 32 events behind drops the event, and the client resyncs from the "hello" state it gets
 // on reconnect.
+//
+// With a Bus attached (Hub.UseBus), the event is also announced to the other API instances, whose
+// own streams for this person would otherwise never hear about it.
 func (h *Hub) Publish(workspace, user, event string, data any) {
 	if h == nil || workspace == "" || user == "" {
 		return
 	}
-	frame := Frame(event, data)
+	h.deliver(workspace, user, Frame(event, data))
+	h.bus.Announce(workspace, user, event, data)
+}
+
+// deliver writes an already-rendered frame to the local streams only. This is the half the Bus
+// calls for an event another instance published: announcing it again would bounce it around the
+// cluster forever.
+func (h *Hub) deliver(workspace, user string, frame []byte) {
+	if h == nil {
+		return
+	}
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for ch := range h.subs[key{workspace, user}] {
@@ -73,6 +89,13 @@ func (h *Hub) Publish(workspace, user, event string, data any) {
 		case ch <- frame:
 		default:
 		}
+	}
+}
+
+// UseBus attaches the cross-instance bus. Called once at boot, before any stream is open.
+func (h *Hub) UseBus(b *Bus) {
+	if h != nil {
+		h.bus = b
 	}
 }
 
@@ -143,4 +166,13 @@ func (h *Hub) Handler(hello func(ctx context.Context) (string, any)) http.Handle
 			}
 		}
 	}
+}
+
+// rawFrame renders an event whose data is already JSON — the bus path, where re-encoding what
+// another instance encoded would only be a chance to change it.
+func rawFrame(event string, data []byte) []byte {
+	if len(data) == 0 {
+		data = []byte("null")
+	}
+	return []byte("event: " + event + "\ndata: " + string(data) + "\n\n")
 }

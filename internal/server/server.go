@@ -6,9 +6,10 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/fadymondy/mahaam/internal/push"
 	"net/http"
+	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -23,8 +24,10 @@ import (
 	"github.com/fadymondy/mahaam/internal/graph/resolvers"
 	"github.com/fadymondy/mahaam/internal/integrations"
 	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/live"
 	"github.com/fadymondy/mahaam/internal/mcp"
 	_ "github.com/fadymondy/mahaam/internal/plugins" // blank-imports installed plugins (togo install)
+	"github.com/fadymondy/mahaam/internal/push"
 	"github.com/fadymondy/mahaam/internal/reports"
 	"github.com/fadymondy/mahaam/internal/rest"
 	"github.com/fadymondy/mahaam/internal/secretbox"
@@ -73,6 +76,7 @@ func Boot() *app.App {
 	// Under /api/w/, so the guard resolves session + membership first and the stream can only carry the
 	// caller's own events (internal/live). The scaffold's global /events stays unmounted.
 	k.Router.Get("/api/w/events", work.New(a).Events())
+	installLiveBus(ctx, a)
 	installReminders(k, a)
 	installBilling(k, a)      // Polar: PUBLIC webhook + the 15-minute usage push
 	installIntegrations(k, a) // GitHub webhook + install callback (PUBLIC), Jira/Linear re-sync, GitHub mirror
@@ -109,7 +113,7 @@ func registerREST(api huma.API, a *app.App) {
 	rest.RegisterRoutes(api, a) // generated CRUD — behind the guard's workspace tier
 	workspaces.Register(api, a)
 	mcp.RegisterTokenRoutes(api, a)
-	mcp.RegisterOAuthConsent(api, a) // /api/oauth/consent — the OAuth authorize flow's consent screen
+	mcp.RegisterOAuthConsent(api, a)     // /api/oauth/consent — the OAuth authorize flow's consent screen
 	work.Register(api, a)                // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
 	reports.RegisterIssues(api, a)       // per-workspace issues — /api/w/issues/*
 	reports.RegisterPortalIssues(api, a) // P7: the client's own filed issues — GET /api/w/portal/issues
@@ -146,4 +150,26 @@ func registerPush(api huma.API, a *app.App) {
 		return
 	}
 	push.Register(api, push.New(a.SysDB, a.Log))
+}
+
+// installLiveBus connects this instance's realtime hub to the others over Postgres LISTEN/NOTIFY.
+//
+// Without it, fan-out is in-process: two API instances behind one balancer each serve half the
+// streams, and a person connected to one never hears what the other published. It fails quietly —
+// the event was delivered, just not to them — which is the worst way for realtime to be wrong.
+//
+// The listener needs a connection of its own (a listening connection cannot be shared with a
+// pool), so it takes DATABASE_URL directly rather than the owner pool. Missing DATABASE_URL leaves
+// the hub in single-instance mode instead of refusing to boot: one instance is the development
+// case and is correct without a bus.
+func installLiveBus(ctx context.Context, a *app.App) {
+	url := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+	bus := live.NewBus(a.Live, a.SysDB, url, a.Log)
+	if bus == nil {
+		a.Log.Warn("realtime: no cross-instance bus — correct for a single API instance only",
+			"reason", "DATABASE_URL is not set")
+		return
+	}
+	a.Live.UseBus(bus)
+	go bus.Listen(ctx)
 }
