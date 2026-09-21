@@ -191,9 +191,9 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
           <span>{t.remember}</span>
         </label>
       )}
-      <button type="button" className="mgy-link" onClick={() => setAdvanced((v) => !v)} aria-expanded={advanced}>
+      <Button type="button" variant="link" className="h-auto p-0 justify-start" onClick={() => setAdvanced((v) => !v)} aria-expanded={advanced}>
         {t.advanced}
-      </button>
+      </Button>
       {advanced && (
         <label className="mgy-field">
           <span>{t.apiUrl}</span>
@@ -258,7 +258,7 @@ function WorkspacePicker({ host, t, session, onPicked, onSignOut }: { host: Pane
       </ul>
       <div className="mgy-pad mgy-foot-actions">
         <span className="mgy-muted mgy-small">{session.email}</span>
-        <button className="mgy-link" onClick={onSignOut}>{t.signOut}</button>
+        <Button variant="link" className="h-auto p-0 justify-start" onClick={onSignOut}>{t.signOut}</Button>
       </div>
     </div>
   );
@@ -419,16 +419,16 @@ function Home({
         </button>
         <span className="mgy-spacer" />
         <span className={`mgy-live mgy-live-${live}`} title={live === "open" ? t.live : live === "reconnecting" ? t.reconnecting : t.offline} />
-        <button className="mgy-icon-btn" onClick={() => setView("inbox")} aria-label={t.notifications} title={t.notifications}>
+        <Button variant="ghost" size="icon" className="mgy-icon-btn size-[26px]" onClick={() => setView("inbox")} aria-label={t.notifications} title={t.notifications}>
           <BellIcon />
           {!!inbox?.unread && <span className="mgy-count mgy-mono">{inbox.unread > 99 ? "99+" : inbox.unread}</span>}
-        </button>
-        <button className="mgy-icon-btn" onClick={loadAll} aria-label={t.refresh} title={t.refresh}>
+        </Button>
+        <Button variant="ghost" size="icon" className="mgy-icon-btn size-[26px]" onClick={loadAll} aria-label={t.refresh} title={t.refresh}>
           <RefreshIcon />
-        </button>
-        <button className="mgy-icon-btn" onClick={() => setView("settings")} aria-label={t.settings} title={t.settings}>
+        </Button>
+        <Button variant="ghost" size="icon" className="mgy-icon-btn size-[26px]" onClick={() => setView("settings")} aria-label={t.settings} title={t.settings}>
           <GearIcon />
-        </button>
+        </Button>
       </header>
 
       {error && (
@@ -685,7 +685,7 @@ function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: 
           </div>
         )}
         <div className="mgy-foot-actions">
-          <button type="button" className="mgy-link" onClick={onDone}>{t.back}</button>
+          <Button type="button" variant="link" className="h-auto p-0 justify-start" onClick={onDone}>{t.back}</Button>
           {ok ? <span className="mgy-ok">{ok}</span> : <Button type="submit">{mode === "issue" ? t.fileIssue : t.log}</Button>}
         </div>
       </form>
@@ -697,9 +697,9 @@ function InboxView({ t, inbox, onBack, onOpen, onReadAll }: { t: Strings; inbox:
   return (
     <div className="mgy-home">
       <header className="mgy-bar">
-        <button className="mgy-link" onClick={onBack}>← {t.back}</button>
+        <Button variant="link" className="h-auto p-0 justify-start" onClick={onBack}>← {t.back}</Button>
         <strong className="mgy-spacer mgy-center-text">{t.notifications}</strong>
-        <button className="mgy-link" onClick={onReadAll} disabled={!inbox?.unread}>{t.markAllRead}</button>
+        <Button variant="link" className="h-auto p-0 justify-start" onClick={onReadAll} disabled={!inbox?.unread}>{t.markAllRead}</Button>
       </header>
       {!inbox?.notifications?.length ? (
         <p className="mgy-muted mgy-pad">{t.noNotifications}</p>
@@ -728,7 +728,7 @@ function Settings({ host, t, prefs, session, onBack, onSwitchWorkspace, onSignOu
   return (
     <div className="mgy-home">
       <header className="mgy-bar">
-        <button className="mgy-link" onClick={onBack}>← {t.back}</button>
+        <Button variant="link" className="h-auto p-0 justify-start" onClick={onBack}>← {t.back}</Button>
         <strong className="mgy-spacer mgy-center-text">{t.settings}</strong>
       </header>
       <div className="mgy-settings">
