@@ -20,6 +20,18 @@ export type Notification = Clean<S["Notification"]>;
 export type Inbox = Clean<S["Inbox"]>;
 export type Workspace = Clean<S["WorkspaceOut"]>;
 
+/**
+ * A personal access token, as GET /api/auth/tokens lists them (auth plugin; not in the Huma
+ * spec). One row per device. The token string itself is returned only when it is minted.
+ */
+export interface AccessToken {
+  id: string;
+  name: string;
+  abilities: string[];
+  created_at: string;
+  expires_at: string;
+}
+
 /** GET /api/auth/me (auth plugin; not part of the Huma spec). */
 export interface Identity {
   id: string;

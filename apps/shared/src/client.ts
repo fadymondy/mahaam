@@ -1,5 +1,6 @@
 import { readSse, SseParser } from "./sse";
 import type {
+  AccessToken,
   CreateIssueInput,
   Credentials,
   EntryPatch,
@@ -183,17 +184,59 @@ export class MahaamClient {
   /**
    * POST /api/auth/tokens → a personal access token (`togo_pat_…`), returned by the server once.
    *
-   * Hold this instead of the user's password. It is revocable per device, it is scoped, and it
-   * never exposes the real credential. Because it is not a JWT, tokenExpiry() returns null for
-   * it and the silent re-login path simply stops firing — which is the point.
+   * Hold this instead of the user's password. It is revocable per device and it never exposes the
+   * real credential. Because it is not a JWT, tokenExpiry() returns null for it and the silent
+   * re-login path simply stops firing — which is the point.
+   *
+   * It is **not** scoped: it carries the user's own access in full. The server refuses a request
+   * that asks for `abilities` rather than issue a narrow-looking token that is not narrow, so
+   * there is no parameter for them here. MCP tokens (`mgy_`) are the scoped token system.
    *
    * Caveat worth knowing: "sign out everywhere" permanently rejects existing PATs, because the
    * server's revocation check looks for a JWT `iat` that a PAT does not carry. Callers should
    * treat a 401 as "sign in again and mint a new one", not as a fatal error.
    */
-  async createAccessToken(name: string, abilities: string[] = []): Promise<string> {
-    const out = await this.request<{ token: string }>("POST", "/api/auth/tokens", { body: { name, abilities } });
+  async createAccessToken(name: string): Promise<string> {
+    const out = await this.request<{ token: string }>("POST", "/api/auth/tokens", { body: { name } });
     return out.token;
+  }
+
+  /** The user's own tokens — one row per device. The token itself is never returned again. */
+  accessTokens(): Promise<AccessToken[]> {
+    return this.request<AccessToken[]>("GET", "/api/auth/tokens");
+  }
+
+  /** Revokes one by id. Revoking someone else's is silently a no-op, not an error. */
+  async revokeAccessToken(id: string): Promise<void> {
+    await this.request("DELETE", `/api/auth/tokens/${encodeURIComponent(id)}`);
+  }
+
+  /**
+   * Mints a token for this device, replacing any earlier one of the same name.
+   *
+   * Without the replace, every sign-in leaves another row behind — after a month the user's device
+   * list is thirty identical entries and revoking "the browser" means revoking all of them.
+   *
+   * The old ids are collected *before* minting, because the new token has the same name and would
+   * otherwise be revoked along with them. If minting fails there is nothing to clean up; if the
+   * cleanup fails the caller still has a working token.
+   */
+  async replaceAccessToken(name: string): Promise<string> {
+    let stale: string[] = [];
+    try {
+      stale = (await this.accessTokens()).filter((t) => t.name === name).map((t) => t.id);
+    } catch {
+      // An older server may not list them. Minting still works.
+    }
+    const token = await this.createAccessToken(name);
+    for (const id of stale) {
+      try {
+        await this.revokeAccessToken(id);
+      } catch {
+        // A stale row is untidy, not dangerous. Never fail a sign-in over it.
+      }
+    }
+    return token;
   }
 
   /** One shared re-login at a time, from the stored credentials. */

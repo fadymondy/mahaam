@@ -35,7 +35,7 @@ describe("auth", () => {
     expect(got).toBe(pat);
     const last = calls.at(-1)!;
     expect(last.url).toBe(BASE + "/api/auth/tokens");
-    expect(JSON.parse(String(last.init.body))).toEqual({ name: "Desktop", abilities: [] });
+    expect(JSON.parse(String(last.init.body))).toEqual({ name: "Desktop" });
 
     // The important property: no expiry, so ensureFresh() has nothing to act on.
     expect(tokenExpiry(pat)).toBeNull();

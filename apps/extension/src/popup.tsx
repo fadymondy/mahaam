@@ -6,7 +6,7 @@ import "@mahaam/client/grid.css";
 import "@mahaam/client/tokens.css";
 import "@mahaam/client/panel.css";
 import "./popup.css";
-import { defaultApiUrl, loadState, makeClient, requestOrigin, saveState, takePendingPage, type ExtMessage } from "./ext";
+import { defaultApiUrl, deviceName, loadState, makeClient, requestOrigin, saveState, takePendingPage, type ExtMessage } from "./ext";
 
 async function boot() {
   // The Vite dev harness (npm run dev:extension) has no chrome.* — stub it.
@@ -35,7 +35,18 @@ async function boot() {
       if (!import.meta.env.DEV && !(await requestOrigin(url))) throw new Error(`Mahaam needs permission to reach ${new URL(url).host}.`);
       const next = { ...state, apiUrl: url, email, token: null as string | null, workspace: state.email === email && state.apiUrl === url ? state.workspace : null };
       const c = makeClient(next, () => void saveState({ token: null }));
-      next.token = await c.login(email, password);
+      await c.login(email, password);
+      // Swap the 24h JWT for a personal access token named for this browser. The JWT cannot be
+      // revoked and forces a silent re-login — which is why the password used to have to be kept.
+      // A PAT can be revoked from the server and shows up in the user's own device list.
+      // An older self-hosted server has no /api/auth/tokens; keeping the JWT there is the same
+      // behaviour as before rather than a broken sign-in.
+      try {
+        c.setToken(await c.replaceAccessToken(deviceName()));
+      } catch {
+        /* keep the JWT */
+      }
+      next.token = c.token;
       if (next.workspace && !(await c.workspaces()).some((w) => w.id === next.workspace!.id)) next.workspace = null;
       c.setWorkspace(next.workspace?.id ?? null);
       state = next;
@@ -45,6 +56,17 @@ async function boot() {
       return session()!;
     },
     async signOut() {
+      // Revoke it rather than just forget it. A token this browser drops but the server still
+      // honours is exactly the thing signing out is supposed to end.
+      if (state.token?.startsWith("togo_pat_")) {
+        try {
+          const name = deviceName();
+          for (const t of await client.accessTokens()) if (t.name === name) await client.revokeAccessToken(t.id);
+        } catch {
+          // Offline, or the server does not list them. Sign out locally regardless — refusing to
+          // would leave someone signed in on a machine they are trying to leave.
+        }
+      }
       state = { ...state, token: null, workspace: null };
       await saveState({ token: null, workspace: null });
       client = makeClient(state);

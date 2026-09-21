@@ -60,9 +60,6 @@ func classify(r *http.Request) tier {
 		// auth-dev hands an admin session to an empty body (fadymondy.com FM-42).
 		// The plugin is not installed; this stays as a tripwire.
 		"/api/auth/dev/",
-		// The auth plugin's personal access tokens: a second token system whose
-		// "abilities" nothing here would check. MCP tokens are the one token system.
-		"/api/auth/tokens",
 		// OTP sign-in: no delivery channel is wired in P0.
 		"/api/auth/otp",
 		// Magic links — the auth-mfa vulnerability class (fadymondy.com FM-81).
@@ -145,6 +142,17 @@ func classify(r *http.Request) tier {
 	if strings.HasPrefix(path, "/api/monitor/") && strings.HasSuffix(path, "/envelope") {
 		return tierPublic
 	}
+	// Personal access tokens (togo-framework/auth): how a desktop, mobile or extension client
+	// holds something revocable instead of the user's password. Signed-in rather than public, so
+	// accountGate runs and a suspended account cannot mint itself a token that outlives the
+	// suspension. A PAT carries the user's own access and nothing more — the workspace Role still
+	// comes from our own membership table, not from the plugin's Identity.
+	//
+	// Their "abilities" are not enforced anywhere in Mahaam, so refuseScopedToken below refuses to
+	// issue one that claims to be scoped. MCP tokens (mgy_) remain the scoped token system.
+	if path == "/api/auth/tokens" || strings.HasPrefix(path, "/api/auth/tokens/") {
+		return tierSignedIn
+	}
 	if strings.HasPrefix(path, "/api/auth/") {
 		return tierPublic // the auth plugin guards its own routes
 	}
@@ -197,6 +205,9 @@ func installGuard(k *togo.Kernel, a *app.App) {
 				}
 				next.ServeHTTP(w, r)
 			case tierSignedIn:
+				if r.URL.Path == "/api/auth/tokens" && r.Method == http.MethodPost && refuseScopedToken(w, r) {
+					return
+				}
 				signedIn.ServeHTTP(w, r)
 			case tierAdmin:
 				admin.ServeHTTP(w, r)
@@ -260,6 +271,34 @@ func refuseSuspendedLogin(w http.ResponseWriter, r *http.Request, a *app.App) bo
 		return true
 	}
 	return false
+}
+
+// refuseScopedToken rejects a personal access token that asks for "abilities".
+//
+// The auth plugin stores abilities and Mahaam checks them nowhere: a PAT minted with
+// ["issues:read"] can do everything its owner can. Issuing it anyway would be the worst outcome —
+// someone hands a narrow-looking token to a script believing it is limited, and it is not. So the
+// request is refused rather than quietly over-granted.
+//
+// mgy_ MCP tokens are the scoped token system, and they are narrowed to the caller's current role
+// on every call. A PAT is for a client that needs the user's own access without holding the user's
+// password.
+func refuseScopedToken(w http.ResponseWriter, r *http.Request) bool {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))
+	if err != nil {
+		return false
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	var c struct {
+		Abilities []string `json:"abilities"`
+	}
+	if json.Unmarshal(body, &c) != nil || len(c.Abilities) == 0 {
+		return false
+	}
+	writeCoded(w, http.StatusUnprocessableEntity,
+		"a personal access token carries your own access and cannot be narrowed — use an MCP token for a scoped one",
+		"abilities_unsupported")
+	return true
 }
 
 // meter counts every workspace-tier call against the plan's API quotas (internal/limits): the

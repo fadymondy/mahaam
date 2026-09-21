@@ -138,9 +138,16 @@ func TestIssueLoop(t *testing.T) {
 	if text, isErr := call("set_feedback_widget", map[string]any{"key": fk["id"], "color": "#112233", "shape": "circle"}); isErr || !strings.Contains(text, "#112233") {
 		t.Errorf("set_feedback_widget: %v %q", isErr, text)
 	}
-	text, isErr = call("get_feedback_install", map[string]any{"project": proj, "stack": "laravel"})
-	if isErr || !strings.Contains(text, "composer require mahaam/feedback") || !strings.Contains(text, "MAHAAM_FEEDBACK_KEY=pfk_") {
-		t.Errorf("get_feedback_install laravel: %v %q", isErr, text)
+	// Feedback is a frontend-only product now — the server-side packages were retired with sdk/,
+	// which is why this used to ask for "laravel" and fail. The key travels in the page, not in a
+	// server .env.
+	text, isErr = call("get_feedback_install", map[string]any{"project": proj, "stack": "react"})
+	if isErr || !strings.Contains(text, "npx shadcn@latest add") || !strings.Contains(text, "pfk_") {
+		t.Errorf("get_feedback_install react: %v %q", isErr, text)
+	}
+	// An unknown stack names the ones that exist rather than silently answering the agent guide.
+	if text, isErr = call("get_feedback_install", map[string]any{"project": proj, "stack": "laravel"}); !isErr || !strings.Contains(text, "unknown stack") {
+		t.Errorf("get_feedback_install with a retired stack: %v %q", isErr, text)
 	}
 	if text, isErr = call("get_feedback_install", map[string]any{"project": proj}); isErr || !strings.Contains(text, "Detect the stack") {
 		t.Errorf("get_feedback_install agent: %v %q", isErr, text)
