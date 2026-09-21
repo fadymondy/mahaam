@@ -727,7 +727,7 @@ function WidgetLookEditor({
 // Must match internal/work/feedback_install.go FeedbackStacks (frontend only now —
 // the server-side feedback packages were retired) and monitor_install.go MonitorStacks.
 const FEEDBACK_STACKS = ["agent", "html", "react", "next", "vue"]
-const MONITOR_STACKS = ["agent", "go", "node", "python", "php"]
+const MONITOR_STACKS = ["agent", "go", "node", "python", "php", "react-native", "flutter", "kotlin", "swift"]
 
 // One tab per stack; "AI agent" is a complete prompt to paste into a coding agent in
 // the target repo. Serves both /feedback-install and /monitor-install — same shape.
