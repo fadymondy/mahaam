@@ -18,6 +18,13 @@ export interface KeyValueStore {
   get(key: string): Promise<string | null>;
   set(key: string, value: string): Promise<void>;
   del(key: string): Promise<void>;
+  /**
+   * Whether this store is backed by OS-level secret storage (Keychain / Keystore).
+   * When false — the web build, which only has localStorage — the password is never
+   * persisted, so silent re-login is disabled rather than leaving credentials where
+   * any XSS could read them. Defaults to true for stores that do not say.
+   */
+  readonly secure?: boolean;
 }
 
 export interface ClientOptions {
@@ -160,9 +167,12 @@ export class MahaamClient {
   private async saveSession(out: { token: string; user?: { id: string; email: string } }, creds: { email: string; password: string }) {
     this.token = out.token;
     this.user = out.user ? { id: out.user.id, email: out.user.email } : this.user;
+    const canKeepSecrets = this.o.store.secure !== false;
     await Promise.all([
       this.o.store.set(K.token, out.token),
-      this.o.store.set(K.creds, JSON.stringify(creds)),
+      // Only where the OS can protect it. Without this the plaintext password lands in
+      // localStorage on the web build. reauthenticate() simply returns false instead.
+      canKeepSecrets ? this.o.store.set(K.creds, JSON.stringify(creds)) : this.o.store.del(K.creds),
       this.user ? this.o.store.set(K.user, JSON.stringify(this.user)) : Promise.resolve(),
     ]);
   }

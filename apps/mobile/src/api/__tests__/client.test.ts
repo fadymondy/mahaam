@@ -38,7 +38,27 @@ function mockFetch(handler: (call: Call, n: number) => Response | Promise<Respon
 const header = (c: Call, name: string) => (c.init.headers as Record<string, string>)[name];
 const future = () => Math.floor(Date.now() / 1000) + 3600;
 
-describe("MahaamClient auth dance", () => {
+describe("MahaamClient auth dance", () => {
+  it("never persists the password to a store that cannot keep secrets (the web build)", async () => {
+    // Regression guard: on web the KeyValueStore is localStorage, so writing the password there
+    // left it in cleartext for any XSS to read. An insecure store must get the token but never
+    // the credentials.
+    const token = jwt(future());
+    const { f } = mockFetch(() => json(200, { token, user: { id: "u1", email: "a@b.c" } }));
+    const store = memStore();
+    (store as { secure?: boolean }).secure = false;
+
+    const c = new MahaamClient({ baseUrl: "http://api", store, fetch: f, randomToken: () => "csrf123" });
+    await c.login("a@b.c", "pw");
+
+    expect(store.data["mahaam.token"]).toBe(token);
+    expect(store.data["mahaam.creds"]).toBeUndefined();
+    expect(JSON.stringify(store.data)).not.toContain("pw");
+
+    // ...and with nothing stored, silent re-login declines rather than throwing.
+    await expect(c.reauthenticate()).resolves.toBe(false);
+  });
+
   it("login sends the double-submit CSRF token as cookie + header and stores the session", async () => {
     const token = jwt(future());
     const { f, calls } = mockFetch(() => json(200, { token, user: { id: "u1", email: "a@b.c" } }));
