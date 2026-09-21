@@ -372,6 +372,7 @@ const API_METHODS = new Set([
   "markAllRead",
   "projects",
   "createIssue",
+  "issues",
 ]);
 
 function trusted(e: IpcMainInvokeEvent): boolean {

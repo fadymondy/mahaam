@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import { DEFAULT_POMODORO, pomodoroState } from "../pomodoro";
 import { Button } from "./components/button"
 import { Input } from "./components/input"
+import { IssuesView } from "./components/issues-view"
 import { Palette } from "./components/palette"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select"
 import { Textarea } from "./components/textarea"
 import { clock, duration, elapsedSeconds, entryLabel } from "../format";
-import type { Inbox, NextItem, TimeEntry, Workspace } from "../types";
+import type { Inbox, NextItem, TimeEntry, Workspace, Issue } from "../types";
 import type { LiveStatus, PanelHost, Session } from "./host";
 import { STRINGS, type Locale, type Strings } from "./i18n";
 import { Mark } from "./Mark";
@@ -311,7 +312,8 @@ function Home({
   const [inbox, setInbox] = useState<Inbox | null>(null);
   const [live, setLive] = useState<LiveStatus>("reconnecting");
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<"home" | "settings" | "inbox">("home");
+  const [view, setView] = useState<"home" | "settings" | "inbox" | "issues">("home");
+  const [issues, setIssues] = useState<Issue[] | null>(null);
   const [page, setPage] = useState<{ url: string; title?: string; mode: "issue" | "log" } | null>(null);
   const now = useTick(!!running);
 
@@ -334,6 +336,11 @@ function Home({
 
   // True once the stream has been open, so the first connect does not refetch what mount just did.
   const wasOpen = useRef(false);
+  const openIssues = () => {
+    setView("issues");
+    api.issues({ state: "open" }).then(setIssues, () => setIssues([]));
+  };
+
   const loadToday = useCallback(() => api.entriesToday().then(setToday, fail), [api, fail]);
   const loadAll = useCallback(() => {
     setError(null);
@@ -421,6 +428,15 @@ function Home({
 
   if (view === "settings")
     return <Settings host={host} t={t} prefs={prefs} session={session} onBack={() => setView("home")} onSwitchWorkspace={onSwitchWorkspace} onSignOut={onSignOut} />;
+  if (view === "issues")
+    return (
+      <IssuesView
+        issues={issues}
+        strings={{ title: t.issues, back: t.back, search: t.issuesSearch, empty: t.issuesEmpty, status: t.issueStatus }}
+        onBack={() => setView("home")}
+        onOpen={(i) => host.openUrl(`${session.apiUrl}/${prefs.locale}/w/${session.workspace?.slug ?? ""}/issues/${i.key}`)}
+      />
+    );
   if (view === "inbox")
     return (
       <InboxView
@@ -444,6 +460,9 @@ function Home({
         </button>
         <span className="mgy-spacer" />
         <span className={`mgy-live mgy-live-${live}`} title={live === "open" ? t.live : live === "reconnecting" ? t.reconnecting : t.offline} />
+        <Button variant="ghost" size="icon" className="mgy-icon-btn size-[26px]" onClick={openIssues} aria-label={t.issues} title={t.issues}>
+          <ListIcon />
+        </Button>
         <Button variant="ghost" size="icon" className="mgy-icon-btn size-[26px]" onClick={() => setView("inbox")} aria-label={t.notifications} title={t.notifications}>
           <BellIcon />
           {!!inbox?.unread && <span className="mgy-count mgy-mono">{inbox.unread > 99 ? "99+" : inbox.unread}</span>}
@@ -849,6 +868,7 @@ const I = ({ d }: { d: string }) => (
 );
 const PlayIcon = () => <I d="M7 4v16l13-8z" />;
 const StopIcon = () => <I d="M6 6h12v12H6z" />;
+const ListIcon = () => <I d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />;
 const BellIcon = () => <I d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />;
 const GearIcon = () => <I d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />;
 const RefreshIcon = () => <I d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5" />;

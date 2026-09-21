@@ -1,4 +1,4 @@
-import type { IssueDetail, Inbox, LiveEvent, LogInput, NextItem, Project, StartInput, TimeEntry, TimerChange, Workspace, CreateIssueInput, EntryPatch } from "../types";
+import type { Issue, IssueDetail, Inbox, LiveEvent, LogInput, NextItem, Project, StartInput, TimeEntry, TimerChange, Workspace, CreateIssueInput, EntryPatch } from "../types";
 
 /** The API surface the panel uses. The extension passes a MahaamClient; the tray proxies to its main process. */
 export interface PanelApi {
@@ -14,6 +14,8 @@ export interface PanelApi {
   notifications(limit?: number): Promise<Inbox>;
   markAllRead(): Promise<{ read: number }>;
   projects(): Promise<Project[]>;
+  /** Open issues for the issues view. */
+  issues(q?: { state?: "open" | "closed" }): Promise<Issue[]>;
   createIssue(input: CreateIssueInput): Promise<IssueDetail>;
 }
 
