@@ -219,7 +219,7 @@ export function IssueDetailView({
         <div className="min-w-0 lg:border-e border-line">
           {report.body ? (
             <div className="border-b border-line px-4 py-8">
-              <Markdown className="max-w-[70ch]">{report.body}</Markdown>
+              <Markdown>{report.body}</Markdown>
             </div>
           ) : null}
 
