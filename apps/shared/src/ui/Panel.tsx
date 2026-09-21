@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "./components/button"
+import { Input } from "./components/input"
+import { Textarea } from "./components/textarea"
 import { clock, duration, elapsedSeconds, entryLabel } from "../format";
 import type { Inbox, NextItem, TimeEntry, Workspace } from "../types";
 import type { LiveStatus, PanelHost, Session } from "./host";
@@ -488,7 +490,7 @@ function TimerCard({ t, running, now, onStop, onStart, onDescribe }: { t: String
         }}
       >
         <span className="mgy-clock mgy-mono mgy-muted">0:00</span>
-        <input className="mgy-input" placeholder={t.whatAreYouDoing} value={free} onChange={(e) => setFree(e.target.value)} aria-label={t.whatAreYouDoing} />
+        <Input placeholder={t.whatAreYouDoing} value={free} onChange={(e) => setFree(e.target.value)} aria-label={t.whatAreYouDoing} />
         <Button type="submit">
           <PlayIcon /> {t.start}
         </Button>
@@ -507,8 +509,7 @@ function TimerCard({ t, running, now, onStop, onStart, onDescribe }: { t: String
         <span className="mgy-clock mgy-mono">{clock(elapsedSeconds(running, now))}</span>
       </div>
       <div className="mgy-timer-bottom">
-        <input
-          className="mgy-input"
+        <Input
           value={desc}
           placeholder={t.description}
           aria-label={t.description}
@@ -553,7 +554,7 @@ function QuickLog({ t, next, onLog }: { t: Strings; next: NextItem[] | null; onL
       </button>
       {open && (
         <form className="mgy-log" onSubmit={submit}>
-          <input className="mgy-input mgy-mono mgy-minutes" type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
+          <Input className="mgy-mono mgy-minutes" type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
           <select className="mgy-input" value={target} onChange={(e) => setTarget(e.target.value)} aria-label={t.onTask}>
             <option value="">{t.noTask}</option>
             {next?.map((n) => (
@@ -562,7 +563,7 @@ function QuickLog({ t, next, onLog }: { t: Strings; next: NextItem[] | null; onL
               </option>
             ))}
           </select>
-          <input className="mgy-input mgy-log-desc" placeholder={t.description} value={desc} onChange={(e) => setDesc(e.target.value)} />
+          <Input className="mgy-log-desc" placeholder={t.description} value={desc} onChange={(e) => setDesc(e.target.value)} />
           <Button type="submit" variant="outline">{done ? t.logged : t.log}</Button>
         </form>
       )}
@@ -645,12 +646,12 @@ function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: 
       </div>
       <form className="mgy-page-form" onSubmit={submit}>
         <p className="mgy-meta mgy-mono mgy-url" dir="ltr" title={page.url}>{page.url}</p>
-        <input className="mgy-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.issueTitle} aria-label={t.issueTitle} required={mode === "issue"} />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.issueTitle} aria-label={t.issueTitle} required={mode === "issue"} />
         {mode === "issue" ? (
-          <textarea ref={bodyRef} className="mgy-input" rows={3} value={body} onChange={(e) => setBody(e.target.value)} aria-label={t.issueBody} />
+          <Textarea ref={bodyRef} rows={3} value={body} onChange={(e) => setBody(e.target.value)} aria-label={t.issueBody} />
         ) : (
           <div className="mgy-log">
-            <input className="mgy-input mgy-mono mgy-minutes" type="number" min={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
+            <Input className="mgy-mono mgy-minutes" type="number" min={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
             <select className="mgy-input" value={target} onChange={(e) => setTarget(e.target.value)} aria-label={t.onTask}>
               <option value="">{t.noTask}</option>
               {next?.map((n) => (
