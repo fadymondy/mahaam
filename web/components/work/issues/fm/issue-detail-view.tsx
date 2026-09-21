@@ -16,6 +16,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { NotFoundState } from "@/components/not-found-state";
 import { ErrorState, LoadingRows } from "@/components/states";
+import { Markdown } from "@/components/markdown";
 import { useWorkspace } from "@/components/workspace/workspace-context";
 import { ContextPanel } from "@/components/work/issues/issue-detail";
 import { ApiError } from "@/lib/api";
@@ -218,9 +219,7 @@ export function IssueDetailView({
         <div className="min-w-0 lg:border-e border-line">
           {report.body ? (
             <div className="border-b border-line px-4 py-8">
-              <p dir="auto" className="max-w-[70ch] whitespace-pre-wrap text-grid-body">
-                {report.body}
-              </p>
+              <Markdown className="max-w-[70ch]">{report.body}</Markdown>
             </div>
           ) : null}
 
@@ -251,9 +250,7 @@ export function IssueDetailView({
                         {new Date(comment.created_at).toLocaleString(dateTag)}
                       </time>
                     </p>
-                    <p dir="auto" className="mt-2 text-sm whitespace-pre-wrap text-grid-body">
-                      {comment.body}
-                    </p>
+                    <Markdown className="mt-2">{comment.body}</Markdown>
                   </li>
                 ))}
               </ul>

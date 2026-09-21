@@ -6,6 +6,7 @@ import { ClockIcon, ExternalLinkIcon, LinkIcon, MoreHorizontalIcon, PencilIcon, 
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Markdown } from "@/components/markdown"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Switch } from "@/components/ui/switch"
@@ -217,9 +218,7 @@ export function IssueSheet({
 
                 <div className="overflow-y-auto p-4 rtl:sm:order-1">
                   {draft.body ? (
-                    <p dir="auto" className="text-sm whitespace-pre-wrap text-grid-body">
-                      {draft.body}
-                    </p>
+                    <Markdown>{draft.body}</Markdown>
                   ) : (
                     <p className="text-sm text-grid-muted">{t("issues.sheet.noDescription")}</p>
                   )}
@@ -245,9 +244,7 @@ export function IssueSheet({
                             <p className="font-mono text-[11px] text-grid-muted">
                               <span dir="ltr">{author(comment)}</span> · {new Date(comment.created_at).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}
                             </p>
-                            <p dir="auto" className="mt-1.5 text-sm whitespace-pre-wrap text-grid-body">
-                              {comment.body}
-                            </p>
+                            <Markdown className="mt-1.5">{comment.body}</Markdown>
                           </li>
                         ))}
                       </ul>

@@ -14,6 +14,7 @@ import (
 
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/authz"
+	"github.com/fadymondy/mahaam/internal/billing/ghmarketplace"
 	"github.com/fadymondy/mahaam/internal/limits"
 	"github.com/fadymondy/mahaam/internal/platform"
 	"github.com/fadymondy/mahaam/internal/tenant"
@@ -116,6 +117,11 @@ func classify(r *http.Request) tier {
 		// Polar billing webhooks (internal/billing/polar): Standard Webhooks HMAC signature
 		// (POLAR_WEBHOOK_SECRET), 5-minute timestamp window, deduplicated by webhook-id. Exact match.
 		"/api/billing/polar/webhook",
+		// GitHub Marketplace purchase events (internal/billing/ghmarketplace): same
+		// X-Hub-Signature-256 HMAC scheme as the App's repo webhook, but its own secret
+		// (GITHUB_MARKETPLACE_WEBHOOK_SECRET) — GitHub issues Marketplace and App webhook
+		// secrets independently. Exact match.
+		ghmarketplace.WebhookPath,
 		"/api/integrations/github/user-callback":
 		return tierPublic
 	}

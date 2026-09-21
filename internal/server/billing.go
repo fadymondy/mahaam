@@ -8,6 +8,7 @@ import (
 	"github.com/togo-framework/togo"
 
 	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/billing/ghmarketplace"
 	"github.com/fadymondy/mahaam/internal/billing/polar"
 )
 
@@ -18,6 +19,7 @@ const JobPolarBilling = "mahaam.billing.polar"
 // and schedules the billing job every 15 minutes.
 func installBilling(k *togo.Kernel, a *app.App) {
 	k.Router.Post(polar.WebhookPath, polar.WebhookHandler(a.SysDB, a.Log).ServeHTTP)
+	k.Router.Post(ghmarketplace.WebhookPath, ghmarketplace.Handler(a.SysDB, a.Log).ServeHTTP)
 	scheduler.Register(JobPolarBilling, func(ctx context.Context) error {
 		now := time.Now()
 		if n, err := polar.ExpireCanceled(ctx, a.SysDB, now); err != nil {
