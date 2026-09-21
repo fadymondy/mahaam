@@ -25,9 +25,11 @@ The base URL is WEB_URL (the public host that proxies /embed and /api).
 // FeedbackStacks are the install targets, in the order the UI shows them.
 var FeedbackStacks = []string{"agent", "html", "react", "next", "vue"}
 
-// registryURL is where `npx shadcn add` fetches the component from. mahaam.app/r/*
-// proxies to the mahaam-feedback repo's GitHub Pages build.
-const registryURL = "https://mahaam.app/r"
+// registryPath is where `npx shadcn add` fetches the component from: /r/* on this app,
+// which Next rewrites to the mahaam-feedback repo's GitHub Pages build. It hangs off the
+// same base as every other snippet rather than a hard-coded host — the marketing domain
+// is a different backend entirely and does not serve /r.
+const registryPath = "/r"
 
 // FeedbackInstall is every stack's guide for one key.
 type FeedbackInstall struct {
@@ -111,7 +113,7 @@ import { FeedbackLauncher } from "@/components/mahaam/feedback-launcher"
   locale="en"
 />
 
-%s`, registryURL, key, endpoint, originNote),
+%s`, base+registryPath, key, endpoint, originNote),
 
 		"next": fmt.Sprintf(`npx shadcn@latest add %s/feedback.json
 npm i @mahaam/feedback-core
@@ -128,7 +130,7 @@ import { FeedbackLauncher } from "@/components/mahaam/feedback-launcher"
   submitOptions={{ headers: { "X-Mahaam-Key": process.env.NEXT_PUBLIC_MAHAAM_FEEDBACK_KEY! } }}
 />
 
-%s`, registryURL, key, endpoint, originNote),
+%s`, base+registryPath, key, endpoint, originNote),
 
 		"vue": fmt.Sprintf(`npx shadcn-vue@latest add %s/feedback-vue.json
 npm i @mahaam/feedback-core
@@ -146,7 +148,7 @@ import { FeedbackLauncher } from "@/components/mahaam"
   />
 </template>
 
-%s`, registryURL, endpoint, key, originNote),
+%s`, base+registryPath, endpoint, key, originNote),
 	}
 
 	g["agent"] = fmt.Sprintf(`Add the Mahaam Feedback widget to this project.
