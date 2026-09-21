@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "./components/button"
 import { Input } from "./components/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select"
 import { Textarea } from "./components/textarea"
 import { clock, duration, elapsedSeconds, entryLabel } from "../format";
 import type { Inbox, NextItem, TimeEntry, Workspace } from "../types";
@@ -566,14 +567,19 @@ function QuickLog({ t, next, onLog }: { t: Strings; next: NextItem[] | null; onL
       {open && (
         <form className="mgy-log" onSubmit={submit}>
           <Input className="mgy-mono mgy-minutes" type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
-          <select className="mgy-input" value={target} onChange={(e) => setTarget(e.target.value)} aria-label={t.onTask}>
-            <option value="">{t.noTask}</option>
-            {next?.map((n) => (
-              <option key={n.kind + n.key} value={n.kind + n.key}>
-                {n.key} {n.title}
-              </option>
-            ))}
-          </select>
+          <Select value={target} onValueChange={(v) => setTarget(String(v ?? ""))}>
+            <SelectTrigger className="mgy-task-select" aria-label={t.onTask}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{t.noTask}</SelectItem>
+              {next?.map((n) => (
+                <SelectItem key={n.kind + n.key} value={n.kind + n.key}>
+                  {n.key} {n.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input className="mgy-log-desc" placeholder={t.description} value={desc} onChange={(e) => setDesc(e.target.value)} />
           <Button type="submit" variant="outline">{done ? t.logged : t.log}</Button>
         </form>
@@ -663,12 +669,19 @@ function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: 
         ) : (
           <div className="mgy-log">
             <Input className="mgy-mono mgy-minutes" type="number" min={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
-            <select className="mgy-input" value={target} onChange={(e) => setTarget(e.target.value)} aria-label={t.onTask}>
-              <option value="">{t.noTask}</option>
-              {next?.map((n) => (
-                <option key={n.kind + n.key} value={n.kind + n.key}>{n.key} {n.title}</option>
-              ))}
-            </select>
+            <Select value={target} onValueChange={(v) => setTarget(String(v ?? ""))}>
+              <SelectTrigger className="mgy-task-select" aria-label={t.onTask}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{t.noTask}</SelectItem>
+                {next?.map((n) => (
+                  <SelectItem key={n.kind + n.key} value={n.kind + n.key}>
+                    {n.key} {n.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
         <div className="mgy-foot-actions">
