@@ -32,9 +32,11 @@ import {
   type TimeEntry,
   type Workspace,
 } from "@mahaam/client";
+import { classify, OfflineQueue } from "@mahaam/client";
 import { rasterMark } from "@mahaam/client/brand";
 import { encodePng } from "@mahaam/client/brand/png";
 import { startIdleWatch } from "./idle-watch";
+import { queueStore } from "./queue-store";
 import * as store from "./store";
 
 const DEV_URL = process.env.MAHAAM_DEV_URL; // Vite dev server (npm run dev:tray)
@@ -53,6 +55,9 @@ let client: MahaamClient | null = null;
 let live: LiveHandle | null = null;
 let running: TimeEntry | null = null;
 let stopIdleWatch: (() => void) | null = null;
+/** Finished blocks typed while offline. Only logTime is queued: replaying a "start" makes no
+ *  sense, and a finished block is exactly what the server can refuse safely as a duplicate. */
+const logQueue = new OfflineQueue<unknown[]>(queueStore);
 let ticker: ReturnType<typeof setInterval> | null = null;
 let secrets: store.Secrets = { token: null };
 let stored: Omit<store.Stored, "secret"> | null = null;
@@ -120,7 +125,15 @@ function startLive(): void {
       else if (e.type === "timer.stopped" && running?.id === e.entry.id) setRunning(null);
       send("mgy:live", e);
     },
-    { onStatus: (s) => send("mgy:live-status", s) },
+    {
+      onStatus: (s) => {
+        send("mgy:live-status", s)
+        // The stream coming back is the clearest signal the network returned, so replay anything
+        // typed while it was down. Failures go back on the queue; a 409 means the server already
+        // has it and it is dropped.
+        if (s === "open") void flushLogQueue()
+      },
+    },
   );
   stopIdleWatch?.();
   // Offer to trim time billed while the person was away. Arithmetic lives in @mahaam/client;
@@ -412,7 +425,18 @@ function registerIpc(): void {
     if (!API_METHODS.has(method)) throw new Error(`unknown method ${method}`);
     if (!client) throw new Error("401:sign in required");
     const fn = (client as unknown as Record<string, (...a: unknown[]) => Promise<unknown>>)[method]!;
-    const out = await fn.apply(client, Array.isArray(args) ? args : []);
+    const call = Array.isArray(args) ? args : [];
+    let out: unknown;
+    try {
+      out = await fn.apply(client, call);
+    } catch (e) {
+      // Only a network failure is queueable. A 4xx is the server refusing the content, and
+      // replaying it forever would wedge everything behind it.
+      const status = (e as { status?: number })?.status;
+      if (method !== "logTime" || status !== 0) throw e;
+      await logQueue.enqueue(`log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, call);
+      throw new Error(queuedMessage(stored?.workspace?.locale === "ar" ? "ar" : "en"));
+    }
     if (method === "start" || method === "startOn") setRunning((out as { started: TimeEntry }).started);
     if (method === "stop") setRunning(null);
     return out;
@@ -468,4 +492,30 @@ function idleStrings(locale: "en" | "ar") {
         keep: "Keep it",
         discard: "Discard the away time",
       };
+}
+
+/** Shown when a logged block could not reach the server and was kept for replay. */
+function queuedMessage(locale: "en" | "ar"): string {
+  return locale === "ar"
+    ? "تعذّر الاتصال بالخادم — حُفظ الوقت وسيُرسل عند عودة الاتصال."
+    : "Couldn't reach the server — saved, and it will sync when you're back online.";
+}
+
+/** Replay queued blocks. A 409 means the server already has it (no_overlap), so it is dropped. */
+async function flushLogQueue(): Promise<void> {
+  if (!client) return;
+  const c = client;
+  const out = await logQueue.flush(async (item) => {
+    try {
+      await (c as unknown as Record<string, (...a: unknown[]) => Promise<unknown>>).logTime!.apply(c, item.payload);
+      return { kind: "ok" };
+    } catch (e) {
+      const status = (e as { status?: number })?.status ?? 0;
+      return status === 0 ? { kind: "retry" } : classify(status);
+    }
+  });
+  if (out.sent || out.duplicates || out.rejected) {
+    console.error("[queue] replayed", out);
+    setRunning(running);
+  }
 }
