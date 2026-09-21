@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Markdown } from "../../components/markdown";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 
@@ -48,7 +49,7 @@ export default function PortalIssueScreen() {
           <Badge label={i.issue_type} />
           <Badge label={i.priority} />
         </Row>
-        {i.body ? <T tone="body">{i.body}</T> : null}
+        {i.body ? <Markdown>{i.body}</Markdown> : null}
         {i.resolution ? <T tone="ok">{i.resolution}</T> : null}
         <T size="xs" tone="muted">
           {f.date(i.created_at)}
@@ -59,7 +60,7 @@ export default function PortalIssueScreen() {
       {(i.comments ?? []).length === 0 ? <Empty text={t("tasks.noComments")} /> : null}
       {(i.comments ?? []).map((cm) => (
         <Card key={cm.id} style={{ padding: space.md }}>
-          <T>{cm.body}</T>
+          <Markdown>{cm.body}</Markdown>
           <T size="xs" tone="muted">{`${cm.mine ? t("portal.mine") + " · " : ""}${f.date(cm.created_at)} ${f.time(cm.created_at)}`}</T>
         </Card>
       ))}

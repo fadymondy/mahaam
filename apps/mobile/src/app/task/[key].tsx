@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { Markdown } from "../../components/markdown";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -97,7 +98,7 @@ export default function TaskScreen() {
       {d.description ? (
         <>
           <SectionTitle>{t("tasks.description")}</SectionTitle>
-          <T tone="body">{d.description}</T>
+          <Markdown>{d.description}</Markdown>
         </>
       ) : null}
 
@@ -125,7 +126,7 @@ export default function TaskScreen() {
       {(comments.data ?? []).length === 0 ? <Empty text={t("tasks.noComments")} /> : null}
       {(comments.data ?? []).map((cm) => (
         <Card key={cm.id} style={{ padding: space.md }}>
-          <T>{cm.body}</T>
+          <Markdown>{cm.body}</Markdown>
           <T size="xs" tone="muted">
             {f.date(cm.created_at)} {f.time(cm.created_at)}
           </T>
