@@ -15,6 +15,7 @@ import {
   Tray,
   type IpcMainInvokeEvent,
 } from "electron";
+import { hostname } from "node:os";
 import { join } from "node:path";
 import {
   ApiError,
@@ -346,9 +347,25 @@ function registerIpc(): void {
     const url = normalizeApiUrl(String(apiUrl ?? ""));
     const c = makeClient(url, null, null);
     // Assign state only after the login succeeds, so a typo cannot wipe a working session.
-    const token = await new MahaamClient({ baseUrl: url, csrf: "cookie-header" }).login(String(email), String(password));
+    const boot = new MahaamClient({ baseUrl: url, csrf: "cookie-header" });
+    const jwt = await boot.login(String(email), String(password));
+    // Prefer a personal access token over keeping the password: it is revocable from the server,
+    // scoped to this device, and it does not expire, so nothing has to silently re-login. Older
+    // self-hosted servers may not expose /api/auth/tokens, so fall back to the previous behaviour
+    // rather than quietly breaking "keep me signed in".
+    let token = jwt;
+    let pat = false;
+    if (remember && store.canEncrypt()) {
+      try {
+        token = await boot.createAccessToken(`Mahaam tray — ${hostname()}`);
+        pat = true;
+      } catch {
+        token = jwt;
+      }
+    }
     stored = { apiUrl: url, email: String(email), workspace: stored?.email === email && stored.apiUrl === url ? stored.workspace : null };
-    secrets = { token, ...(remember && store.canEncrypt() ? { password: String(password) } : {}) };
+    // The password is only kept when we could not get a PAT — see above.
+    secrets = { token, ...(!pat && remember && store.canEncrypt() ? { password: String(password) } : {}) };
     c.setToken(token);
     client = c;
     if (stored.workspace) {
