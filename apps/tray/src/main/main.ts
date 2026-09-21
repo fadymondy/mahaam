@@ -123,6 +123,9 @@ function startLive(): void {
       if (e.type === "timer.state") setRunning(e.running);
       else if (e.type === "timer.started") setRunning(e.entry);
       else if (e.type === "timer.stopped" && running?.id === e.entry.id) setRunning(null);
+      // These already reached the renderer; now they reach the desktop too, so a mention lands
+      // even when the popover is closed.
+      else if (e.type === "notification") notifyFromLive(e.data);
       send("mgy:live", e);
     },
     {
@@ -240,8 +243,37 @@ async function toggleTimer(): Promise<void> {
   }
 }
 
-function notify(title: string, body: string): void {
-  if (Notification.isSupported()) new Notification({ title, body, silent: true }).show();
+function notify(title: string, body: string, onClick?: () => void): void {
+  if (!Notification.isSupported()) return;
+  const n = new Notification({ title, body, silent: true });
+  if (onClick) n.on("click", onClick);
+  n.show();
+}
+
+/**
+ * Surface an inbox notification from the realtime stream as an OS notification.
+ *
+ * The events were already arriving and being forwarded to the renderer — they just never reached
+ * the desktop, so a mention only appeared if the popover happened to be open.
+ *
+ * Deliberately tolerant of the payload: it crosses SSE as `unknown`, and a notification is not
+ * worth throwing over. Anything without a title is ignored rather than shown as "undefined".
+ */
+function notifyFromLive(data: unknown): void {
+  const n = data as { title?: unknown; body?: unknown; url?: unknown } | null;
+  const title = typeof n?.title === "string" ? n.title.trim() : "";
+  if (!title) return;
+  const body = typeof n?.body === "string" ? n.body : "";
+  const url = typeof n?.url === "string" ? n.url : "";
+  notify(title, body, url ? () => openExternal(absoluteUrl(url)) : () => showPopover());
+}
+
+/** Notification URLs are app-relative; the panel builds the same shape for its own links. */
+function absoluteUrl(url: string): string {
+  if (/^https?:/i.test(url)) return url;
+  const base = stored?.apiUrl ?? "";
+  const locale = stored?.workspace?.locale === "ar" ? "ar" : "en";
+  return `${base}/${locale}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
 // ── popover window ───────────────────────────────────────────────────────
