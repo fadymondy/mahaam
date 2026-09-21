@@ -18,16 +18,22 @@ CREATE TABLE IF NOT EXISTS notification_prefs (
     updated_at     timestamptz NOT NULL DEFAULT now()
 );
 
--- P5: email delivery state of an inbox item. NULL = not processed yet; sent | skipped | failed.
+-- P5: email delivery state of an inbox item. NULL = not processed yet;
+-- sending | sent | skipped | failed.
+--
+-- 'sending' is the CLAIM, added with MH-249: it means a runner owns this row
+-- right now, which is a different fact from 'skipped' (a decision not to mail
+-- it). Without the distinction, a process that died mid-send left a row that
+-- looked deliberately skipped — a mail nobody sent and nobody could find.
 -- When the column is first added, the existing items are marked skipped: they predate email and are
 -- not mailed retroactively.
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'notifications' AND column_name = 'email_status') THEN
-        ALTER TABLE notifications ADD COLUMN email_status text CHECK (email_status IS NULL OR email_status IN ('sent','skipped','failed'));
+        ALTER TABLE notifications ADD COLUMN email_status text CHECK (email_status IS NULL OR email_status IN ('sending','sent','skipped','failed'));
         UPDATE notifications SET email_status = 'skipped';
     END IF;
 END $$;
 -- The same column again, for sqlc (it does not read DO blocks); a no-op once the block has run.
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS email_status text CHECK (email_status IS NULL OR email_status IN ('sent','skipped','failed'));
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS email_status text CHECK (email_status IS NULL OR email_status IN ('sending','sent','skipped','failed'));
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS emailed_at timestamptz;

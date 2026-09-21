@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/togo-framework/scheduler"
@@ -51,6 +52,14 @@ func installReminders(k *togo.Kernel, a *app.App) {
 		return err
 	})
 	scheduler.Register(JobEmail, func(ctx context.Context) error {
+		// Put back anything a dead process left claimed before delivering:
+		// otherwise those rows sit as 'sending' for ever and the person never
+		// gets the mail (MH-249). Fifteen minutes is far longer than a send.
+		if back, err := sv.ReclaimStuckEmails(ctx, 15*time.Minute); err != nil {
+			a.Log.Warn("notification email: reclaim", "err", err)
+		} else if back > 0 {
+			a.Log.Info("notification email: reclaimed abandoned sends", "count", back)
+		}
 		n, err := sv.DeliverEmails(ctx)
 		if n > 0 {
 			a.Log.Info("notification email", "sent", n)
@@ -64,6 +73,16 @@ func installReminders(k *togo.Kernel, a *app.App) {
 		}
 		return err
 	})
+	// SCHEDULER=off keeps the clock out of the tests. Without it the email job
+	// fires every minute, which for a test that takes twenty seconds means
+	// roughly one run in three has the scheduler delivering the same inbox the
+	// test is delivering — the counts then disagree and it looks like duplicate
+	// mail rather than two runners sharing the work (MH-249).
+	if os.Getenv("SCHEDULER") == "off" {
+		a.Log.Info("scheduler disabled (SCHEDULER=off)")
+		return
+	}
+
 	s, ok := scheduler.FromKernel(k)
 	if !ok {
 		a.Log.Warn("scheduler plugin not registered — time reminders are off")

@@ -311,6 +311,38 @@ func (sv *Service) DeliverEmails(ctx context.Context) (int, error) {
 	return sent, nil
 }
 
+// markSkipped records a deliberate decision not to mail this one. Kept apart
+// from the 'sending' claim so "nobody wanted this" and "something owned this
+// and never finished" stay distinguishable.
+func (sv *Service) markSkipped(ctx context.Context, workspaceID, id string) {
+	if _, err := sv.DB.ExecContext(ctx, `UPDATE notifications SET email_status = 'skipped', updated_at = now()
+		WHERE workspace_id = $1 AND id = $2`, workspaceID, id); err != nil && sv.Log != nil {
+		sv.Log.Warn("notification email: could not record a skip", "notification", id, "err", err)
+	}
+}
+
+// ReclaimStuckEmails puts back anything left 'sending' by a process that died
+// mid-flight, so it is tried again instead of sitting in a state nobody looks
+// at. The window is generous: a send that is genuinely in progress must not be
+// stolen from the runner that owns it.
+//
+// On the OWNER pool, because "what did any process abandon" is a question
+// across every workspace by definition — the same reason the delivery queue is
+// read that way. It touches only rows in one narrow state and sets them back
+// to unprocessed.
+func (sv *Service) ReclaimStuckEmails(ctx context.Context, olderThan time.Duration) (int, error) {
+	if sv.Sys == nil {
+		return 0, nil
+	}
+	res, err := sv.Sys.ExecContext(ctx, `UPDATE notifications SET email_status = NULL, updated_at = now()
+		WHERE email_status = 'sending' AND updated_at < now() - $1::interval`, olderThan.String())
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
 // SendDigests sends the daily summaries that are due at now. Returns how many were sent.
 func (sv *Service) SendDigests(ctx context.Context, now time.Time) (int, error) {
 	if sv.Mail == nil {

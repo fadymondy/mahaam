@@ -59,7 +59,10 @@ try {
   }
   log("credential: PAT in session only, nothing authenticating on disk");
 
-  const stopBtn = page.locator(".mgy-timer .mgy-btn-stop");
+  // Selected by accessible name, not a class. `.mgy-btn-stop` vanished when the timer moved to
+  // shadcn Buttons and this test sat broken until someone ran it; a styling change should not be
+  // able to do that again. The tray e2e was fixed the same way.
+  const stopBtn = page.locator(".mgy-timer").getByRole("button", { name: /Stop/i });
   if (await stopBtn.isVisible()) await stopBtn.click();
   await page.locator(".mgy-timer-idle input").fill("Extension e2e");
   await page.locator(".mgy-timer-idle").getByRole("button", { name: /Start/ }).click();
@@ -79,7 +82,9 @@ try {
   await page.getByText("This page").waitFor({ timeout: 10000 });
   await page.screenshot({ path: "e2e-shots/ext-page.png" });
   await page.locator(".mgy-page").getByRole("button", { name: "File an issue" }).last().click();
-  await page.getByText(/Issue filed: MG-\d+/).waitFor({ timeout: 10000 });
+  // The key prefix comes from the workspace, so matching a specific one ties this test to whichever
+  // workspace it was first written against.
+  await page.getByText(/Issue filed: [A-Z]+-\d+/).waitFor({ timeout: 10000 });
   log("filed:", await page.locator(".mgy-ok").innerText());
   if (failures.length) {
     console.error(`[ext-e2e] FAIL — ${failures.length} check(s):\n  ` + failures.join("\n  "));

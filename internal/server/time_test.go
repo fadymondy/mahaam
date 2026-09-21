@@ -51,6 +51,9 @@ func bootStack(t *testing.T) (*app.App, *httptest.Server) {
 	t.Setenv("STORAGE_DIR", t.TempDir())
 	// Workspaces created by these tests start unlimited (the plan tests move them explicitly).
 	t.Setenv("PLAN_DEFAULT", "unlimited")
+	// No background clock in a test: a job firing halfway through makes the
+	// result depend on where the minute boundary fell (MH-249).
+	t.Setenv("SCHEDULER", "off")
 	k0 := togo.New()
 	sys, err := k0.SQL(context.Background())
 	if err != nil {
