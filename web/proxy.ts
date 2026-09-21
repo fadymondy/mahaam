@@ -14,7 +14,7 @@ const SESSION_COOKIE = "togo_session"
 // Locale-stripped prefixes that need a session. The API is the security boundary; this file only
 // decides where to SEND someone. A missing cookie goes straight to login; a present-but-invalid
 // cookie is caught client-side when /api/auth/me answers 401.
-const PROTECTED_PREFIXES = ["/workspaces", "/w", "/admin"]
+const PROTECTED_PREFIXES = ["/workspaces", "/w", "/admin", "/oauth"]
 
 function isProtected(rest: string): boolean {
   return PROTECTED_PREFIXES.some((p) => rest === p || rest.startsWith(p + "/"))
@@ -31,6 +31,9 @@ function shouldSkip(pathname: string): boolean {
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/graphql") ||
+    // OAuth discovery metadata (RFC 8414/9728) must be reachable at these exact, unprefixed
+    // paths — that's where a client looks for them, not under a locale.
+    pathname.startsWith("/.well-known/") ||
     /\.[a-zA-Z0-9]+$/.test(pathname)
   )
 }

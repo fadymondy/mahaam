@@ -21,6 +21,8 @@ const nextConfig = {
       // The embeddable feedback loader/bundle is served by the Go API; proxy it so
       // the snippet's {app-origin}/embed/v1.js works on the public host too.
       { source: "/embed/:path*", destination: `${API_ORIGIN}/embed/:path*` },
+      // MCP OAuth discovery metadata (RFC 8414/9728) — served by the Go API, not a Next.js page.
+      { source: "/.well-known/:path*", destination: `${API_ORIGIN}/.well-known/:path*` },
     ];
   },
 

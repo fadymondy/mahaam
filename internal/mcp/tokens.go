@@ -67,6 +67,30 @@ func parseScopes(raw string) []string {
 	return list
 }
 
+// mintToken inserts a new mcp_tokens row and returns the plaintext (shown once) and the row.
+// Shared by POST /api/w/mcp_tokens and the OAuth token endpoint (internal/mcp/oauth.go), which
+// is the ONLY new thing the OAuth flow introduces: everything after this point — auth,
+// tenant.Resolve, scope narrowing, project scoping, rate limits — is the same code every other
+// MCP token already runs through.
+func mintToken(ctx context.Context, db *sql.DB, workspaceID, userID, name string, scopes, projectIDs []string, expires *time.Time) (plain string, out *tokenOut, err error) {
+	plain, visible := NewToken(UserPrefix)
+	rawScopes, _ := json.Marshal(scopes)
+	rawProjects, _ := json.Marshal(projectIDs)
+	t := &tokenOut{}
+	err = db.QueryRowContext(ctx, `
+		INSERT INTO mcp_tokens (workspace_id, user_id, name, token_hash, prefix, scopes, expires_at, project_ids)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, name, prefix, expires_at, last_used_at, revoked_at, created_at`,
+		workspaceID, userID, name, HashToken(plain), visible, string(rawScopes), expires, string(rawProjects),
+	).Scan(&t.ID, &t.Name, &t.Prefix, &t.ExpiresAt, &t.LastUsedAt, &t.RevokedAt, &t.CreatedAt)
+	if err != nil {
+		return "", nil, err
+	}
+	t.Scopes = scopes
+	t.ProjectIDs = projectIDs
+	return plain, t, nil
+}
+
 // authUser resolves a user MCP token to the SAME tenant.Scope a browser session
 // gets — workspace, user, current role — so the tools run under the same authz
 // and the same RLS. The token's stored scopes are narrowed by the role.
@@ -243,8 +267,6 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 			t := time.Now().Add(time.Duration(in.Body.ExpiresInDays) * 24 * time.Hour).UTC()
 			expires = &t
 		}
-		plain, visible := NewToken(UserPrefix)
-		rawScopes, _ := json.Marshal(scopes)
 		projectIDs := []string{}
 		for _, ref := range in.Body.Projects {
 			if strings.TrimSpace(ref) == "" {
@@ -258,26 +280,18 @@ func RegisterTokenRoutes(api huma.API, a *app.App) {
 				projectIDs = append(projectIDs, p.ID)
 			}
 		}
-		rawProjects, _ := json.Marshal(projectIDs)
 
+		plain, tok, err := mintToken(ctx, a.SQLDB, s.WorkspaceID, s.UserID, name, scopes, projectIDs, expires)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("could not create the token")
+		}
 		out := &struct {
 			Body struct {
 				Token     tokenOut `json:"token"`
 				Plaintext string   `json:"plaintext"`
 			}
 		}{}
-		t := &out.Body.Token
-		err := a.SQLDB.QueryRowContext(ctx, `
-			INSERT INTO mcp_tokens (workspace_id, user_id, name, token_hash, prefix, scopes, expires_at, project_ids)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-			RETURNING id, name, prefix, expires_at, last_used_at, revoked_at, created_at`,
-			s.WorkspaceID, s.UserID, name, HashToken(plain), visible, string(rawScopes), expires, string(rawProjects),
-		).Scan(&t.ID, &t.Name, &t.Prefix, &t.ExpiresAt, &t.LastUsedAt, &t.RevokedAt, &t.CreatedAt)
-		if err != nil {
-			return nil, huma.Error500InternalServerError("could not create the token")
-		}
-		t.Scopes = scopes
-		t.ProjectIDs = projectIDs
+		out.Body.Token = *tok
 		out.Body.Plaintext = plain
 		return out, nil
 	})

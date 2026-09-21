@@ -203,5 +203,14 @@
   "mcp.genericClient": "Any other MCP client",
   "mcp.serverUrl": "Server URL",
   "mcp.authHeader": "Auth header",
-  "mcp.oauthClientsHint": "Claude.ai and ChatGPT's remote connectors want a plain server URL and sign in with OAuth rather than a pasted token — that flow isn't wired up on Mahaam yet. Claude Code, Claude Desktop, Cursor and Windsurf all work today with the token above."
+  "mcp.oauthClientsHint": "Claude.ai and ChatGPT's remote connectors can now use this server URL directly (they discover OAuth automatically and show their own sign-in/consent screen) — no token needed for those. Claude Code, Claude Desktop, Cursor and Windsurf still use the token above.",
+  "oauth.title": "Connect an AI app",
+  "oauth.hint": "An external app is asking to connect to your Mahaam account.",
+  "oauth.wantsToConnect": "wants to connect to your Mahaam workspace.",
+  "oauth.workspace": "Workspace",
+  "oauth.noWorkspaces": "You don't belong to any workspace yet.",
+  "oauth.willBeAbleTo": "It will be able to",
+  "oauth.allow": "Allow",
+  "oauth.deny": "Deny",
+  "oauth.badRequest": "This connection request is missing something it needs (client, redirect address, or PKCE parameters) — ask the app you're connecting to try again."
 }

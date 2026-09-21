@@ -419,6 +419,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"kpi":     true, // GET /api/w/kpi/team (manager+, the caller's workspace)
 		"plan":    true, // GET /api/w/plan: the workspace's plan and usage (admin+)
 		"billing": true, // GET /api/w/billing, POST /api/w/billing/{checkout,portal} (admin+)
+		"oauth":   true, // GET/POST /api/oauth/consent — the MCP OAuth consent screen (account-level, no workspace)
 	}
 
 	leaks := func(b []byte) string {

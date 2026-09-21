@@ -15,6 +15,7 @@ import (
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/billing/ghmarketplace"
+	"github.com/fadymondy/mahaam/internal/mcp"
 	"github.com/fadymondy/mahaam/internal/limits"
 	"github.com/fadymondy/mahaam/internal/platform"
 	"github.com/fadymondy/mahaam/internal/tenant"
@@ -122,6 +123,14 @@ func classify(r *http.Request) tier {
 		// (GITHUB_MARKETPLACE_WEBHOOK_SECRET) — GitHub issues Marketplace and App webhook
 		// secrets independently. Exact match.
 		ghmarketplace.WebhookPath,
+		// MCP OAuth (internal/mcp/oauth.go): authorize validates client_id/redirect_uri itself and
+		// redirects to the web app's consent screen (which requires a session, tierSignedIn below,
+		// via /api/oauth/consent); register/token/revoke are public per their RFCs — token exchange
+		// is protected by PKCE, not by an API credential. Exact matches.
+		mcp.AuthorizePath,
+		mcp.RegisterPath,
+		mcp.TokenPath,
+		mcp.RevokePath,
 		"/api/integrations/github/user-callback":
 		return tierPublic
 	}
@@ -133,6 +142,10 @@ func classify(r *http.Request) tier {
 		return tierPublic // the auth plugin guards its own routes
 	}
 	if strings.HasPrefix(path, "/api/me/") {
+		return tierSignedIn
+	}
+	// The OAuth consent screen: "who is authorizing this" is the web app's own session.
+	if strings.HasPrefix(path, "/api/oauth/consent") {
 		return tierSignedIn
 	}
 	// The invite preview: the unguessable token in the URL is the authorization.

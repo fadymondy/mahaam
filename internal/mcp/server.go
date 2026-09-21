@@ -184,7 +184,13 @@ func (s *server) handler(a *app.App) http.Handler {
 			if s.limit != nil && !s.limit.take(w, req, s.limit.fail, "ip:"+clientHost(req)) {
 				return
 			}
-			w.Header().Set("WWW-Authenticate", `Bearer realm="`+s.name+`"`)
+			auth := `Bearer realm="` + s.name + `"`
+			if s.name == "mahaam-mcp" {
+				// Points an OAuth-capable client (Claude.ai, ChatGPT, ...) at the discovery
+				// metadata for the flow in oauth.go, so it can "Connect" with just this URL.
+				auth += `, resource_metadata="` + appURL() + RSMetadataPath + `"`
+			}
+			w.Header().Set("WWW-Authenticate", auth)
 			writeRPC(w, http.StatusUnauthorized, rpcResponse{JSONRPC: "2.0",
 				Error: &rpcError{Code: -32001, Message: "invalid or missing MCP token"}})
 			return

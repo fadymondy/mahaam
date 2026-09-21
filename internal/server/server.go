@@ -68,6 +68,7 @@ func Boot() *app.App {
 	registerREST(api, a)
 
 	mcp.Mount(k, a)
+	mcp.MountOAuth(k.Router, a.SysDB) // discovery, dynamic client registration, authorize/token/revoke
 	// P2: the per-user realtime stream (timer.started / timer.stopped / entry.changed / notification.*).
 	// Under /api/w/, so the guard resolves session + membership first and the stream can only carry the
 	// caller's own events (internal/live). The scaffold's global /events stays unmounted.
@@ -107,6 +108,7 @@ func registerREST(api huma.API, a *app.App) {
 	rest.RegisterRoutes(api, a) // generated CRUD — behind the guard's workspace tier
 	workspaces.Register(api, a)
 	mcp.RegisterTokenRoutes(api, a)
+	mcp.RegisterOAuthConsent(api, a) // /api/oauth/consent — the OAuth authorize flow's consent screen
 	work.Register(api, a)                // P1: clients, teams, projects, tasks, labels, activity — /api/w/*
 	reports.RegisterIssues(api, a)       // per-workspace issues — /api/w/issues/*
 	reports.RegisterPortalIssues(api, a) // P7: the client's own filed issues — GET /api/w/portal/issues
