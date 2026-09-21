@@ -116,7 +116,7 @@ export function AuthorKindBadge({ kind }: { kind: string }) {
  */
 export function IssueSourceChip({ issue }: { issue: { type: string; source: string; screenshot: boolean; diagnostics: boolean } }) {
   const { t } = useTranslations()
-  const known = ["app", "portal", "embed", "mcp", "github", "jira", "linear"]
+  const known = ["app", "portal", "embed", "monitor", "mcp", "github", "jira", "linear"]
   return (
     <span className="inline-flex items-center gap-1" data-issue-source={issue.source}>
       <IssueTypeIcon type={issue.type} />

@@ -41,6 +41,7 @@ func Register(api huma.API, a *app.App) {
 	r.billing()       // AI usage + project subscriptions (billed on invoices)
 	r.kpi()           // employee KPI, manager reviews, per-user GitHub accounts
 	r.catalogue()     // per-project agents and skills
+	r.monitorKeys()   // per-project backend error-monitoring DSN keys
 }
 
 type routes struct {

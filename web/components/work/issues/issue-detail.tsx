@@ -354,7 +354,7 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
           <span className="text-grid-muted">{t("issues.anonymous")}</span>
         )}
         <span className="mt-1 block text-xs text-grid-muted">
-          {t(`issues.source.${["portal", "embed", "mcp", "github", "jira", "linear"].includes(issue.source) ? issue.source : "app"}`)} · {formatDay(issue.created_at, locale)}
+          {t(`issues.source.${["portal", "embed", "monitor", "mcp", "github", "jira", "linear"].includes(issue.source) ? issue.source : "app"}`)} · {formatDay(issue.created_at, locale)}
         </span>
       </Row>
     </dl>

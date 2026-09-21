@@ -662,5 +662,6 @@
   "project.avatarChange": "تغيير الصورة",
   "project.avatarRemove": "إزالة",
   "project.avatarHint": "الصورة المربعة هي الأنسب. بدون صورة يظهر المشروع بأحرفه الأولى بلونه.",
-  "project.avatarBad": "تعذّر قراءة هذا الملف كصورة."
+  "project.avatarBad": "تعذّر قراءة هذا الملف كصورة.",
+  "issues.source.monitor": "المراقبة الخلفية"
 }

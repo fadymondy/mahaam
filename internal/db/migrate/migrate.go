@@ -44,6 +44,8 @@ var TenantTables = []string{
 	"user_github_accounts", "member_reviews",
 	// Per-project catalogue of agents and skills
 	"project_catalogue",
+	// Backend error-monitoring DSN keys (sdk/go et al.)
+	"project_monitor_keys",
 }
 
 var roleName = regexp.MustCompile(`^[a-z_][a-z0-9_]{0,62}$`)

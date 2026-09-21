@@ -138,6 +138,13 @@ func classify(r *http.Request) tier {
 	if strings.HasPrefix(path, "/api/admin/") {
 		return tierAdmin
 	}
+	// Backend error-monitoring intake (internal/reports/monitor.go): PUBLIC on purpose, same model
+	// as /api/feedback/embed — the only credential is the DSN's public key in the body, checked
+	// against the {project} in the path. {project} is a path segment, so this is a prefix/suffix
+	// check rather than one of the exact matches above.
+	if strings.HasPrefix(path, "/api/monitor/") && strings.HasSuffix(path, "/envelope") {
+		return tierPublic
+	}
 	if strings.HasPrefix(path, "/api/auth/") {
 		return tierPublic // the auth plugin guards its own routes
 	}
