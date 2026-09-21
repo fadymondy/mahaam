@@ -34,6 +34,7 @@ import {
 } from "@mahaam/client";
 import { rasterMark } from "@mahaam/client/brand";
 import { encodePng } from "@mahaam/client/brand/png";
+import { startIdleWatch } from "./idle-watch";
 import * as store from "./store";
 
 const DEV_URL = process.env.MAHAAM_DEV_URL; // Vite dev server (npm run dev:tray)
@@ -51,6 +52,7 @@ let win: BrowserWindow | null = null;
 let client: MahaamClient | null = null;
 let live: LiveHandle | null = null;
 let running: TimeEntry | null = null;
+let stopIdleWatch: (() => void) | null = null;
 let ticker: ReturnType<typeof setInterval> | null = null;
 let secrets: store.Secrets = { token: null };
 let stored: Omit<store.Stored, "secret"> | null = null;
@@ -120,9 +122,20 @@ function startLive(): void {
     },
     { onStatus: (s) => send("mgy:live-status", s) },
   );
+  stopIdleWatch?.();
+  // Offer to trim time billed while the person was away. Arithmetic lives in @mahaam/client;
+  // this only supplies the OS reading and performs the write.
+  stopIdleWatch = startIdleWatch({
+    running: () => running,
+    cut: (id, endedAt) => c.updateEntry(id, { ended_at: endedAt }).then(() => setRunning(null)),
+    strings: () => idleStrings(stored?.workspace?.locale === "ar" ? "ar" : "en"),
+    log: (m, e) => console.error("[idle]", m, e),
+  });
 }
 
 function stopLive(): void {
+  stopIdleWatch?.();
+  stopIdleWatch = null;
   live?.close();
   live = null;
 }
@@ -437,3 +450,22 @@ void app.whenReady().then(() => {
   win = createWindow();
   if (SHOW_ON_START) win.once("ready-to-show", () => showPopover());
 });
+
+// Prompt copy for the idle watch. The tray's main process has no access to the panel's string
+// table (that lives in the renderer bundle), so these two languages are kept here deliberately
+// rather than plumbing i18n across the IPC boundary for one dialog.
+function idleStrings(locale: "en" | "ar") {
+  return locale === "ar"
+    ? {
+        title: "كنت بعيدًا",
+        body: (m: number) => `يبدو أنك كنت بعيدًا لمدة ${m} دقيقة والمؤقّت يعمل. هل نحتسب هذا الوقت؟`,
+        keep: "احتساب الوقت",
+        discard: "خصم وقت الغياب",
+      }
+    : {
+        title: "You were away",
+        body: (m: number) => `The timer kept running while you were away for about ${m} minutes. Keep that time?`,
+        keep: "Keep it",
+        discard: "Discard the away time",
+      };
+}
