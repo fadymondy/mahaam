@@ -180,6 +180,22 @@ export class MahaamClient {
     this.setToken(null);
   }
 
+  /**
+   * POST /api/auth/tokens → a personal access token (`togo_pat_…`), returned by the server once.
+   *
+   * Hold this instead of the user's password. It is revocable per device, it is scoped, and it
+   * never exposes the real credential. Because it is not a JWT, tokenExpiry() returns null for
+   * it and the silent re-login path simply stops firing — which is the point.
+   *
+   * Caveat worth knowing: "sign out everywhere" permanently rejects existing PATs, because the
+   * server's revocation check looks for a JWT `iat` that a PAT does not carry. Callers should
+   * treat a 401 as "sign in again and mint a new one", not as a fatal error.
+   */
+  async createAccessToken(name: string, abilities: string[] = []): Promise<string> {
+    const out = await this.request<{ token: string }>("POST", "/api/auth/tokens", { body: { name, abilities } });
+    return out.token;
+  }
+
   /** One shared re-login at a time, from the stored credentials. */
   private tryRelogin(): Promise<boolean> {
     if (!this.opts.credentials) return Promise.resolve(false);

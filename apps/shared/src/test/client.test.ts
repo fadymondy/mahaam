@@ -23,7 +23,35 @@ const hdr = (c: Call) => new Headers(c.init.headers as HeadersInit);
 const NOW = 1_800_000_000_000;
 const fresh = jwt(NOW / 1000 + 86_400);
 
-describe("auth", () => {
+describe("auth", () => {
+  it("mints a personal access token, and that token stops the silent re-login path", async () => {
+    // A PAT is what a client should hold instead of the password: revocable per device, scoped,
+    // and — because it is not a JWT — it never triggers the expiry-driven re-login.
+    const pat = "togo_pat_" + "a".repeat(48);
+    const { f, calls } = mockFetch(() => json({ token: pat, name: "Desktop", abilities: [] }));
+    const c = new MahaamClient({ baseUrl: BASE, fetch: f, token: fresh });
+
+    const got = await c.createAccessToken("Desktop");
+    expect(got).toBe(pat);
+    const last = calls.at(-1)!;
+    expect(last.url).toBe(BASE + "/api/auth/tokens");
+    expect(JSON.parse(String(last.init.body))).toEqual({ name: "Desktop", abilities: [] });
+
+    // The important property: no expiry, so ensureFresh() has nothing to act on.
+    expect(tokenExpiry(pat)).toBeNull();
+  });
+
+  it("a stored PAT never triggers a silent re-login, unlike an expiring JWT", async () => {
+    const pat = "togo_pat_" + "b".repeat(48);
+    const credentials = vi.fn(async () => ({ email: "a", password: "b" }));
+    const { f, calls } = mockFetch(() => json({ ok: true }));
+    const c = new MahaamClient({ baseUrl: BASE, fetch: f, token: pat, now: () => NOW, credentials });    await c.workspaces().catch(() => {});
+
+    // credentials() must never be consulted — that is the whole point of holding a PAT.
+    expect(credentials).not.toHaveBeenCalled();
+    expect(calls.some((x) => x.url.includes("/api/auth/login"))).toBe(false);
+  });
+
   it("logs in with the double-submit CSRF pair as a cookie header", async () => {
     const onToken = vi.fn();
     const { f, calls } = mockFetch(() => json({ token: fresh }));
