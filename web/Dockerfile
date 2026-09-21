@@ -12,7 +12,7 @@ ENV API_ORIGIN=http://api:8110
 # NEXT_PUBLIC_* vars are inlined into the client bundle at build time (not readable at runtime).
 # This is the URL an external MCP client (Claude Desktop, Cursor, ChatGPT, ...) is told to call —
 # the public domain, which the web server's own rewrite above proxies to the API container.
-ENV NEXT_PUBLIC_MCP_ORIGIN=https://console.mahaam.app
+ENV NEXT_PUBLIC_MCP_ORIGIN=https://mcp.mahaam.app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .

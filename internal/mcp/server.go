@@ -188,7 +188,7 @@ func (s *server) handler(a *app.App) http.Handler {
 			if s.name == "mahaam-mcp" {
 				// Points an OAuth-capable client (Claude.ai, ChatGPT, ...) at the discovery
 				// metadata for the flow in oauth.go, so it can "Connect" with just this URL.
-				auth += `, resource_metadata="` + appURL() + RSMetadataPath + `"`
+				auth += `, resource_metadata="` + mcpURL() + RSMetadataPath + `"`
 			}
 			w.Header().Set("WWW-Authenticate", auth)
 			writeRPC(w, http.StatusUnauthorized, rpcResponse{JSONRPC: "2.0",

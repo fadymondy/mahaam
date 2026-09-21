@@ -57,6 +57,17 @@ const issuedTokenDays = 30
 // useful without asking a chat client to understand Mahaam's full scope catalogue up front.
 var defaultOAuthScopes = []string{"projects:read", "tasks:read", "tasks:write", "issues:read", "issues:write", "time:read", "time:write"}
 
+// mcpURL is the public base URL the OAuth/MCP discovery metadata, issuer and resource
+// identifiers report — MCP_URL if set (mcp.mahaam.app, a separate hostname so it reads like a
+// dedicated MCP endpoint), else APP_URL. webURL, below, is deliberately NOT this: the consent
+// screen has to stay on the same hostname the user's session cookie belongs to.
+func mcpURL() string {
+	if v := strings.TrimRight(os.Getenv("MCP_URL"), "/"); v != "" {
+		return v
+	}
+	return appURL()
+}
+
 func appURL() string { return strings.TrimRight(os.Getenv("APP_URL"), "/") }
 func webURL() string {
 	if v := strings.TrimRight(os.Getenv("WEB_URL"), "/"); v != "" {
@@ -76,7 +87,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 // AuthServerMetadataHandler serves RFC 8414 metadata at /.well-known/oauth-authorization-server.
 func AuthServerMetadataHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		base := appURL()
+		base := mcpURL()
 		writeJSON(w, http.StatusOK, map[string]any{
 			"issuer":                                     base,
 			"authorization_endpoint":                     base + AuthorizePath,
@@ -97,7 +108,7 @@ func AuthServerMetadataHandler() http.HandlerFunc {
 // pointing at the MCP endpoint and its authorization server.
 func ResourceMetadataHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		base := appURL()
+		base := mcpURL()
 		writeJSON(w, http.StatusOK, map[string]any{
 			"resource":              base + "/api/mcp",
 			"authorization_servers": []string{base},
