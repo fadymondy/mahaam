@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/fadymondy/mahaam/internal/tenant"
 )
@@ -33,9 +35,37 @@ type pendingNote struct {
 // pendingNotes: *sql.Tx → *[]pendingNote, published by Service.tx after a successful commit.
 var pendingNotes sync.Map
 
+// undelivered counts notifications that were written but had no transaction to be published
+// from — see queueNote. Read by the CI guard in notify_test.go, which is the only reason it is
+// not simply a log line.
+var undelivered atomic.Int64
+
+// UndeliveredNotifications is how many notifications were stored but never announced. It should
+// be zero; anything else means someone recorded activity outside a transaction (see queueNote).
+func UndeliveredNotifications() int64 { return undelivered.Load() }
+
+// queueNote holds a notification until its transaction commits, so a reader never hears about a
+// row that a rollback is about to remove (Service.tx → flushNotes).
+//
+// Delivery therefore depends on `q` being that transaction. When it is not — `record` was handed
+// a *sql.DB, as the integration hooks do (internal/work/integration_hooks.go) — the row is
+// written and then nothing announces it: no realtime event, so the inbox badge does not move
+// until a reload, and no Web Push, so the notification simply never arrives.
+//
+// No action currently reaches this path: fanout only handles task.* and comment.added, and every
+// one of those runs in a transaction. It is a trap rather than a live bug, which is exactly why
+// it is counted and logged instead of silently returning — the day someone adds an integration
+// action to fanout's switch, that silence would be the whole symptom.
 func queueNote(q querier, ws, user string, n *Notification) {
+	if n == nil {
+		return
+	}
 	tx, ok := q.(*sql.Tx)
-	if !ok || n == nil {
+	if !ok {
+		undelivered.Add(1)
+		slog.Error("notification stored but never announced: recorded outside a transaction",
+			"workspace", ws, "user", user, "kind", n.Kind,
+			"fix", "pass the transaction of the change to record/RecordActivity")
 		return
 	}
 	v, _ := pendingNotes.LoadOrStore(tx, &[]pendingNote{})
