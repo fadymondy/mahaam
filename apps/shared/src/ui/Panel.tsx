@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { DEFAULT_POMODORO, pomodoroState } from "../pomodoro";
 import { Button } from "./components/button"
 import { Input } from "./components/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select"
@@ -12,6 +13,7 @@ import { Mark } from "./Mark";
 type Theme = "system" | "light" | "dark";
 const LS_LOCALE = "mahaam.locale";
 const LS_THEME = "mahaam.theme";
+const LS_POMODORO = "mahaam.pomodoro";
 
 function readPref<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
@@ -64,6 +66,7 @@ function useTick(active: boolean): number {
 export function Panel({ host, footer }: { host: PanelHost; footer?: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [theme, setTheme] = useState<Theme>(() => readPref<Theme>(LS_THEME, ["system", "light", "dark"], "system"));
+  const [pomodoro, setPomodoro] = useState(() => readPref<"on" | "off">(LS_POMODORO, ["on", "off"], "off") === "on");
   const t = STRINGS[locale];
   useAppearance(locale, theme);
 
@@ -84,6 +87,11 @@ export function Panel({ host, footer }: { host: PanelHost; footer?: ReactNode })
     setTheme: (v: Theme) => {
       setTheme(v);
       try { localStorage.setItem(LS_THEME, v); } catch { /* private mode */ }
+    },
+    pomodoro,
+    setPomodoro: (v: boolean) => {
+      setPomodoro(v);
+      try { localStorage.setItem(LS_POMODORO, v ? "on" : "off"); } catch { /* private mode */ }
     },
   };
 
@@ -269,8 +277,11 @@ function WorkspacePicker({ host, t, session, onPicked, onSignOut }: { host: Pane
 interface Prefs {
   locale: Locale;
   theme: Theme;
+  /** Pomodoro is a view over the running entry, not a second timer — see ../pomodoro. */
+  pomodoro: boolean;
   setLocale(l: Locale): void;
   setTheme(t: Theme): void;
+  setPomodoro(v: boolean): void;
 }
 
 function Home({
@@ -437,7 +448,7 @@ function Home({
         </p>
       )}
 
-      <TimerCard t={t} running={running} now={now} onStop={stop} onStart={startFree} onDescribe={(id, d) => act(async () => setTimer(await api.updateEntry(id, { description: d })))} />
+      <TimerCard t={t} pomodoro={prefs.pomodoro} running={running} now={now} onStop={stop} onStart={startFree} onDescribe={(id, d) => act(async () => setTimer(await api.updateEntry(id, { description: d })))} />
 
       {page && <PageCard t={t} host={host} page={page} next={next} onDone={() => { setPage(null); loadToday(); }} onError={fail} />}
 
@@ -484,7 +495,7 @@ function Home({
   );
 }
 
-function TimerCard({ t, running, now, onStop, onStart, onDescribe }: { t: Strings; running: TimeEntry | null | undefined; now: number; onStop: () => void; onStart: (d: string) => void; onDescribe: (id: string, d: string) => void }) {
+function TimerCard({ t, running, now, onStop, onStart, onDescribe, pomodoro }: { t: Strings; running: TimeEntry | null | undefined; now: number; onStop: () => void; onStart: (d: string) => void; onDescribe: (id: string, d: string) => void; pomodoro: boolean }) {
   const [desc, setDesc] = useState("");
   const [free, setFree] = useState("");
   const entryId = running?.id;
@@ -519,6 +530,7 @@ function TimerCard({ t, running, now, onStop, onStart, onDescribe }: { t: String
           {running.project_name && label !== running.project_name && <span className="mgy-meta">{running.project_name}</span>}
         </span>
         <span className="mgy-clock mgy-mono">{clock(elapsedSeconds(running, now))}</span>
+        {pomodoro ? <PomodoroBadge t={t} elapsed={elapsedSeconds(running, now)} /> : null}
       </div>
       <div className="mgy-timer-bottom">
         <Input
@@ -587,7 +599,19 @@ function QuickLog({ t, next, onLog }: { t: Strings; next: NextItem[] | null; onL
     </section>
   );
 }
-
+
+// Pomodoro is derived from the running entry's elapsed time, never stored, so it survives a
+// reload and cannot disagree with the server's clock. See ../pomodoro.
+function PomodoroBadge({ t, elapsed }: { t: Strings; elapsed: number }) {
+  const p = pomodoroState(elapsed, DEFAULT_POMODORO);
+  if (!p) return null;
+  const label = p.phase === "work" ? t.pomFocus : p.phase === "break" ? t.pomBreak : t.pomLongBreak;
+  return (
+    <span className="mgy-meta mgy-pom" title={`${label} · ${clock(p.remaining)}`}>
+      {label} <span className="mgy-mono">{clock(p.remaining)}</span>
+    </span>
+  );
+}
 function TodayList({ t, entries, running, now }: { t: Strings; entries: TimeEntry[] | null; running: TimeEntry | null; now: number }) {
   const total = useMemo(() => (entries ?? []).reduce((s, e) => s + (e.id === running?.id ? elapsedSeconds(running, now) : elapsedSeconds(e, now)), 0), [entries, running, now]);
   return (
@@ -735,6 +759,13 @@ function Settings({ host, t, prefs, session, onBack, onSwitchWorkspace, onSignOu
         <div className="mgy-setting">
           <span>{t.workspace}</span>
           <Button variant="outline" size="sm" onClick={onSwitchWorkspace}>{session.workspace?.name}</Button>
+        </div>
+        <div className="mgy-setting">
+          <span>{t.pomodoro}</span>
+          <span className="mgy-seg">
+            <button aria-pressed={!prefs.pomodoro} onClick={() => prefs.setPomodoro(false)}>{t.pomodoroOff}</button>
+            <button aria-pressed={prefs.pomodoro} onClick={() => prefs.setPomodoro(true)}>{t.pomodoroOn}</button>
+          </span>
         </div>
         <div className="mgy-setting">
           <span>{t.language}</span>
