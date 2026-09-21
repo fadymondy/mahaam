@@ -376,7 +376,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </Sheet>
 
       <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
-      {ctx ? <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} /> : null}
+      {ctx ? (
+        <WorkspaceContext.Provider value={ctx}>
+          <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} />
+        </WorkspaceContext.Provider>
+      ) : null}
       <ReportProblemDialog
         open={reporting}
         onOpenChange={setReporting}
