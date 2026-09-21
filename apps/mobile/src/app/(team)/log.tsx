@@ -79,10 +79,7 @@ export default function LogTime() {
               id: x.key,
               name: `${x.key} · ${x.title}`,
               color: "",
-              status: "",
-              client_name: null,
               archived_at: null,
-              tasks: { todo: 0, doing: 0, done: 0 },
             }))}
             value={task}
             onChange={setTask}

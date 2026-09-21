@@ -130,8 +130,8 @@ type Project struct {
 	Name          string     `json:"name"`
 	Description   *string    `json:"description"`
 	Color         string     `json:"color"`
-	Status        string     `json:"status" doc:"planned, active, on_hold, completed, cancelled"`
-	BillingMode   string     `json:"billing_mode" doc:"non_billable, hourly, fixed"`
+	Status        string     `json:"status" enum:"planned,active,on_hold,completed,cancelled" doc:"planned, active, on_hold, completed, cancelled"`
+	BillingMode   string     `json:"billing_mode" enum:"non_billable,hourly,fixed" doc:"non_billable, hourly, fixed"`
 	BudgetMinutes *int64     `json:"budget_minutes"`
 	BudgetMinor   *int64     `json:"budget_minor" doc:"Budget in minor units of currency"`
 	Currency      *string    `json:"currency"`

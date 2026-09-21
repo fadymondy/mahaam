@@ -63,7 +63,8 @@
     "export:web:client": "cross-env APP_VARIANT=client EXPO_PUBLIC_APP_VARIANT=client expo export --platform web --clear --output-dir dist/client",
     "serve:web": "node scripts/serve-web.mjs",
     "doctor": "expo-doctor",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "gen:types": "node scripts/gen-types.mjs"
   },
   "private": true,
   "jest": {

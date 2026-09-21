@@ -5604,8 +5604,11 @@ export interface components {
              * @description Sum of recorded payments, minor units
              */
             paid_minor: number;
-            /** @description draft, sent, paid or void */
-            status: string;
+            /**
+             * @description draft, sent, paid or void
+             * @enum {string}
+             */
+            status: "draft" | "sent" | "paid" | "void";
             /** Format: int64 */
             subtotal_minor: number;
             /** Format: int64 */
@@ -5644,8 +5647,11 @@ export interface components {
              */
             paid_minor: number;
             payments: components["schemas"]["InvoicePayment"][] | null;
-            /** @description draft, sent, paid or void */
-            status: string;
+            /**
+             * @description draft, sent, paid or void
+             * @enum {string}
+             */
+            status: "draft" | "sent" | "paid" | "void";
             /** Format: int64 */
             subtotal_minor: number;
             /** Format: int64 */
@@ -6777,8 +6783,11 @@ export interface components {
             /** Format: int64 */
             percent_done: number;
             starts_on: string | null;
-            /** @description planned, active, on_hold, completed, cancelled */
-            status: string;
+            /**
+             * @description planned, active, on_hold, completed, cancelled
+             * @enum {string}
+             */
+            status: "planned" | "active" | "on_hold" | "completed" | "cancelled";
             /** @description Counts only — task rows are never shown */
             tasks: components["schemas"]["TaskCounts"];
             /**
@@ -6844,8 +6853,11 @@ export interface components {
             /** @description What the team shares with you on this project */
             share: components["schemas"]["PortalShare"];
             starts_on: string | null;
-            /** @description planned, active, on_hold, completed, cancelled */
-            status: string;
+            /**
+             * @description planned, active, on_hold, completed, cancelled
+             * @enum {string}
+             */
+            status: "planned" | "active" | "on_hold" | "completed" | "cancelled";
             /** @description Counts only — task rows are never shown */
             tasks: components["schemas"]["TaskCounts"];
             /** @description The people on the project (when shared): names only */
@@ -7001,8 +7013,11 @@ export interface components {
             archived_at: string | null;
             /** @description data: URL of the project's image; null = coloured initials */
             avatar: string | null;
-            /** @description non_billable, hourly, fixed */
-            billing_mode: string;
+            /**
+             * @description non_billable, hourly, fixed
+             * @enum {string}
+             */
+            billing_mode: "non_billable" | "hourly" | "fixed";
             /**
              * Format: int64
              * @description Budget in minor units of currency
@@ -7036,8 +7051,11 @@ export interface components {
             share_team: boolean;
             /** @description YYYY-MM-DD */
             starts_on: string | null;
-            /** @description planned, active, on_hold, completed, cancelled */
-            status: string;
+            /**
+             * @description planned, active, on_hold, completed, cancelled
+             * @enum {string}
+             */
+            status: "planned" | "active" | "on_hold" | "completed" | "cancelled";
             tasks: components["schemas"]["TaskCounts"];
             /** Format: date-time */
             updated_at: string;
@@ -7055,8 +7073,11 @@ export interface components {
             archived_at: string | null;
             /** @description data: URL of the project's image; null = coloured initials */
             avatar: string | null;
-            /** @description non_billable, hourly, fixed */
-            billing_mode: string;
+            /**
+             * @description non_billable, hourly, fixed
+             * @enum {string}
+             */
+            billing_mode: "non_billable" | "hourly" | "fixed";
             /**
              * Format: int64
              * @description Budget in minor units of currency
@@ -7093,8 +7114,11 @@ export interface components {
             share_team: boolean;
             /** @description YYYY-MM-DD */
             starts_on: string | null;
-            /** @description planned, active, on_hold, completed, cancelled */
-            status: string;
+            /**
+             * @description planned, active, on_hold, completed, cancelled
+             * @enum {string}
+             */
+            status: "planned" | "active" | "on_hold" | "completed" | "cancelled";
             statuses: components["schemas"]["Status"][] | null;
             tasks: components["schemas"]["TaskCounts"];
             teams: components["schemas"]["ProjectTeam"][] | null;
@@ -7935,8 +7959,11 @@ export interface components {
             billable: boolean;
             /** @description End of the last billed period */
             billed_until: string | null;
-            /** @description infrastructure, ai, marketing, software, domain, support, other */
-            category: string;
+            /**
+             * @description infrastructure, ai, marketing, software, domain, support, other
+             * @enum {string}
+             */
+            category: "infrastructure" | "ai" | "marketing" | "software" | "domain" | "support" | "other";
             /**
              * Format: int64
              * @description What it costs us per period
@@ -7945,8 +7972,11 @@ export interface components {
             currency: string;
             ends_on: string | null;
             id: string;
-            /** @description month, quarter, year, one_time */
-            interval: string;
+            /**
+             * @description month, quarter, year, one_time
+             * @enum {string}
+             */
+            interval: "month" | "quarter" | "year" | "one_time";
             name: string;
             /** @description Start of the next unbilled period, if any */
             next_period: string | null;
@@ -8056,8 +8086,11 @@ export interface components {
             parent_id: string | null;
             /** Format: double */
             position: number;
-            /** @description none, low, medium, high, urgent */
-            priority: string;
+            /**
+             * @description none, low, medium, high, urgent
+             * @enum {string}
+             */
+            priority: "none" | "low" | "medium" | "high" | "urgent";
             project_id: string;
             status_id: string;
             /** Format: int64 */
@@ -8182,8 +8215,11 @@ export interface components {
             parent_id: string | null;
             /** Format: double */
             position: number;
-            /** @description none, low, medium, high, urgent */
-            priority: string;
+            /**
+             * @description none, low, medium, high, urgent
+             * @enum {string}
+             */
+            priority: "none" | "low" | "medium" | "high" | "urgent";
             project: components["schemas"]["TaskProject"];
             project_id: string;
             status: components["schemas"]["Status"];

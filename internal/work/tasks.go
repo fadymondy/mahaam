@@ -25,7 +25,7 @@ type Task struct {
 	Position        float64    `json:"position"`
 	DueAt           *time.Time `json:"due_at"`
 	EstimateMinutes *int64     `json:"estimate_minutes"`
-	Priority        string     `json:"priority" doc:"none, low, medium, high, urgent"`
+	Priority        string     `json:"priority" enum:"none,low,medium,high,urgent" doc:"none, low, medium, high, urgent"`
 	ParentID        *string    `json:"parent_id"`
 	CreatedBy       string     `json:"created_by"`
 	CompletedAt     *time.Time `json:"completed_at"`

@@ -311,12 +311,12 @@ type Subscription struct {
 	ProjectID   string  `json:"project_id"`
 	ProjectName string  `json:"project_name"`
 	Name        string  `json:"name"`
-	Category    string  `json:"category" doc:"infrastructure, ai, marketing, software, domain, support, other"`
+	Category    string  `json:"category" enum:"infrastructure,ai,marketing,software,domain,support,other" doc:"infrastructure, ai, marketing, software, domain, support, other"`
 	Vendor      *string `json:"vendor"`
 	PriceMinor  int64   `json:"price_minor" doc:"What we bill per period"`
 	CostMinor   int64   `json:"cost_minor" doc:"What it costs us per period"`
 	Currency    string  `json:"currency"`
-	Interval    string  `json:"interval" doc:"month, quarter, year, one_time"`
+	Interval    string  `json:"interval" enum:"month,quarter,year,one_time" doc:"month, quarter, year, one_time"`
 	StartsOn    string  `json:"starts_on"`
 	EndsOn      *string `json:"ends_on"`
 	Billable    bool    `json:"billable"`

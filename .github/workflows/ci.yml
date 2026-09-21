@@ -99,6 +99,7 @@ jobs:
 
   mobile:
     runs-on: ubuntu-latest
+    needs: api
     defaults:
       run:
         working-directory: apps/mobile
@@ -110,5 +111,18 @@ jobs:
       # apps/mobile is deliberately outside the apps/ npm workspace (its own lockfile),
       # so it needs its own job or it is never checked at all.
       - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: apps/mobile
+      # Its API types are derived from the spec rather than hand-written, so a field renamed
+      # server-side must fail here instead of surfacing as undefined on a phone.
+      - name: API types are current
+        env:
+          MAHAAM_OPENAPI: openapi.yaml
+        run: |
+          npm run gen:types
+          git diff --exit-code -- src/api/openapi.d.ts \
+            || { echo '::error::apps/mobile/src/api/openapi.d.ts is stale — run `npm run gen:types` there and commit it'; exit 1; }
       - run: npx tsc --noEmit
       - run: npx jest --ci

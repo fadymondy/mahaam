@@ -7,6 +7,13 @@ import { projectColor, radius, space } from "@/theme/tokens";
 import { T } from "./ui";
 
 /** Horizontal chips: "No project" + the projects you can log on. */
+/**
+ * Only the fields this picker renders. It used to ask for a whole Project, which meant the
+ * task picker in (team)/log.tsx had to fabricate one — inventing eighteen fields it had no
+ * values for just to satisfy the type.
+ */
+export type PickerProject = Pick<Project, "id" | "name" | "color" | "archived_at">;
+
 export function ProjectPicker({
   projects,
   value,
@@ -14,7 +21,7 @@ export function ProjectPicker({
   label,
   allowNone = true,
 }: {
-  projects: Project[];
+  projects: PickerProject[];
   value: string | null;
   onChange: (id: string | null) => void;
   label: string;

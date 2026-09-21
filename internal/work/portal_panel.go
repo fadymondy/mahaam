@@ -27,7 +27,7 @@ type PortalProject struct {
 	Name            string     `json:"name"`
 	Description     *string    `json:"description"`
 	Color           string     `json:"color"`
-	Status          string     `json:"status" doc:"planned, active, on_hold, completed, cancelled"`
+	Status          string     `json:"status" enum:"planned,active,on_hold,completed,cancelled" doc:"planned, active, on_hold, completed, cancelled"`
 	StartsOn        *string    `json:"starts_on"`
 	EndsOn          *string    `json:"ends_on"`
 	ClientName      *string    `json:"client_name"`

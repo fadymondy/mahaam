@@ -1,3 +1,5 @@
+import type { components } from "./openapi";
+
 // Response shapes, transcribed from the API's OpenAPI document (GET /openapi.json on the dev API).
 // Only the fields the apps read are typed; the API returns more.
 
@@ -16,24 +18,9 @@ export interface Workspace {
   locale: string;
 }
 
-export interface TimeEntry {
-  id: string;
-  user_id: string;
-  project_id: string | null;
-  project_name: string | null;
-  project_color: string | null;
-  client_name: string | null;
-  task_id: string | null;
-  task_key: string | null;
-  task_title: string | null;
-  description: string;
-  billable: boolean;
-  source: string;
-  started_at: string;
-  ended_at: string | null;
-  duration_s: number | null;
-  locked: boolean;
-}
+// Derived from the API's OpenAPI document rather than hand-written, so a field renamed or
+// removed server-side becomes a compile error here instead of undefined at runtime.
+export type TimeEntry = components["schemas"]["TimeEntry"];
 
 export interface TimerChange {
   started: TimeEntry;
@@ -73,45 +60,13 @@ export interface TimeSettings {
 
 export type Priority = "none" | "low" | "medium" | "high" | "urgent";
 
-export interface Task {
-  id: string;
-  key: string;
-  title: string;
-  project_id: string;
-  status_id: string;
-  priority: Priority;
-  position: number;
-  due_at: string | null;
-  estimate_minutes: number | null;
-  assignee_ids: string[];
-  checklist_done: number;
-  checklist_total: number;
-  comment_count: number;
-  completed_at: string | null;
-}
+export type Task = components["schemas"]["Task"];
 
-export interface Status {
-  id: string;
-  name: string;
-  color: string;
-  category: "todo" | "doing" | "done";
-  position: number;
-}
+export type Status = components["schemas"]["Status"];
 
-export interface ChecklistItem {
-  id: string;
-  title: string;
-  done: boolean;
-  position: number;
-}
+export type ChecklistItem = components["schemas"]["ChecklistItem"];
 
-export interface Comment {
-  id: string;
-  author_id: string;
-  author_kind: string;
-  body: string;
-  created_at: string;
-}
+export type Comment = components["schemas"]["Comment"];
 
 export interface TaskDetail extends Task {
   description: string | null;
@@ -127,15 +82,7 @@ export interface TaskCounts {
   done: number;
 }
 
-export interface Project {
-  id: string;
-  name: string;
-  color: string;
-  status: string;
-  client_name: string | null;
-  archived_at: string | null;
-  tasks: TaskCounts;
-}
+export type Project = components["schemas"]["Project"];
 
 export interface ProjectDetail extends Project {
   statuses: Status[];
@@ -155,15 +102,7 @@ export interface Issue {
   updated_at: string;
 }
 
-export interface Notification {
-  id: string;
-  kind: string;
-  title: string;
-  body: string | null;
-  url: string | null;
-  read_at: string | null;
-  created_at: string;
-}
+export type Notification = components["schemas"]["Notification"];
 
 export interface Inbox {
   notifications: Notification[] | null;

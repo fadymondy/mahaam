@@ -37,7 +37,7 @@ type Invoice struct {
 	Number        string    `json:"number"`
 	ClientID      string    `json:"client_id"`
 	ClientName    *string   `json:"client_name"`
-	Status        string    `json:"status" doc:"draft, sent, paid or void"`
+	Status        string    `json:"status" enum:"draft,sent,paid,void" doc:"draft, sent, paid or void"`
 	Currency      string    `json:"currency"`
 	IssueDate     string    `json:"issue_date" doc:"YYYY-MM-DD"`
 	DueDate       *string   `json:"due_date" doc:"YYYY-MM-DD or null"`
