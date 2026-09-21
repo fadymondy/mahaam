@@ -41,7 +41,10 @@ try {
   log("signed in; home visible");
 
   // make sure nothing runs, then start on the first task
-  const stopBtn = page.locator(".mgy-timer .mgy-btn-stop");
+  // Selected by accessible name, not a class. The stop button is a shadcn <Button> now, and
+  // the old .mgy-btn-stop hook vanished with the migration — a styling change should not be able
+  // to break this test again.
+  const stopBtn = page.locator(".mgy-timer").getByRole("button", { name: /Stop/i });
   if (await stopBtn.isVisible()) await stopBtn.click();
   await page.locator(".mgy-timer-idle input").waitFor();
   const first = page.locator(".mgy-list .mgy-row").first();
