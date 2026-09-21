@@ -178,11 +178,11 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
       {error && <p className="mgy-error" role="alert">{error}</p>}
       <label className="mgy-field">
         <span>{t.email}</span>
-        <input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
+        <Input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
       </label>
       <label className="mgy-field">
         <span>{t.password}</span>
-        <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
       </label>
       {host.canRemember && (
         <label className="mgy-check">
@@ -196,7 +196,7 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
       {advanced && (
         <label className="mgy-field">
           <span>{t.apiUrl}</span>
-          <input type="url" dir="ltr" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} placeholder={host.defaultApiUrl} />
+          <Input type="url" dir="ltr" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} placeholder={host.defaultApiUrl} />
         </label>
       )}
       <Button type="submit" className="w-full" disabled={busy}>

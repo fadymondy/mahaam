@@ -221,8 +221,9 @@ textarea {
   color: var(--grid-muted);
   cursor: default;
 }
-.mgy-input,
-.mgy-field input {
+/* .mgy-field input was here too; its inputs are the shadcn <Input> now, and a descendant
+   selector would outrank the utility classes. Only the two native <select>s still need this. */
+.mgy-input {
   width: 100%;
   min-width: 0;
   height: 30px;
