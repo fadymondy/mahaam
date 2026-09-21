@@ -55,3 +55,51 @@ jobs:
       - run: npm run build
       # grid:check needs the fadymondy.com-v2 checkout (packages/sync-grid.mjs); run it locally
       # with `make grid-check` until the grid is published as a package.
+
+  apps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install (shared, tray, extension workspaces)
+        working-directory: apps
+        run: npm ci
+      - name: Typecheck every workspace
+        working-directory: apps
+        run: npm run typecheck
+      - name: Client tests
+        working-directory: apps
+        run: npm test -w @mahaam/client
+      - name: Tray builds (needs no display)
+        working-directory: apps
+        run: npm run build -w @mahaam/tray
+      # The checked-in openapi.d.ts silently lagged the API for days because generation
+      # needed a running server. It now comes from `go run ./cmd/api openapi`, so drift
+      # can be a hard failure instead of something nobody notices.
+      - name: API types are current
+        working-directory: apps
+        run: |
+          npm run gen:types
+          git diff --exit-code -- shared/src/openapi.d.ts \
+            || { echo '::error::openapi.d.ts is stale — run `npm run gen:types` in apps/ and commit the result'; exit 1; }
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # apps/mobile is deliberately outside the apps/ npm workspace (its own lockfile),
+      # so it needs its own job or it is never checked at all.
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx jest --ci
