@@ -25,7 +25,8 @@
             "providers": ["Mahaam\\Feedback\\FeedbackServiceProvider"],
             "aliases": {
                 "MahaamFeedback": "Mahaam\\Feedback\\Facades\\MahaamFeedback",
-                "ManagyFeedback": "Mahaam\\Feedback\\Facades\\MahaamFeedback"
+                "ManagyFeedback": "Mahaam\\Feedback\\Facades\\MahaamFeedback",
+                "MahaamMonitor": "Mahaam\\Feedback\\Facades\\MahaamMonitor"
             }
         }
     },

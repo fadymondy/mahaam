@@ -15,12 +15,16 @@
     "./react": {
       "import": { "types": "./dist/esm/react.d.ts", "default": "./dist/esm/react.js" },
       "require": { "types": "./dist/cjs/react.d.ts", "default": "./dist/cjs/react.js" }
+    },
+    "./monitor": {
+      "import": { "types": "./dist/esm/monitor.d.ts", "default": "./dist/esm/monitor.js" },
+      "require": { "types": "./dist/cjs/monitor.d.ts", "default": "./dist/cjs/monitor.js" }
     }
   },
   "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/pkg-types.mjs",
-    "test": "npm run build && node --test test/feedback.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "peerDependencies": { "react": ">=17" },
   "peerDependenciesMeta": { "react": { "optional": true } },

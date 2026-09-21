@@ -33,24 +33,40 @@ Steps:
 
 ---
 
-# Install Mahaam Error Monitoring (Go — a separate product from the Feedback widget above)
+# Install Mahaam Error Monitoring (Go, Node, Laravel, Python — a separate product from the Feedback widget above)
 
 This is Sentry-shaped, not the feedback widget: a DSN (from a project's Settings → Monitoring),
 reporting unhandled errors to Mahaam's issue board directly, with no browser widget involved.
-Only the Go SDK has this today (`sdk/go/monitor`); Node/Laravel/Python are coming.
 
-1. `go get github.com/fadymondy/mahaam/sdk/go`
-2. Add `MAHAAM_DSN=<DSN>` to `.env` / `.env.example` and the deploy config.
-3. Wrap the root HTTP handler:
-   ```go
-   import "github.com/fadymondy/mahaam/sdk/go/monitor"
+1. Add `MAHAAM_DSN=<DSN>` to `.env` / `.env.example` and the deploy config.
+2. Install and wire, by stack:
+   - **Go**: `go get github.com/fadymondy/mahaam/sdk/go`
+     ```go
+     import "github.com/fadymondy/mahaam/sdk/go/monitor"
 
-   mon := monitor.New(monitor.Config{Environment: "production"}) // reads MAHAAM_DSN
-   http.ListenAndServe(":8080", mon.Recover(handler))
-   ```
-   For a non-HTTP process (worker, cron job), use `defer mon.LogUnhandled()` at the top of `main`
-   instead of `Recover`.
-4. **Verify.** Trigger a deliberate panic (a debug-only route works well) and confirm it appears
-   as a new issue on the project's board with source "monitor" in Mahaam. Trigger the same panic
+     mon := monitor.New(monitor.Config{Environment: "production"}) // reads MAHAAM_DSN
+     http.ListenAndServe(":8080", mon.Recover(handler))
+     ```
+     For a non-HTTP process (worker, cron job), use `defer mon.LogUnhandled()` at the top of
+     `main` instead of `Recover`.
+   - **Node / Express**: `npm i @mahaam/feedback`
+     ```js
+     import { Monitor, expressErrorHandler } from "@mahaam/feedback/monitor";
+
+     const monitor = new Monitor({ environment: "production" }); // reads MAHAAM_DSN
+     app.use(expressErrorHandler(monitor)); // mount LAST, after all routes
+     ```
+   - **Laravel**: `composer require mahaam/feedback`. In `bootstrap/app.php` (11/12):
+     ```php
+     ->withExceptions(fn ($e) => $e->report(fn (Throwable $t) => \Mahaam\Feedback\Facades\MahaamMonitor::captureException($t)))
+     ```
+     In Laravel 10, register the same callback in `App\Exceptions\Handler::register()`.
+   - **Django**: `pip install mahaam-feedback`. Add `"mahaam_feedback.monitor.MonitorMiddleware"`
+     to `MIDDLEWARE`.
+   - **Flask**: `pip install mahaam-feedback`. Call
+     `from mahaam_feedback.monitor import init_app as init_monitor; init_monitor(app)`.
+   - **Other Python**: `from mahaam_feedback import monitor; monitor.configure(); monitor.install_monitor_excepthook()`.
+3. **Verify.** Trigger a deliberate error (a debug-only route works well) and confirm it appears
+   as a new issue on the project's board with source "monitor" in Mahaam. Trigger the same error
    again and confirm it bumps the SAME issue's occurrence count rather than creating a second one.
-5. Don't commit a real DSN into a tracked `.env` file. Only the example file gets a placeholder.
+4. Don't commit a real DSN into a tracked `.env` file. Only the example file gets a placeholder.
