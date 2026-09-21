@@ -38,6 +38,8 @@ export interface ClientOptions {
   randomToken?: () => string;
   now?: () => number;
   retries?: number;
+  /** Label for the personal access token minted at sign-in, so a user can tell devices apart. */
+  deviceName?: string;
 }
 
 export class ApiError extends Error {
@@ -148,15 +150,43 @@ export class MahaamClient {
   async login(email: string, password: string): Promise<User> {
     const out = await this.authPost("/api/auth/login", { email, password });
     await this.saveSession(out, { email, password });
+    await this.upgradeToAccessToken(this.o.deviceName ?? "Mahaam mobile");
     return this.user!;
   }
 
   async register(name: string, email: string, password: string): Promise<User> {
     const out = await this.authPost("/api/auth/register", { name, email, password });
     await this.saveSession(out, { email, password });
+    await this.upgradeToAccessToken(this.o.deviceName ?? "Mahaam mobile");
     return this.user!;
   }
 
+  /**
+   * POST /api/auth/tokens → a personal access token (`togo_pat_…`), returned once.
+   *
+   * Held instead of the password: revocable from the server, scoped to this device and
+   * non-expiring, so nothing needs the credentials to silently re-login.
+   *
+   * Note "sign out everywhere" permanently rejects existing PATs — the server's revocation
+   * check looks for a JWT `iat` a PAT has not got — so a 401 means sign in again, not a bug.
+   */
+  async createAccessToken(name: string): Promise<string> {
+    const out = await this.request<{ token: string }>("/api/auth/tokens", { method: "POST", body: { name, abilities: [] } });
+    return out.token;
+  }
+
+  /** Swap the freshly issued JWT for a PAT, so the password never has to be kept. */
+  private async upgradeToAccessToken(deviceName: string): Promise<boolean> {
+    try {
+      const pat = await this.createAccessToken(deviceName);
+      this.token = pat;
+      await Promise.all([this.o.store.set(K.token, pat), this.o.store.del(K.creds)]);
+      return true;
+    } catch {
+      // An older self-hosted server may not expose the endpoint; keep the JWT path.
+      return false;
+    }
+  }
   async logout() {
     this.token = null;
     this.user = null;

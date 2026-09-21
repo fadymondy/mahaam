@@ -38,7 +38,41 @@ function mockFetch(handler: (call: Call, n: number) => Response | Promise<Respon
 const header = (c: Call, name: string) => (c.init.headers as Record<string, string>)[name];
 const future = () => Math.floor(Date.now() / 1000) + 3600;
 
-describe("MahaamClient auth dance", () => {
+describe("MahaamClient auth dance", () => {
+  it("swaps the JWT for a personal access token at login and drops the stored password", async () => {
+    // The password only existed so the client could silently re-login. A PAT removes that need
+    // entirely, and the server can revoke it per device.
+    const token = jwt(future());
+    const pat = "togo_pat_" + "c".repeat(48);
+    const { f, calls } = mockFetch((c) =>
+      c.url.includes("/api/auth/tokens") ? json(201, { token: pat }) : json(200, { token, user: { id: "u1", email: "a@b.c" } }),
+    );
+    const store = memStore();
+    const c = new MahaamClient({ baseUrl: "http://api", store, fetch: f, randomToken: () => "x", deviceName: "Pixel" });
+
+    await c.login("a@b.c", "pw");
+
+    const mint = calls.find((x) => x.url.includes("/api/auth/tokens"));
+    expect(mint).toBeTruthy();
+    expect(JSON.parse(String(mint!.init.body)).name).toBe("Pixel");
+    expect(store.data["mahaam.token"]).toBe(pat);
+    expect(store.data["mahaam.creds"]).toBeUndefined();
+    expect(JSON.stringify(store.data)).not.toContain("pw");
+  });
+
+  it("keeps working against a server with no PAT endpoint", async () => {
+    // Older self-hosted servers may not expose /api/auth/tokens; sign-in must not break.
+    const token = jwt(future());
+    const { f } = mockFetch((c) =>
+      c.url.includes("/api/auth/tokens") ? json(404, { error: "not found" }) : json(200, { token, user: { id: "u1", email: "a@b.c" } }),
+    );
+    const store = memStore();
+    const c = new MahaamClient({ baseUrl: "http://api", store, fetch: f, randomToken: () => "x" });
+
+    await expect(c.login("a@b.c", "pw")).resolves.toBeTruthy();
+    expect(store.data["mahaam.token"]).toBe(token); // still signed in on the JWT
+  });
+
   it("never persists the password to a store that cannot keep secrets (the web build)", async () => {
     // Regression guard: on web the KeyValueStore is localStorage, so writing the password there
     // left it in cleartext for any XSS to read. An insecure store must get the token but never
@@ -59,9 +93,13 @@ describe("MahaamClient auth dance", () => {
     await expect(c.reauthenticate()).resolves.toBe(false);
   });
 
+  // Pinned to a server with no /api/auth/tokens, so this still covers the legacy path where the
+  // password is kept for silent re-login. The PAT path is covered by the test below it.
   it("login sends the double-submit CSRF token as cookie + header and stores the session", async () => {
     const token = jwt(future());
-    const { f, calls } = mockFetch(() => json(200, { token, user: { id: "u1", email: "a@b.c" } }));
+    const { f, calls } = mockFetch((call) =>
+      call.url.includes("/api/auth/tokens") ? json(404, { error: "not found" }) : json(200, { token, user: { id: "u1", email: "a@b.c" } }),
+    );
     const store = memStore();
     const c = new MahaamClient({ baseUrl: "http://api", store, fetch: f, randomToken: () => "csrf123" });
 
