@@ -19,6 +19,7 @@ import {
   MenuIcon,
   MessageSquarePlusIcon,
   DownloadIcon,
+  PlugZapIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   ReceiptTextIcon,
@@ -56,6 +57,7 @@ import { CubeMark } from "@/components/brand/cube-mark";
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls";
 import { ReportProblemDialog } from "@/components/feedback/report-problem";
 import { AppInstallDialog, useAutoOpenAppPrompt } from "@/components/app-install-dialog";
+import { ConnectAgentDialog } from "@/components/mcp/connect-agent-dialog";
 import { NotFoundState } from "@/components/not-found-state";
 import { ErrorState } from "@/components/states";
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
@@ -208,6 +210,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggleNav]);
   const [appOpen, setAppOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const openApp = useCallback(() => setAppOpen(true), []);
   useAutoOpenAppPrompt(Boolean(me.data), openApp);
   const [navOpen, setNavOpen] = useState(false);
@@ -321,6 +324,18 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 <span className="hidden sm:inline">{t("feedback.report")}</span>
               </Button>
             ) : null}
+            {ctx ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden sm:inline-flex"
+                onClick={() => setConnectOpen(true)}
+                aria-label={t("mcp.connectTitle")}
+              >
+                <PlugZapIcon />
+                <span className="hidden sm:inline">{t("mcp.connectAgent")}</span>
+              </Button>
+            ) : null}
             {me.data ? (
               <Button variant="ghost" size="icon-sm" onClick={openApp} aria-label={t("pwa.title")} title={t("pwa.title")}>
                 <DownloadIcon />
@@ -361,6 +376,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </Sheet>
 
       <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
+      {ctx ? <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} /> : null}
       <ReportProblemDialog
         open={reporting}
         onOpenChange={setReporting}

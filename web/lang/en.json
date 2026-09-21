@@ -190,5 +190,18 @@
   "mcp.allProjects": "All projects",
   "mcp.projectCount": "{n} projects",
   "shell.collapseNav": "Collapse sidebar (Ctrl+B)",
-  "shell.expandNav": "Expand sidebar (Ctrl+B)"
+  "shell.expandNav": "Expand sidebar (Ctrl+B)",
+  "mcp.connectAgent": "Connect AI agent",
+  "mcp.connectTitle": "Connect an AI agent",
+  "mcp.connectHint": "Mint a token and get ready-to-paste setup for Claude Code, Claude Desktop, Cursor or any other MCP client.",
+  "mcp.connectDefaultName": "AI agent",
+  "mcp.connectDefaultScopeHint": "Starts with a broad set of read/write scopes for projects, tasks, issues and time.",
+  "mcp.connectPickScopes": "Pick scopes myself",
+  "mcp.connectGo": "Create and connect",
+  "mcp.claudeDesktopCursor": "Claude Desktop / Cursor / Windsurf (config JSON)",
+  "mcp.claudeDesktopCursorHint": "Add this under \"mcpServers\" in the app's MCP config file.",
+  "mcp.genericClient": "Any other MCP client",
+  "mcp.serverUrl": "Server URL",
+  "mcp.authHeader": "Auth header",
+  "mcp.oauthClientsHint": "Claude.ai and ChatGPT's remote connectors want a plain server URL and sign in with OAuth rather than a pasted token — that flow isn't wired up on Mahaam yet. Claude Code, Claude Desktop, Cursor and Windsurf all work today with the token above."
 }

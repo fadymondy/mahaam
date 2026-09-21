@@ -191,5 +191,18 @@
   "mcp.allProjects": "كل المشاريع",
   "mcp.projectCount": "{n} مشاريع",
   "shell.collapseNav": "طيّ الشريط الجانبي (Ctrl+B)",
-  "shell.expandNav": "توسيع الشريط الجانبي (Ctrl+B)"
+  "shell.expandNav": "توسيع الشريط الجانبي (Ctrl+B)",
+  "mcp.connectAgent": "ربط وكيل ذكاء",
+  "mcp.connectTitle": "ربط وكيل ذكاء اصطناعي",
+  "mcp.connectHint": "أنشئ رمزًا واحصل على إعداد جاهز للّصق في Claude Code وClaude Desktop وCursor أو أي عميل MCP آخر.",
+  "mcp.connectDefaultName": "وكيل ذكاء",
+  "mcp.connectDefaultScopeHint": "يبدأ بمجموعة واسعة من صلاحيات القراءة والكتابة للمشاريع والمهام والمشكلات والوقت.",
+  "mcp.connectPickScopes": "اختيار الصلاحيات بنفسي",
+  "mcp.connectGo": "إنشاء واتصال",
+  "mcp.claudeDesktopCursor": "Claude Desktop / Cursor / Windsurf (إعداد JSON)",
+  "mcp.claudeDesktopCursorHint": "أضف هذا ضمن \"mcpServers\" في ملف إعداد MCP الخاص بالتطبيق.",
+  "mcp.genericClient": "أي عميل MCP آخر",
+  "mcp.serverUrl": "رابط الخادم",
+  "mcp.authHeader": "ترويسة التوثيق",
+  "mcp.oauthClientsHint": "توصيلات Claude.ai وChatGPT عن بُعد تطلب رابط خادم فقط وتسجّل الدخول عبر OAuth بدل لصق رمز — هذا التدفّق غير مفعّل في مهام بعد. Claude Code وClaude Desktop وCursor وWindsurf تعمل جميعها اليوم بالرمز أعلاه."
 }
