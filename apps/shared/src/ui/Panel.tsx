@@ -318,6 +318,8 @@ function Home({
     [host],
   );
 
+  // True once the stream has been open, so the first connect does not refetch what mount just did.
+  const wasOpen = useRef(false);
   const loadToday = useCallback(() => api.entriesToday().then(setToday, fail), [api, fail]);
   const loadAll = useCallback(() => {
     setError(null);
@@ -346,7 +348,16 @@ function Home({
         } else if (e.type === "entry.changed") loadToday();
         else if (e.type === "notification") api.notifications(20).then(setInbox, () => null);
       },
-      setLive,
+      (status) => {
+        setLive(status);
+        // The stream replays nothing on reconnect — the server's hello frame carries the running
+        // timer and nothing else — so everything else would sit stale until the user acted.
+        // Only refetch on a genuine reconnect; the first open is already covered by mount.
+        if (status === "open") {
+          if (wasOpen.current) loadAll();
+          wasOpen.current = true;
+        }
+      },
       onAuthLost,
     );
     return off;
