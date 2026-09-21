@@ -496,6 +496,34 @@ func TestTimeTracking(t *testing.T) {
 	if code, b := bob.do("GET", "/api/w/time/entries/"+e1ID, nil); code != 404 || strings.Contains(string(b), "late deploy") {
 		t.Errorf("bob read A's entry: %d %s", code, b)
 	}
+
+	// ---- 10. replaying a logged entry is refused, which is what makes an offline queue safe ------
+	// An offline client queues finished blocks and replays them on reconnect. Nothing in the API
+	// carries an idempotency key, so replay safety rests entirely on the no_overlap exclusion
+	// constraint: the same block cannot be inserted twice for the same person. This pins that
+	// contract — a queue may treat 409 as "already recorded" and drop the item, rather than
+	// retrying forever or double-billing the customer.
+	rex.ws = aID
+	block := map[string]any{
+		"project":     prID,
+		"started_at":  "2026-03-02T09:00:00Z",
+		"ended_at":    "2026-03-02T10:00:00Z",
+		"description": "offline block",
+	}
+	first := rex.must("POST", "/api/w/time/entries", block, 201)
+	if first["id"] == nil {
+		t.Fatalf("logging a block did not return an entry: %v", first)
+	}
+	if code, b := rex.do("POST", "/api/w/time/entries", block); code != 409 {
+		t.Errorf("replaying the same block: got %d %s, want 409 so a queue can drop it", code, b)
+	}
+	// A different block on the same day must still be accepted — the guard is the time range,
+	// not "one entry per day".
+	rex.must("POST", "/api/w/time/entries", map[string]any{
+		"project":    prID,
+		"started_at": "2026-03-02T11:00:00Z",
+		"ended_at":   "2026-03-02T12:00:00Z",
+	}, 201)
 }
 
 func testAppURL() string { return os.Getenv("TEST_APP_DATABASE_URL") }
