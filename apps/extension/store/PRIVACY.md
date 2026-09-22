@@ -1,7 +1,8 @@
 # Mahaam browser extension — privacy
 
-*Publish this at `https://mahaam.app/legal/extension-privacy` and link it from both store
-listings. Keep it in the repo as the source, so it changes in the same commit as the behaviour it
+*The public policy is `https://mahaam.app/en/legal/privacy` (`web/content/legal.ts`), whose
+extension section agrees with this file; link that from both store listings. This file is the
+extension's detail, kept in the repo so it changes in the same commit as the behaviour it
 describes.*
 
 ---

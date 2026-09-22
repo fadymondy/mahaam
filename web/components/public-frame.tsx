@@ -92,9 +92,16 @@ export function PublicFrame({
             </FooterCell>
             <FooterCell label={t("footer.languages")}>English · العربية</FooterCell>
           </dl>
-          <div className="grid-screen-line-top grid-screen-line-bottom mt-4 flex items-center px-4 py-3 text-grid-muted">
+          <div className="grid-screen-line-top grid-screen-line-bottom mt-4 flex items-center gap-4 px-4 py-3 text-sm text-grid-muted">
             <Link href={`/${locale}`} aria-label={brandName(locale)}>
               <CubeMark mark={MAHAAM_MARK} size={16} />
+            </Link>
+            <div className="flex-1" />
+            <Link href={`/${locale}/legal/terms`} className="underline-offset-4 hover:text-grid-fg hover:underline">
+              {t("legal.terms")}
+            </Link>
+            <Link href={`/${locale}/legal/privacy`} className="underline-offset-4 hover:text-grid-fg hover:underline">
+              {t("legal.privacy")}
             </Link>
           </div>
         </div>

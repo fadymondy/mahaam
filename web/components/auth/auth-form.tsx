@@ -185,6 +185,27 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             ))}
           </div>
         ) : null}
+        {mode === "register" ? (
+          // Links rather than a checkbox: submitting the form is the agreement, and a box that
+          // must be ticked before the button works adds a step without adding consent.
+          <p className="mt-4 text-center text-xs text-grid-muted" data-consent>
+            {t("auth.consent")
+              .split(/(\{terms\}|\{privacy\})/)
+              .map((part, i) =>
+                part === "{terms}" || part === "{privacy}" ? (
+                  <Link
+                    key={i}
+                    href={`/${locale}/legal/${part === "{terms}" ? "terms" : "privacy"}`}
+                    className="text-grid-fg underline underline-offset-4"
+                  >
+                    {t(part === "{terms}" ? "auth.consentTerms" : "auth.consentPrivacy")}
+                  </Link>
+                ) : (
+                  <span key={i}>{part}</span>
+                ),
+              )}
+          </p>
+        ) : null}
         <p className="mt-6 text-center text-sm text-grid-muted">
           {mode === "login" ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
           <Link href={otherHref} className="font-medium text-grid-fg underline underline-offset-4">

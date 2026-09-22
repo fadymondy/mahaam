@@ -260,5 +260,13 @@
   "account.deleteConfirmHint": "أدخل كلمة مرورك للتأكيد.",
   "account.deleteSubmit": "حذف الحساب",
   "account.deleteSoleOwner": "أنت المالك الوحيد لمساحات العمل هذه. اجعل شخصاً آخر مالكاً أو احذفها أولاً:",
-  "auth.deletedNotice": "سيُحذف حسابك في {date}. سجّل الدخول قبل ذلك لإلغاء الحذف."
+  "auth.deletedNotice": "سيُحذف حسابك في {date}. سجّل الدخول قبل ذلك لإلغاء الحذف.",
+  "legal.eyebrow": "قانوني",
+  "legal.updated": "آخر تحديث {date}",
+  "legal.draft": "مسودة: هذا النص بانتظار المراجعة النهائية وقد يتغيّر قبل سريانه.",
+  "legal.terms": "الشروط",
+  "legal.privacy": "الخصوصية",
+  "auth.consent": "بإنشائك حساباً فأنت توافق على {terms} و{privacy}.",
+  "auth.consentTerms": "شروط الخدمة",
+  "auth.consentPrivacy": "سياسة الخصوصية"
 }

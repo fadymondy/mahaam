@@ -259,5 +259,13 @@
   "account.deleteConfirmHint": "Enter your password to confirm.",
   "account.deleteSubmit": "Delete account",
   "account.deleteSoleOwner": "You're the only owner of these workspaces. Make someone else an owner, or delete them, first:",
-  "auth.deletedNotice": "Your account will be deleted on {date}. Sign in before then to cancel the deletion."
+  "auth.deletedNotice": "Your account will be deleted on {date}. Sign in before then to cancel the deletion.",
+  "legal.eyebrow": "Legal",
+  "legal.updated": "Updated {date}",
+  "legal.draft": "Draft: this text is waiting for final review and may still change before it takes effect.",
+  "legal.terms": "Terms",
+  "legal.privacy": "Privacy",
+  "auth.consent": "By creating an account you agree to the {terms} and the {privacy}.",
+  "auth.consentTerms": "Terms of Service",
+  "auth.consentPrivacy": "Privacy Policy"
 }
