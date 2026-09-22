@@ -7,6 +7,7 @@ import type {
   Inbox,
   Invoice,
   Issue,
+  IssueDetail,
   PortalComment,
   PortalIssueDetail,
   PortalProject,
@@ -80,6 +81,14 @@ export function api(c: MahaamClient) {
 
     issues: {
       list: () => c.get<{ issues: Issue[] | null }>(`/api/w/issues${q({ state: "open" })}`),
+      // The team side was read-only: a list, with nothing behind it. These are what turn it into
+      // something a member can work from. All four routes already exist on the server — only the
+      // client was missing them.
+      get: (key: string) => c.get<IssueDetail>(`/api/w/issues/${e(key)}`),
+      comment: (key: string, body: string) => c.post<unknown>(`/api/w/issues/${e(key)}/comments`, { body }),
+      move: (key: string, status: string) => c.patch<IssueDetail>(`/api/w/issues/${e(key)}`, { status }),
+      create: (input: { title: string; body?: string; project?: string; issue_type?: string; priority?: string }) =>
+        c.post<IssueDetail>("/api/w/issues", input),
     },
 
     notifications: {

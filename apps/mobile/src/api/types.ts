@@ -102,6 +102,9 @@ export interface Issue {
   updated_at: string;
 }
 
+/** One workspace issue in full, as the team side reads it. Generated shape; only what we use. */
+export type IssueDetail = components["schemas"]["IssueDetail"];
+export type IssueComment = components["schemas"]["IssueComment"];
 export type Notification = components["schemas"]["Notification"];
 
 export interface Inbox {

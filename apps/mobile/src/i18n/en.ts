@@ -106,6 +106,20 @@ const en = {
     empty: "No time this week.",
   },
   inbox: { title: "Notifications", markAll: "Mark all read", empty: "You're all caught up.", unread: "{n} unread" },
+  issues: {
+    unavailable: "This issue is not available.",
+    noBody: "No description.",
+    moveTo: "Move to",
+    agent: "Agent",
+    status: {
+      backlog: "Backlog",
+      todo: "To do",
+      in_progress: "In progress",
+      waiting_approval: "Waiting approval",
+      in_review: "In review",
+      done: "Done",
+    },
+  },
   portal: {
     projects: "Your projects",
     none: "No projects are shared with you yet.",

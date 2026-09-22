@@ -32,6 +32,7 @@ export const qk = {
   projects: (ws: string) => ["projects", ws] as const,
   project: (ws: string, id: string) => ["project", ws, id] as const,
   issues: (ws: string) => ["issues", ws] as const,
+  issue: (ws: string, key: string) => ["issue", ws, key] as const,
   inbox: (ws: string) => ["inbox", ws] as const,
   settings: (ws: string) => ["time-settings", ws] as const,
   portalProjects: (ws: string) => ["portal-projects", ws] as const,

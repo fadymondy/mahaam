@@ -104,6 +104,20 @@ const ar: Shape<Dict> = {
     empty: "لا وقت هذا الأسبوع.",
   },
   inbox: { title: "الإشعارات", markAll: "تعليم الكل كمقروء", empty: "لا جديد.", unread: "{n} غير مقروء" },
+  issues: {
+    unavailable: "هذه المهمة غير متاحة.",
+    noBody: "لا يوجد وصف.",
+    moveTo: "انقل إلى",
+    agent: "الوكيل",
+    status: {
+      backlog: "قائمة الانتظار",
+      todo: "للتنفيذ",
+      in_progress: "قيد التنفيذ",
+      waiting_approval: "بانتظار الموافقة",
+      in_review: "قيد المراجعة",
+      done: "منجز",
+    },
+  },
   portal: {
     projects: "مشاريعك",
     none: "لم تتم مشاركة أي مشروع معك بعد.",

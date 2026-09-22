@@ -86,7 +86,12 @@ export default function Tasks() {
       {(issues.data ?? []).length === 0 && !issues.isError ? <Empty text={t("tasks.noIssues")} /> : null}
       {issueOrder(issues.data ?? []).map((i) => (
         <View key={i.key} style={{ gap: space.xs }}>
-          <ListItem title={`${i.key} · ${i.title}`} subtitle={[i.issue_type, i.status].join(" · ")} right={<Badge label={i.priority} />} />
+          <ListItem
+            title={`${i.key} · ${i.title}`}
+            subtitle={[i.issue_type, i.status].join(" · ")}
+            right={<Badge label={i.priority} />}
+            onPress={() => router.push({ pathname: "/team-issue/[key]", params: { key: i.key } })}
+          />
           <Row style={{ justifyContent: "flex-end" }}>
             <Button
               small
