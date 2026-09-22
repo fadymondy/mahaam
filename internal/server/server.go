@@ -16,6 +16,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
+	"github.com/togo-framework/auth"
 	"github.com/togo-framework/ratelimit"
 	"github.com/togo-framework/togo"
 
@@ -165,9 +166,13 @@ func registerAccount(api huma.API, a *app.App) {
 		account.RegisterProfile(api, &account.Service{})
 		account.RegisterDelete(api, &account.Service{})
 		account.RegisterVerify(api, &account.Service{})
+		account.RegisterTwoFA(api, &account.Service{})
 		return
 	}
 	s := &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(a.Kernel), Log: a.Log}
+	if svc, ok := auth.FromKernel(a.Kernel); ok {
+		s.Auth = svc
+	}
 	if rl, ok := ratelimit.FromKernel(a.Kernel); ok {
 		s.Limit = rl
 	} else {
@@ -177,6 +182,7 @@ func registerAccount(api huma.API, a *app.App) {
 	account.RegisterProfile(api, s)
 	account.RegisterDelete(api, s)
 	account.RegisterVerify(api, s)
+	account.RegisterTwoFA(api, s) // /api/me/2fa/*, /api/auth/2fa/challenge
 	account.OnRegistered(a.Kernel, s) // the first verification code, when the auth plugin creates an account
 }
 

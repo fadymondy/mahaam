@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/togo-framework/auth"
 	"github.com/togo-framework/ratelimit"
 	"golang.org/x/crypto/bcrypt"
 
@@ -50,6 +51,8 @@ type Service struct {
 	Mail  mailer.Sender
 	Log   *slog.Logger
 	Limit *ratelimit.Service // nil: not rate limited (development without the plugin)
+	// Auth issues the session token after a second factor (twofa_routes.go).
+	Auth *auth.Service
 }
 
 var (

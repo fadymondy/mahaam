@@ -169,9 +169,22 @@ export class MahaamClient {
     return data.token;
   }
 
-  /** POST /api/auth/login → stores and returns the JWT. */
-  login(email: string, password: string): Promise<string> {
-    return this.credentialPost("/api/auth/login", { email, password });
+  /**
+   * POST /api/auth/login → stores and returns the JWT.
+   *
+   * With two-factor sign-in on (MH-341) the server answers the password with 401
+   * {code: "mfa_required", challenge} instead of a token. Without `second` that surfaces as an
+   * ApiError whose data.code is "mfa_required" (isMfaRequired), so the UI can ask for the code;
+   * with it, the challenge is answered here and the token comes back as usual.
+   */
+  async login(email: string, password: string, second?: { code?: string; recovery_code?: string }): Promise<string> {
+    try {
+      return await this.credentialPost("/api/auth/login", { email, password });
+    } catch (err) {
+      const challenge = isMfaRequired(err) ? ((err as ApiError).body as { challenge?: string }).challenge : undefined;
+      if (!challenge || !second || !(second.code || second.recovery_code)) throw err;
+      return this.credentialPost("/api/auth/2fa/challenge", { challenge, ...second });
+    }
   }
 
   /** POST /api/auth/register → stores and returns the JWT. */
@@ -194,9 +207,9 @@ export class MahaamClient {
    * that asks for `abilities` rather than issue a narrow-looking token that is not narrow, so
    * there is no parameter for them here. MCP tokens (`mgy_`) are the scoped token system.
    *
-   * Caveat worth knowing: "sign out everywhere" permanently rejects existing PATs, because the
-   * server's revocation check looks for a JWT `iat` that a PAT does not carry. Callers should
-   * treat a 401 as "sign in again and mint a new one", not as a fatal error.
+   * "Sign out everywhere" and a password reset end the PATs that existed before them; one minted
+   * afterwards works. Callers should treat a 401 as "sign in again and mint a new one", not as a
+   * fatal error.
    */
   async createAccessToken(name: string): Promise<string> {
     const out = await this.request<{ token: string }>("POST", "/api/auth/tokens", { body: { name } });
@@ -646,4 +659,10 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return new Blob([bytes], { type });
+}
+
+/** The password was right but the account asks for a second factor (MH-341). */
+export function isMfaRequired(err: unknown): boolean {
+  const b = err instanceof ApiError ? (err.body as { code?: unknown } | undefined) : undefined;
+  return err instanceof ApiError && err.status === 401 && b?.code === "mfa_required";
 }

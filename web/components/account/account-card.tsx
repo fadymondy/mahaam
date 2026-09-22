@@ -18,6 +18,7 @@ import { ErrorState, LoadingRows } from "@/components/states"
 import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { errorText } from "@/lib/work"
+import { TwoFactor, useTwoFactor } from "@/components/account/two-factor"
 
 export type Profile = {
   id: string
@@ -57,6 +58,7 @@ export function AccountCard() {
               <EmailForm profile={profile.data} onSaved={(p) => void profile.mutate(p, false)} />
               <PasswordForm />
             </div>
+            <TwoFactor />
             <DeleteAccount />
           </>
         )}
@@ -415,6 +417,9 @@ function DeleteAccount() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [owned, setOwned] = useState<OwnedWorkspace[] | null>(null)
+  // With two-factor sign-in on, the password alone doesn't delete the account.
+  const twofa = useTwoFactor()
+  const [code, setCode] = useState("")
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -422,7 +427,9 @@ function DeleteAccount() {
     setOwned(null)
     setBusy(true)
     try {
-      const out = await api<{ purge_after: string }>("/api/me/delete", { json: { password, locale } })
+      const out = await api<{ purge_after: string }>("/api/me/delete", {
+        json: twofa.data?.enabled ? { password, locale, code } : { password, locale },
+      })
       // The session is already revoked; this only clears the cookie, so it may well 401.
       await api("/api/auth/logout", { method: "POST" }).catch(() => undefined)
       resetCsrf()
@@ -431,6 +438,10 @@ function DeleteAccount() {
       setBusy(false)
       if (err instanceof ApiError && err.code === "sole_owner") {
         setOwned(((err.data as { workspaces?: OwnedWorkspace[] })?.workspaces ?? []) as OwnedWorkspace[])
+      } else if (err instanceof ApiError && err.code === "mfa_required") {
+        setError(t("auth.mfaHint"))
+      } else if (err instanceof ApiError && err.status === 400) {
+        setError(t("auth.mfaWrong"))
       } else if (err instanceof ApiError && err.status === 403) {
         setError(t("account.wrongPassword"))
       } else {
@@ -462,6 +473,22 @@ function DeleteAccount() {
               />
               <FieldDescription>{t("account.deleteConfirmHint")}</FieldDescription>
             </Field>
+            {twofa.data?.enabled ? (
+              <Field>
+                <FieldLabel htmlFor="acc-delete-code">{t("auth.mfaLabel")}</FieldLabel>
+                <Input
+                  id="acc-delete-code"
+                  dir="ltr"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="font-mono tracking-[0.4em]"
+                  placeholder="000000"
+                />
+              </Field>
+            ) : null}
             {error ? <FieldError>{error}</FieldError> : null}
             {owned ? (
               <div className="rounded-md border border-line p-3 text-sm" role="alert" data-sole-owner>
@@ -478,7 +505,7 @@ function DeleteAccount() {
               </div>
             ) : null}
             <div className="flex gap-2">
-              <Button type="submit" variant="destructive" disabled={busy || !password}>
+              <Button type="submit" variant="destructive" disabled={busy || !password || (!!twofa.data?.enabled && code.length !== 6)}>
                 {busy ? t("common.working") : t("account.deleteSubmit")}
               </Button>
               <Button type="button" variant="ghost" disabled={busy} onClick={() => setOpen(false)}>

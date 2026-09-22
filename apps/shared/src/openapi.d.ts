@@ -419,6 +419,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/2fa/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish signing in with a two-factor code
+         * @description The second step after POST /api/auth/login answered 401 {code: mfa_required, challenge}. Send the challenge with a code from the authenticator, or a recovery code. Returns the session token (use it as a Bearer token), and for a browser that sent the CSRF header, also sets the session cookie.
+         */
+        post: operations["auth-2fa-challenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/password/forgot": {
         parameters: {
             query?: never;
@@ -636,6 +656,97 @@ export interface paths {
         post?: never;
         /** Delete a McpToken */
         delete: operations["delete-mcp-token"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your two-factor sign-in */
+        get: operations["me-2fa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn two-factor sign-in on with the first code */
+        post: operations["me-2fa-confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn two-factor sign-in off
+         * @description Needs your password and a current code (or a recovery code).
+         */
+        post: operations["me-2fa-disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start setting up two-factor sign-in
+         * @description Needs your password. Returns the secret and an otpauth:// link (show it as a QR code, or open it on the same phone). Nothing is enforced until /api/me/2fa/confirm.
+         */
+        post: operations["me-2fa-enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace your recovery codes */
+        post: operations["me-2fa-recovery"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4522,6 +4633,17 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        "Auth-2fa-challengeRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Auth-2fa-challengeRequest.json
+             */
+            readonly $schema?: string;
+            challenge: string;
+            code?: string;
+            recovery_code?: string;
+        };
         Billing: {
             cancel_at_period_end: boolean;
             /** Format: date-time */
@@ -4635,6 +4757,16 @@ export interface components {
             name: string;
             /** @enum {string} */
             source: "ui" | "mcp" | "sync";
+        };
+        ChallengeOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ChallengeOutBody.json
+             */
+            readonly $schema?: string;
+            token: string;
+            user: components["schemas"]["Identity"];
         };
         ChecklistItem: {
             /**
@@ -4891,6 +5023,25 @@ export interface components {
             readonly $schema?: string;
             request: components["schemas"]["Request"];
             task_key: string;
+        };
+        Cookie: {
+            Domain: string;
+            /** Format: date-time */
+            Expires: string;
+            HttpOnly: boolean;
+            /** Format: int64 */
+            MaxAge: number;
+            Name: string;
+            Partitioned: boolean;
+            Path: string;
+            Quoted: boolean;
+            Raw: string;
+            RawExpires: string;
+            /** Format: int64 */
+            SameSite: number;
+            Secure: boolean;
+            Unparsed: string[] | null;
+            Value: string;
         };
         "Create-activity-logRequest": {
             /**
@@ -5751,6 +5902,13 @@ export interface components {
             readonly $schema?: string;
             grants: components["schemas"]["Grant"][] | null;
         };
+        Identity: {
+            email: string;
+            guard: string;
+            id: string;
+            permissions: string[] | null;
+            roles: string[] | null;
+        };
         ImportCounts: {
             /** Format: int64 */
             create: number;
@@ -6539,6 +6697,56 @@ export interface components {
             user_id: string;
             workspace_id: string;
         };
+        "Me-2fa-confirmRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-confirmRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+        };
+        "Me-2fa-disableRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-disableRequest.json
+             */
+            readonly $schema?: string;
+            code?: string;
+            password: string;
+            recovery_code?: string;
+        };
+        "Me-2fa-enrollRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-enrollRequest.json
+             */
+            readonly $schema?: string;
+            password: string;
+        };
+        "Me-2fa-enrollResponse": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-enrollResponse.json
+             */
+            readonly $schema?: string;
+            otpauth_url: string;
+            /** @description Base32, for typing into an authenticator by hand */
+            secret: string;
+        };
+        "Me-2fa-recoveryRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-recoveryRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+            password: string;
+        };
         "Me-deleteRequest": {
             /**
              * Format: uri
@@ -6546,9 +6754,12 @@ export interface components {
              * @example https://example.com/schemas/Me-deleteRequest.json
              */
             readonly $schema?: string;
+            /** @description Required when two-factor sign-in is on */
+            code?: string;
             /** @enum {string} */
             locale?: "en" | "ar" | "";
             password: string;
+            recovery_code?: string;
         };
         "Me-email-changeRequest": {
             /**
@@ -7738,6 +7949,16 @@ export interface components {
              */
             readonly $schema?: string;
             reason?: string;
+        };
+        RecoveryOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RecoveryOutBody.json
+             */
+            readonly $schema?: string;
+            /** @description Shown once. Each works once, in place of a code. */
+            recovery_codes: string[] | null;
         };
         Repo: {
             default_branch: string;
@@ -9269,6 +9490,19 @@ export interface components {
             deleted_at: string;
             entity: string;
             id: string;
+        };
+        TwoFAState: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TwoFAState.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** @description Setup started (QR shown) but no code confirmed yet */
+            pending: boolean;
+            /** Format: int64 */
+            recovery_codes_left: number;
         };
         Unbilled: {
             /**
@@ -11466,6 +11700,44 @@ export interface operations {
             };
         };
     };
+    "auth-2fa-challenge": {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: {
+                togo_csrf?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Auth-2fa-challengeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Set-Cookie"?: components["schemas"]["Cookie"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "password-forgot": {
         parameters: {
             query?: never;
@@ -12220,6 +12492,165 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoFAState"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-confirmRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-disableRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-enrollRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me-2fa-enrollResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-recoveryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryOutBody"];
+                };
             };
             /** @description Error */
             default: {

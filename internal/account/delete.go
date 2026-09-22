@@ -95,13 +95,22 @@ func soleOwned(ctx context.Context, q interface {
 
 // RequestDeletion checks the password and the ownership rule, then signs the account out of
 // everything at once and schedules the purge.
-func (s *Service) RequestDeletion(ctx context.Context, userID, password, locale string) (time.Time, error) {
+func (s *Service) RequestDeletion(ctx context.Context, userID, password, code, recovery, locale string) (time.Time, error) {
 	var email, hash string
 	if err := s.DB.QueryRowContext(ctx, `SELECT email, password_hash FROM users WHERE id = $1`, userID).Scan(&email, &hash); err != nil {
 		return time.Time{}, err
 	}
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
 		return time.Time{}, errWrongPassword
+	}
+	// With 2FA on, the password alone doesn't delete the account (MH-341).
+	if TwoFAEnabled(ctx, s.DB, userID) {
+		if code == "" && recovery == "" {
+			return time.Time{}, errSecondFactorRequired
+		}
+		if err := s.SecondFactor(ctx, userID, code, recovery); err != nil {
+			return time.Time{}, err
+		}
 	}
 	owned, err := soleOwned(ctx, s.DB, userID)
 	if err != nil {
@@ -319,19 +328,25 @@ func RegisterDelete(api huma.API, s *Service) {
 		Errors: []int{http.StatusForbidden, http.StatusConflict}},
 		func(ctx context.Context, in *struct {
 			Body struct {
-				Password string `json:"password" minLength:"1" maxLength:"200"`
-				Locale   string `json:"locale,omitempty" enum:"en,ar,"`
+				Password     string `json:"password" minLength:"1" maxLength:"200"`
+				Code         string `json:"code,omitempty" maxLength:"6" doc:"Required when two-factor sign-in is on"`
+				RecoveryCode string `json:"recovery_code,omitempty" maxLength:"20"`
+				Locale       string `json:"locale,omitempty" enum:"en,ar,"`
 			}
 		}) (*deleteOut, error) {
 			id, err := who(ctx)
 			if err != nil {
 				return nil, err
 			}
-			purge, err := s.RequestDeletion(ctx, id, in.Body.Password, in.Body.Locale)
+			purge, err := s.RequestDeletion(ctx, id, in.Body.Password, in.Body.Code, in.Body.RecoveryCode, in.Body.Locale)
 			var sole *SoleOwnerError
 			switch {
 			case errors.Is(err, errWrongPassword):
 				return nil, huma.Error403Forbidden(err.Error())
+			case errors.Is(err, errSecondFactorRequired):
+				return nil, &Refusal{Status: http.StatusForbidden, Code: "mfa_required", Msg: err.Error()}
+			case errors.Is(err, ErrTOTPInvalid), errors.Is(err, ErrTOTPLocked):
+				return nil, s.twoFAError(err)
 			case errors.As(err, &sole):
 				return nil, &SoleOwnerRefusal{Code: "sole_owner", Msg: sole.Error(), Workspaces: sole.Workspaces}
 			case err != nil:

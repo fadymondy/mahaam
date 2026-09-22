@@ -29,13 +29,15 @@ async function boot() {
     defaultApiUrl: state.apiUrl || defaultApiUrl(),
     canRemember: false, // token only; no password is kept by the extension
     session: async () => session(),
-    async signIn(apiUrl, email, password) {
+    async signIn(apiUrl, email, password, _remember, code) {
       const url = normalizeApiUrl(apiUrl || defaultApiUrl());
       // Ask for the host permission first, while still inside the click's user gesture.
       if (!import.meta.env.DEV && !(await requestOrigin(url))) throw new Error(`Mahaam needs permission to reach ${new URL(url).host}.`);
       const next = { ...state, apiUrl: url, email, token: null as string | null, workspace: state.email === email && state.apiUrl === url ? state.workspace : null };
       const c = makeClient(next, () => void saveState({ token: null }));
-      await c.login(email, password);
+      // With two-factor sign-in the first call throws isMfaRequired and the panel asks for the
+      // code; the second call brings it (MH-341).
+      await c.login(email, password, code ? { code } : undefined);
       // Swap the 24h JWT for a personal access token named for this browser. The JWT cannot be
       // revoked and forces a silent re-login — which is why the password used to have to be kept.
       // A PAT can be revoked from the server and shows up in the user's own device list.

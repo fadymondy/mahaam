@@ -69,6 +69,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Two-factor sign-in (MH-341): the password was right and the account has a second factor, so
+  // the API answered with a challenge instead of a session.
+  const [challenge, setChallenge] = useState<string | null>(null)
+  const [code, setCode] = useState("")
+  const [useRecovery, setUseRecovery] = useState(false)
 
   const methods = useSWR("/api/auth/methods", (p: string) => api<unknown>(p), {
     revalidateOnFocus: false,
@@ -93,12 +98,41 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       router.replace(next)
     } catch (err) {
       if (err instanceof ApiError) {
-        if (mode === "login" && err.status === 401) setError(t("auth.invalidCredentials"))
+        const mfa = (err.data as { challenge?: string } | undefined)?.challenge
+        if (mode === "login" && err.code === "mfa_required" && mfa) {
+          setChallenge(mfa)
+          setCode("")
+        } else if (mode === "login" && err.status === 401) setError(t("auth.invalidCredentials"))
         else if (mode === "register" && /registration failed/i.test(err.message)) setError(t("auth.registrationFailed"))
         else setError(err.message)
       } else {
         setError(t("common.networkError"))
       }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onSecondFactor(e: FormEvent) {
+    e.preventDefault()
+    if (!challenge) return
+    setError(null)
+    setBusy(true)
+    try {
+      await api("/api/auth/2fa/challenge", {
+        json: useRecovery ? { challenge, recovery_code: code.trim() } : { challenge, code: code.trim() },
+      })
+      resetCsrf()
+      await mutate("/api/auth/me")
+      router.replace(next)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        // The challenge expired (five minutes) or the password changed: start over.
+        setChallenge(null)
+        setError(t("auth.mfaExpired"))
+      } else if (err instanceof ApiError && err.status === 429) setError(t("auth.mfaLocked"))
+      else if (err instanceof ApiError && err.status === 400) setError(t("auth.mfaWrong"))
+      else setError(err instanceof ApiError ? err.message : t("common.networkError"))
     } finally {
       setBusy(false)
     }
@@ -115,6 +149,45 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     >
       <PublicPanel className="flex justify-center py-10">
       <div className="w-full max-w-sm" data-auth-form>
+        {challenge ? (
+          <form onSubmit={onSecondFactor} noValidate data-mfa-form>
+            <FieldGroup>
+              <p className="text-sm text-grid-muted" role="status">
+                {useRecovery ? t("auth.mfaRecoveryHint") : t("auth.mfaHint")}
+              </p>
+              <Field data-invalid={!!error || undefined}>
+                <FieldLabel htmlFor="mfa-code">{useRecovery ? t("auth.mfaRecoveryLabel") : t("auth.mfaLabel")}</FieldLabel>
+                <Input
+                  id="mfa-code"
+                  dir="ltr"
+                  autoFocus
+                  inputMode={useRecovery ? "text" : "numeric"}
+                  autoComplete="one-time-code"
+                  maxLength={useRecovery ? 11 : 6}
+                  value={code}
+                  onChange={(e) => setCode(useRecovery ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="font-mono tracking-[0.3em]"
+                  placeholder={useRecovery ? "xxxxx-xxxxx" : "000000"}
+                />
+              </Field>
+              {error ? <FieldError>{error}</FieldError> : null}
+              <Button type="submit" size="lg" disabled={busy || (useRecovery ? code.trim().length < 10 : code.length !== 6)}>
+                {busy ? t("common.working") : t("auth.mfaSubmit")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setUseRecovery(!useRecovery)
+                  setCode("")
+                  setError(null)
+                }}
+              >
+                {useRecovery ? t("auth.mfaUseApp") : t("auth.mfaUseRecovery")}
+              </Button>
+            </FieldGroup>
+          </form>
+        ) : (
         <form onSubmit={onSubmit} noValidate>
           <FieldGroup>
             {mode === "login" && params.get("deleted") ? (
@@ -164,6 +237,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             </Button>
           </FieldGroup>
         </form>
+        )}
 
         {providers.length > 0 ? (
           <div className="mt-6 space-y-3">

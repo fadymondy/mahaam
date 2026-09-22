@@ -10,6 +10,7 @@ import { Textarea } from "./components/textarea"
 import { clock, duration, elapsedSeconds, entryLabel } from "../format";
 import type { Inbox, NextItem, TimeEntry, Workspace, Issue } from "../types";
 import type { LiveStatus, PanelHost, Session } from "./host";
+import { ApiError, isMfaRequired } from "../client";
 import { STRINGS, type Locale, type Strings } from "./i18n";
 import { Mark } from "./Mark";
 
@@ -166,15 +167,19 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
   const [remember, setRemember] = useState(host.canRemember);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(notice);
+  // Two-factor sign-in (MH-341): the password was right and the server wants a code as well.
+  const [needCode, setNeedCode] = useState(false);
+  const [code, setCode] = useState("");
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      onSignedIn(await host.signIn(apiUrl, email.trim(), password, remember && host.canRemember));
+      onSignedIn(await host.signIn(apiUrl, email.trim(), password, remember && host.canRemember, needCode ? code.trim() : undefined));
     } catch (err) {
-      setError(errText(err, t));
+      if (isMfaRequired(err) && !needCode) setNeedCode(true);
+      else setError(needCode && err instanceof ApiError && err.status === 400 ? t.mfaWrong : errText(err, t));
     } finally {
       setBusy(false);
     }
@@ -196,6 +201,23 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
         <span>{t.password}</span>
         <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
       </label>
+      {needCode && (
+        <label className="mgy-field">
+          <span>{t.mfaCode}</span>
+          <Input
+            dir="ltr"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="000000"
+            autoFocus
+            data-mfa-code
+          />
+          <span className="mgy-muted">{t.mfaHint}</span>
+        </label>
+      )}
       {host.canRemember && (
         <label className="mgy-check">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />

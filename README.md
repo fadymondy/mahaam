@@ -492,6 +492,17 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   The gate: an unverified account can't `POST /api/me/workspaces` (403 `email_unverified`) when `EMAIL_VERIFICATION`
   is `required`, or `auto` (the default) with a mail driver that really delivers. Without SMTP nobody could receive
   the code, so `auto` leaves the gate off.
+- **Two-factor sign-in** (MH-341, `internal/account/twofa.go`): Mahaam's own TOTP, because the plugin's
+  `/api/auth/2fa/enroll|verify` stored the secret in plain text as issuer "togo" and sign-in never checked it. Those
+  two routes are now blocked. `user_totp` holds the secret sealed with secretbox, a `last_step` replay guard, and failure
+  counting in the DB (10 per 15 min); `user_recovery_codes` holds 10 HMAC'd one-time codes. `/api/me/2fa`: state,
+  `enroll` (password), `confirm` (returns the recovery codes once), `recovery-codes` (password + code), `disable`
+  (password + code or recovery). Sign-in: the guard answers POST /api/auth/login itself only when the password is
+  RIGHT and 2FA is on: 401 `{code: mfa_required, challenge}`, no session. A wrong password still goes to the plugin,
+  so nothing reveals 2FA. `POST /api/auth/2fa/challenge` returns the token via the plugin's exported `IssueToken`,
+  and sets the session cookie only when the CSRF header matches (no login CSRF); `SESSION_DRIVER=cookie` only.
+  Delete account asks for the code too. The shared client (`login(email, pw, {code})`, `isMfaRequired`) and panel
+  handle it for the extension.
 - **Native push** (MH-352, `internal/push/native.go`): `devices` (owner pool; one row per install, UNIQUE push token,
   so a phone that changes hands moves rather than receiving both people's notifications). `POST /api/me/devices`
   (with `previous_token` for FCM's token rotation) and `DELETE /api/me/devices/{token}`. Every inbox notification that

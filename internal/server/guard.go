@@ -66,6 +66,10 @@ func classify(r *http.Request) tier {
 		"/api/auth/otp",
 		// Magic links — the auth-mfa vulnerability class (fadymondy.com FM-81).
 		"/api/auth/magic",
+		// The auth plugin's own TOTP: it stores the secret in plain text, and nothing at sign-in
+		// ever checked it. Mahaam's is /api/me/2fa/* and /api/auth/2fa/challenge (MH-341).
+		"/api/auth/2fa/enroll",
+		"/api/auth/2fa/verify",
 		// togo-framework/settings arrives transitively (queue -> providers -> settings) and its
 		// init() mounts GET/PUT/DELETE /api/settings/{scope}/{key} over one GLOBAL table, the
 		// scope taken from the path, with no authentication or tenant of its own. Workspace
@@ -182,7 +186,8 @@ func installGuard(k *togo.Kernel, a *app.App) {
 
 	trusted := trustedProxies()
 	k.UseMiddleware(func(next http.Handler) http.Handler {
-		gate := accountGate(a, &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(k), Log: a.Log})
+		acct := &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(k), Log: a.Log}
+		gate := accountGate(a, acct)
 		signedIn := svc.Middleware(csrf(gate(next)))
 		workspace := svc.Middleware(csrf(gate(tenant.Require(a.SysDB)(meter(generatedAuthz(next))))))
 		admin := hideUnauthorized(svc.Middleware(csrf(gate(requirePlatformAdmin(a, next)))))
@@ -198,6 +203,11 @@ func installGuard(k *togo.Kernel, a *app.App) {
 				case r.URL.Path == "/api/auth/login" && r.Method == http.MethodPost:
 					// A suspended account cannot sign in (the plugin's handler knows nothing of it).
 					if refuseSuspendedLogin(w, r, a) {
+						return
+					}
+					// 2FA (MH-341): a right password for an account with a second factor gets a
+					// challenge, not a session. A wrong one goes on to the plugin as always.
+					if askSecondFactor(w, r, acct) {
 						return
 					}
 				case r.URL.Path == "/api/auth/me":
@@ -283,6 +293,36 @@ func accountGate(a *app.App, acct *account.Service) func(http.Handler) http.Hand
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// askSecondFactor answers a sign-in whose password is right for an account with 2FA on: 401
+// {code: mfa_required, challenge}, and no session. Status 401 rather than 200 so that a client
+// that predates 2FA fails as a failed sign-in instead of treating a missing token as success.
+// The body is read and put back for the plugin.
+func askSecondFactor(w http.ResponseWriter, r *http.Request, acct *account.Service) bool {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))
+	if err != nil {
+		return false
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	var c struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if json.Unmarshal(body, &c) != nil || c.Email == "" || c.Password == "" {
+		return false
+	}
+	challenge, needed := acct.LoginChallenge(r.Context(), c.Email, c.Password)
+	if !needed {
+		return false
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"error": "enter the code from your authenticator app", "code": "mfa_required",
+		"mfa_required": true, "challenge": challenge, "methods": []string{"totp", "recovery_code"},
+	})
+	return true
 }
 
 // refuseSuspendedLogin answers 403 for a suspended account's sign-in and reports whether it did.

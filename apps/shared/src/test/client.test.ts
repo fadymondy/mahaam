@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError, liveStream, MahaamClient, normalizeApiUrl, tokenExpiry, type LiveEvent } from "../index";
+import { ApiError, isMfaRequired, liveStream, MahaamClient, normalizeApiUrl, tokenExpiry, type LiveEvent } from "../index";
 
 const BASE = "http://api.test";
 
@@ -23,7 +23,7 @@ const hdr = (c: Call) => new Headers(c.init.headers as HeadersInit);
 const NOW = 1_800_000_000_000;
 const fresh = jwt(NOW / 1000 + 86_400);
 
-describe("auth", () => {
+describe("auth", () => {
   it("mints a personal access token, and that token stops the silent re-login path", async () => {
     // A PAT is what a client should hold instead of the password: revocable per device, scoped,
     // and — because it is not a JWT — it never triggers the expiry-driven re-login.
@@ -75,6 +75,30 @@ describe("auth", () => {
     expect(hdr(calls[1]!).get("X-CSRF-Token")).toBe("tok123");
     expect(hdr(calls[1]!).get("Cookie")).toBeNull();
     expect(calls[1]!.init.credentials).toBe("include");
+  });
+
+  it("two-factor sign-in: without a code it says so; with one it answers the challenge (MH-341)", async () => {
+    const mfa = { error: "enter the code", code: "mfa_required", mfa_required: true, challenge: "sealed-challenge" };
+    const { f, calls } = mockFetch((u) => (u.pathname === "/api/auth/login" ? json(mfa, 401) : json({ token: fresh })));
+    const c = new MahaamClient({ baseUrl: BASE, fetch: f });
+
+    // No code yet: a recognisable refusal, not "invalid credentials" the UI can't act on.
+    const err = await c.login("a@b.c", "pw").catch((e) => e);
+    expect(isMfaRequired(err)).toBe(true);
+    expect(c.token).toBeNull();
+
+    // With the code: the challenge from the login answer goes to /api/auth/2fa/challenge.
+    await expect(c.login("a@b.c", "pw", { code: "123456" })).resolves.toBe(fresh);
+    const last = calls.at(-1)!;
+    expect(new URL(last.url).pathname).toBe("/api/auth/2fa/challenge");
+    expect(JSON.parse(String(last.init.body))).toEqual({ challenge: "sealed-challenge", code: "123456" });
+    expect(c.token).toBe(fresh);
+
+    // An ordinary wrong password is not mistaken for it.
+    const plain = mockFetch(() => json({ error: "invalid credentials" }, 401));
+    const c2 = new MahaamClient({ baseUrl: BASE, fetch: plain.f });
+    expect(isMfaRequired(await c2.login("a", "b", { code: "123456" }).catch((e) => e))).toBe(false);
+    expect(plain.calls.some((x) => x.url.includes("/2fa/"))).toBe(false);
   });
 
   it("maps a 401 login to 'invalid credentials' and a 429 to the API's message", async () => {

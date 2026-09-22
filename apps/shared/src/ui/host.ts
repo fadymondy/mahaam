@@ -44,7 +44,8 @@ export interface PanelHost {
   /** Whether "keep me signed in" (a stored password for silent re-login) is offered. */
   canRemember: boolean;
   session(): Promise<Session | null>;
-  signIn(apiUrl: string, email: string, password: string, remember: boolean): Promise<Session>;
+  /** `code` is the two-factor code, on the second attempt after isMfaRequired (MH-341). */
+  signIn(apiUrl: string, email: string, password: string, remember: boolean, code?: string): Promise<Session>;
   signOut(): Promise<void>;
   selectWorkspace(ws: Workspace): Promise<void>;
   api: PanelApi;
