@@ -132,19 +132,41 @@ func randomID(n int) string {
 	return hex.EncodeToString(b)
 }
 
-// validRedirectURI: https, or http(s) to loopback (native/local apps, per OAuth 2.1 for public
-// clients). No fragments — a fragment could be used to smuggle data past the redirect.
+// NativeScheme is the private-use URI scheme Mahaam's own mobile apps redirect to (RFC 8252 §7.1).
+//
+// Exactly one scheme is allowed, and it is this constant rather than a pattern. A validator that
+// accepts "any scheme containing a dot" hands every app on the device a way to register itself as
+// a plausible Mahaam callback — private-use schemes are first-come-first-served on Android and
+// iOS, and there is no ownership check. Naming one means an attacker has to collide with it
+// directly rather than invent a neighbour.
+const NativeScheme = "mahaam"
+
 func validRedirectURI(raw string) bool {
 	u, err := url.Parse(raw)
+	// A fragment is never legal on a redirect_uri (RFC 6749 §3.1.2) and is a classic way to smuggle
+	// a second target past a prefix comparison somewhere downstream.
 	if err != nil || u.Fragment != "" {
 		return false
 	}
-	if u.Scheme == "https" {
+	switch u.Scheme {
+	case "https":
 		return u.Host != ""
-	}
-	if u.Scheme == "http" {
+
+	case "http":
+		// Loopback only, and the PORT IS DELIBERATELY IGNORED. RFC 8252 §7.3 requires the server to
+		// accept any port here, because a native app must take an ephemeral one — pinning a port
+		// means two apps, or two windows, cannot both be signing in.
 		h := u.Hostname()
 		return h == "localhost" || h == "127.0.0.1" || h == "::1"
+
+	case NativeScheme:
+		// mahaam://auth/callback — a host and a path, nothing else.
+		//
+		// url.Parse is lenient with unknown schemes, so each part is checked rather than assumed:
+		// a bare "mahaam:" or "mahaam://" would otherwise pass and then match a prefix comparison
+		// against anything at all. Credentials are refused because a redirect target carrying a
+		// userinfo section is never something we produced.
+		return u.Opaque == "" && u.Host != "" && u.User == nil && u.Path != ""
 	}
 	return false
 }
@@ -174,7 +196,7 @@ func RegisterClientHandler(sysDB *sql.DB) http.HandlerFunc {
 		}
 		for _, u := range in.RedirectURIs {
 			if !validRedirectURI(u) {
-				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_redirect_uri", "error_description": "redirect_uris must be https, or http to a loopback address"})
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_redirect_uri", "error_description": "redirect_uris must be https, http to a loopback address, or mahaam://"})
 				return
 			}
 		}
