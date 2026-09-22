@@ -69,6 +69,13 @@ func Register(api huma.API, a *app.App) {
 		act := Actor{IP: work.MetaFrom(ctx).IP, Via: "rest"}
 		if id, ok := auth.IdentityFrom(ctx); ok && id != nil {
 			act.ID, act.Email = id.ID, id.Email
+			// A PAT's identity carries no email, and a JWT's is whatever it was at sign-in. The
+			// audit trail wants the address the account has now.
+			if a != nil {
+				if u, err := platform.Load(ctx, a.SysDB, id.ID); err == nil {
+					act.Email = u.Email
+				}
+			}
 		}
 		return act
 	}

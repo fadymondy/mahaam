@@ -473,6 +473,12 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   `MAHAAM_SECRET_KEY`, 10 min, 5 attempts, one live code per purpose). A reset sets the password, deletes the
   user's PATs and moves `sessions_valid_after`, all in the code's transaction. Web: `/{locale}/forgot-password`.
   The admin panel still cannot send a reset on someone's behalf; the person asks for one themselves.
+  **Profile** (MH-343): `user_profiles` (name, avatar, locale, timezone), a table of its own because the plugin
+  reads `users` whole; `GET/PATCH /api/me/profile`, `POST/DELETE /api/me/avatar` (re-encoded server-side to a
+  256px JPEG data: URL, EXIF and all else dropped), email change by a code sent to the NEW address
+  (`/api/me/email`, `/confirm`; the old address is told), and `DELETE /api/me/token` to revoke the PAT a request
+  carries (app sign-out). The auth identity's email is never trusted: it is empty for a PAT and stale after a
+  change, so `/api/auth/me`, invitation accept, feedback and the admin audit read it from `users`.
 - **Enforcement**: one helper, `internal/limits` (`Check`, `CheckStorage`, `Feature`, `Integration`, `CountCall`),
   called in the domain functions REST and MCP share: invitations/accept, `CreateProject`, `CreateClient` + client
   import, `CreateTeam`, `CreateTask`, `reports.Create` (every issue: app, portal, requests, embed, MCP, integration

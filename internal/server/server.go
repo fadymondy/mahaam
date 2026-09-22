@@ -124,7 +124,7 @@ func registerREST(api huma.API, a *app.App) {
 	reports.RegisterPortalPanel(api, a)  // roadmap 5: customer panel + staff Requests inbox
 	integrations.Register(api, a)        // /api/w/projects/{project}/integrations*, /github/*
 	registerPush(api, a)                 // /api/me/push: Web Push for the installed app (PWA)
-	registerAccount(api, a)              // /api/auth/password/*: forgot / reset by emailed code
+	registerAccount(api, a)              // /api/auth/password/*, /api/me/profile|avatar|email|token
 	admin.Register(api, a)               // /api/admin/* (platform admins), /api/me/platform, /api/w/plan
 }
 
@@ -160,6 +160,7 @@ func registerPush(api huma.API, a *app.App) {
 func registerAccount(api huma.API, a *app.App) {
 	if a == nil {
 		account.Register(api, &account.Service{})
+		account.RegisterProfile(api, &account.Service{})
 		return
 	}
 	s := &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(a.Kernel), Log: a.Log}
@@ -169,6 +170,7 @@ func registerAccount(api huma.API, a *app.App) {
 		a.Log.Warn("ratelimit plugin not registered — the password reset routes are NOT rate limited")
 	}
 	account.Register(api, s)
+	account.RegisterProfile(api, s)
 }
 
 // installLiveBus connects this instance's realtime hub to the others over Postgres LISTEN/NOTIFY.

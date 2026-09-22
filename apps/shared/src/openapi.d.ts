@@ -641,6 +641,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload your picture (multipart field "file": JPEG, PNG or GIF, up to 10 MB)
+         * @description Cropped to a centred square, scaled to 256px and re-encoded as JPEG. Nothing else from the file is kept, EXIF location included.
+         */
+        post: operations["me-avatar-upload"];
+        /** Remove your picture */
+        delete: operations["me-avatar-delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move your account to a new email address
+         * @description Needs your password. A six-digit code goes to the NEW address; confirm it with /api/me/email/confirm. Nothing changes until then.
+         */
+        post: operations["me-email-change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/email/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a new email address with the code sent to it */
+        post: operations["me-email-confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/platform": {
         parameters: {
             query?: never;
@@ -658,6 +716,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your profile */
+        get: operations["me-profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change your name, language or timezone */
+        patch: operations["me-profile-update"];
+        trace?: never;
+    };
     "/api/me/push": {
         parameters: {
             query?: never;
@@ -672,6 +748,26 @@ export interface paths {
         post: operations["me-push-subscribe"];
         /** Stop push notifications on this device */
         delete: operations["me-push-unsubscribe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke the personal access token this request is signed with
+         * @description For signing out of an app: the app holds the token but not its id, so it can't use DELETE /api/auth/tokens/{id}. With a cookie session instead, this does nothing; use POST /api/auth/logout.
+         */
+        delete: operations["me-token-revoke"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6307,6 +6403,30 @@ export interface components {
             user_id: string;
             workspace_id: string;
         };
+        "Me-email-changeRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-email-changeRequest.json
+             */
+            readonly $schema?: string;
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+            password: string;
+        };
+        "Me-email-confirmRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-email-confirmRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+        };
         "Me-push-subscribeRequest": {
             /**
              * Format: uri
@@ -7041,6 +7161,41 @@ export interface components {
             expired: boolean;
             role: string;
             workspace_name: string;
+        };
+        Profile: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Profile.json
+             */
+            readonly $schema?: string;
+            /** @description A data: URL (256px JPEG), or null for initials */
+            avatar: string | null;
+            created_at: string;
+            email: string;
+            id: string;
+            /** @description en or ar; null: follow the device */
+            locale: string | null;
+            /** @description Empty until set; show the email instead */
+            name: string;
+            /** @description IANA name; null: follow the device */
+            timezone: string | null;
+        };
+        ProfilePatch: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProfilePatch.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description "" clears it
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            name?: string;
+            /** @description IANA name, e.g. Africa/Cairo; "" clears it */
+            timezone?: string;
         };
         ProfitRow: {
             /** Format: int64 */
@@ -11899,6 +12054,135 @@ export interface operations {
             };
         };
     };
+    "me-avatar-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-avatar-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-email-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-email-changeRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-email-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-email-confirmRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "me-platform": {
         parameters: {
             query?: never;
@@ -11915,6 +12199,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RespStruct { IsAdmin bool \"json:\\\"is_admin\\\"\" }Body"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-profile-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfilePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
                 };
             };
             /** @description Error */
@@ -12002,6 +12348,35 @@ export interface operations {
                 "application/json": components["schemas"]["Me-push-unsubscribeRequest"];
             };
         };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-token-revoke": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {

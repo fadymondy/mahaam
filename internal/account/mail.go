@@ -70,3 +70,53 @@ func page(locale, body string) string {
 	return `<!doctype html><html lang="` + locale + `" dir="` + dir + `"><body style="font-family:system-ui,sans-serif;line-height:1.5;color:#111">` +
 		body + `</body></html>`
 }
+
+type changeText struct {
+	subject, lead, codeNote, notYou, doneSubject, done, doneNotYou string
+}
+
+var emailChangeText = map[string]changeText{
+	"en": {
+		subject:     "Confirm your new Mahaam email address",
+		lead:        "Enter this code in Mahaam to move your account to this address:",
+		codeNote:    "It works for 10 minutes, once.",
+		notYou:      "If you didn't ask for this, ignore this email and nothing will change.",
+		doneSubject: "Your Mahaam email address was changed",
+		done:        "Your Mahaam account now signs in with %s instead of this address.",
+		doneNotYou:  "If this wasn't you, reply to this email or contact support straight away. Password reset codes now go to the new address.",
+	},
+	"ar": {
+		subject:     "أكّد بريدك الإلكتروني الجديد في مهام",
+		lead:        "أدخل هذا الرمز في مهام لنقل حسابك إلى هذا البريد:",
+		codeNote:    "صالح لمدة 10 دقائق، ولمرة واحدة.",
+		notYou:      "إن لم تطلب ذلك فتجاهل هذه الرسالة ولن يتغير شيء.",
+		doneSubject: "تم تغيير بريدك الإلكتروني في مهام",
+		done:        "أصبح حسابك في مهام يسجّل الدخول بالبريد %s بدلاً من هذا البريد.",
+		doneNotYou:  "إن لم تكن أنت، فردّ على هذه الرسالة أو تواصل مع الدعم فوراً. رموز إعادة تعيين كلمة المرور تُرسل الآن إلى البريد الجديد.",
+	},
+}
+
+func changeTextFor(locale string) (changeText, string) {
+	if t, ok := emailChangeText[locale]; ok {
+		return t, locale
+	}
+	return emailChangeText["en"], "en"
+}
+
+func emailChangeMail(to, code, locale string) mail.Message {
+	t, loc := changeTextFor(locale)
+	text := t.lead + "\n\n    " + code + "\n\n" + t.codeNote + "\n\n" + t.notYou + "\n"
+	body := `<p>` + html.EscapeString(t.lead) + `</p>` +
+		`<p dir="ltr" style="font-size:28px;font-weight:600;letter-spacing:6px;font-family:ui-monospace,monospace">` + html.EscapeString(code) + `</p>` +
+		`<p>` + html.EscapeString(t.codeNote) + `</p><p style="color:#666">` + html.EscapeString(t.notYou) + `</p>`
+	return mail.Message{To: []string{to}, Subject: t.subject, Text: text, HTML: page(loc, body)}
+}
+
+func emailChangedMail(to, next, locale string) mail.Message {
+	t, loc := changeTextFor(locale)
+	done := strings.Replace(t.done, "%s", next, 1)
+	text := done + "\n\n" + t.doneNotYou + "\n"
+	body := `<p>` + strings.Replace(html.EscapeString(t.done), "%s", `<bdi dir="ltr">`+html.EscapeString(next)+`</bdi>`, 1) + `</p>` +
+		`<p style="color:#666">` + html.EscapeString(t.doneNotYou) + `</p>`
+	return mail.Message{To: []string{to}, Subject: t.doneSubject, Text: text, HTML: page(loc, body)}
+}

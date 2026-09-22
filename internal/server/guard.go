@@ -184,7 +184,7 @@ func installGuard(k *togo.Kernel, a *app.App) {
 		signedIn := svc.Middleware(csrf(gate(next)))
 		workspace := svc.Middleware(csrf(gate(tenant.Require(a.SysDB)(meter(generatedAuthz(next))))))
 		admin := hideUnauthorized(svc.Middleware(csrf(gate(requirePlatformAdmin(a, next)))))
-		me := svc.Middleware(gate(next))
+		me := svc.Middleware(gate(currentIdentity(a)))
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			stripUntrustedForwarding(trusted, r) // proxies.go: forwarding headers are client-settable
@@ -215,6 +215,26 @@ func installGuard(k *togo.Kernel, a *app.App) {
 				workspace.ServeHTTP(w, r)
 			}
 		})
+	})
+}
+
+// currentIdentity answers GET /api/auth/me in place of the auth plugin's handler, which echoes the
+// identity the token was issued with. That email is whatever the account had at sign-in: stale
+// the moment it is changed (MH-343), and empty for a personal access token, whose identity
+// carries none. Everything else about the identity is passed through untouched.
+func currentIdentity(a *app.App) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, ok := auth.IdentityFrom(r.Context())
+		if !ok || id == nil {
+			writeError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		out := *id
+		if u, err := platform.Load(r.Context(), a.SysDB, id.ID); err == nil {
+			out.Email = u.Email
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(out)
 	})
 }
 

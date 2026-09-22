@@ -261,7 +261,7 @@ func Register(api huma.API, a *app.App) {
 		if err != nil {
 			return nil, err
 		}
-		ws, err := Accept(ctx, a.SysDB, id.ID, id.Email, in.Body.Token)
+		ws, err := Accept(ctx, a.SysDB, id.ID, in.Body.Token)
 		switch {
 		case errors.Is(err, errInviteGone):
 			return nil, huma.Error404NotFound("this invitation is no longer valid")
@@ -582,12 +582,21 @@ var (
 
 // Accept redeems an invite token for the signed-in user. The invitation is
 // bound to its email: a forwarded link does not let someone else in.
-func Accept(ctx context.Context, sys *sql.DB, userID, userEmail, token string) (*WorkspaceOut, error) {
+//
+// The email is read from the account, never from the auth identity. A personal access token's
+// identity has no email at all, so every app and the extension failed to accept any invitation
+// (MH-343); and a JWT's email is the one the account had at sign-in, not now.
+func Accept(ctx context.Context, sys *sql.DB, userID, token string) (*WorkspaceOut, error) {
 	tx, err := sys.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback() //nolint:errcheck
+
+	var userEmail string
+	if err := tx.QueryRowContext(ctx, `SELECT email FROM users WHERE id = $1`, userID).Scan(&userEmail); err != nil {
+		return nil, err
+	}
 
 	var invID, wsID, email, role string
 	var expires time.Time

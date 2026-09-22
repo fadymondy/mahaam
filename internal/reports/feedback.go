@@ -19,6 +19,7 @@ import (
 
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/platform"
 	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
@@ -167,7 +168,13 @@ func intake(w http.ResponseWriter, r *http.Request, a *app.App) {
 	// The reports table has no `meta` column (it mirrors fadymondy.com's), so the
 	// reporter's context travels in the body, where a human and an agent both see it.
 	body := strings.TrimSpace(fields["body"])
-	body += "\n\n---\nReported by " + id.Email + " via the in-app dialog."
+	// Read from the account, not the identity: a PAT (the extension, the apps) carries no email,
+	// and "Reported by  via the in-app dialog" tells triage nothing.
+	reporter := id.Email
+	if u, err := platform.Load(r.Context(), a.SysDB, id.ID); err == nil {
+		reporter = u.Email
+	}
+	body += "\n\n---\nReported by " + reporter + " via the in-app dialog."
 	if m := strings.TrimSpace(fields["meta"]); m != "" {
 		var pretty any
 		if json.Unmarshal([]byte(m), &pretty) == nil {

@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 
+import { AccountCard } from "@/components/account/account-card"
 import { Badge } from "@/components/ui/badge"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
@@ -15,7 +16,8 @@ import { useTranslations } from "@/lib/i18n"
 import { useMe } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
 
-// Your profile in this workspace: the GitHub connection (for KPI attribution) and your own KPI.
+// Your profile: the account itself (every workspace), then in this workspace the GitHub connection
+// (for KPI attribution) and your own KPI.
 export default function MyProfilePage() {
   const { t } = useTranslations()
   const ws = useWorkspace()
@@ -50,10 +52,11 @@ export default function MyProfilePage() {
           ) : null
         }
       />
+      <AccountCard />
       {!me.data ? (
         <LoadingRows rows={3} />
       ) : canKpi ? (
-        <div className="space-y-6 pb-8">
+        <div className="space-y-6 pt-6 pb-8">
           <GitHubConnectCard />
           <KpiDashboard userId={String(me.data.id)} isSelf />
         </div>
