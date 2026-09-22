@@ -69,6 +69,11 @@ func New(ctx context.Context, k *togo.Kernel) *App {
 	}
 	if sysDB, err := k.SQL(ctx); err == nil {
 		a.SysDB = sysDB
+		// Bound it too (MH-250). The kernel hands back an unbounded pool, and this one is not
+		// spare capacity: auth, tenant resolution, the admin MCP and the realtime bus's NOTIFY
+		// all run on it. Leaving it unbounded means the same burst that exhausted the app pool
+		// can exhaust this one, and then nobody can even sign in to find out why.
+		tenant.Tune(sysDB)
 	} else {
 		k.Log.Warn("database unavailable", "err", err)
 	}
