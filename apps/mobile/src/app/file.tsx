@@ -3,16 +3,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { Camera, ImagePlus, Send, X } from "lucide-react-native";
 import { useState } from "react";
-import { Platform, View } from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
 
 import type { Attachment } from "@/api/endpoints";
-import { Button, Card, Field, Row, Screen, Segmented, T, useErrorText } from "@/components/ui";
+import { Actions, Grow, Micro, useErrorText } from "@/components/kit";
+import { AppText, ErrorLine, Field, FilterStrip, fonts, FooterBar, PrimaryButton, Row, Rows, Screen, SecondaryButton, StackHeader, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { mahaam } from "@/lib/session";
-import { space } from "@/theme/tokens";
 
 type IssueType = "bug" | "feature" | "task";
 type RequestKind = "feature" | "change" | "bug";
@@ -30,6 +31,7 @@ async function toAttachment(a: ImagePicker.ImagePickerAsset): Promise<Attachment
 export default function FileScreen() {
   const { project, kind = "issue" } = useLocalSearchParams<{ project: string; kind?: "issue" | "request" }>();
   const t = useT();
+  const c = useColors();
   const ws = useWs();
   const qc = useQueryClient();
   const errText = useErrorText();
@@ -67,61 +69,77 @@ export default function FileScreen() {
   });
 
   return (
-    <Screen edges={[]}>
-      <Stack.Screen options={{ title: kind === "request" ? t("file.titleRequest") : t("file.titleIssue") }} />
-      <Card style={{ gap: space.md }}>
-        {kind === "request" ? (
-          <Segmented<RequestKind>
-            label={t("file.kind")}
-            value={reqKind}
-            onChange={setReqKind}
-            options={[
-              { value: "feature", label: t("file.feature") },
-              { value: "change", label: t("file.change") },
-              { value: "bug", label: t("file.bug") },
-            ]}
-          />
-        ) : (
-          <Segmented<IssueType>
-            label={t("file.type")}
-            value={issueType}
-            onChange={setIssueType}
-            options={[
-              { value: "bug", label: t("file.bug") },
-              { value: "feature", label: t("file.feature") },
-              { value: "task", label: t("file.task") },
-            ]}
-          />
-        )}
-        <Field label={t("file.title")} value={title} onChangeText={setTitle} maxLength={200} testID="file-title" />
-        <Field
-          label={t("file.details")}
-          value={body}
-          onChangeText={setBody}
-          multiline
-          style={{ minHeight: 120, textAlignVertical: "top" }}
-          testID="file-body"
-        />
-        {kind === "request" ? <Field label={t("file.desiredOn")} value={desiredOn} onChangeText={setDesiredOn} autoCapitalize="none" /> : null}
-        {photo ? (
-          <View style={{ gap: space.sm }}>
-            <Image source={{ uri: photo.uri }} style={{ width: "100%", height: 200 }} contentFit="contain" accessibilityLabel={t("file.photo")} />
-            <Button small variant="secondary" label={t("file.removePhoto")} onPress={() => setPhoto(null)} />
-          </View>
-        ) : (
-          <Row>
-            <Button variant="secondary" label={t("file.photo")} onPress={() => void pick(false)} style={{ flex: 1 }} />
-            {Platform.OS !== "web" ? <Button variant="secondary" label={t("file.camera")} onPress={() => void pick(true)} style={{ flex: 1 }} /> : null}
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <Screen
+        header={<StackHeader title={kind === "request" ? t("file.titleRequest") : t("file.titleIssue")} />}
+        footer={
+          <FooterBar>
+            <PrimaryButton
+              label={t("file.submit")}
+              icon={<Send size={17} color={c.onAction} strokeWidth={1.6} />}
+              disabled={!title.trim() || !project || submit.isPending || submit.isSuccess}
+              onPress={() => submit.mutate()}
+            />
+          </FooterBar>
+        }>
+        <Rows>
+          <Row style={{ paddingHorizontal: 0 }}>
+            <Micro style={{ paddingHorizontal: 28 }}>{kind === "request" ? t("file.kind") : t("file.type")}</Micro>
+            {kind === "request" ? (
+              <FilterStrip<RequestKind>
+                value={reqKind}
+                onChange={setReqKind}
+                options={[
+                  { value: "feature", label: t("file.feature") },
+                  { value: "change", label: t("file.change") },
+                  { value: "bug", label: t("file.bug") },
+                ]}
+              />
+            ) : (
+              <FilterStrip<IssueType>
+                value={issueType}
+                onChange={setIssueType}
+                options={[
+                  { value: "bug", label: t("file.bug") },
+                  { value: "feature", label: t("file.feature") },
+                  { value: "task", label: t("file.task") },
+                ]}
+              />
+            )}
           </Row>
-        )}
-        <Button label={t("file.submit")} disabled={!title.trim() || !project} busy={submit.isPending} onPress={() => submit.mutate()} />
-        {note ? <T tone={submit.isSuccess ? "ok" : "muted"}>{note}</T> : null}
-        {submit.error ? (
-          <T tone="danger" role="alert">
-            {errText(submit.error)}
-          </T>
-        ) : null}
-      </Card>
-    </Screen>
+          <Row>
+            <Field label={t("file.title")} value={title} onChangeText={setTitle} maxLength={200} testID="file-title" />
+            <Field label={t("file.details")} value={body} onChangeText={setBody} multiline testID="file-body" />
+            {kind === "request" ? <Field label={t("file.desiredOn")} value={desiredOn} onChangeText={setDesiredOn} autoCapitalize="none" ltr /> : null}
+          </Row>
+          <Row>
+            {photo ? (
+              <View style={{ gap: 10 }}>
+                <Image
+                  source={{ uri: photo.uri }}
+                  style={{ width: "100%", height: 200, borderRadius: 8, borderWidth: 1, borderColor: c.line }}
+                  contentFit="contain"
+                  accessibilityLabel={t("file.photo")}
+                />
+                <SecondaryButton label={t("file.removePhoto")} icon={<X size={16} color={c.muted} strokeWidth={1.6} />} onPress={() => setPhoto(null)} />
+              </View>
+            ) : (
+              <Actions>
+                <Grow>
+                  <SecondaryButton label={t("file.photo")} icon={<ImagePlus size={17} color={c.muted} strokeWidth={1.6} />} onPress={() => void pick(false)} />
+                </Grow>
+                {Platform.OS !== "web" ? (
+                  <Grow>
+                    <SecondaryButton label={t("file.camera")} icon={<Camera size={17} color={c.muted} strokeWidth={1.6} />} onPress={() => void pick(true)} />
+                  </Grow>
+                ) : null}
+              </Actions>
+            )}
+            {note ? <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: submit.isSuccess ? c.okText : c.muted }}>{note}</AppText> : null}
+            {submit.error ? <ErrorLine text={errText(submit.error)} /> : null}
+          </Row>
+        </Rows>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }

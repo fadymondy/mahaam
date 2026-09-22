@@ -1,12 +1,10 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 import type { Project } from "@/api/types";
+import { AppText, fonts, metrics, useColors } from "@/grid";
 import { useT } from "@/i18n";
-import { useTheme } from "@/theme";
-import { projectColor, radius, space } from "@/theme/tokens";
-import { T } from "./ui";
+import { projectColor } from "./kit";
 
-/** Horizontal chips: "No project" + the projects you can log on. */
 /**
  * Only the fields this picker renders. It used to ask for a whole Project, which meant the
  * task picker in (team)/log.tsx had to fabricate one — inventing eighteen fields it had no
@@ -14,6 +12,7 @@ import { T } from "./ui";
  */
 export type PickerProject = Pick<Project, "id" | "name" | "color" | "archived_at">;
 
+/** Horizontal filter chips (the grid's FilterStrip shape): "No project" + the projects you can log on. */
 export function ProjectPicker({
   projects,
   value,
@@ -28,18 +27,16 @@ export function ProjectPicker({
   allowNone?: boolean;
 }) {
   const t = useT();
-  const { c } = useTheme();
+  const c = useColors();
   const items = [
     ...(allowNone ? [{ id: null as string | null, name: t("timer.noProject"), color: "" }] : []),
     ...projects.filter((p) => !p.archived_at),
   ];
   return (
-    <View style={{ gap: space.xs }}>
-      <T size="sm" tone="body" weight="500">
-        {label}
-      </T>
+    <View style={{ gap: 8 }}>
+      <AppText style={{ fontFamily: fonts.medium, fontSize: 11, color: c.muted }}>{label}</AppText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="radiogroup" accessibilityLabel={label}>
-        <View style={{ flexDirection: "row", gap: space.sm }}>
+        <View style={{ flexDirection: "row", gap: 8 }}>
           {items.map((p) => {
             const on = p.id === value;
             return (
@@ -50,19 +47,18 @@ export function ProjectPicker({
                 accessibilityLabel={p.name}
                 onPress={() => onChange(p.id)}
                 style={{
-                  minHeight: 44,
-                  paddingHorizontal: space.md,
-                  borderRadius: radius.control,
+                  minHeight: 38,
+                  paddingHorizontal: 14,
+                  borderRadius: metrics.radius.chip,
                   borderWidth: 1,
-                  borderColor: on ? c.brand : c.line,
-                  backgroundColor: on ? c.brand : c.elevated,
+                  borderColor: on ? c.gold : c.line,
+                  backgroundColor: on ? `${c.gold}1A` : c.card,
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: space.xs,
-                }}
-              >
-                {p.id ? <View style={{ width: 10, height: 10, backgroundColor: projectColor(p.color) }} /> : null}
-                <Text style={{ color: on ? c.onBrand : c.fg }}>{p.name}</Text>
+                  gap: 8,
+                }}>
+                {p.id ? <View style={{ width: 8, height: 8, borderRadius: 1.5, backgroundColor: projectColor(p.color) }} /> : null}
+                <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: on ? c.goldText : c.muted }}>{p.name}</AppText>
               </Pressable>
             );
           })}

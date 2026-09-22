@@ -1,0 +1,93 @@
+# Team app smoke pass on a local stack (never production): first-run language, sign in, every tab,
+# a task, settings, then the same in Arabic (RTL) and dark.
+#   make db migrate && ./api (ADDR=:8120) · seed qa@mahaam.local · Metro on :8081 ·
+#   .maestro/run.sh <udid>
+# takeScreenshot writes to shots/ under the cwd.
+appId: com.fadymondy.mahaam.team
+---
+# A notification-permission alert can outlive a reinstall on the simulator.
+- tapOn:
+    text: "Don.t Allow"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*English"
+    timeout: 60000
+- takeScreenshot: shots/01-welcome
+- tapOn: ".*English"
+- tapOn: "Continue"
+# With a stored session the tabs mount at once, and a running timer makes iOS ask for
+# notification permission — that alert hides the app from the accessibility tree.
+- extendedWaitUntil:
+    visible: "Don.t Allow|Sign in.*|Today"
+    timeout: 30000
+- tapOn:
+    text: "Don.t Allow"
+    optional: true
+# The iOS Keychain keeps the session across a reinstall, so sign in only when asked.
+- runFlow:
+    when:
+      visible:
+        id: "email"
+    commands:
+      - takeScreenshot: shots/02-sign-in
+      - tapOn:
+          id: "email"
+      - inputText: "qa@mahaam.local"
+      - tapOn:
+          below: "Password"
+      - inputText: "Qa-Test-2026!"
+      - hideKeyboard
+      - tapOn:
+          text: "Sign in"
+          index: 1
+# System alerts after sign-in: notification permission (in our tree), then "Save Password?" —
+# drawn by the Passwords process, so it is not in the app's tree and is tapped by position
+# ("Not Now"). Without the sheet that point lands on a non-interactive row of Today's list.
+- extendedWaitUntil:
+    visible: "Don.t Allow|Today"
+    timeout: 30000
+- tapOn:
+    text: "Don.t Allow"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    point: "31%,63%"
+- tapOn:
+    text: "Don.t Allow"
+    optional: true
+- extendedWaitUntil:
+    visible: "RUNNING|Running"
+    timeout: 30000
+- takeScreenshot: shots/03-today
+- tapOn: "Tasks"
+- extendedWaitUntil:
+    visible: "(?i)in progress|(?i)to do"
+    timeout: 15000
+- takeScreenshot: shots/04-tasks
+- tapOn: ".*Design the landing hero.*"
+- extendedWaitUntil:
+    visible: "(?i)checklist"
+    timeout: 15000
+- takeScreenshot: shots/05-task
+- tapOn: "Back"
+- tapOn: "Log time"
+- takeScreenshot: shots/06-log
+- tapOn: "Timesheet"
+- takeScreenshot: shots/07-timesheet
+- tapOn: "Inbox"
+- takeScreenshot: shots/08-inbox
+- tapOn: "Today"
+- tapOn: "Settings"
+- takeScreenshot: shots/09-settings
+# Dark, then Arabic: the app reloads once to flip the layout to RTL.
+- tapOn: "Dark"
+- takeScreenshot: shots/10-settings-dark
+- tapOn: "العربية"
+- extendedWaitUntil:
+    visible: "اليوم"
+    timeout: 60000
+- takeScreenshot: shots/11-today-ar-dark
+- tapOn: "المهام"
+- takeScreenshot: shots/12-tasks-ar-dark
+- tapOn: "سجل الوقت"
+- takeScreenshot: shots/13-timesheet-ar-dark

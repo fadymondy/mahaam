@@ -31,8 +31,9 @@ test-e2e: ## Cross-workspace isolation sweep over every route (throwaway DB)
 	TEST_DATABASE_URL="postgres://postgres:postgres@localhost:55460/mahaam_test?sslmode=disable" \
 	go test -count=1 ./internal/live/ -v
 
-grid-check: ## Fail if the grid / feedback-sdk copies drifted from fadymondy.com-v2
+grid-check: ## Fail if the grid / feedback-sdk copies drifted from fadymondy.com-v2 (web and mobile)
 	cd web && npm run grid:check
+	cd apps/mobile && npm run -s grid:check
 
 embed: ## Bundle the embeddable feedback widget IIFE -> embed/dist/v1.js
 	cd web && npx --yes esbuild ../embed/src/widget.ts --bundle --format=iife --minify --target=es2019 --outfile=../embed/dist/v1.js

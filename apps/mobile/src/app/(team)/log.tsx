@@ -1,22 +1,22 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Check } from "lucide-react-native";
 import { useState } from "react";
-import { Switch, View } from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
 
+import { TabHeader, useErrorText } from "@/components/kit";
 import { ProjectPicker } from "@/components/project-picker";
-import { Button, Card, Field, Row, Screen, T, useErrorText } from "@/components/ui";
 import { useMyTasks, useProjects, useTimeSettings } from "@/features/team";
+import { AppText, Checkbox, ErrorLine, Field, fonts, FooterBar, PrimaryButton, Row, Rows, Screen, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { mahaam } from "@/lib/session";
 import { formatDuration, localDay, parseMinutes } from "@/lib/time";
-import { useTheme } from "@/theme";
-import { space } from "@/theme/tokens";
 
 export default function LogTime() {
   const t = useT();
+  const c = useColors();
   const ws = useWs();
   const qc = useQueryClient();
-  const { c } = useTheme();
   const errText = useErrorText();
   const settings = useTimeSettings();
   const projects = useProjects();
@@ -60,52 +60,55 @@ export default function LogTime() {
   };
 
   return (
-    <Screen edges={[]}>
-      <Card style={{ gap: space.md }}>
-        <ProjectPicker
-          label={t("log.project")}
-          projects={projects.data ?? []}
-          value={project}
-          onChange={(p) => {
-            setProject(p);
-            setTask(null);
-          }}
-        />
-        {projectTasks.length ? (
-          <ProjectPicker
-            label={t("log.task")}
-            allowNone
-            projects={projectTasks.map((x) => ({
-              id: x.key,
-              name: `${x.key} · ${x.title}`,
-              color: "",
-              archived_at: null,
-            }))}
-            value={task}
-            onChange={setTask}
-          />
-        ) : null}
-        <Field label={t("log.date")} value={date} onChangeText={setDate} placeholder={today} autoCapitalize="none" inputMode="numeric" />
-        <Field label={t("log.duration")} value={duration} onChangeText={setDuration} placeholder="1h30" autoCapitalize="none" testID="log-duration" />
-        <Field label={t("log.description")} value={description} onChangeText={setDescription} />
-        <Row style={{ justifyContent: "space-between", minHeight: 44 }}>
-          <T>{t("log.billable")}</T>
-          <Switch
-            accessibilityLabel={t("log.billable")}
-            value={billable}
-            onValueChange={setBillable}
-            trackColor={{ true: c.brand, false: c.line }}
-          />
-        </Row>
-        <Button label={t("log.submit")} onPress={submit} busy={log.isPending} disabled={!duration.trim()} />
-        {message ? (
-          <View accessibilityLiveRegion="polite">
-            <T tone={message.ok ? "ok" : "danger"} role={message.ok ? "text" : "alert"}>
-              {message.text}
-            </T>
-          </View>
-        ) : null}
-      </Card>
-    </Screen>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <Screen
+        header={<TabHeader title="log.title" inbox="/notifications" />}
+        footer={
+          <FooterBar>
+            <PrimaryButton
+              label={t("log.submit")}
+              icon={<Check size={18} color={c.onAction} strokeWidth={1.8} />}
+              onPress={submit}
+              disabled={log.isPending || !duration.trim()}
+            />
+          </FooterBar>
+        }>
+        <Rows inset>
+          <Row>
+            <ProjectPicker
+              label={t("log.project")}
+              projects={projects.data ?? []}
+              value={project}
+              onChange={(p) => {
+                setProject(p);
+                setTask(null);
+              }}
+            />
+            {projectTasks.length ? (
+              <ProjectPicker
+                label={t("log.task")}
+                allowNone
+                projects={projectTasks.map((x) => ({ id: x.key, name: `${x.key} · ${x.title}`, color: "", archived_at: null }))}
+                value={task}
+                onChange={setTask}
+              />
+            ) : null}
+          </Row>
+          <Row>
+            <Field label={t("log.date")} value={date} onChangeText={setDate} placeholder={today} autoCapitalize="none" inputMode="numeric" ltr />
+            <Field label={t("log.duration")} value={duration} onChangeText={setDuration} placeholder="1h30" autoCapitalize="none" ltr testID="log-duration" />
+            <Field label={t("log.description")} value={description} onChangeText={setDescription} />
+            <Checkbox checked={billable} onChange={setBillable}>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: 13.5, color: c.body }}>{t("log.billable")}</AppText>
+            </Checkbox>
+            {message ? (
+              <View accessibilityLiveRegion="polite">
+                {message.ok ? <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.okText }}>{message.text}</AppText> : <ErrorLine text={message.text} />}
+              </View>
+            ) : null}
+          </Row>
+        </Rows>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }

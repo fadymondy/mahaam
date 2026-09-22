@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react-native";
 
-import { translate } from "@/i18n";
+import { translate } from "@/i18n/strings";
 import { useNow } from "../use-now";
 
 jest.mock("@react-native-async-storage/async-storage", () =>

@@ -2,16 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { View } from "react-native";
 
-import { Button, Card, Empty, ErrorState, ListItem, Loading, Row, Screen, SectionTitle, T } from "@/components/ui";
+import { Micro, projectColor, StatCells, TabHeader, useErrorText } from "@/components/kit";
 import { useTimeSettings } from "@/features/team";
+import { AppText, fonts, IconButton, ListItem, Meta, Row, Rows, Screen, SkeletonRow, StateRow, useChevrons, useColors } from "@/grid";
 import { useFormat, useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { usePolling } from "@/lib/live";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
 import { addDays, formatDuration, localDay, weekStartOf } from "@/lib/time";
-import { useTheme } from "@/theme";
-import { projectColor, space } from "@/theme/tokens";
 
 interface Row7 {
   project_name?: string | null;
@@ -25,8 +24,10 @@ interface Row7 {
 export default function Timesheet() {
   const t = useT();
   const f = useFormat();
+  const c = useColors();
   const ws = useWs();
-  const { c } = useTheme();
+  const errText = useErrorText();
+  const { Back, Forward } = useChevrons();
   const settings = useTimeSettings();
   const tz = settings.data?.timezone;
   const [offset, setOffset] = useState(0);
@@ -44,69 +45,84 @@ export default function Timesheet() {
   const totals = d?.day_totals ?? [];
   const max = Math.max(1, ...totals);
   const rows = (d?.rows ?? []) as Row7[];
+  const today = localDay(new Date(), tz);
 
   return (
-    <Screen edges={[]} refreshing={sheet.isRefetching} onRefresh={() => void sheet.refetch()}>
-      <Row style={{ justifyContent: "space-between" }}>
-        <Button small variant="secondary" label="‹" hint={t("sheet.prev")} onPress={() => setOffset(offset - 1)} />
-        <T weight="600" role="header">
-          {offset === 0 ? t("sheet.thisWeek") : t("sheet.title", { date: f.date(week) })}
-        </T>
-        <Button small variant="secondary" label="›" hint={t("sheet.next")} disabled={offset >= 0} onPress={() => setOffset(offset + 1)} />
-      </Row>
-      {sheet.isPending ? <Loading /> : null}
-      {sheet.isError ? <ErrorState error={sheet.error} onRetry={() => void sheet.refetch()} /> : null}
-      {d ? (
-        <>
-          <Card>
-            <Row style={{ justifyContent: "space-between" }}>
-              <T weight="600">{`${t("sheet.total")}: ${formatDuration(d.total_s)}`}</T>
-              <T tone="body">{`${t("sheet.billable")}: ${formatDuration(d.billable_s)}`}</T>
+    <Screen header={<TabHeader title="tabs.timesheet" inbox="/notifications" />} refreshing={sheet.isRefetching} onRefresh={() => void sheet.refetch()}>
+      <Rows inset>
+        <Row style={{ flexDirection: "row", alignItems: "center" }}>
+          <IconButton label={t("sheet.prev")} onPress={() => setOffset(offset - 1)}>
+            <Back size={20} color={c.muted} strokeWidth={1.6} />
+          </IconButton>
+          <AppText variant="rowTitle" style={{ flex: 1, textAlign: "center" }}>
+            {offset === 0 ? t("sheet.thisWeek") : t("sheet.title", { date: f.date(week) })}
+          </AppText>
+          <View style={{ opacity: offset >= 0 ? 0.35 : 1 }}>
+            <IconButton label={t("sheet.next")} onPress={offset >= 0 ? undefined : () => setOffset(offset + 1)}>
+              <Forward size={20} color={c.muted} strokeWidth={1.6} />
+            </IconButton>
+          </View>
+        </Row>
+        {sheet.isPending ? <SkeletonRow lines={3} /> : null}
+        {sheet.isError ? <StateRow state="error" message={errText(sheet.error)} onRetry={() => void sheet.refetch()} /> : null}
+        {d ? (
+          <>
+            <Row>
+              <StatCells
+                items={[
+                  { label: t("sheet.total"), value: formatDuration(d.total_s) },
+                  { label: t("sheet.billable"), value: formatDuration(d.billable_s), tone: "gold" },
+                ]}
+              />
+              {/* A 7-bar week chart; each bar is labelled for screen readers. */}
+              <View style={{ flexDirection: "row", alignItems: "flex-end", height: 120, gap: 4 }}>
+                {days.map((day, i) => (
+                  <View key={day} style={{ flex: 1, alignItems: "center", gap: 6 }} accessible accessibilityLabel={`${f.day(day)}: ${formatDuration(totals[i] ?? 0)}`}>
+                    <View
+                      style={{
+                        width: "62%",
+                        height: Math.max(2, ((totals[i] ?? 0) / max) * 84),
+                        borderRadius: 2,
+                        backgroundColor: day === today ? c.gold : c.brand,
+                      }}
+                    />
+                    <AppText style={{ fontFamily: fonts.regular, fontSize: 10.5, color: day === today ? c.goldText : c.muted }} numberOfLines={1}>
+                      {f.day(day)}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
             </Row>
-            {/* A 7-bar week chart; each bar is labelled for screen readers. */}
-            <Row style={{ alignItems: "flex-end", height: 120, gap: space.xs }}>
-              {days.map((day, i) => (
-                <View
-                  key={day}
-                  style={{ flex: 1, alignItems: "center", gap: 4 }}
-                  accessible
-                  accessibilityLabel={`${f.day(day)}: ${formatDuration(totals[i] ?? 0)}`}
-                >
-                  <View
-                    style={{
-                      width: "70%",
-                      height: Math.max(2, ((totals[i] ?? 0) / max) * 84),
-                      backgroundColor: day === localDay(new Date(), tz) ? c.accent : c.brand,
-                    }}
+            <Row style={{ paddingVertical: 0 }}>
+              <Micro style={{ paddingTop: 14, paddingBottom: 4 }}>{t("tabs.timesheet")}</Micro>
+              {rows.length === 0 ? (
+                <AppText variant="meta" style={{ paddingVertical: 14 }}>
+                  {t("sheet.empty")}
+                </AppText>
+              ) : null}
+              {rows.map((r, i) => (
+                <ListItem
+                  key={i}
+                  last={i === rows.length - 1}
+                  leading={<View style={{ width: 3, alignSelf: "stretch", borderRadius: 1.5, backgroundColor: projectColor(r.project_color) }} />}
+                  trailing={<AppText style={{ fontFamily: fonts.mono, fontSize: 13, color: c.fg, writingDirection: "ltr" }}>{formatDuration(r.total_s ?? 0)}</AppText>}>
+                  <AppText variant="rowTitle" numberOfLines={2}>
+                    {r.task_key ? `${r.task_key} · ${r.task_title ?? ""}` : (r.project_name ?? t("timer.noProject"))}
+                  </AppText>
+                  <Meta
+                    items={
+                      [
+                        r.task_key ? r.project_name : null,
+                        ...(r.seconds ?? []).map((s, j) => (s && days[j] ? `${f.day(days[j]!)} ${formatDuration(s)}` : null)),
+                      ].filter(Boolean) as string[]
+                    }
                   />
-                  <T size="xs" tone="muted" numberOfLines={1}>
-                    {f.day(day)}
-                  </T>
-                </View>
+                </ListItem>
               ))}
             </Row>
-          </Card>
-          <SectionTitle>{t("tabs.timesheet")}</SectionTitle>
-          {rows.length === 0 ? <Empty text={t("sheet.empty")} /> : null}
-          {rows.map((r, i) => (
-            <ListItem
-              key={i}
-              accent={projectColor(r.project_color)}
-              title={r.task_key ? `${r.task_key} · ${r.task_title ?? ""}` : (r.project_name ?? t("timer.noProject"))}
-              subtitle={[
-                r.task_key ? r.project_name : null,
-                (r.seconds ?? [])
-                  .map((s, j) => (s ? `${f.day(days[j])} ${formatDuration(s)}` : null))
-                  .filter(Boolean)
-                  .join(", "),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              right={<T weight="600">{formatDuration(r.total_s ?? 0)}</T>}
-            />
-          ))}
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </Rows>
     </Screen>
   );
 }

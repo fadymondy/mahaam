@@ -1,27 +1,25 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { Markdown } from "../../components/markdown";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { Play } from "lucide-react-native";
+import { View } from "react-native";
 
 import type { TaskDetail } from "@/api/types";
-import { Badge, Button, Card, Empty, ErrorState, Field, Loading, Row, Screen, SectionTitle, T, useErrorText } from "@/components/ui";
+import { Chip, Micro, projectColor, useErrorText } from "@/components/kit";
+import { Thread } from "@/components/thread";
 import { useRunning, useStartTimer } from "@/features/team";
+import { AppText, Checkbox, ErrorLine, fonts, Markdown, Meta, PrimaryButton, Row, Rows, Screen, SkeletonRow, StackHeader, StateRow, useColors } from "@/grid";
 import { useFormat, useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
-import { useTheme } from "@/theme";
-import { projectColor, space } from "@/theme/tokens";
 
 export default function TaskScreen() {
   const { key } = useLocalSearchParams<{ key: string }>();
   const t = useT();
   const f = useFormat();
+  const c = useColors();
   const ws = useWs();
   const qc = useQueryClient();
-  const { c } = useTheme();
   const errText = useErrorText();
   const task = useQuery({ queryKey: qk.task(ws, key), queryFn: () => mahaam.tasks.get(key), enabled: !!ws && !!key });
   const comments = useQuery({
@@ -31,7 +29,6 @@ export default function TaskScreen() {
   });
   const running = useRunning();
   const start = useStartTimer();
-  const [body, setBody] = useState("");
 
   const toggle = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => mahaam.tasks.toggleChecklist(id, done),
@@ -55,88 +52,71 @@ export default function TaskScreen() {
   });
 
   const comment = useMutation({
-    mutationFn: () => mahaam.tasks.comment(key, body.trim()),
-    onSuccess: () => {
-      setBody("");
-      void qc.invalidateQueries({ queryKey: qk.comments(ws, key) });
-    },
+    mutationFn: (body: string) => mahaam.tasks.comment(key, body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: qk.comments(ws, key) }),
   });
 
-  if (task.isPending) return <Loading />;
-  if (task.isError) {
-    return (
-      <Screen edges={[]}>
-        <ErrorState error={task.error} onRetry={() => void task.refetch()} />
-      </Screen>
-    );
-  }
   const d = task.data;
-  const isRunning = running.data?.task_key === d.key;
+  const isRunning = !!d && running.data?.task_key === d.key;
 
   return (
-    <Screen edges={[]} refreshing={task.isRefetching} onRefresh={() => void task.refetch()}>
-      <Stack.Screen options={{ title: d.key }} />
-      <Card accent={projectColor(d.project.color)}>
-        <T size="lg" weight="700" role="header">
-          {d.title}
-        </T>
-        <Row style={{ flexWrap: "wrap" }}>
-          <Badge label={d.status.name} />
-          {d.priority !== "none" ? <Badge label={t(`tasks.priority.${d.priority}`)} /> : null}
-          {d.due_at ? <Badge label={t("tasks.due", { date: f.date(d.due_at) })} /> : null}
-        </Row>
-        <T tone="body">{d.project.name}</T>
-        <Button
-          label={isRunning ? t("timer.running") : t("tasks.startTimer", { key: d.key })}
-          disabled={isRunning || d.status.category === "done"}
-          busy={start.isPending}
-          onPress={() => start.mutate({ task: d.key, project: d.project_id })}
-        />
-        {start.error ? <T tone="danger" role="alert">{errText(start.error)}</T> : null}
-      </Card>
+    <Screen header={<StackHeader title={d?.title ?? key} subtitle={key} />} refreshing={task.isRefetching} onRefresh={() => void task.refetch()}>
+      <Rows>
+        {task.isPending ? <SkeletonRow lines={3} /> : null}
+        {task.isError ? <StateRow state="error" message={errText(task.error)} onRetry={() => void task.refetch()} /> : null}
+        {d ? (
+          <>
+            <Row style={{ borderStartWidth: 2, borderStartColor: projectColor(d.project.color) }}>
+              <AppText variant="title">{d.title}</AppText>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
+                <Chip label={d.status.name} dot={d.status.color} />
+                {d.priority !== "none" ? <Chip label={t(`tasks.priority.${d.priority}`)} tone={d.priority === "urgent" || d.priority === "high" ? "danger" : "neutral"} /> : null}
+                {d.due_at ? <Chip label={t("tasks.due", { date: f.date(d.due_at) })} tone="gold" /> : null}
+              </View>
+              <Meta items={[d.project.name]} />
+              <PrimaryButton
+                label={isRunning ? t("timer.running") : t("tasks.startTimer", { key: d.key })}
+                icon={<Play size={17} color={c.onAction} strokeWidth={1.8} />}
+                disabled={isRunning || d.status.category === "done" || start.isPending}
+                onPress={() => start.mutate({ task: d.key, project: d.project_id })}
+              />
+              {start.error ? <ErrorLine text={errText(start.error)} /> : null}
+            </Row>
 
-      {d.description ? (
-        <>
-          <SectionTitle>{t("tasks.description")}</SectionTitle>
-          <Markdown>{d.description}</Markdown>
-        </>
-      ) : null}
+            {d.description ? (
+              <Row>
+                <Micro>{t("tasks.description")}</Micro>
+                <Markdown source={d.description} />
+              </Row>
+            ) : null}
 
-      <SectionTitle right={<T tone="muted">{`${d.checklist_done}/${d.checklist_total}`}</T>}>{t("tasks.checklist")}</SectionTitle>
-      {d.checklist.length === 0 ? <Empty text={t("common.empty")} /> : null}
-      {d.checklist.map((i) => (
-        <Pressable
-          key={i.id}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: i.done, disabled: !d.can_write }}
-          accessibilityLabel={i.title}
-          disabled={!d.can_write}
-          onPress={() => toggle.mutate({ id: i.id, done: !i.done })}
-          style={{ flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 44 }}
-        >
-          <Ionicons name={i.done ? "checkbox" : "square-outline"} size={24} color={i.done ? c.brand : c.muted} />
-          <T tone={i.done ? "muted" : "fg"} style={i.done ? { textDecorationLine: "line-through" } : undefined}>
-            {i.title}
-          </T>
-        </Pressable>
-      ))}
-      {toggle.error ? <T tone="danger" role="alert">{errText(toggle.error)}</T> : null}
+            <Row>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Micro style={{ flex: 1 }}>{t("tasks.checklist")}</Micro>
+                <AppText variant="mono">{`${d.checklist_done}/${d.checklist_total}`}</AppText>
+              </View>
+              {d.checklist.length === 0 ? <AppText variant="meta">{t("common.empty")}</AppText> : null}
+              {d.checklist.map((i) => (
+                <Checkbox key={i.id} checked={i.done} onChange={(done) => d.can_write && toggle.mutate({ id: i.id, done })}>
+                  <AppText
+                    style={{ fontFamily: fonts.regular, fontSize: 13.5, color: i.done ? c.muted : c.fg, textDecorationLine: i.done ? "line-through" : "none" }}>
+                    {i.title}
+                  </AppText>
+                </Checkbox>
+              ))}
+              {toggle.error ? <ErrorLine text={errText(toggle.error)} /> : null}
+            </Row>
 
-      <SectionTitle>{t("tasks.comments")}</SectionTitle>
-      {(comments.data ?? []).length === 0 ? <Empty text={t("tasks.noComments")} /> : null}
-      {(comments.data ?? []).map((cm) => (
-        <Card key={cm.id} style={{ padding: space.md }}>
-          <Markdown>{cm.body}</Markdown>
-          <T size="xs" tone="muted">
-            {f.date(cm.created_at)} {f.time(cm.created_at)}
-          </T>
-        </Card>
-      ))}
-      <View style={{ gap: space.sm }}>
-        <Field label={t("tasks.addComment")} value={body} onChangeText={setBody} multiline style={{ minHeight: 80, textAlignVertical: "top" }} />
-        <Button label={t("common.send")} disabled={!body.trim()} busy={comment.isPending} onPress={() => comment.mutate()} />
-        {comment.error ? <T tone="danger" role="alert">{errText(comment.error)}</T> : null}
-      </View>
+            <Thread
+              comments={(comments.data ?? []).map((cm) => ({ id: cm.id, body: cm.body, created_at: cm.created_at, agent: cm.author_kind === "agent" }))}
+              onSend={(body) => comment.mutateAsync(body)}
+              sending={comment.isPending}
+              error={comment.error}
+              canWrite={d.can_write}
+            />
+          </>
+        ) : null}
+      </Rows>
     </Screen>
   );
 }

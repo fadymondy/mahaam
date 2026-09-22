@@ -18,6 +18,8 @@ const en = {
     polling: "Syncing every 30s",
   },
   auth: {
+    haveAccountQ: "Already have an account?",
+    noAccountQ: "No account yet?",
     title: "Sign in",
     subtitleTeam: "Track time and work your tasks.",
     subtitleClient: "Follow your projects, file issues, see invoices.",
@@ -121,6 +123,7 @@ const en = {
     },
   },
   portal: {
+    hoursLabel: "Hours",
     projects: "Your projects",
     none: "No projects are shared with you yet.",
     progress: "{p}% done",

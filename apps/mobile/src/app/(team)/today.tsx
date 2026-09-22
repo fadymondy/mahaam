@@ -1,15 +1,19 @@
+import { View } from "react-native";
+
+import { Chip, Micro, projectColor, TabHeader, useErrorText } from "@/components/kit";
 import { TimerCard } from "@/components/timer-card";
-import { Badge, Empty, ErrorState, ListItem, Loading, Row, Screen, SectionTitle, T } from "@/components/ui";
 import { useRunning, useTimeSettings, useTodayEntries } from "@/features/team";
+import { AppText, fonts, ListItem, Meta, Row, Rows, Screen, SkeletonRow, StateRow, useColors } from "@/grid";
 import { useFormat, useT } from "@/i18n";
 import { useNow } from "@/lib/hooks";
 import { useLiveMode, usePolling } from "@/lib/live";
 import { entrySeconds, formatDuration, todaySummary } from "@/lib/time";
-import { projectColor } from "@/theme/tokens";
 
 export default function Today() {
   const t = useT();
   const f = useFormat();
+  const c = useColors();
+  const errText = useErrorText();
   const polling = usePolling();
   const mode = useLiveMode();
   const running = useRunning(polling);
@@ -17,42 +21,53 @@ export default function Today() {
   const settings = useTimeSettings();
   const now = useNow(30_000);
 
-  if (running.isPending && entries.isPending) return <Loading />;
   const { entries: list, total } = todaySummary(entries.data ?? [], running.data ?? null, now, settings.data?.timezone);
 
   return (
     <Screen
-      edges={[]}
+      header={<TabHeader title="tabs.today" inbox="/notifications" />}
       refreshing={running.isRefetching || entries.isRefetching}
       onRefresh={() => {
         void running.refetch();
         void entries.refetch();
-      }}
-    >
-      {running.isError && !running.data ? <ErrorState error={running.error} onRetry={() => void running.refetch()} /> : null}
-      <TimerCard running={running.data ?? null} />
-      <SectionTitle right={<T weight="600">{`${t("timer.todayTotal")}: ${formatDuration(total)}`}</T>}>{t("timer.today")}</SectionTitle>
-      {entries.isError ? <ErrorState error={entries.error} onRetry={() => void entries.refetch()} /> : null}
-      {list.length === 0 ? <Empty text={t("timer.noEntries")} /> : null}
-      {list.map((e) => (
-        <ListItem
-          key={e.id}
-          accent={projectColor(e.project_color)}
-          title={e.task_key ? `${e.task_key} · ${e.task_title ?? ""}` : e.description || t("timer.noProject")}
-          subtitle={[e.project_name, `${f.time(e.started_at)}${e.ended_at ? `–${f.time(e.ended_at)}` : ""}`]
-            .filter(Boolean)
-            .join(" · ")}
-          right={
-            <Row>
-              {!e.ended_at ? <Badge label={t("timer.running")} /> : null}
-              <T weight="600">{formatDuration(entrySeconds(e, now))}</T>
-            </Row>
-          }
-        />
-      ))}
-      <T size="xs" tone="muted">
-        {mode === "live" ? `● ${t("common.live")}` : t("common.polling")}
-      </T>
+      }}>
+      <Rows inset>
+        {running.isError && !running.data ? <StateRow state="error" message={errText(running.error)} onRetry={() => void running.refetch()} /> : null}
+        {running.isPending ? <SkeletonRow lines={3} /> : <TimerCard running={running.data ?? null} />}
+        <Row style={{ paddingVertical: 0 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingBottom: 6 }}>
+            <Micro style={{ flex: 1 }}>{t("timer.todayTotal")}</Micro>
+            <AppText style={{ fontFamily: fonts.mono, fontSize: 13, color: c.fg, writingDirection: "ltr" }}>{formatDuration(total)}</AppText>
+          </View>
+          {entries.isPending ? <SkeletonRow /> : null}
+          {entries.isError ? <StateRow state="error" message={errText(entries.error)} onRetry={() => void entries.refetch()} /> : null}
+          {entries.data && list.length === 0 ? (
+            <AppText variant="meta" style={{ paddingVertical: 14 }}>
+              {t("timer.noEntries")}
+            </AppText>
+          ) : null}
+          {list.map((e, i) => (
+            <ListItem
+              key={e.id}
+              last={i === list.length - 1}
+              leading={<View style={{ width: 3, alignSelf: "stretch", borderRadius: 1.5, backgroundColor: projectColor(e.project_color) }} />}
+              trailing={
+                <View style={{ alignItems: "flex-end", gap: 4 }}>
+                  <AppText style={{ fontFamily: fonts.mono, fontSize: 13, color: c.fg, writingDirection: "ltr" }}>{formatDuration(entrySeconds(e, now))}</AppText>
+                  {!e.ended_at ? <Chip label={t("timer.running")} tone="ok" /> : null}
+                </View>
+              }>
+              <AppText variant="rowTitle" numberOfLines={2}>
+                {e.task_key ? `${e.task_key} · ${e.task_title ?? ""}` : e.description || t("timer.noProject")}
+              </AppText>
+              <Meta items={[e.project_name, `${f.time(e.started_at)}${e.ended_at ? `–${f.time(e.ended_at)}` : ""}`].filter(Boolean) as string[]} />
+            </ListItem>
+          ))}
+        </Row>
+        <Row style={{ paddingVertical: 10 }}>
+          <Meta items={[mode === "live" ? t("common.live") : t("common.polling")]} />
+        </Row>
+      </Rows>
     </Screen>
   );
 }

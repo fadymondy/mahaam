@@ -22,6 +22,8 @@ const ar: Shape<Dict> = {
     polling: "مزامنة كل ٣٠ ثانية",
   },
   auth: {
+    haveAccountQ: "لديك حساب بالفعل؟",
+    noAccountQ: "ليس لديك حساب؟",
     title: "تسجيل الدخول",
     subtitleTeam: "سجّل وقتك وأنجز مهامك.",
     subtitleClient: "تابع مشاريعك، أبلغ عن المشكلات، واطّلع على الفواتير.",
@@ -119,6 +121,7 @@ const ar: Shape<Dict> = {
     },
   },
   portal: {
+    hoursLabel: "الساعات",
     projects: "مشاريعك",
     none: "لم تتم مشاركة أي مشروع معك بعد.",
     progress: "أُنجز {p}٪",

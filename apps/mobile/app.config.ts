@@ -27,6 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   userInterfaceStyle: "automatic",
   ios: {
     bundleIdentifier: V.id,
+    // Fady Nasef (individual). Automatic signing registers both bundle ids and their capabilities.
+    appleTeamId: process.env.APPLE_TEAM_ID ?? "JW9HJH86GC",
     supportsTablet: true,
     infoPlist: {
       NSPhotoLibraryUsageDescription: "Attach a photo to an issue or request you file.",

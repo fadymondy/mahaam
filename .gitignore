@@ -20,3 +20,6 @@ deploy/lxc/.env.prod
 .env.prod
 *.tgz
 .devrun/
+
+# Credentials (Firebase service account, APNs keys) — never committed
+/secrets/

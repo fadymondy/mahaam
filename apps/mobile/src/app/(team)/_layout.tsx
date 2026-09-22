@@ -1,16 +1,24 @@
 import { Redirect } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
+import { Bell, CalendarDays, ListChecks, PlusCircle, Timer } from "lucide-react-native";
 import { useEffect } from "react";
 
-import { SettingsButton } from "@/components/header-buttons";
-import { tabIcon } from "@/components/tab-icon";
 import { isTeam } from "@/config";
 import { useRunning, useTimeSettings } from "@/features/team";
+import { GridTabBar, type GridTab } from "@/grid";
 import { useT } from "@/i18n";
 import { LiveProvider, usePolling } from "@/lib/live";
 import { syncTimerReminder } from "@/lib/reminders";
 import { useSession } from "@/lib/session";
-import { useTheme } from "@/theme";
+
+// Labels are string keys: the grid's tab bar translates them.
+const TABS: GridTab[] = [
+  { name: "today", label: "tabs.today", Icon: Timer },
+  { name: "tasks", label: "tabs.tasks", Icon: ListChecks },
+  { name: "log", label: "tabs.log", Icon: PlusCircle },
+  { name: "timesheet", label: "tabs.timesheet", Icon: CalendarDays },
+  { name: "notifications", label: "tabs.inbox", Icon: Bell },
+];
 
 function ReminderSync() {
   const t = useT();
@@ -30,29 +38,15 @@ function ReminderSync() {
 }
 
 export default function TeamLayout() {
-  const t = useT();
-  const { c } = useTheme();
   const { status, workspace } = useSession();
   if (!isTeam || status !== "signedIn" || !workspace) return <Redirect href="/" />;
   return (
     <LiveProvider>
       <ReminderSync />
-      <Tabs
-        screenOptions={{
-          headerStyle: { backgroundColor: c.card },
-          headerTintColor: c.fg,
-          headerRight: () => <SettingsButton />,
-          tabBarStyle: { backgroundColor: c.card, borderTopColor: c.line },
-          tabBarActiveTintColor: c.brand,
-          tabBarInactiveTintColor: c.muted,
-          sceneStyle: { backgroundColor: c.bg },
-        }}
-      >
-        <Tabs.Screen name="today" options={{ title: t("tabs.today"), tabBarIcon: tabIcon("timer-outline") }} />
-        <Tabs.Screen name="tasks" options={{ title: t("tabs.tasks"), tabBarIcon: tabIcon("checkbox-outline") }} />
-        <Tabs.Screen name="log" options={{ title: t("tabs.log"), tabBarIcon: tabIcon("add-circle-outline") }} />
-        <Tabs.Screen name="timesheet" options={{ title: t("tabs.timesheet"), tabBarIcon: tabIcon("calendar-outline") }} />
-        <Tabs.Screen name="notifications" options={{ title: t("tabs.inbox"), tabBarIcon: tabIcon("notifications-outline") }} />
+      <Tabs screenOptions={{ headerShown: false }} tabBar={(p) => <GridTabBar {...p} tabs={TABS} />}>
+        {TABS.map((tab) => (
+          <Tabs.Screen key={tab.name} name={tab.name} />
+        ))}
       </Tabs>
     </LiveProvider>
   );

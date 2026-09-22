@@ -1,14 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Check, RotateCcw } from "lucide-react-native";
 
 import type { PortalIssue } from "@/api/types";
+import { AppText, ErrorLine, fonts, PrimaryButton, SecondaryButton, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { mahaam } from "@/lib/session";
-import { Button, Row, T, useErrorText } from "./ui";
+import { Actions, Grow, useErrorText } from "./kit";
 
 /** Accept (in review → done) / Reopen (→ to do), shown only when the API says it's allowed. */
 export function IssueActions({ issue }: { issue: Pick<PortalIssue, "key" | "can_accept" | "can_reopen"> }) {
   const t = useT();
+  const c = useColors();
   const ws = useWs();
   const qc = useQueryClient();
   const errText = useErrorText();
@@ -21,20 +24,32 @@ export function IssueActions({ issue }: { issue: Pick<PortalIssue, "key" | "can_
   if (!issue.can_accept && !issue.can_reopen) return null;
   return (
     <>
-      <Row>
+      <Actions>
         {issue.can_accept ? (
-          <Button small label={t("portal.accept")} busy={m.isPending && m.variables === "done"} onPress={() => m.mutate("done")} />
+          <Grow>
+            <PrimaryButton
+              label={t("portal.accept")}
+              icon={<Check size={17} color={c.onAction} strokeWidth={1.8} />}
+              disabled={m.isPending}
+              onPress={() => m.mutate("done")}
+            />
+          </Grow>
         ) : null}
         {issue.can_reopen ? (
-          <Button small variant="secondary" label={t("portal.reopen")} busy={m.isPending && m.variables === "todo"} onPress={() => m.mutate("todo")} />
+          <Grow>
+            <SecondaryButton
+              label={t("portal.reopen")}
+              icon={<RotateCcw size={16} color={c.muted} strokeWidth={1.6} />}
+              disabled={m.isPending}
+              onPress={() => m.mutate("todo")}
+            />
+          </Grow>
         ) : null}
-      </Row>
-      {m.isSuccess ? <T tone="ok">{m.variables === "done" ? t("portal.accepted") : t("portal.reopened")}</T> : null}
-      {m.error ? (
-        <T tone="danger" role="alert">
-          {errText(m.error)}
-        </T>
+      </Actions>
+      {m.isSuccess ? (
+        <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.okText }}>{m.variables === "done" ? t("portal.accepted") : t("portal.reopened")}</AppText>
       ) : null}
+      {m.error ? <ErrorLine text={errText(m.error)} /> : null}
     </>
   );
 }

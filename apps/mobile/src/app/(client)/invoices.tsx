@@ -1,38 +1,28 @@
-import { router } from "expo-router";
-
-import { Badge, Empty, ErrorState, ListItem, Loading, Screen, T } from "@/components/ui";
+import { InvoiceRow } from "@/components/invoice-row";
+import { TabHeader, useErrorText } from "@/components/kit";
 import { useInvoices } from "@/features/client";
-import { useFormat, useT } from "@/i18n";
+import { Row, Rows, Screen, SkeletonRow, StateRow } from "@/grid";
+import { useT } from "@/i18n";
 
 export default function Invoices() {
   const t = useT();
-  const f = useFormat();
+  const errText = useErrorText();
   const q = useInvoices();
-  if (q.isPending) return <Loading />;
   const list = q.data ?? [];
   return (
-    <Screen edges={[]} refreshing={q.isRefetching} onRefresh={() => void q.refetch()}>
-      {q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : null}
-      {list.length === 0 && !q.isError ? <Empty text={t("portal.noInvoices")} /> : null}
-      {list.map((iv) => (
-        <ListItem
-          key={iv.id}
-          title={iv.number}
-          subtitle={[
-            t("invoice.issued", { date: f.date(iv.issue_date) }),
-            iv.due_date ? t("invoice.due", { date: f.date(iv.due_date) }) : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-          right={
-            <>
-              <Badge label={t(`invoice.status.${iv.status}` as "invoice.status.sent")} />
-              <T weight="600">{f.money(iv.total_minor, iv.currency)}</T>
-            </>
-          }
-          onPress={() => router.push({ pathname: "/invoice/[id]", params: { id: iv.id } })}
-        />
-      ))}
+    <Screen header={<TabHeader title="tabs.invoices" count={q.data ? list.length : undefined} inbox="/updates" />} refreshing={q.isRefetching} onRefresh={() => void q.refetch()}>
+      <Rows inset>
+        {q.isPending ? <SkeletonRow /> : null}
+        {q.isError ? <StateRow state="error" message={errText(q.error)} onRetry={() => void q.refetch()} /> : null}
+        {q.data && list.length === 0 ? <StateRow state="empty" message={t("portal.noInvoices")} /> : null}
+        {list.length ? (
+          <Row style={{ paddingVertical: 0 }}>
+            {list.map((iv, i) => (
+              <InvoiceRow key={iv.id} iv={iv} last={i === list.length - 1} />
+            ))}
+          </Row>
+        ) : null}
+      </Rows>
     </Screen>
   );
 }

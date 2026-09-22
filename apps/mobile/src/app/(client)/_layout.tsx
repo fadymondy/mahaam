@@ -1,35 +1,28 @@
 import { Redirect } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
+import { Bell, FolderOpen, ReceiptText } from "lucide-react-native";
 
-import { SettingsButton } from "@/components/header-buttons";
-import { tabIcon } from "@/components/tab-icon";
 import { isTeam } from "@/config";
-import { useT } from "@/i18n";
+import { GridTabBar, type GridTab } from "@/grid";
 import { LiveProvider } from "@/lib/live";
 import { useSession } from "@/lib/session";
-import { useTheme } from "@/theme";
+
+// Labels are string keys: the grid's tab bar translates them.
+const TABS: GridTab[] = [
+  { name: "projects", label: "tabs.projects", Icon: FolderOpen },
+  { name: "invoices", label: "tabs.invoices", Icon: ReceiptText },
+  { name: "updates", label: "tabs.inbox", Icon: Bell },
+];
 
 export default function ClientLayout() {
-  const t = useT();
-  const { c } = useTheme();
   const { status, workspace } = useSession();
   if (isTeam || status !== "signedIn" || !workspace) return <Redirect href="/" />;
   return (
     <LiveProvider>
-      <Tabs
-        screenOptions={{
-          headerStyle: { backgroundColor: c.card },
-          headerTintColor: c.fg,
-          headerRight: () => <SettingsButton />,
-          tabBarStyle: { backgroundColor: c.card, borderTopColor: c.line },
-          tabBarActiveTintColor: c.brand,
-          tabBarInactiveTintColor: c.muted,
-          sceneStyle: { backgroundColor: c.bg },
-        }}
-      >
-        <Tabs.Screen name="projects" options={{ title: t("tabs.projects"), tabBarIcon: tabIcon("folder-open-outline") }} />
-        <Tabs.Screen name="invoices" options={{ title: t("tabs.invoices"), tabBarIcon: tabIcon("receipt-outline") }} />
-        <Tabs.Screen name="updates" options={{ title: t("tabs.inbox"), tabBarIcon: tabIcon("notifications-outline") }} />
+      <Tabs screenOptions={{ headerShown: false }} tabBar={(p) => <GridTabBar {...p} tabs={TABS} />}>
+        {TABS.map((tab) => (
+          <Tabs.Screen key={tab.name} name={tab.name} />
+        ))}
       </Tabs>
     </LiveProvider>
   );
