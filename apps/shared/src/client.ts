@@ -60,6 +60,8 @@ type Query = Record<string, string | number | boolean | undefined | null>;
 
 interface RequestOpts {
   body?: unknown;
+  /** A multipart payload. Mutually exclusive with `body` — an intake reads one or the other. */
+  form?: FormData;
   query?: Query;
   /** Send X-Workspace-ID (default true for /api/w/*). */
   workspace?: boolean;
@@ -276,6 +278,10 @@ export class MahaamClient {
 
   private headers(path: string, opts: RequestOpts, json: boolean): Record<string, string> {
     const h: Record<string, string> = { Accept: "application/json" };
+    // Only for JSON. A FormData body must have its Content-Type set by the runtime, because only
+    // the runtime knows the multipart boundary it generated — naming the type without the boundary
+    // produces a request the server cannot parse, and the failure looks like a malformed form
+    // rather than a header mistake.
     if (json) h["Content-Type"] = "application/json";
     if (this.token) h.Authorization = `Bearer ${this.token}`;
     const wantWs = opts.workspace ?? path.startsWith("/api/w/");
@@ -300,6 +306,7 @@ export class MahaamClient {
       method,
       headers: this.headers(path, opts, json),
       ...(json ? { body: JSON.stringify(opts.body) } : {}),
+      ...(opts.form ? { body: opts.form } : {}),
       ...(opts.signal ? { signal: opts.signal } : {}),
     });
     if (res.status === 401) {
@@ -418,6 +425,32 @@ export class MahaamClient {
 
   createIssue(input: CreateIssueInput): Promise<IssueDetail> {
     return this.request<IssueDetail>("POST", "/api/w/issues", { body: input });
+  }
+
+  /**
+   * Files an issue with a screenshot, through the multipart intake (`POST /api/w/issues/file`).
+   *
+   * Separate from createIssue because the transport differs, not because the concept does: the
+   * JSON route cannot carry a file, and a base64 image inside a JSON body would be a third of a
+   * megabyte of string for a screenshot, parsed twice.
+   *
+   * `shot` is a data URL — what `chrome.tabs.captureVisibleTab` and a canvas both produce.
+   */
+  async fileIssueWithScreenshot(
+    input: { title: string; body?: string; project?: string; issue_type?: string; priority?: string; page_url?: string; viewport?: string },
+    shot?: string | null,
+  ): Promise<{ key: string }> {
+    const form = new FormData();
+    for (const [k, v] of Object.entries(input)) {
+      if (v !== undefined && v !== null && v !== "") form.append(k, String(v));
+    }
+    if (shot) {
+      const blob = dataUrlToBlob(shot);
+      // The filename matters only for the extension the server derives the stored name from; the
+      // Content-Type on the part is what it actually checks.
+      form.append("screenshot", blob, blob.type === "image/png" ? "screen.png" : "screen.jpg");
+    }
+    return this.request<{ key: string }>("POST", "/api/w/issues/file", { form });
   }
 
   /** One issue in full, with its comment thread. `key` is the MG-12 form, not the id. */
@@ -586,4 +619,31 @@ export function liveStream(
       opts.onStatus?.("closed");
     },
   };
+}
+
+/**
+ * Decodes a `data:` URL into a Blob, by hand.
+ *
+ * The obvious `await (await fetch(dataUrl)).blob()` is a network request as far as the platform is
+ * concerned, so a Content-Security-Policy without `data:` in `connect-src` blocks it — which is
+ * exactly the extension's policy. The symptom is silent: the fetch rejects, the upload never
+ * happens, and nothing reaches the server to log. Decoding here touches no network at all and so
+ * has no policy to satisfy.
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0) throw new ApiError(0, "not a data URL");
+  const meta = dataUrl.slice(5, comma); // after "data:"
+  const type = meta.split(";")[0] || "application/octet-stream";
+  const payload = dataUrl.slice(comma + 1);
+
+  if (!meta.includes("base64")) {
+    return new Blob([decodeURIComponent(payload)], { type });
+  }
+  const bin = atob(payload);
+  // A Uint8Array, not a string: a JPEG is binary, and putting it in a Blob as text would
+  // re-encode every byte above 0x7f into the replacement character.
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type });
 }

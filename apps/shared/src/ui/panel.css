@@ -711,3 +711,21 @@ kbd {
   color: var(--grid-action);
   text-decoration: underline;
 }
+
+/* ---- page screenshot ---------------------------------------------------- */
+/* Capped by height rather than width so a tall page thumbnails to something
+   recognisable instead of a sliver, and object-fit keeps the top of the page —
+   which is where the thing being reported usually is. */
+.mgy-shot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mgy-shot-thumb {
+  max-height: 64px;
+  max-width: 50%;
+  border: 1px solid var(--grid-line);
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: top;
+}

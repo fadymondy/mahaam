@@ -11,6 +11,9 @@ import { join, resolve } from "node:path";
 const EMAIL = process.env.E2E_EMAIL;
 const PASSWORD = process.env.E2E_PASSWORD;
 const WS = process.env.E2E_WORKSPACE ?? "tray-dev";
+// The API the extension was BUILT against — the popup has it compiled in, so the test has to be
+// told separately.
+const API = process.env.MAHAAM_API_URL ?? "http://localhost:8120";
 if (!EMAIL || !PASSWORD) throw new Error("set E2E_EMAIL and E2E_PASSWORD");
 const dist = resolve("dist");
 mkdirSync("e2e-shots", { recursive: true });
@@ -86,6 +89,55 @@ try {
   // workspace it was first written against.
   await page.getByText(/Issue filed: [A-Z]+-\d+/).waitFor({ timeout: 10000 });
   log("filed:", await page.locator(".mgy-ok").innerText());
+
+  // Filing WITH a screenshot goes through the multipart intake instead of the JSON one, so this
+  // checks the picture actually reaches the server rather than just that the form rendered.
+  const onePixelJpeg =
+    "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAP//////////////////////////////////////////////" +
+    "////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgB" +
+    "AQABPxA//9k=";
+  await sw.evaluate((shot) => chrome.storage.session.set({
+    pending: { url: "https://example.com/broken", title: "Broken page", mode: "issue", screenshot: shot },
+  }), onePixelJpeg);
+  await page.reload();
+  await page.getByText("This page").waitFor({ timeout: 10000 });
+
+  const thumb = page.locator(".mgy-shot-thumb");
+  if (!(await thumb.isVisible())) fail("the captured screenshot is not shown before sending");
+  await page.screenshot({ path: "e2e-shots/ext-page-shot.png" });
+
+  await page.locator(".mgy-page").getByRole("button", { name: "File an issue" }).last().click();
+  await page.getByText(/Issue filed: [A-Z]+-\d+/).waitFor({ timeout: 15000 });
+  const withShot = (await page.locator(".mgy-ok").innerText()).match(/[A-Z]+-\d+/)?.[0];
+  log("filed with a screenshot:", withShot);
+
+  // The server serves it back only if it was actually stored.
+  const shotStatus = await page.evaluate(async (args) => {
+    const r = await fetch(`${args.api}/api/w/issues/${args.key}/screenshot`, {
+      headers: { Authorization: `Bearer ${args.token}`, "X-Workspace-ID": args.ws },
+    });
+    return { status: r.status, type: r.headers.get("content-type"), bytes: (await r.arrayBuffer()).byteLength };
+  }, {
+    api: API,
+    key: withShot,
+    token: (await sw.evaluate(() => chrome.storage.session.get("token"))).token,
+    ws: (await sw.evaluate(() => chrome.storage.local.get("workspace"))).workspace.id,
+  });
+  log("screenshot round trip:", JSON.stringify(shotStatus));
+  if (shotStatus.status !== 200) fail(`the screenshot did not reach the server (GET returned ${shotStatus.status})`);
+  if (!shotStatus.bytes) fail("the stored screenshot is empty");
+
+  // And removing it must actually stop it being sent.
+  await sw.evaluate((shot) => chrome.storage.session.set({
+    pending: { url: "https://example.com/no-shot", title: "No shot", mode: "issue", screenshot: shot },
+  }), onePixelJpeg);
+  await page.reload();
+  await page.getByText("This page").waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: "Remove screenshot" }).click();
+  if (await page.locator(".mgy-shot-thumb").isVisible()) fail("the thumbnail survived Remove");
+  await page.locator(".mgy-page").getByRole("button", { name: "File an issue" }).last().click();
+  await page.getByText(/Issue filed: [A-Z]+-\d+/).waitFor({ timeout: 15000 });
+  log("filed after removing the screenshot:", (await page.locator(".mgy-ok").innerText()).match(/[A-Z]+-\d+/)?.[0]);
   if (failures.length) {
     console.error(`[ext-e2e] FAIL — ${failures.length} check(s):\n  ` + failures.join("\n  "));
     process.exitCode = 1;

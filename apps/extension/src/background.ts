@@ -68,6 +68,29 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && ("token" in changes || "workspace" in changes)) void poll();
 });
 
+/**
+ * A screenshot of the visible tab, or undefined.
+ *
+ * `activeTab` is granted transiently by the context-menu click itself, which is why this has to
+ * happen here and now: the grant is tied to that gesture and is gone by the time the popup opens.
+ * The extension asks for no host permission and has no content script, so this is the *only*
+ * moment it can see the page at all — and only because the person just asked it to.
+ *
+ * JPEG at 70, not PNG: a full-window PNG of a 4K screen runs to several megabytes, past both the
+ * server's 8 MB cap and the 10 MB session-storage quota this then has to sit in. A screenshot of a
+ * bug does not need to be lossless.
+ *
+ * Never throws. A page the browser refuses to capture — chrome://, the Web Store, a PDF viewer —
+ * must still file an issue, just without the picture.
+ */
+async function capture(windowId: number | undefined): Promise<string | undefined> {
+  try {
+    return await chrome.tabs.captureVisibleTab(windowId as number, { format: "jpeg", quality: 70 });
+  } catch {
+    return undefined;
+  }
+}
+
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== "mahaam-issue" && info.menuItemId !== "mahaam-log") return;
   const pending: PendingPage = {
@@ -76,8 +99,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     ...(info.selectionText ? { selection: info.selectionText } : {}),
     mode: info.menuItemId === "mahaam-issue" ? "issue" : "log",
   };
-  void chrome.storage.session.set({ pending }).then(() =>
+  void (async () => {
+    // Capture before the popup opens: opening it changes what is on screen, and the activeTab
+    // grant belongs to the click that is already behind us.
+    if (pending.mode === "issue") {
+      const shot = await capture(tab?.windowId);
+      if (shot) pending.screenshot = shot;
+    }
+    await chrome.storage.session.set({ pending });
     // openPopup works from a context-menu click on Chrome 127+; fall back to a small window.
-    chrome.action.openPopup().catch(() => chrome.windows.create({ url: chrome.runtime.getURL("popup.html"), type: "popup", width: 400, height: 620 })),
-  );
+    await chrome.action
+      .openPopup()
+      .catch(() => chrome.windows.create({ url: chrome.runtime.getURL("popup.html"), type: "popup", width: 400, height: 620 }));
+  })();
 });

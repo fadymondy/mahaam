@@ -22,6 +22,12 @@ export interface PanelApi {
   /** Triage from the detail view. Only status is used today; the rest is what the route accepts. */
   updateIssue(key: string, patch: { status?: string; priority?: string; state?: "open" | "closed" }): Promise<IssueDetail>;
   commentOnIssue(key: string, body: string): Promise<unknown>;
+  /**
+   * Files an issue with a screenshot. Optional: only a host that can capture one implements it
+   * (the extension does, from a context-menu click). The Panel falls back to createIssue when it
+   * is absent, so a host without capture is unaffected.
+   */
+  fileIssueWithScreenshot?(input: { title: string; body?: string; page_url?: string }, shot?: string | null): Promise<{ key: string }>;
 }
 
 export interface Session {
@@ -50,6 +56,9 @@ export interface PanelHost {
   autoLaunch?: { get(): Promise<boolean>; set(on: boolean): Promise<void> };
   shortcut?: string;
   quit?(): void;
-  /** Extension: the page the context menu was used on. */
-  pageContext?(): Promise<{ url: string; title?: string; mode: "issue" | "log" } | null>;
+  /**
+   * Extension: the page the context menu was used on. `screenshot` is a data URL, present only
+   * when the host captured one for this page.
+   */
+  pageContext?(): Promise<{ url: string; title?: string; mode: "issue" | "log"; screenshot?: string } | null>;
 }

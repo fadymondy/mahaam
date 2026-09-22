@@ -31,8 +31,8 @@ analytics, no telemetry and no third-party services of any kind in this extensio
 | --- | --- |
 | Opening the popup | A request for your running timer and your assigned work. |
 | Starting or stopping a timer | The timer change, and the task if you picked one. |
-| **"File an issue for this page"** | The page's URL, its title, and the text you had selected — and only when you choose that menu item. |
-| **"Log time on this page"** | The same, attached to a time entry. |
+| **"File an issue for this page"** | The page's URL, its title, the text you had selected, **and a screenshot of the visible tab** — and only when you choose that menu item. The screenshot is shown to you first and can be removed with one click before anything is sent. |
+| **"Log time on this page"** | The URL, title and selection, attached to a time entry. **No screenshot** — a time entry has nowhere to put one, so none is taken. |
 
 That is the complete list. The page URL leaves your browser **only** when you deliberately choose
 one of those two menu items. Browsing normally sends nothing.
@@ -41,9 +41,12 @@ one of those two menu items. Browsing normally sends nothing.
 
 These are structural, not promises — they follow from what the extension asks for:
 
-- **It cannot read page content.** There are no content scripts, and it does not request
-  `activeTab`, `tabs` or `scripting`. The URL and selection come from the right-click event
-  itself, which the browser provides because you chose the menu item.
+- **It cannot read page content, except the one screenshot you ask for.** There are no content
+  scripts, and it does not request `tabs` or `scripting`, so it cannot read the text, the DOM or
+  the form fields of any page. It does request `activeTab`, which the browser grants *only for the
+  tab you were on, and only for the moment you clicked "File an issue for this page"* — long
+  enough to take one picture of the visible area. The grant is gone immediately afterwards, and
+  browsing normally never triggers it.
 - **It cannot reach arbitrary sites.** The only host permission is for your own Mahaam server,
   requested when you sign in and narrowed to that one origin.
 - **It cannot run code from the internet.** Its content-security policy allows scripts only from

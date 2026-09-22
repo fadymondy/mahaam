@@ -316,7 +316,7 @@ function Home({
   const [view, setView] = useState<"home" | "settings" | "inbox" | "issues" | "issue">("home");
   const [openIssue, setOpenIssue] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[] | null>(null);
-  const [page, setPage] = useState<{ url: string; title?: string; mode: "issue" | "log" } | null>(null);
+  const [page, setPage] = useState<{ url: string; title?: string; mode: "issue" | "log"; screenshot?: string } | null>(null);
   const now = useTick(!!running);
 
   const fail = useCallback(
@@ -726,19 +726,29 @@ function TodayList({ t, entries, running, now }: { t: Strings; entries: TimeEntr
   );
 }
 
-function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: PanelHost; page: { url: string; title?: string; mode: "issue" | "log" }; next: NextItem[] | null; onDone: () => void; onError: (e: unknown) => void }) {
+function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: PanelHost; page: { url: string; title?: string; mode: "issue" | "log"; screenshot?: string }; next: NextItem[] | null; onDone: () => void; onError: (e: unknown) => void }) {
   const [mode, setMode] = useState(page.mode);
   const [title, setTitle] = useState(page.title ?? "");
   const [body, setBody] = useState(`Page: ${page.url}\n\n`);
   const [minutes, setMinutes] = useState("15");
   const [target, setTarget] = useState("");
   const [ok, setOk] = useState<string | null>(null);
+  // Attached by default when the host captured one, and removable before sending. A screenshot of
+  // whatever happened to be on screen can hold far more than the person meant to report, so
+  // dropping it has to be one obvious click rather than a setting somewhere.
+  const [attachShot, setAttachShot] = useState(true);
+  const shot = attachShot ? page.screenshot : undefined;
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       if (mode === "issue") {
-        const r = await host.api.createIssue({ title: title.trim() || page.url, body });
+        // The multipart route only when there is actually a file for it. Its JSON sibling is the
+        // simpler request and stays the path for every host that cannot capture a screen.
+        const r =
+          shot && host.api.fileIssueWithScreenshot
+            ? await host.api.fileIssueWithScreenshot({ title: title.trim() || page.url, body, page_url: page.url }, shot)
+            : await host.api.createIssue({ title: title.trim() || page.url, body });
         setOk(`${t.issueFiled}: ${r.key}`);
       } else {
         const m = Math.max(1, Math.round(Number(minutes)));
@@ -770,7 +780,27 @@ function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: 
         <p className="mgy-meta mgy-mono mgy-url" dir="ltr" title={page.url}>{page.url}</p>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.issueTitle} aria-label={t.issueTitle} required={mode === "issue"} />
         {mode === "issue" ? (
-          <Textarea ref={bodyRef} rows={3} value={body} onChange={(e) => setBody(e.target.value)} aria-label={t.issueBody} />
+          <>
+            <Textarea ref={bodyRef} rows={3} value={body} onChange={(e) => setBody(e.target.value)} aria-label={t.issueBody} />
+            {page.screenshot && (
+              <div className="mgy-shot">
+                {attachShot ? (
+                  <>
+                    {/* Shown, not just announced: nobody can decide whether to send a screenshot
+                        they cannot see. */}
+                    <img src={page.screenshot} alt={t.screenshotAlt} className="mgy-shot-thumb" />
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setAttachShot(false)}>
+                      {t.removeScreenshot}
+                    </Button>
+                  </>
+                ) : (
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setAttachShot(true)}>
+                    {t.addScreenshot}
+                  </Button>
+                )}
+              </div>
+            )}
+          </>
         ) : (
           <div className="mgy-log">
             <Input className="mgy-mono mgy-minutes" type="number" min={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />

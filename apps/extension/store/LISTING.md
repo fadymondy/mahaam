@@ -49,7 +49,8 @@ often one click away.
 • See what's next. Your assigned work, in the order you should work it, with a one-click start.
 
 • File an issue about the page you're on. Right-click anywhere — or select some text first — and
-  the page URL and your selection come along with it.
+  the page URL, your selection and a screenshot of what you were looking at come along with it.
+  You see the screenshot before anything is sent, and one click removes it.
 
 • Log time against the page you're on, for the work you just did on it.
 
@@ -59,9 +60,12 @@ You need a Mahaam account. The extension talks only to your own Mahaam server �
 your self-hosted install if you have one.
 
 WHAT IT DOES NOT DO
-It does not read the pages you visit. It does not track your browsing. It does not inject
-anything into web pages. The only thing it ever sends about a page is the URL and the text you
-selected, and only when you explicitly file an issue or log time.
+It does not track your browsing. It does not inject anything into web pages. It cannot read the
+text or the contents of the pages you visit.
+
+The only things it ever sends about a page are the URL, the text you selected, and — when you pick
+"File an issue for this page" — one screenshot of what was on screen at that moment, which you see
+and can remove before it is sent. Nothing at all is sent while you simply browse.
 ```
 
 **Arabic** — translate at upload; the "WHAT IT DOES NOT DO" section is the part that matters most
@@ -78,13 +82,16 @@ Reviewers read these closely. Each is written against the line of code that need
 | `storage` | Keeps the API URL, the signed-in email and the chosen workspace, so the popup does not ask again on every open. | The credential is **not** kept here. It lives in `chrome.storage.session`, which is memory-only and cleared when the browser closes. |
 | `alarms` | One alarm a minute refreshes the running timer so the toolbar badge is correct while the popup is shut. | Without it the badge would only update while the popup is open, which defeats the point of a badge. |
 | `contextMenus` | Adds "File an issue for this page" and "Log time on this page" to the right-click menu. | The menu item is the whole page-capture feature. |
+| `activeTab` | Takes one screenshot of the visible tab when the user picks "File an issue for this page", so the report shows what they were looking at. | Granted by the browser **only for that click**, on **only that tab**, and it lapses immediately. It is not requested at install and browsing never triggers it. The user sees the screenshot before sending and can remove it. No screenshot is taken for "Log time". |
 | `optional_host_permissions`: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Reaching the user's own Mahaam server. | **Optional and requested at sign-in for one origin only** — the host the user typed. Mahaam is self-hostable, so the manifest cannot name the host in advance. Localhost is there for people running Mahaam on their own machine. |
 
 Three things worth stating plainly in the review notes, because they are unusual in a good way:
 
-- **No `activeTab`, no `tabs`, no `scripting`, and no content scripts.** The extension never reads
-  or writes page content. The URL and selection come from the context-menu event, which Chrome
-  hands over precisely because the user chose the menu item.
+- **No `tabs`, no `scripting`, and no content scripts.** The extension cannot read the text, DOM or
+  form fields of any page. The URL and selection come from the context-menu event, which Chrome
+  hands over precisely because the user chose the menu item. `activeTab` is requested, and is used
+  for exactly one thing: a single screenshot of the visible tab at the moment the user asks to file
+  an issue about it.
 - **No broad host permission is granted at install.** The `https://*/*` pattern is *optional* and
   narrowed to a single origin at the moment of sign-in (`ext.ts` → `chrome.permissions.request`).
 - **No remote code.** The CSP is `script-src 'self'`; everything ships in the package.
@@ -98,9 +105,10 @@ request — please ask and we will send credentials rather than post them here.
 The extension talks to one origin: the Mahaam server the user names at sign-in (mahaam.app by
 default). Host permission for that origin is requested at that moment, not at install.
 
-There are no content scripts and no page access. "File an issue for this page" uses the
-contextMenus event, which carries the page URL and the user's text selection; nothing is read
-from the page itself.
+There are no content scripts. "File an issue for this page" uses the contextMenus event, which
+carries the page URL and the user's text selection, plus chrome.tabs.captureVisibleTab under the
+activeTab grant that click provides — one screenshot of the visible area, shown to the user before
+sending and removable. The page DOM and its text are never read.
 ```
 
 ---
@@ -121,7 +129,7 @@ no real customer data appears in a public listing.
 
 ## Before uploading
 
-- [ ] Version bumped from `0.1.0` in **both** `manifest.json` and `package.json` — they must agree,
+- [ ] Version bumped in **both** `manifest.json` and `package.json` — they must agree,
       and the store rejects a re-upload of an existing version.
 - [ ] `npm run build` with `MAHAAM_API_URL` unset, so the default production host is compiled in.
 - [ ] Icons present in `dist/icons/` — they are generated by `scripts/icons.mjs` at build time and

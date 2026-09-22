@@ -31,7 +31,8 @@
   "permissions": [
     "storage",
     "alarms",
-    "contextMenus"
+    "contextMenus",
+    "activeTab"
   ],
   "optional_host_permissions": [
     "https://*/*",

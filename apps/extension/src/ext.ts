@@ -22,6 +22,13 @@ export interface PendingPage {
   title?: string;
   selection?: string;
   mode: "issue" | "log";
+  /**
+   * A JPEG data URL of the visible tab, captured at the moment the context-menu item was clicked.
+   *
+   * Only ever present for "File an issue", never for "Log time" — a time entry has nowhere to put
+   * a picture, so capturing one would be taking a screenshot for no reason.
+   */
+  screenshot?: string;
 }
 
 export type ExtMessage = { type: "timer"; running: TimeEntry | null } | { type: "refresh" };

@@ -103,7 +103,12 @@ async function boot() {
       const p = await takePendingPage();
       if (!p) return null;
       const title = p.title ?? "";
-      return { url: p.url, title: p.selection ? `${title}: ${p.selection.slice(0, 80)}` : title, mode: p.mode };
+      return {
+        url: p.url,
+        title: p.selection ? `${title}: ${p.selection.slice(0, 80)}` : title,
+        mode: p.mode,
+        ...(p.screenshot ? { screenshot: p.screenshot } : {}),
+      };
     },
   };
 
