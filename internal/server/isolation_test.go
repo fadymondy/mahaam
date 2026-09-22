@@ -361,6 +361,10 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	// A personal access token of alice's, for DELETE /api/auth/tokens/{id}. Not workspace-scoped —
 	// it belongs to a user — so the leak this route could have is bob revoking alice's device.
 	// Inserted directly: the plugin returns the plaintext once and we only need the row.
+	deviceToken := "iso-device-" + rnd()
+	if _, err := a.SysDB.Exec(`INSERT INTO devices (user_id, platform, app, push_token) VALUES ($1, 'ios', 'team', $2)`, aliceID, deviceToken); err != nil {
+		t.Fatal(err)
+	}
 	patID := "iso-pat-" + rnd()
 	if _, err := a.SysDB.Exec(`INSERT INTO personal_access_tokens (id, user_id, name, token_hash, abilities, created_at)
 		VALUES ($1, $2, $3, $4, '', now()::text)`, patID, aliceID, marker+" pat", "iso-hash-"+rnd()); err != nil {
@@ -416,6 +420,10 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		// User-scoped rather than workspace-scoped; TestPersonalAccessTokens covers what the sweep
 		// cannot, namely that bob's DELETE leaves alice's token alive.
 		"auth": patID,
+		// Native push: DELETE /api/me/devices/{token}, alice's phone. Account-scoped, not
+		// workspace-scoped (the only parameterised /api/me route); TestNativePush checks that bob's
+		// DELETE of it is a no-op.
+		"me": deviceToken,
 	}
 	// Guarded routes without path parameters, by segment. Anything else is unknown.
 	unparameterised := map[string]bool{

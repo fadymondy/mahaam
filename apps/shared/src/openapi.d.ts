@@ -682,6 +682,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register this phone for push notifications
+         * @description Call on every app start and whenever FCM hands the app a new token (pass the old one as previous_token). Registering a token another account had moves it to you. Works whether or not the server has FCM configured; native_enabled says whether anything will actually be sent.
+         */
+        post: operations["me-device-register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/devices/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop push notifications on this phone */
+        delete: operations["me-device-remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/email": {
         parameters: {
             query?: never;
@@ -5410,6 +5447,37 @@ export interface components {
              */
             readonly $schema?: string;
             deployments: components["schemas"]["Deployment"][] | null;
+        };
+        Device: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Device.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            app: "team" | "client";
+            app_version?: string;
+            /**
+             * @description Language of the notification titles. Default en.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            /** @enum {string} */
+            platform: "ios" | "android";
+            previous_token?: string;
+            /** @description The FCM registration token */
+            push_token: string;
+        };
+        DeviceOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeviceOutBody.json
+             */
+            readonly $schema?: string;
+            /** @description FCM is configured on this server */
+            native_enabled: boolean;
         };
         DraftInput: {
             /**
@@ -12214,6 +12282,68 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Device"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };

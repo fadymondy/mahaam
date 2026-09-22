@@ -135,6 +135,7 @@ func (s *Service) RequestDeletion(ctx context.Context, userID, password, locale 
 		`DELETE FROM oauth_refresh_tokens WHERE user_id = $1`,
 		`DELETE FROM oauth_codes WHERE user_id = $1`,
 		`DELETE FROM push_subscriptions WHERE user_id = $1`,
+		`DELETE FROM devices WHERE user_id = $1`,
 	); err != nil {
 		return time.Time{}, err
 	}
@@ -245,6 +246,7 @@ func (s *Service) purge(ctx context.Context, userID string) error {
 		`DELETE FROM oauth_refresh_tokens WHERE user_id = $1`,
 		`DELETE FROM oauth_codes WHERE user_id = $1`,
 		`DELETE FROM push_subscriptions WHERE user_id = $1`,
+		`DELETE FROM devices WHERE user_id = $1`,
 		`UPDATE platform_users SET deleted_at = now(), purge_after = NULL, updated_at = now() WHERE user_id = $1`,
 	); err != nil {
 		return err

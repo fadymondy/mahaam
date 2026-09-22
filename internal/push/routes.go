@@ -76,6 +76,54 @@ func Register(api huma.API, s *Service) {
 		})
 }
 
+type deviceOut struct {
+	Body struct {
+		NativeEnabled bool `json:"native_enabled" doc:"FCM is configured on this server"`
+	}
+}
+
+// RegisterDevices mounts the native half under /api/me/devices (MH-352).
+func RegisterDevices(api huma.API, s *Service) {
+	huma.Register(api, huma.Operation{OperationID: "me-device-register", Method: http.MethodPost, Path: "/api/me/devices",
+		Summary: "Register this phone for push notifications", Tags: []string{"Push"},
+		Description: "Call on every app start and whenever FCM hands the app a new token (pass the old one as previous_token). " +
+			"Registering a token another account had moves it to you. Works whether or not the server has FCM configured; " +
+			"native_enabled says whether anything will actually be sent."},
+		func(ctx context.Context, in *struct{ Body Device }) (*deviceOut, error) {
+			id, err := who(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if s.DB == nil {
+				return nil, huma.Error503ServiceUnavailable("push is unavailable")
+			}
+			if err := s.SaveDevice(ctx, id, in.Body); err != nil {
+				s.Log.Error("push: save device", "err", err)
+				return nil, huma.Error500InternalServerError("could not register the device")
+			}
+			out := &deviceOut{}
+			out.Body.NativeEnabled = NativeEnabled()
+			return out, nil
+		})
+
+	huma.Register(api, huma.Operation{OperationID: "me-device-remove", Method: http.MethodDelete, Path: "/api/me/devices/{token}",
+		DefaultStatus: http.StatusNoContent, Summary: "Stop push notifications on this phone", Tags: []string{"Push"}},
+		func(ctx context.Context, in *struct {
+			Token string `path:"token" maxLength:"4096"`
+		}) (*struct{}, error) {
+			id, err := who(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if s.DB != nil {
+				if err := s.RemoveDevice(ctx, id, in.Token); err != nil {
+					return nil, huma.Error500InternalServerError("could not remove the device")
+				}
+			}
+			return nil, nil
+		})
+}
+
 func who(ctx context.Context) (string, error) {
 	id, ok := auth.IdentityFrom(ctx)
 	if !ok || id == nil {

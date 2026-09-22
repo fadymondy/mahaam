@@ -152,9 +152,11 @@ func OpenAPI() ([]byte, error) {
 func registerPush(api huma.API, a *app.App) {
 	if a == nil {
 		push.Register(api, push.New(nil, nil))
+		push.RegisterDevices(api, push.New(nil, nil))
 		return
 	}
 	push.Register(api, push.New(a.SysDB, a.Log))
+	push.RegisterDevices(api, push.New(a.SysDB, a.Log)) // /api/me/devices: native push (FCM)
 }
 
 func registerAccount(api huma.API, a *app.App) {

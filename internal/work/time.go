@@ -114,6 +114,7 @@ func (sv *Service) publish(workspace, user, event string, data any) {
 		if n.URL != nil {
 			m.URL = *n.URL
 		}
+		m.Data, m.Titles = nativePayload(workspace, n)
 		sv.Push.Notify(user, m)
 	}
 }

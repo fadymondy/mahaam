@@ -217,3 +217,41 @@ func fanout(ctx context.Context, q querier, s *tenant.Scope, e entry) error {
 	}
 	return nil
 }
+
+// nativePayload is what a phone needs beyond the banner (MH-352): enough to open the right screen
+// without another request, and the title in each language the app might be set to. The inbox
+// row's own title is in the workspace's language; a person whose phone is in Arabic in an
+// English workspace should still read Arabic on their lock screen.
+func nativePayload(workspace string, n *Notification) (map[string]string, map[string]string) {
+	str := func(k string) string {
+		if v, ok := n.Data[k].(string); ok {
+			return v
+		}
+		return ""
+	}
+	data := map[string]string{"workspace_id": workspace, "kind": n.Kind, "notification_id": n.ID}
+	if n.URL != nil {
+		// Notification URLs are /w/{slug}/…, so the slug a deep link needs is already there.
+		if rest, ok := strings.CutPrefix(*n.URL, "/w/"); ok {
+			if slug, _, _ := strings.Cut(rest, "/"); slug != "" {
+				data["workspace_slug"] = slug
+			}
+		}
+	}
+	if v := str("project_id"); v != "" {
+		data["project_id"] = v
+	}
+	if v := str("task_key"); v != "" {
+		data["key"] = v
+	}
+	var titles map[string]string
+	if actor, key, title := str("actor"), str("task_key"), str("task_title"); key != "" {
+		if _, known := eventText["en"][n.Kind]; known {
+			titles = map[string]string{}
+			for locale := range eventText {
+				titles[locale] = eventTitle(locale, n.Kind, actor, key, title)
+			}
+		}
+	}
+	return data, titles
+}

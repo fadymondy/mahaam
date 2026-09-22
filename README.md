@@ -486,6 +486,14 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   The hourly `mahaam.account.purge` job ANONYMISES rather than deletes: time entries, comments, projects and invoices
   reference `users` with no cascade, so the row stays as `deleted-<id>@deleted.invalid` with an unmatchable password,
   and memberships, assignments, profile, inbox, codes and tokens go. It re-checks the sole-owner rule and postpones.
+- **Native push** (MH-352, `internal/push/native.go`): `devices` (owner pool; one row per install, UNIQUE push token,
+  so a phone that changes hands moves rather than receiving both people's notifications). `POST /api/me/devices`
+  (with `previous_token` for FCM's token rotation) and `DELETE /api/me/devices/{token}`. Every inbox notification that
+  goes to Web Push also goes to the user's phones through the FCM HTTP v1 API. The service-account JWT bearer grant
+  is written by hand rather than with Google's client library, and the access token is cached per process. The payload
+  data is workspace_id, workspace_slug, kind, project_id, key, notification_id and url; the title is rendered in the
+  device's locale; collapse is by kind and key. UNREGISTERED and 404 delete the device. Off unless
+  `FCM_PROJECT_ID` + `FCM_SERVICE_ACCOUNT` are set.
 - **Enforcement**: one helper, `internal/limits` (`Check`, `CheckStorage`, `Feature`, `Integration`, `CountCall`),
   called in the domain functions REST and MCP share: invitations/accept, `CreateProject`, `CreateClient` + client
   import, `CreateTeam`, `CreateTask`, `reports.Create` (every issue: app, portal, requests, embed, MCP, integration
