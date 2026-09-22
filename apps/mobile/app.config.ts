@@ -48,6 +48,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: { output: "single", favicon: asset("favicon") },
   plugins: [
     "expo-router",
+    "./plugins/with-scene-lifecycle",
     "expo-secure-store",
     "expo-localization",
     ["expo-notifications", { color: "#8C3FB5" }],
