@@ -36,6 +36,7 @@ import { classify, OfflineQueue } from "@mahaam/client";
 import { rasterMark } from "@mahaam/client/brand";
 import { encodePng } from "@mahaam/client/brand/png";
 import { startIdleWatch } from "./idle-watch";
+import { startUpdates, stopUpdates } from "./updates";
 import { queueStore } from "./queue-store";
 import * as store from "./store";
 
@@ -491,6 +492,7 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
   stopLive();
+  stopUpdates();
 });
 
 void app.whenReady().then(() => {
@@ -505,6 +507,8 @@ void app.whenReady().then(() => {
   refreshTray();
   if (!globalShortcut.register(SHORTCUT, () => void toggleTimer())) console.warn(`[mahaam] shortcut ${SHORTCUT} is taken`);
   win = createWindow();
+  // No-op unless this is a packaged build: an unsigned app cannot install an update anyway.
+  startUpdates(() => win);
   if (SHOW_ON_START) win.once("ready-to-show", () => showPopover());
 });
 
