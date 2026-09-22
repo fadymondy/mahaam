@@ -212,5 +212,19 @@
   "oauth.willBeAbleTo": "It will be able to",
   "oauth.allow": "Allow",
   "oauth.deny": "Deny",
-  "oauth.badRequest": "This connection request is missing something it needs (client, redirect address, or PKCE parameters) — ask the app you're connecting to try again."
+  "oauth.badRequest": "This connection request is missing something it needs (client, redirect address, or PKCE parameters) — ask the app you're connecting to try again.",
+  "auth.backToSignIn": "Back to sign in",
+  "auth.forgotPassword": "Forgot password?",
+  "auth.newPassword": "New password",
+  "auth.resetBadCode": "That code isn't valid, or it has expired. Codes work for 10 minutes and five tries. Send a new one if you need to.",
+  "auth.resetCode": "Code from the email",
+  "auth.resetEyebrow": "Account recovery",
+  "auth.resetHint": "We'll email you a six-digit code. Enter it here with a new password.",
+  "auth.resetResend": "Send a new code",
+  "auth.resetSend": "Email me a code",
+  "auth.resetSent": "If {email} has a Mahaam account, a code is on its way. It works for 10 minutes.",
+  "auth.resetSignsOut": "At least 8 characters. Every device signed in to this account will be signed out.",
+  "auth.resetSubmit": "Set new password",
+  "auth.resetTitle": "Reset your password",
+  "auth.resetTooMany": "Too many attempts. Wait a few minutes and try again."
 }

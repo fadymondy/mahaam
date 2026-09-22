@@ -143,6 +143,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                 onChange={(e) => setPassword(e.target.value)}
               />
               {mode === "register" ? <FieldDescription>{t("auth.passwordHint")}</FieldDescription> : null}
+              {mode === "login" ? (
+                <Link
+                  href={`/${locale}/forgot-password`}
+                  className="self-end text-sm text-grid-muted underline-offset-4 hover:text-grid-fg hover:underline"
+                >
+                  {t("auth.forgotPassword")}
+                </Link>
+              ) : null}
             </Field>
             {error ? <FieldError>{error}</FieldError> : null}
             <Button type="submit" size="lg" disabled={busy || !email || !password}>

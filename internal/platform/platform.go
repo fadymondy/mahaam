@@ -8,8 +8,10 @@ package platform
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -169,7 +171,38 @@ func SessionRevoked(ctx context.Context, db *sql.DB, u *User, r *http.Request) b
 		return false
 	}
 	iat, ok := IssuedAt(ctx, db, r)
+	if !ok {
+		// A personal access token has no iat: it is not a JWT. It used to fall through to "no
+		// issue time, so revoked", which refused every PAT the user would EVER mint once anyone
+		// had signed them out everywhere: the extension and the apps then failed for good, with
+		// nothing to fix it but clearing the column by hand. A PAT is judged by when it was
+		// minted, the same rule as a session.
+		iat, ok = patMinted(ctx, db, r)
+	}
 	return !ok || iat.Before(u.SessionsValidAfter.Truncate(time.Second))
+}
+
+// patPrefix is the auth plugin's token prefix (auth@v0.8.0 pat.go), which it does not export.
+const patPrefix = "togo_pat_"
+
+// patMinted returns when the bearer PAT on r was created. The plugin stores created_at as RFC 3339
+// text, with whole-second precision like a JWT's iat.
+func patMinted(ctx context.Context, db *sql.DB, r *http.Request) (time.Time, bool) {
+	h := r.Header.Get("Authorization")
+	if db == nil || len(h) <= 7 || !strings.EqualFold(h[:7], "Bearer ") {
+		return time.Time{}, false
+	}
+	tok := strings.TrimSpace(h[7:])
+	if !strings.HasPrefix(tok, patPrefix) {
+		return time.Time{}, false
+	}
+	sum := sha256.Sum256([]byte(tok))
+	var created string
+	if db.QueryRowContext(ctx, `SELECT created_at FROM personal_access_tokens WHERE token_hash = $1`, hex.EncodeToString(sum[:])).Scan(&created) != nil {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(time.RFC3339, created)
+	return t, err == nil
 }
 
 // ---- audit ---------------------------------------------------------------------------------------

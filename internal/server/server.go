@@ -16,14 +16,17 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
+	"github.com/togo-framework/ratelimit"
 	"github.com/togo-framework/togo"
 
+	"github.com/fadymondy/mahaam/internal/account"
 	"github.com/fadymondy/mahaam/internal/admin"
 	"github.com/fadymondy/mahaam/internal/app"
 	graphgen "github.com/fadymondy/mahaam/internal/graph/gen"
 	"github.com/fadymondy/mahaam/internal/graph/resolvers"
 	"github.com/fadymondy/mahaam/internal/integrations"
 	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/mailer"
 	"github.com/fadymondy/mahaam/internal/live"
 	"github.com/fadymondy/mahaam/internal/mcp"
 	_ "github.com/fadymondy/mahaam/internal/plugins" // blank-imports installed plugins (togo install)
@@ -121,6 +124,7 @@ func registerREST(api huma.API, a *app.App) {
 	reports.RegisterPortalPanel(api, a)  // roadmap 5: customer panel + staff Requests inbox
 	integrations.Register(api, a)        // /api/w/projects/{project}/integrations*, /github/*
 	registerPush(api, a)                 // /api/me/push: Web Push for the installed app (PWA)
+	registerAccount(api, a)              // /api/auth/password/*: forgot / reset by emailed code
 	admin.Register(api, a)               // /api/admin/* (platform admins), /api/me/platform, /api/w/plan
 }
 
@@ -151,6 +155,20 @@ func registerPush(api huma.API, a *app.App) {
 		return
 	}
 	push.Register(api, push.New(a.SysDB, a.Log))
+}
+
+func registerAccount(api huma.API, a *app.App) {
+	if a == nil {
+		account.Register(api, &account.Service{})
+		return
+	}
+	s := &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(a.Kernel), Log: a.Log}
+	if rl, ok := ratelimit.FromKernel(a.Kernel); ok {
+		s.Limit = rl
+	} else {
+		a.Log.Warn("ratelimit plugin not registered — the password reset routes are NOT rate limited")
+	}
+	account.Register(api, s)
 }
 
 // installLiveBus connects this instance's realtime hub to the others over Postgres LISTEN/NOTIFY.

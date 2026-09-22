@@ -419,6 +419,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email a password-reset code
+         * @description Always answers 202, whether or not the address has an account, and in the same time either way. A code is valid for 10 minutes and 5 attempts; asking again replaces it.
+         */
+        post: operations["password-forgot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a new password with an emailed code
+         * @description Signs the account out everywhere: every session and personal access token it held stops working. Sign in again with the new password.
+         */
+        post: operations["password-reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients": {
         parameters: {
             query?: never;
@@ -3517,6 +3557,23 @@ export interface paths {
         patch: operations["w-update-subscription"];
         trace?: never;
     };
+    "/api/w/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What changed since a cursor: rows plus tombstones (offline clients) */
+        get: operations["w-sync"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/tasks": {
         parameters: {
             query?: never;
@@ -5349,6 +5406,21 @@ export interface components {
              */
             readonly $schema?: string;
             keys: components["schemas"]["FeedbackKey"][] | null;
+        };
+        ForgotInBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ForgotInBody.json
+             */
+            readonly $schema?: string;
+            /** Format: email */
+            email: string;
+            /**
+             * @description Language of the email. Default en.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
         };
         GitHubAccount: {
             /** Format: date-time */
@@ -7670,6 +7742,23 @@ export interface components {
             counts?: components["schemas"]["RequestCounts"];
             requests: components["schemas"]["Request"][] | null;
         };
+        ResetInBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ResetInBody.json
+             */
+            readonly $schema?: string;
+            code: string;
+            /** Format: email */
+            email: string;
+            /**
+             * @description Language of the "your password was changed" email. Default en.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            new_password: string;
+        };
         "RespStruct { IsAdmin bool \"json:\\\"is_admin\\\"\" }Body": {
             /**
              * Format: uri
@@ -8026,6 +8115,52 @@ export interface components {
             readonly $schema?: string;
             subscriptions: components["schemas"]["Subscription"][] | null;
         };
+        SyncComment: {
+            author_id: string | null;
+            body: string;
+            id: string;
+            task_id: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SyncIssue: {
+            issue_type: string;
+            key: string;
+            priority: string;
+            project_id: string | null;
+            state: string;
+            status: string;
+            title: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SyncPage: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SyncPage.json
+             */
+            readonly $schema?: string;
+            comments: components["schemas"]["SyncComment"][] | null;
+            deletions: components["schemas"]["Tombstone"][] | null;
+            issues: components["schemas"]["SyncIssue"][] | null;
+            /** Format: date-time */
+            next_since: string;
+            projects: components["schemas"]["SyncProject"][] | null;
+            tasks: components["schemas"]["SyncTask"][] | null;
+            time_entries: components["schemas"]["SyncTimeEntry"][] | null;
+            truncated: boolean;
+        };
+        SyncProject: {
+            archived: boolean;
+            client_id: string | null;
+            color: string;
+            id: string;
+            name: string;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
         SyncReport: {
             /**
              * Format: uri
@@ -8055,6 +8190,35 @@ export interface components {
             provider: string;
             /** Format: int64 */
             updated: number;
+        };
+        SyncTask: {
+            /** Format: date-time */
+            completed_at: string | null;
+            /** Format: date-time */
+            due_at: string | null;
+            id: string;
+            key: string;
+            priority: string;
+            project_id: string;
+            status_id: string;
+            title: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SyncTimeEntry: {
+            billable: boolean;
+            description: string;
+            /** Format: int64 */
+            duration_s: number | null;
+            /** Format: date-time */
+            ended_at: string | null;
+            id: string;
+            project_id: string | null;
+            /** Format: date-time */
+            started_at: string;
+            task_id: string | null;
+            /** Format: date-time */
+            updated_at: string;
         };
         Task: {
             assignee_ids: string[] | null;
@@ -8777,6 +8941,12 @@ export interface components {
             /** Format: date-time */
             revoked_at: string | null;
             scopes: string[] | null;
+        };
+        Tombstone: {
+            /** Format: date-time */
+            deleted_at: string;
+            entity: string;
+            id: string;
         };
         Unbilled: {
             /**
@@ -10944,6 +11114,68 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "password-forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotInBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetInBody"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {
@@ -20628,6 +20860,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Subscription"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-sync": {
+        parameters: {
+            query?: {
+                /** @description next_since from the previous call (RFC 3339). Empty for a first sync. */
+                since?: string;
+            };
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncPage"];
                 };
             };
             /** @description Error */

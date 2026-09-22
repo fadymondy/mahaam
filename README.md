@@ -466,8 +466,13 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   `status` active|suspended + `suspended_reason`. Suspended workspace → **403** `workspace_suspended` for members
   (REST + MCP), embed refuses; platform admins still see it. Suspended **account** (`platform_users.suspended_at`) →
   403 `account_suspended` everywhere, sign-in refused, MCP tokens refused. "Sign out everywhere" sets
-  `sessions_valid_after` (older session JWTs → 401; MCP tokens are not sessions). **Password reset**: the auth plugin
-  has no reset flow, so the panel cannot send one — not done.
+  `sessions_valid_after` (older session JWTs and older personal access tokens → 401; a PAT is judged by its
+  `created_at`, since it has no iat; MCP tokens are not sessions). **Password reset** (`internal/account`, MH-340):
+  the auth plugin has none, so Mahaam adds `POST /api/auth/password/forgot` (always 202, sent off the request
+  path so timing does not reveal an account) and `/reset` (six-digit code in `account_codes`, HMAC under
+  `MAHAAM_SECRET_KEY`, 10 min, 5 attempts, one live code per purpose). A reset sets the password, deletes the
+  user's PATs and moves `sessions_valid_after`, all in the code's transaction. Web: `/{locale}/forgot-password`.
+  The admin panel still cannot send a reset on someone's behalf; the person asks for one themselves.
 - **Enforcement**: one helper, `internal/limits` (`Check`, `CheckStorage`, `Feature`, `Integration`, `CountCall`),
   called in the domain functions REST and MCP share: invitations/accept, `CreateProject`, `CreateClient` + client
   import, `CreateTeam`, `CreateTask`, `reports.Create` (every issue: app, portal, requests, embed, MCP, integration
