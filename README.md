@@ -486,6 +486,12 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   The hourly `mahaam.account.purge` job ANONYMISES rather than deletes: time entries, comments, projects and invoices
   reference `users` with no cascade, so the row stays as `deleted-<id>@deleted.invalid` with an unmatchable password,
   and memberships, assignments, profile, inbox, codes and tokens go. It re-checks the sole-owner rule and postpones.
+- **Email verification** (MH-342): a code is mailed on the auth plugin's `auth.registered` hook (plugin untouched);
+  `GET/POST /api/me/verify-email`, `/resend`. `platform_users.email_verified_at`; accounts that existed before were
+  marked verified once (`platform_meta` flag). A password reset by code and a confirmed email change also verify.
+  The gate: an unverified account can't `POST /api/me/workspaces` (403 `email_unverified`) when `EMAIL_VERIFICATION`
+  is `required`, or `auto` (the default) with a mail driver that really delivers. Without SMTP nobody could receive
+  the code, so `auto` leaves the gate off.
 - **Native push** (MH-352, `internal/push/native.go`): `devices` (owner pool; one row per install, UNIQUE push token,
   so a phone that changes hands moves rather than receiving both people's notifications). `POST /api/me/devices`
   (with `previous_token` for FCM's token rotation) and `DELETE /api/me/devices/{token}`. Every inbox notification that

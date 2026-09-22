@@ -41,15 +41,19 @@ type Profile struct {
 	Locale    *string `json:"locale" doc:"en or ar; null: follow the device"`
 	Timezone  *string `json:"timezone" doc:"IANA name; null: follow the device"`
 	CreatedAt string  `json:"created_at"`
+	// EmailVerified: the address has been proven with a code (MH-342).
+	EmailVerified bool `json:"email_verified"`
 }
 
 // LoadProfile reads a profile. A person who never saved one has the empty profile.
 func LoadProfile(ctx context.Context, db *sql.DB, userID string) (*Profile, error) {
 	p := &Profile{ID: userID}
 	err := db.QueryRowContext(ctx, `
-		SELECT u.email, u.created_at, coalesce(p.name, ''), p.avatar, p.locale, p.timezone
-		FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id WHERE u.id = $1`, userID,
-	).Scan(&p.Email, &p.CreatedAt, &p.Name, &p.Avatar, &p.Locale, &p.Timezone)
+		SELECT u.email, u.created_at, coalesce(p.name, ''), p.avatar, p.locale, p.timezone,
+			coalesce(pu.email_verified_at IS NOT NULL, false)
+		FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id LEFT JOIN platform_users pu ON pu.user_id = u.id
+		WHERE u.id = $1`, userID,
+	).Scan(&p.Email, &p.CreatedAt, &p.Name, &p.Avatar, &p.Locale, &p.Timezone, &p.EmailVerified)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, platform.ErrNoUser
 	}
@@ -182,7 +186,13 @@ func (s *Service) ConfirmEmailChange(ctx context.Context, userID, code, locale s
 			return errEmailTaken
 		}
 		next = target
-		_, err := tx.ExecContext(ctx, `UPDATE users SET email = $2 WHERE id = $1`, userID, target)
+		if _, err := tx.ExecContext(ctx, `UPDATE users SET email = $2 WHERE id = $1`, userID, target); err != nil {
+			return err
+		}
+		// The code went to the new address, so the new address is proven (MH-342).
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO platform_users (user_id, email_verified_at, updated_at) VALUES ($1, now(), now())
+			ON CONFLICT (user_id) DO UPDATE SET email_verified_at = now(), updated_at = now()`, userID)
 		return err
 	})
 	if err != nil {

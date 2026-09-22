@@ -119,7 +119,9 @@ func TestPasswordReset(t *testing.T) {
 	// 4. Asking again issues a fresh code; the error for an unknown account is the same 400 as a
 	// wrong code, so reset can't be used to probe for accounts either.
 	anon.must("POST", "/api/auth/password/forgot", map[string]string{"email": email, "locale": "ar"}, 202)
-	second := mailTo(t, mailDir, email, "", 1)
+	// Matched on the Arabic body: the subject is MIME-encoded, and the sign-up confirmation
+	// (MH-342) is in this inbox too, with a code of its own.
+	second := mailTo(t, mailDir, email, "لتعيين كلمة مرور جديدة", 0)
 	if !strings.Contains(second, `lang="ar"`) {
 		t.Error("locale=ar did not produce the Arabic message")
 	}

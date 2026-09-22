@@ -164,6 +164,7 @@ func registerAccount(api huma.API, a *app.App) {
 		account.Register(api, &account.Service{})
 		account.RegisterProfile(api, &account.Service{})
 		account.RegisterDelete(api, &account.Service{})
+		account.RegisterVerify(api, &account.Service{})
 		return
 	}
 	s := &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(a.Kernel), Log: a.Log}
@@ -175,6 +176,8 @@ func registerAccount(api huma.API, a *app.App) {
 	account.Register(api, s)
 	account.RegisterProfile(api, s)
 	account.RegisterDelete(api, s)
+	account.RegisterVerify(api, s)
+	account.OnRegistered(a.Kernel, s) // the first verification code, when the auth plugin creates an account
 }
 
 // installLiveBus connects this instance's realtime hub to the others over Postgres LISTEN/NOTIFY.

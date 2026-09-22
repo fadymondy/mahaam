@@ -6,6 +6,7 @@ import { ChevronRightIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
+import { VerifyEmailGate } from "@/components/account/verify-email-gate"
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { UserMenu } from "@/components/workspace/user-menu"
@@ -78,7 +79,9 @@ export default function WorkspacesPage() {
           <p className="text-sm text-grid-muted">{t("workspaces.createHint")}</p>
         </div>
         <div className="p-4">
-          <CreateWorkspaceForm autoFocus={!list.isLoading && workspaces.length === 0} />
+          <VerifyEmailGate email={me.data.email}>
+            <CreateWorkspaceForm autoFocus={!list.isLoading && workspaces.length === 0} />
+          </VerifyEmailGate>
         </div>
       </section>
     </PublicFrame>

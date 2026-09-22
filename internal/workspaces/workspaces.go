@@ -23,9 +23,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/togo-framework/auth"
 
+	"github.com/fadymondy/mahaam/internal/account"
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/mailer"
 	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
@@ -174,6 +176,10 @@ func Register(api huma.API, a *app.App) {
 		id, err := identity(ctx)
 		if err != nil {
 			return nil, err
+		}
+		// MH-342: a new workspace is the one thing an unproven address can't start.
+		if err := account.RequireVerified(ctx, a.SysDB, mailer.FromKernel(a.Kernel), id.ID); err != nil {
+			return nil, account.Unverified()
 		}
 		name := strings.TrimSpace(in.Body.Name)
 		if name == "" {

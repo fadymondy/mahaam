@@ -123,7 +123,8 @@ func TestProfile(t *testing.T) {
 	next := "profile-alice-new-" + rnd() + "@example.test"
 	alice.must("POST", "/api/me/email", map[string]string{"email": next, "password": "correct-horse-9"}, 202)
 	code2 := codeIn(t, mailTo(t, mailDir, next, "Confirm your new", 0))
-	if n := len(mailsTo(mailDir, bobEmail, "")); n != 0 {
+	// Bob has his own sign-up confirmation in there; what must not exist is an email-change code.
+	if n := len(mailsTo(mailDir, bobEmail, "Confirm your new")); n != 0 {
 		t.Errorf("%d message(s) went to an address another account holds", n)
 	}
 	wrong := "000000"

@@ -165,3 +165,20 @@ func deletionCancelledMail(to, locale string) mail.Message {
 	return mail.Message{To: []string{to}, Subject: t.cancelledSubject, Text: t.cancelled + "\n",
 		HTML: page(loc, `<p>`+html.EscapeString(t.cancelled)+`</p>`)}
 }
+
+var verifyTexts = map[string][3]string{
+	"en": {"Confirm your email for Mahaam", "Enter this code in Mahaam to confirm this is your address:", "It works for 10 minutes. If you didn't create a Mahaam account, ignore this email."},
+	"ar": {"أكّد بريدك الإلكتروني في مهام", "أدخل هذا الرمز في مهام لتأكيد أن هذا بريدك:", "صالح لمدة 10 دقائق. إن لم تنشئ حساباً في مهام فتجاهل هذه الرسالة."},
+}
+
+func verifyMail(to, code, locale string) mail.Message {
+	t, ok := verifyTexts[locale]
+	if !ok {
+		locale, t = "en", verifyTexts["en"]
+	}
+	text := t[1] + "\n\n    " + code + "\n\n" + t[2] + "\n"
+	body := `<p>` + html.EscapeString(t[1]) + `</p>` +
+		`<p dir="ltr" style="font-size:28px;font-weight:600;letter-spacing:6px;font-family:ui-monospace,monospace">` + html.EscapeString(code) + `</p>` +
+		`<p style="color:#666">` + html.EscapeString(t[2]) + `</p>`
+	return mail.Message{To: []string{to}, Subject: t[0], Text: text, HTML: page(locale, body)}
+}

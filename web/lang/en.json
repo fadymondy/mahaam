@@ -267,5 +267,10 @@
   "legal.privacy": "Privacy",
   "auth.consent": "By creating an account you agree to the {terms} and the {privacy}.",
   "auth.consentTerms": "Terms of Service",
-  "auth.consentPrivacy": "Privacy Policy"
+  "auth.consentPrivacy": "Privacy Policy",
+  "verify.sent": "We sent a six-digit code to {email}. Enter it to confirm the address and create your workspace.",
+  "verify.why": "You can use workspaces you're invited to straight away; starting a new one needs a confirmed address.",
+  "verify.submit": "Confirm email",
+  "verify.done": "Email confirmed",
+  "verify.resent": "A new code is on its way."
 }

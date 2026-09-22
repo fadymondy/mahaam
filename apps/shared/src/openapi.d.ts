@@ -830,6 +830,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether your email address is confirmed */
+        get: operations["me-verify-email-state"];
+        put?: never;
+        /** Confirm your email address with the code sent to it */
+        post: operations["me-verify-email"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/verify-email/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a new confirmation code */
+        post: operations["me-verify-email-resend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/workspaces": {
         parameters: {
             query?: never;
@@ -6559,6 +6594,25 @@ export interface components {
             readonly $schema?: string;
             endpoint: string;
         };
+        "Me-verify-email-resendRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-verify-email-resendRequest.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+        };
+        "Me-verify-emailRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-verify-emailRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+        };
         Member: {
             email: string;
             /** Format: date-time */
@@ -7285,6 +7339,7 @@ export interface components {
             avatar: string | null;
             created_at: string;
             email: string;
+            email_verified: boolean;
             id: string;
             /** @description en or ar; null: follow the device */
             locale: string | null;
@@ -9818,6 +9873,17 @@ export interface components {
              */
             readonly $schema?: string;
             items: components["schemas"]["VaultItem"][] | null;
+        };
+        VerifyStateBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/VerifyStateBody.json
+             */
+            readonly $schema?: string;
+            /** @description Unverified accounts can't create a workspace on this server */
+            email_verification_required: boolean;
+            email_verified: boolean;
         };
         "W-add-catalogue-itemRequest": {
             /**
@@ -12614,6 +12680,99 @@ export interface operations {
         responses: {
             /** @description No Content */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-verify-email-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyStateBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-verify-emailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyStateBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-verify-email-resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Me-verify-email-resendRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };

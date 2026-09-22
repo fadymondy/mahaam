@@ -177,10 +177,13 @@ func (s *Service) Reset(ctx context.Context, email, code, password, locale strin
 		if _, err := tx.ExecContext(ctx, `DELETE FROM personal_access_tokens WHERE user_id = $1`, userID); err != nil {
 			return err
 		}
-		_, err := tx.ExecContext(ctx, `
+		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO platform_users (user_id, sessions_valid_after, updated_at) VALUES ($1, now(), now())
-			ON CONFLICT (user_id) DO UPDATE SET sessions_valid_after = now(), updated_at = now()`, userID)
-		return err
+			ON CONFLICT (user_id) DO UPDATE SET sessions_valid_after = now(), updated_at = now()`, userID); err != nil {
+			return err
+		}
+		// The code came to this inbox, so the address is proven (MH-342).
+		return markVerified(ctx, tx, userID)
 	})
 	if err != nil {
 		return err
