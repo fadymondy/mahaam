@@ -1,0 +1,135 @@
+# Chrome Web Store / Edge Add-ons listing
+
+Everything the submission forms ask for, kept in the repo so it can be reviewed and corrected
+like anything else rather than living only in a web form. Copy it into the dashboards at upload
+time.
+
+Written against `manifest.json` and the code as they actually are — every claim below was checked,
+not remembered. If you change the permissions, change this file in the same commit, because a
+listing that overstates what an extension does is how a review gets rejected and a listing that
+understates it is how one gets pulled.
+
+---
+
+## Identity
+
+| field | value |
+| --- | --- |
+| Name | Mahaam |
+| Category | Workflow & Planning |
+| Language | English (primary), Arabic |
+| Homepage | https://mahaam.app |
+| Support | https://mahaam.app/support |
+| Privacy policy | https://mahaam.app/legal/extension-privacy (see `PRIVACY.md`) |
+
+## Short description (132 char max)
+
+**English** — 118 characters:
+
+```
+Track time, see what's next, and file an issue about the page you're on — without leaving the tab.
+```
+
+**Arabic**:
+
+```
+تتبّع وقتك، واعرف مهمتك التالية، وأبلغ عن مشكلة في الصفحة التي تتصفّحها — دون مغادرة التبويب.
+```
+
+## Full description
+
+```
+Mahaam is project management and time tracking. This extension puts the part you reach for most
+often one click away.
+
+• Start and stop your timer from the toolbar. The badge shows how long it has been running, and
+  the timer stays in step with the Mahaam web app and the desktop tray in real time — start it in
+  one, and the others catch up within a second.
+
+• See what's next. Your assigned work, in the order you should work it, with a one-click start.
+
+• File an issue about the page you're on. Right-click anywhere — or select some text first — and
+  the page URL and your selection come along with it.
+
+• Log time against the page you're on, for the work you just did on it.
+
+• Works in English and Arabic, light and dark, and follows your system theme.
+
+You need a Mahaam account. The extension talks only to your own Mahaam server — mahaam.app, or
+your self-hosted install if you have one.
+
+WHAT IT DOES NOT DO
+It does not read the pages you visit. It does not track your browsing. It does not inject
+anything into web pages. The only thing it ever sends about a page is the URL and the text you
+selected, and only when you explicitly file an issue or log time.
+```
+
+**Arabic** — translate at upload; the "WHAT IT DOES NOT DO" section is the part that matters most
+and must not be softened in translation.
+
+---
+
+## Permission justifications
+
+Reviewers read these closely. Each is written against the line of code that needs it.
+
+| permission | why | reviewer note |
+| --- | --- | --- |
+| `storage` | Keeps the API URL, the signed-in email and the chosen workspace, so the popup does not ask again on every open. | The credential is **not** kept here. It lives in `chrome.storage.session`, which is memory-only and cleared when the browser closes. |
+| `alarms` | One alarm a minute refreshes the running timer so the toolbar badge is correct while the popup is shut. | Without it the badge would only update while the popup is open, which defeats the point of a badge. |
+| `contextMenus` | Adds "File an issue for this page" and "Log time on this page" to the right-click menu. | The menu item is the whole page-capture feature. |
+| `optional_host_permissions`: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Reaching the user's own Mahaam server. | **Optional and requested at sign-in for one origin only** — the host the user typed. Mahaam is self-hostable, so the manifest cannot name the host in advance. Localhost is there for people running Mahaam on their own machine. |
+
+Three things worth stating plainly in the review notes, because they are unusual in a good way:
+
+- **No `activeTab`, no `tabs`, no `scripting`, and no content scripts.** The extension never reads
+  or writes page content. The URL and selection come from the context-menu event, which Chrome
+  hands over precisely because the user chose the menu item.
+- **No broad host permission is granted at install.** The `https://*/*` pattern is *optional* and
+  narrowed to a single origin at the moment of sign-in (`ext.ts` → `chrome.permissions.request`).
+- **No remote code.** The CSP is `script-src 'self'`; everything ships in the package.
+
+## Review notes (paste into "Notes for reviewers")
+
+```
+Sign-in is required to see anything beyond the sign-in form. A test account is available on
+request — please ask and we will send credentials rather than post them here.
+
+The extension talks to one origin: the Mahaam server the user names at sign-in (mahaam.app by
+default). Host permission for that origin is requested at that moment, not at install.
+
+There are no content scripts and no page access. "File an issue for this page" uses the
+contextMenus event, which carries the page URL and the user's text selection; nothing is read
+from the page itself.
+```
+
+---
+
+## Screenshots (1280×800 or 640×400, 5 max)
+
+The e2e run already produces two of these: `apps/extension/e2e-shots/`. Capture the rest the same
+way so they show real data rather than a mock.
+
+1. **Popup, timer running** — badge visible in the toolbar. (`ext-running.png`)
+2. **Popup, "Next up"** — a few assigned tasks with start buttons.
+3. **Right-click menu** on an ordinary page, showing both Mahaam items.
+4. **Page card** after choosing "File an issue for this page". (`ext-page.png`)
+5. **Arabic, dark** — the same popup, to show RTL is first-class and not an afterthought.
+
+Use the local stack (`apps/extension` e2e against a seeded workspace) rather than production, so
+no real customer data appears in a public listing.
+
+## Before uploading
+
+- [ ] Version bumped from `0.1.0` in **both** `manifest.json` and `package.json` — they must agree,
+      and the store rejects a re-upload of an existing version.
+- [ ] `npm run build` with `MAHAAM_API_URL` unset, so the default production host is compiled in.
+- [ ] Icons present in `dist/icons/` — they are generated by `scripts/icons.mjs` at build time and
+      are gitignored, so a packaged zip built without running the build step will be missing them.
+- [ ] Privacy policy published at the URL above (content in `PRIVACY.md`).
+- [ ] Data-use disclosures in the dashboard match `PRIVACY.md`.
+
+## Still blocked
+
+Uploading needs a Chrome Web Store developer account (one-off 5 USD) and an Edge Partner Center
+account. Neither exists yet, and I cannot create them.
