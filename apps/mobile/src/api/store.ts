@@ -2,9 +2,14 @@
 //
 // The web build has no secure store, so it reports secure:false and the client then refuses to
 // persist the password there — it previously went into localStorage in cleartext, readable by
-// any XSS. The cost is that silent re-login does not work on web: when the 24h JWT expires the
-// user signs in again. The real fix is server-side refresh tokens, after which no client needs
-// to keep a password at all.
+// any XSS.
+//
+// That is now the fallback rather than the normal path. Sign-in swaps the 24h JWT for a personal
+// access token (client.ts upgradeToAccessToken), which deletes the stored credentials outright:
+// a PAT does not expire, so nothing needs a password to silently re-login, and it can be revoked
+// from the server if a device is lost. The password is only ever kept when that swap fails —
+// against a server too old to expose /api/auth/tokens — and even then only where the OS can
+// protect it.
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
