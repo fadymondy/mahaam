@@ -81,6 +81,37 @@ try {
   await page.locator(".mgy-timer-idle").waitFor({ timeout: 10000 });
   log("SSE: stop elsewhere cleared the tray timer");
 
+  // Issues: list → detail → comment → move a stage. The IPC bridge is an allowlist the type
+  // checker cannot see through, so a missing method fails only here, at runtime.
+  await page.getByRole("button", { name: "Issues" }).click();
+  const firstIssue = page.locator(".mgy-list .mgy-row").first();
+  await firstIssue.waitFor({ timeout: 10000 });
+  const issueKey = (await firstIssue.locator(".mgy-mono").first().innerText()).trim();
+  await firstIssue.click();
+  await page.getByRole("button", { name: /Move to|In review/ }).first().waitFor({ timeout: 10000 });
+  log("issue detail opened:", issueKey);
+
+  // Markdown must render as elements, not as the characters someone typed.
+  const rendered = await page.evaluate(() => {
+    const md = document.querySelector(".mgy-md");
+    return md ? { html: md.innerHTML.slice(0, 200), scripts: md.querySelectorAll("script").length } : null;
+  });
+  if (!rendered) throw new Error("the issue body did not render");
+  if (rendered.scripts > 0) throw new Error("a <script> element reached the DOM from an issue body");
+  log("body rendered; script elements =", rendered.scripts);
+
+  const comment = `tray e2e ${Date.now()}`;
+  await page.getByLabel("Comments").fill(comment);
+  await page.getByRole("button", { name: "Comment", exact: true }).click();
+  await page.getByText(comment).waitFor({ timeout: 15000 });
+  log("comment posted and read back");
+
+  await page.screenshot({ path: "e2e-shots/4-issue.png" });
+  await page.getByRole("button", { name: /← Back/ }).click();
+  await page.locator(".mgy-list").waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: /← Back/ }).click();
+  await page.getByText("Next up").waitFor({ timeout: 10000 });
+
   // Arabic + dark
   await page.getByRole("button", { name: "Settings" }).click();
   await page.getByRole("button", { name: "العربية" }).click();

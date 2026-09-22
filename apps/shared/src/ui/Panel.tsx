@@ -3,6 +3,7 @@ import { DEFAULT_POMODORO, pomodoroState } from "../pomodoro";
 import { Button } from "./components/button"
 import { Input } from "./components/input"
 import { IssuesView } from "./components/issues-view"
+import { IssueDetailView } from "./components/issue-detail"
 import { Palette } from "./components/palette"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select"
 import { Textarea } from "./components/textarea"
@@ -312,7 +313,8 @@ function Home({
   const [inbox, setInbox] = useState<Inbox | null>(null);
   const [live, setLive] = useState<LiveStatus>("reconnecting");
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<"home" | "settings" | "inbox" | "issues">("home");
+  const [view, setView] = useState<"home" | "settings" | "inbox" | "issues" | "issue">("home");
+  const [openIssue, setOpenIssue] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[] | null>(null);
   const [page, setPage] = useState<{ url: string; title?: string; mode: "issue" | "log" } | null>(null);
   const now = useTick(!!running);
@@ -434,7 +436,42 @@ function Home({
         issues={issues}
         strings={{ title: t.issues, back: t.back, search: t.issuesSearch, empty: t.issuesEmpty, status: t.issueStatus }}
         onBack={() => setView("home")}
-        onOpen={(i) => host.openUrl(`${session.apiUrl}/${prefs.locale}/w/${session.workspace?.slug ?? ""}/issues/${i.key}`)}
+        onOpen={(i) => {
+          setOpenIssue(i.key);
+          setView("issue");
+        }}
+      />
+    );
+  if (view === "issue" && openIssue)
+    return (
+      <IssueDetailView
+        issueKey={openIssue}
+        strings={{
+          back: t.back,
+          loading: t.issueLoading,
+          failed: t.issueFailed,
+          retry: t.issueRetry,
+          noBody: t.issueNoBody,
+          comments: t.issueComments,
+          noComments: t.issueNoComments,
+          commentPlaceholder: t.issueCommentPlaceholder,
+          send: t.issueSend,
+          sending: t.issueSending,
+          openInApp: t.issueOpenInApp,
+          moveTo: t.issueMoveTo,
+          agent: t.issueAgent,
+          status: t.issueStatus,
+        }}
+        load={(k) => api.issue(k)}
+        comment={(k, b) => api.commentOnIssue(k, b)}
+        move={(k, status) => api.updateIssue(k, { status })}
+        onBack={() => {
+          setView("issues");
+          // The list is stale the moment a stage changes here, so refetch rather than leave a
+          // card sitting in a column it has just left.
+          api.issues({ state: "open" }).then(setIssues, () => null);
+        }}
+        onOpenExternal={(target) => host.openUrl(target.startsWith("http") ? target : `${webBase}/issues/${target}`)}
       />
     );
   if (view === "inbox")
@@ -643,7 +680,7 @@ function QuickLog({ t, next, onLog }: { t: Strings; next: NextItem[] | null; onL
     </section>
   );
 }
-
+
 // Pomodoro is derived from the running entry's elapsed time, never stored, so it survives a
 // reload and cannot disagree with the server's clock. See ../pomodoro.
 function PomodoroBadge({ t, elapsed }: { t: Strings; elapsed: number }) {

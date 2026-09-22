@@ -17,6 +17,11 @@ export interface PanelApi {
   /** Open issues for the issues view. */
   issues(q?: { state?: "open" | "closed" }): Promise<Issue[]>;
   createIssue(input: CreateIssueInput): Promise<IssueDetail>;
+  /** One issue with its comment thread, for the detail view. */
+  issue(key: string): Promise<IssueDetail>;
+  /** Triage from the detail view. Only status is used today; the rest is what the route accepts. */
+  updateIssue(key: string, patch: { status?: string; priority?: string; state?: "open" | "closed" }): Promise<IssueDetail>;
+  commentOnIssue(key: string, body: string): Promise<unknown>;
 }
 
 export interface Session {

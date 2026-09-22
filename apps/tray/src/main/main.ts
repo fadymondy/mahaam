@@ -374,6 +374,13 @@ const API_METHODS = new Set([
   "projects",
   "createIssue",
   "issues",
+  // The issue detail view. An allowlist rather than "whatever the renderer names" is the point of
+  // this set: the renderer is sandboxed and untrusted, so adding a view means adding its calls
+  // here deliberately. TypeScript will not catch a missing one — the bridge is dynamic — so the
+  // e2e opens an issue and reads its comments to prove these three are reachable.
+  "issue",
+  "updateIssue",
+  "commentOnIssue",
 ]);
 
 function trusted(e: IpcMainInvokeEvent): boolean {

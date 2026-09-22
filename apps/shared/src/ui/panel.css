@@ -607,3 +607,107 @@ kbd {
   padding: 2px 4px;
   font-size: 12px;
 }
+
+/* ---- issue detail ------------------------------------------------------- */
+/* A reading surface in 380px. Long words and URLs must wrap or they push the
+   whole column sideways, which in a fixed-width popover means content is simply
+   unreachable — there is nowhere to scroll to. */
+.mgy-issue-title {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.mgy-issue-meta {
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.mgy-wrap {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mgy-chip {
+  border: 1px solid var(--grid-line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+}
+.mgy-issue-body {
+  max-height: 220px;
+  overflow-y: auto;
+}
+.mgy-comments {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.mgy-comment {
+  border-top: 1px solid var(--grid-line);
+  padding: 6px 0;
+}
+.mgy-comment-meta {
+  display: flex;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+/* ---- markdown ----------------------------------------------------------- */
+.mgy-md {
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.mgy-md p,
+.mgy-md ul,
+.mgy-md ol,
+.mgy-md blockquote,
+.mgy-md pre {
+  margin: 6px 0;
+}
+.mgy-md h1,
+.mgy-md h2,
+.mgy-md h3,
+.mgy-md h4,
+.mgy-md h5,
+.mgy-md h6 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.mgy-md ul,
+.mgy-md ol {
+  padding-inline-start: 18px;
+}
+.mgy-md code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  background: var(--grid-elevated-soft);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+/* Code is the one thing that must not wrap — a broken line changes what it says.
+   dir="ltr" is set on the element: code reads left-to-right even in Arabic. */
+.mgy-md pre {
+  background: var(--grid-elevated-soft);
+  border-radius: 6px;
+  padding: 8px;
+  overflow-x: auto;
+}
+.mgy-md pre code {
+  background: none;
+  padding: 0;
+  white-space: pre;
+}
+.mgy-md blockquote {
+  border-inline-start: 2px solid var(--grid-line);
+  padding-inline-start: 8px;
+  color: var(--grid-muted);
+}
+.mgy-md hr {
+  border: 0;
+  border-top: 1px solid var(--grid-line);
+}
+.mgy-md a {
+  color: var(--grid-action);
+  text-decoration: underline;
+}

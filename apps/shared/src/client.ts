@@ -420,6 +420,21 @@ export class MahaamClient {
     return this.request<IssueDetail>("POST", "/api/w/issues", { body: input });
   }
 
+  /** One issue in full, with its comment thread. `key` is the MG-12 form, not the id. */
+  issue(key: string): Promise<IssueDetail> {
+    return this.request<IssueDetail>("GET", `/api/w/issues/${encodeURIComponent(key)}`);
+  }
+
+  /** Triage an issue: status, priority, type, state. Only what a small panel should offer. */
+  updateIssue(key: string, patch: { status?: string; priority?: string; state?: "open" | "closed" }): Promise<IssueDetail> {
+    return this.request<IssueDetail>("PATCH", `/api/w/issues/${encodeURIComponent(key)}`, { body: patch });
+  }
+
+  /** Reply on an issue, as the signed-in user. */
+  commentOnIssue(key: string, body: string): Promise<unknown> {
+    return this.request("POST", `/api/w/issues/${encodeURIComponent(key)}/comments`, { body: { body } });
+  }
+
   /** "Next up": my open tasks (doing, then todo) followed by open issues I reported or that are in progress. */
   async nextUp(limit = 30): Promise<NextItem[]> {
     const [mine, projects, issues, me] = await Promise.all([
