@@ -479,6 +479,13 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   (`/api/me/email`, `/confirm`; the old address is told), and `DELETE /api/me/token` to revoke the PAT a request
   carries (app sign-out). The auth identity's email is never trusted: it is empty for a PAT and stale after a
   change, so `/api/auth/me`, invitation accept, feedback and the admin audit read it from `users`.
+  **Delete account** (MH-344): `POST /api/me/delete {password}` → 409 `sole_owner` with the workspaces the person
+  alone owns (hand over or delete first), else 202 `{purge_after}`: sessions, PATs, MCP/OAuth tokens and push end at
+  once, and `platform_users.deletion_requested_at`/`purge_after` are set (grace `ACCOUNT_DELETE_GRACE_DAYS`, default
+  14). Any request on a session newer than the request, meaning they signed in again, cancels it (guard).
+  The hourly `mahaam.account.purge` job ANONYMISES rather than deletes: time entries, comments, projects and invoices
+  reference `users` with no cascade, so the row stays as `deleted-<id>@deleted.invalid` with an unmatchable password,
+  and memberships, assignments, profile, inbox, codes and tokens go. It re-checks the sole-owner rule and postpones.
 - **Enforcement**: one helper, `internal/limits` (`Check`, `CheckStorage`, `Feature`, `Integration`, `CountCall`),
   called in the domain functions REST and MCP share: invitations/accept, `CreateProject`, `CreateClient` + client
   import, `CreateTeam`, `CreateTask`, `reports.Create` (every issue: app, portal, requests, embed, MCP, integration

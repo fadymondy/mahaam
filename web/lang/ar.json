@@ -253,5 +253,12 @@
   "account.wrongPassword": "كلمة المرور غير صحيحة.",
   "account.password": "كلمة المرور",
   "account.passwordSave": "تغيير كلمة المرور",
-  "account.passwordChanged": "تم تغيير كلمة المرور"
+  "account.passwordChanged": "تم تغيير كلمة المرور",
+  "account.deleteTitle": "حذف الحساب",
+  "account.deleteHint": "يسجّل خروجك من كل مكان فوراً، ويُنهي كل رمز وكل وكيل متصل. يُحذف حسابك نهائياً بعد 14 يوماً، وسجّل الدخول قبل ذلك للإلغاء. يبقى عملك في مساحات العمل المشتركة منسوباً إلى مستخدم محذوف.",
+  "account.deleteOpen": "حذف حسابي",
+  "account.deleteConfirmHint": "أدخل كلمة مرورك للتأكيد.",
+  "account.deleteSubmit": "حذف الحساب",
+  "account.deleteSoleOwner": "أنت المالك الوحيد لمساحات العمل هذه. اجعل شخصاً آخر مالكاً أو احذفها أولاً:",
+  "auth.deletedNotice": "سيُحذف حسابك في {date}. سجّل الدخول قبل ذلك لإلغاء الحذف."
 }

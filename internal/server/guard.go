@@ -12,11 +12,13 @@ import (
 	"github.com/togo-framework/auth"
 	"github.com/togo-framework/togo"
 
+	"github.com/fadymondy/mahaam/internal/account"
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/billing/ghmarketplace"
 	"github.com/fadymondy/mahaam/internal/mcp"
 	"github.com/fadymondy/mahaam/internal/limits"
+	"github.com/fadymondy/mahaam/internal/mailer"
 	"github.com/fadymondy/mahaam/internal/platform"
 	"github.com/fadymondy/mahaam/internal/tenant"
 )
@@ -180,7 +182,7 @@ func installGuard(k *togo.Kernel, a *app.App) {
 
 	trusted := trustedProxies()
 	k.UseMiddleware(func(next http.Handler) http.Handler {
-		gate := accountGate(a)
+		gate := accountGate(a, &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(k), Log: a.Log})
 		signedIn := svc.Middleware(csrf(gate(next)))
 		workspace := svc.Middleware(csrf(gate(tenant.Require(a.SysDB)(meter(generatedAuthz(next))))))
 		admin := hideUnauthorized(svc.Middleware(csrf(gate(requirePlatformAdmin(a, next)))))
@@ -241,7 +243,7 @@ func currentIdentity(a *app.App) http.Handler {
 // accountGate runs after the auth plugin verified the session: a suspended account gets 403 on
 // every call, a session issued before an admin's "sign out everywhere" gets 401, and activity is
 // recorded for the platform stats.
-func accountGate(a *app.App) func(http.Handler) http.Handler {
+func accountGate(a *app.App, acct *account.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id, ok := auth.IdentityFrom(r.Context())
@@ -265,6 +267,17 @@ func accountGate(a *app.App) func(http.Handler) http.Handler {
 			if platform.SessionRevoked(r.Context(), a.SysDB, u, r) {
 				writeCoded(w, http.StatusUnauthorized, "your session was ended — sign in again", "session_revoked")
 				return
+			}
+			// An anonymised account has no sessions (they all predate its deletion), so reaching
+			// here means something is very wrong; refuse rather than serve a row that is no one.
+			if u.DeletedAt != nil {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			// A deletion is pending and this session survived it, so it was made after the
+			// request: the person signed in again, which is how a deletion is cancelled (MH-344).
+			if u.DeletionRequestedAt != nil {
+				account.Cancel(r.Context(), acct, u.ID)
 			}
 			platform.TouchSeen(r.Context(), a.SysDB, u.ID)
 			next.ServeHTTP(w, r)

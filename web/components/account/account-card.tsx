@@ -4,6 +4,8 @@
 // email they sign in with, and their password. Account-wide, not per workspace, so it reads
 // /api/me/* and never sends X-Workspace-ID.
 import { useMemo, useRef, useState, type FormEvent } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 import { toast } from "sonner"
 
@@ -13,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Ltr } from "@/components/copy-field"
 import { ErrorState, LoadingRows } from "@/components/states"
-import { api, ApiError } from "@/lib/api"
+import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { errorText } from "@/lib/work"
 
@@ -49,11 +51,14 @@ export function AccountCard() {
         ) : !profile.data ? (
           <LoadingRows rows={3} />
         ) : (
-          <div className="grid gap-8 lg:grid-cols-3">
-            <ProfileForm profile={profile.data} onSaved={(p) => void profile.mutate(p, false)} />
-            <EmailForm profile={profile.data} onSaved={(p) => void profile.mutate(p, false)} />
-            <PasswordForm />
-          </div>
+          <>
+            <div className="grid gap-8 lg:grid-cols-3">
+              <ProfileForm profile={profile.data} onSaved={(p) => void profile.mutate(p, false)} />
+              <EmailForm profile={profile.data} onSaved={(p) => void profile.mutate(p, false)} />
+              <PasswordForm />
+            </div>
+            <DeleteAccount />
+          </>
         )}
       </div>
     </section>
@@ -394,5 +399,95 @@ function PasswordForm() {
         </Button>
       </FieldGroup>
     </form>
+  )
+}
+
+type OwnedWorkspace = { id: string; slug: string; name: string }
+
+// Deleting the account (MH-344). The API refuses while the person is the only owner of a
+// workspace and sends the list, so each is a link rather than a sentence to go and act on. On
+// success every session has already ended server-side; this page only has to leave.
+function DeleteAccount() {
+  const { t, locale } = useTranslations()
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [password, setPassword] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [owned, setOwned] = useState<OwnedWorkspace[] | null>(null)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setOwned(null)
+    setBusy(true)
+    try {
+      const out = await api<{ purge_after: string }>("/api/me/delete", { json: { password, locale } })
+      // The session is already revoked; this only clears the cookie, so it may well 401.
+      await api("/api/auth/logout", { method: "POST" }).catch(() => undefined)
+      resetCsrf()
+      router.replace(`/${locale}/login?deleted=${encodeURIComponent(out.purge_after)}`)
+    } catch (err) {
+      setBusy(false)
+      if (err instanceof ApiError && err.code === "sole_owner") {
+        setOwned(((err.data as { workspaces?: OwnedWorkspace[] })?.workspaces ?? []) as OwnedWorkspace[])
+      } else if (err instanceof ApiError && err.status === 403) {
+        setError(t("account.wrongPassword"))
+      } else {
+        setError(errorText(err, t("common.networkError")))
+      }
+    }
+  }
+
+  return (
+    <div className="mt-8 border-t border-line pt-5" data-delete-account>
+      <h3 className="grid-micro mb-2 text-grid-danger">{t("account.deleteTitle")}</h3>
+      <p className="max-w-2xl text-sm text-grid-muted">{t("account.deleteHint")}</p>
+      {!open ? (
+        <Button type="button" variant="destructive" size="sm" className="mt-3" onClick={() => setOpen(true)}>
+          {t("account.deleteOpen")}
+        </Button>
+      ) : (
+        <form onSubmit={submit} noValidate className="mt-4 max-w-sm">
+          <FieldGroup>
+            <Field data-invalid={!!error || undefined}>
+              <FieldLabel htmlFor="acc-delete-pw">{t("account.currentPassword")}</FieldLabel>
+              <Input
+                id="acc-delete-pw"
+                type="password"
+                dir="ltr"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <FieldDescription>{t("account.deleteConfirmHint")}</FieldDescription>
+            </Field>
+            {error ? <FieldError>{error}</FieldError> : null}
+            {owned ? (
+              <div className="rounded-md border border-line p-3 text-sm" role="alert" data-sole-owner>
+                <p>{t("account.deleteSoleOwner")}</p>
+                <ul className="mt-2 list-disc ps-5">
+                  {owned.map((w) => (
+                    <li key={w.id}>
+                      <Link href={`/${locale}/w/${w.slug}/settings/workspace`} className="underline underline-offset-4">
+                        {w.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <div className="flex gap-2">
+              <Button type="submit" variant="destructive" disabled={busy || !password}>
+                {busy ? t("common.working") : t("account.deleteSubmit")}
+              </Button>
+              <Button type="button" variant="ghost" disabled={busy} onClick={() => setOpen(false)}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </FieldGroup>
+        </form>
+      )}
+    </div>
   )
 }

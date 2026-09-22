@@ -68,7 +68,7 @@ try {
   })
   await page.goto(`${WEB}/en/w/${slug}/me`, { waitUntil: "load" })
   const card = page.locator("[data-account-card]")
-  await card.getByText("Your account").waitFor({ timeout: 15000 })
+  await card.getByRole("heading", { name: "Your account" }).waitFor({ timeout: 15000 })
   log("account card shown for", email)
 
   // Name, saved and still there after a reload.
@@ -111,6 +111,70 @@ try {
   await card.getByRole("button", { name: "Change password" }).click()
   await page.getByText("Password changed").waitFor()
   log("password changed")
+
+  // Delete: this user is the only owner of their workspace, so it's refused with a link to it.
+  const del = page.locator("[data-delete-account]")
+  await del.getByRole("button", { name: "Delete my account" }).click()
+  await del.locator("#acc-delete-pw").fill("account-pass-2")
+  await del.getByRole("button", { name: "Delete account" }).click()
+  await del.locator("[data-sole-owner]").waitFor()
+  if ((await del.locator("[data-sole-owner] a").count()) !== 1) fail("the sole-owner refusal does not link the workspace")
+  await page.screenshot({ path: "e2e/shots/account-delete-refused.png", fullPage: true })
+  log("delete refused for the only owner, with the workspace linked")
+
+  // A member who owns nothing can delete: invite one, sign in as them, delete, land on sign-in with
+  // the date, sign in again, and the deletion is cancelled.
+  const memberEmail = `account-member-${stamp}@example.test`
+  const acceptPath = await page.evaluate(async ({ email, slug }) => {
+    const csrf = (await (await fetch("/api/auth/csrf")).json()).csrf_token
+    const r = await fetch("/api/w/invitations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf, "X-Workspace-ID": slug },
+      body: JSON.stringify({ email, role: "member" }),
+    })
+    return (await r.json()).accept_url
+  }, { email: memberEmail, slug })
+  await ctx.clearCookies()
+  await page.goto(`${WEB}/en/register`, { waitUntil: "load" })
+  await page.getByLabel("Email").fill(memberEmail)
+  await page.getByLabel("Password").fill("member-pass-1")
+  await page.getByRole("button", { name: "Create account" }).click()
+  await page.waitForURL(/\/workspaces/, { timeout: 20000 })
+  await page.evaluate(async (token) => {
+    const csrf = (await (await fetch("/api/auth/csrf")).json()).csrf_token
+    await fetch("/api/invitations/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+      body: JSON.stringify({ token }),
+    })
+  }, acceptPath.replace("/invite/", ""))
+  // Sessions carry whole-second issue times; one made in the same second as the deletion would
+  // survive it. A person takes longer than that; the test has to wait for it.
+  await page.waitForTimeout(1100)
+  await page.goto(`${WEB}/en/w/${slug}/me`, { waitUntil: "load" })
+  await del.getByRole("button", { name: "Delete my account" }).click()
+  await del.locator("#acc-delete-pw").fill("member-pass-1")
+  await del.getByRole("button", { name: "Delete account" }).click()
+  await page.waitForURL(/\/login\?deleted=/, { timeout: 15000 })
+  await page.locator("[data-deleted-notice]").waitFor()
+  await page.screenshot({ path: "e2e/shots/account-deleted-login.png" })
+  log("deleted; sign-in page says when:", (await page.locator("[data-deleted-notice]").innerText()).trim())
+
+  await page.getByLabel("Email").fill(memberEmail)
+  await page.getByLabel("Password").fill("member-pass-1")
+  await page.getByRole("button", { name: "Sign in" }).click()
+  await page.waitForURL(/\/workspaces/, { timeout: 20000 })
+  const back = await page.evaluate(async () => (await fetch("/api/me/profile")).status)
+  if (back !== 200) fail(`signing in again did not restore the account (${back})`)
+  log("signed in again: deletion cancelled")
+
+  // Back to the owner for the screenshots.
+  await ctx.clearCookies()
+  await page.goto(`${WEB}/en/login`, { waitUntil: "load" })
+  await page.getByLabel("Email").fill(next)
+  await page.getByLabel("Password").fill("account-pass-2")
+  await page.getByRole("button", { name: "Sign in" }).click()
+  await page.waitForURL(/\/workspaces/, { timeout: 20000 })
 
   for (const locale of ["en", "ar"]) {
     for (const scheme of ["light", "dark"]) {

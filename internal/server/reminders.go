@@ -8,7 +8,9 @@ import (
 	"github.com/togo-framework/scheduler"
 	"github.com/togo-framework/togo"
 
+	"github.com/fadymondy/mahaam/internal/account"
 	"github.com/fadymondy/mahaam/internal/app"
+	"github.com/fadymondy/mahaam/internal/mailer"
 	"github.com/fadymondy/mahaam/internal/work"
 )
 
@@ -21,6 +23,8 @@ const (
 	JobBudgetAlerts = "managy.budget.alerts"
 	JobEmail        = "managy.notifications.email"
 	JobDigest       = "managy.notifications.digest"
+	// MH-344: anonymise accounts whose deletion grace period is over.
+	JobAccountPurge = "mahaam.account.purge"
 )
 
 // installReminders registers and schedules the P2 reminder jobs. The scheduler plugin's provider
@@ -73,6 +77,14 @@ func installReminders(k *togo.Kernel, a *app.App) {
 		}
 		return err
 	})
+	acct := &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(k), Log: a.Log}
+	scheduler.Register(JobAccountPurge, func(ctx context.Context) error {
+		n, err := acct.PurgeDue(ctx, time.Now())
+		if n > 0 {
+			a.Log.Info("deleted accounts anonymised", "count", n)
+		}
+		return err
+	})
 	// SCHEDULER=off keeps the clock out of the tests. Without it the email job
 	// fires every minute, which for a test that takes twenty seconds means
 	// roughly one run in three has the scheduler delivering the same inbox the
@@ -89,7 +101,8 @@ func installReminders(k *togo.Kernel, a *app.App) {
 		return
 	}
 	schedule := map[string]string{JobLongRunningTimers: scheduler.EveryFiveMinutes, JobMissingTime: scheduler.EveryFiveMinutes,
-		JobBudgetAlerts: scheduler.EveryFiveMinutes, JobEmail: scheduler.EveryMinute, JobDigest: scheduler.EveryFiveMinutes}
+		JobBudgetAlerts: scheduler.EveryFiveMinutes, JobEmail: scheduler.EveryMinute, JobDigest: scheduler.EveryFiveMinutes,
+		JobAccountPurge: scheduler.Hourly}
 	for job, spec := range schedule {
 		if err := s.Schedule(job, spec); err != nil {
 			a.Log.Error("reminders", "job", job, "err", err)

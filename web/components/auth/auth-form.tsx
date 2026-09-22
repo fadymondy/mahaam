@@ -57,7 +57,7 @@ function oauthProviders(data: unknown): OAuthProvider[] {
 }
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
-  const { t, locale } = useTranslations()
+  const { t, locale, formatDate } = useTranslations()
   const router = useRouter()
   const params = useSearchParams()
   const { mutate } = useSWRConfig()
@@ -117,6 +117,12 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       <div className="w-full max-w-sm" data-auth-form>
         <form onSubmit={onSubmit} noValidate>
           <FieldGroup>
+            {mode === "login" && params.get("deleted") ? (
+              // Arrived from deleting the account: say when, and that signing in is the undo.
+              <p className="rounded-md border border-line p-3 text-sm" role="status" data-deleted-notice>
+                {t("auth.deletedNotice", { date: formatDate(params.get("deleted")) })}
+              </p>
+            ) : null}
             <Field data-invalid={!!error || undefined}>
               <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
               <Input

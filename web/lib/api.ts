@@ -7,6 +7,8 @@ export class ApiError extends Error {
     message: string,
     /** The API's machine-readable `code` (e.g. "workspace_suspended"), when it sent one. */
     public code?: string,
+    /** The whole JSON error body, for refusals that carry more than a message (e.g. sole_owner's list). */
+    public data?: unknown,
   ) {
     super(message)
     this.name = "ApiError"
@@ -53,12 +55,12 @@ async function errorMessage(res: Response): Promise<string> {
   }
 }
 
-async function errorCode(res: Response): Promise<string | undefined> {
+async function errorBody(res: Response): Promise<{ code?: string; data?: unknown }> {
   try {
     const data = (await res.json()) as { code?: unknown }
-    return typeof data.code === "string" ? data.code : undefined
+    return { code: typeof data.code === "string" ? data.code : undefined, data }
   } catch {
-    return undefined
+    return {}
   }
 }
 
@@ -106,8 +108,8 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
   }
 
   if (!res.ok) {
-    const code = await errorCode(res.clone())
-    throw new ApiError(res.status, await errorMessage(res), code)
+    const { code, data } = await errorBody(res.clone())
+    throw new ApiError(res.status, await errorMessage(res), code, data)
   }
   if (res.status === 204) return undefined as T
   const type = res.headers.get("content-type") ?? ""

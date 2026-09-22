@@ -3,6 +3,7 @@ package account
 import (
 	"html"
 	"strings"
+	"time"
 
 	"github.com/togo-framework/mail"
 )
@@ -119,4 +120,48 @@ func emailChangedMail(to, next, locale string) mail.Message {
 	body := `<p>` + strings.Replace(html.EscapeString(t.done), "%s", `<bdi dir="ltr">`+html.EscapeString(next)+`</bdi>`, 1) + `</p>` +
 		`<p style="color:#666">` + html.EscapeString(t.doneNotYou) + `</p>`
 	return mail.Message{To: []string{to}, Subject: t.doneSubject, Text: text, HTML: page(loc, body)}
+}
+
+type deletionText struct {
+	subject, body, undo, cancelledSubject, cancelled string
+}
+
+var deletionTexts = map[string]deletionText{
+	"en": {
+		subject:          "Your Mahaam account will be deleted",
+		body:             "You asked to delete your Mahaam account. It has been signed out everywhere, and it will be permanently deleted on %s.",
+		undo:             "Changed your mind? Sign in before then and the deletion is cancelled. If you didn't ask for this, sign in now and change your password.",
+		cancelledSubject: "Your Mahaam account will not be deleted",
+		cancelled:        "You signed in again, so the deletion of your Mahaam account has been cancelled. Nothing was removed.",
+	},
+	"ar": {
+		subject:          "سيتم حذف حسابك في مهام",
+		body:             "طلبت حذف حسابك في مهام. تم تسجيل الخروج من كل الأجهزة، وسيُحذف الحساب نهائياً في %s.",
+		undo:             "غيّرت رأيك؟ سجّل الدخول قبل ذلك وسيُلغى الحذف. إن لم تطلب ذلك، فسجّل الدخول الآن وغيّر كلمة مرورك.",
+		cancelledSubject: "لن يتم حذف حسابك في مهام",
+		cancelled:        "سجّلت الدخول مجدداً، لذلك أُلغي حذف حسابك في مهام. لم يُحذف أي شيء.",
+	},
+}
+
+func deletionTextFor(locale string) (deletionText, string) {
+	if t, ok := deletionTexts[locale]; ok {
+		return t, locale
+	}
+	return deletionTexts["en"], "en"
+}
+
+func deletionScheduledMail(to string, purge time.Time, locale string) mail.Message {
+	t, loc := deletionTextFor(locale)
+	// A date with no time or zone: "on 7 October" is what a person plans around, and the reaper
+	// runs hourly anyway.
+	day := purge.UTC().Format("2 January 2006")
+	body := strings.Replace(t.body, "%s", day, 1)
+	return mail.Message{To: []string{to}, Subject: t.subject, Text: body + "\n\n" + t.undo + "\n",
+		HTML: page(loc, `<p>`+strings.Replace(html.EscapeString(t.body), "%s", `<bdi dir="ltr">`+html.EscapeString(day)+`</bdi>`, 1)+`</p><p>`+html.EscapeString(t.undo)+`</p>`)}
+}
+
+func deletionCancelledMail(to, locale string) mail.Message {
+	t, loc := deletionTextFor(locale)
+	return mail.Message{To: []string{to}, Subject: t.cancelledSubject, Text: t.cancelled + "\n",
+		HTML: page(loc, `<p>`+html.EscapeString(t.cancelled)+`</p>`)}
 }

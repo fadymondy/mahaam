@@ -252,5 +252,12 @@
   "account.wrongPassword": "That password isn't right.",
   "account.password": "Password",
   "account.passwordSave": "Change password",
-  "account.passwordChanged": "Password changed"
+  "account.passwordChanged": "Password changed",
+  "account.deleteTitle": "Delete account",
+  "account.deleteHint": "Signs you out everywhere at once and ends every token and connected agent. Your account is deleted for good after 14 days; sign in before then to cancel. Work you did in shared workspaces stays, attributed to a deleted user.",
+  "account.deleteOpen": "Delete my account",
+  "account.deleteConfirmHint": "Enter your password to confirm.",
+  "account.deleteSubmit": "Delete account",
+  "account.deleteSoleOwner": "You're the only owner of these workspaces. Make someone else an owner, or delete them, first:",
+  "auth.deletedNotice": "Your account will be deleted on {date}. Sign in before then to cancel the deletion."
 }

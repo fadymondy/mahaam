@@ -30,6 +30,10 @@ type User struct {
 	SuspendedAt        *time.Time
 	SuspendedReason    string
 	SessionsValidAfter *time.Time
+	// DeletionRequestedAt is set while the account waits out its deletion grace period, and
+	// DeletedAt once the reaper has anonymised it (internal/account/delete.go).
+	DeletionRequestedAt *time.Time
+	DeletedAt           *time.Time
 }
 
 // Suspended reports whether the account is suspended.
@@ -80,9 +84,10 @@ func Load(ctx context.Context, db *sql.DB, userID string) (*User, error) {
 	var roles string
 	var reason sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT u.email, u.roles, p.suspended_at, p.suspended_reason, p.sessions_valid_after
+		SELECT u.email, u.roles, p.suspended_at, p.suspended_reason, p.sessions_valid_after,
+			p.deletion_requested_at, p.deleted_at
 		FROM users u LEFT JOIN platform_users p ON p.user_id = u.id WHERE u.id = $1`, userID,
-	).Scan(&u.Email, &roles, &u.SuspendedAt, &reason, &u.SessionsValidAfter)
+	).Scan(&u.Email, &roles, &u.SuspendedAt, &reason, &u.SessionsValidAfter, &u.DeletionRequestedAt, &u.DeletedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNoUser
 	}

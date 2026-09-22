@@ -662,6 +662,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete your account
+         * @description Needs your password. Refused (409, code sole_owner, with the list) while you are the only owner of a workspace. Otherwise every session and token ends now, and the account is anonymised after the grace period (purge_after). Signing in again before then cancels the deletion.
+         */
+        post: operations["me-delete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/email": {
         parameters: {
             query?: never;
@@ -5341,6 +5361,19 @@ export interface components {
             key: string;
             kind: string;
         };
+        DeleteOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteOutBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description When the account is anonymised, unless you sign in before then
+             */
+            purge_after: string;
+        };
         DeployInput: {
             /**
              * Format: uri
@@ -6402,6 +6435,17 @@ export interface components {
             updated_at: string;
             user_id: string;
             workspace_id: string;
+        };
+        "Me-deleteRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-deleteRequest.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+            password: string;
         };
         "Me-email-changeRequest": {
             /**
@@ -12110,6 +12154,66 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-deleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteOutBody"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
