@@ -38,7 +38,9 @@ function mockFetch(handler: (call: Call, n: number) => Response | Promise<Respon
 const header = (c: Call, name: string) => (c.init.headers as Record<string, string>)[name];
 const future = () => Math.floor(Date.now() / 1000) + 3600;
 
-describe("MahaamClient auth dance", () => {
+describe("MahaamClient auth dance", () => {
+
+
   it("swaps the JWT for a personal access token at login and drops the stored password", async () => {
     // The password only existed so the client could silently re-login. A PAT removes that need
     // entirely, and the server can revoke it per device.
@@ -191,6 +193,21 @@ describe("MahaamClient auth dance", () => {
     expect(lost).toHaveBeenCalledTimes(1);
     expect(store.data["mahaam.creds"]).toBeUndefined();
     expect(c.token).toBeNull();
+  });
+
+  it("clears the session and reports it lost when a personal access token is rejected", async () => {
+    // A PAT session keeps no password, so there is nothing to re-login with: a 401 means the token
+    // was revoked (or is another server's). It used to surface as a bare "unauthorized" everywhere.
+    const { f } = mockFetch(() => json(401, { error: "unauthorized" }));
+    const lost = jest.fn();
+    const pat = "togo_pat_" + "d".repeat(48);
+    const store = memStore({ "mahaam.token": pat });
+    const c = new MahaamClient({ baseUrl: "", store, fetch: f, onSessionLost: lost });
+    c.token = pat;
+    await expect(c.get("/x")).rejects.toMatchObject({ status: 401 });
+    expect(lost).toHaveBeenCalledTimes(1);
+    expect(c.token).toBeNull();
+    expect(store.data["mahaam.token"]).toBeUndefined();
   });
 
   it("keeps the credentials when re-login is rate limited", async () => {

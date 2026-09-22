@@ -230,7 +230,16 @@ export class MahaamClient {
     if (!this.relogin) {
       this.relogin = (async () => {
         const raw = await this.o.store.get(K.creds);
-        if (!raw) return false;
+        if (!raw) {
+          // A personal access token has no password behind it (login dropped it). A 401 on a PAT
+          // means it was revoked, expired or belongs to another server: the session is gone, and
+          // saying so beats leaving every screen on "unauthorized" with nowhere to go.
+          if (this.token) {
+            await this.logout();
+            this.o.onSessionLost?.();
+          }
+          return false;
+        }
         const { email, password } = JSON.parse(raw) as { email: string; password: string };
         try {
           const out = await this.authPost("/api/auth/login", { email, password });
