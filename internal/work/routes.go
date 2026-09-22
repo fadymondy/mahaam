@@ -42,6 +42,7 @@ func Register(api huma.API, a *app.App) {
 	r.kpi()           // employee KPI, manager reviews, per-user GitHub accounts
 	r.catalogue()     // per-project agents and skills
 	r.monitorKeys()   // per-project backend error-monitoring DSN keys
+	r.sync()          // delta sync for offline clients: rows + tombstones since a cursor
 }
 
 type routes struct {

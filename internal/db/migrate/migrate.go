@@ -46,6 +46,10 @@ var TenantTables = []string{
 	"project_catalogue",
 	// Backend error-monitoring DSN keys (github.com/fadymondy/mahaam-go et al.)
 	"project_monitor_keys",
+	// Tombstones for offline clients. INSERT is what the AFTER DELETE trigger needs; the table has
+	// no UPDATE or DELETE policy, so those grants are inert — a tombstone that can be removed is a
+	// delete a client never hears about.
+	"deletions",
 }
 
 var roleName = regexp.MustCompile(`^[a-z_][a-z0-9_]{0,62}$`)
