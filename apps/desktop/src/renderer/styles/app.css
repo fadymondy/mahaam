@@ -123,3 +123,16 @@ html:not([data-platform="darwin"]) :is(.pop, .qp) {
 .nav-item[aria-current="page"] .nav-icon {
   color: var(--grid-action);
 }
+
+/* Light mode on macOS: the solid windows (main, settings) go without the system shadow, whose outline
+   is a dark line around a light window, and draw their own hairline along the rounded corner
+   (main.ts lightEdge). The radius is the window's own (measured: 26px on macOS 26+). */
+html[data-platform="darwin"]:not(.dark):not([data-fullscreen]):is([data-surface="main"], [data-surface="settings"]) #root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  border: 1px solid var(--grid-line);
+  border-radius: 26px;
+  pointer-events: none;
+  z-index: 2147483647;
+}

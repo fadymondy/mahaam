@@ -98,6 +98,7 @@ function createWindow(): BrowserWindow {
     webPreferences: webPreferences(),
   });
   if (b.maximized) w.maximize();
+  lightEdge(w);
   w.once("ready-to-show", () => {
     if (process.env.MAHAAM_E2E_HIDDEN !== "1") w.show();
   });
@@ -120,6 +121,17 @@ function createWindow(): BrowserWindow {
 
   load(w, "main");
   return w;
+}
+
+/**
+ * macOS draws a window's outline as part of its shadow, and in light mode that outline is a dark
+ * line around a light window (the owner saw it as a black border). In light mode the solid windows
+ * go without the system shadow and the page draws its own hairline in the grid's line colour along
+ * the rounded edge (app.css, html[data-edge]); dark mode keeps the native edge, which is right there.
+ */
+export function lightEdge(w: BrowserWindow): void {
+  if (!IS_MAC || w.isDestroyed()) return;
+  w.setHasShadow(nativeTheme.shouldUseDarkColors);
 }
 
 function show(): void {
@@ -383,6 +395,7 @@ function applyTheme(): void {
     }
   }
   retintSurfaces();
+  for (const w of [win, surfaceWindow("settings")]) if (w) lightEdge(w);
 }
 
 // ── IPC: a fixed surface, only from our own renderer ─────────────────────────
@@ -532,7 +545,10 @@ app.whenReady().then(async () => {
   });
   applySession();
 
-  initSurfaces({ devUrl: DEV_URL, openExternal, ground: background });
+  initSurfaces({ devUrl: DEV_URL, openExternal, ground: background, edge: lightEdge });
+  nativeTheme.on("updated", () => {
+    for (const w of [win, surfaceWindow("settings")]) if (w) lightEdge(w);
+  });
   createTray({
     onClick: (bounds) => togglePopover(bounds),
     locale: () => prefs.locale,

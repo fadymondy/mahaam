@@ -19,11 +19,13 @@ const IS_MAC = process.platform === "darwin";
 let devUrl: string | undefined;
 let openExternal: (url: string) => void = () => {};
 let ground: () => string = () => "#f0ebe1";
+let edge: (w: BrowserWindow) => void = () => {};
 const windows = new Map<Exclude<Surface, "main">, BrowserWindow>();
 const shownAt = new WeakMap<BrowserWindow, number>();
 
-export function initSurfaces(opts: { devUrl?: string; openExternal: (url: string) => void; ground: () => string }): void {
+export function initSurfaces(opts: { devUrl?: string; openExternal: (url: string) => void; ground: () => string; edge: (w: BrowserWindow) => void }): void {
   devUrl = opts.devUrl;
+  edge = opts.edge;
   openExternal = opts.openExternal;
   ground = opts.ground;
 }
@@ -188,6 +190,7 @@ export function showSettings(section?: string): void {
     webPreferences: webPreferences(),
   });
   windows.set("settings", w);
+  edge(w);
   w.once("ready-to-show", () => w.show());
   w.on("closed", () => windows.delete("settings"));
   load(w, "settings", section ? { section } : {});
