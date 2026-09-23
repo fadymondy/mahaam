@@ -40,6 +40,9 @@ async function poll(): Promise<void> {
 }
 
 function setup(): void {
+  // Builds before the PAT change kept the 24h JWT in storage.local, which is on disk. Nothing
+  // reads it any more; an update is the moment to stop it lingering in the profile directory.
+  void chrome.storage.local.remove("token");
   void chrome.alarms.create(ALARM, { periodInMinutes: 1 });
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({ id: "mahaam", title: "Mahaam", contexts: ["page", "selection", "link"] });
@@ -64,8 +67,11 @@ chrome.runtime.onMessage.addListener((msg: ExtMessage, sender) => {
   } else if (msg.type === "refresh") void poll();
 });
 
+// The token lives in storage.session (ext.ts), the workspace and server in storage.local. Watching
+// only "local" for the token — as this did after the token moved — meant a sign-out or a revoked
+// token left the badge counting until the next alarm.
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && ("token" in changes || "workspace" in changes)) void poll();
+  if ((area === "session" && "token" in changes) || (area === "local" && ("workspace" in changes || "apiUrl" in changes))) void poll();
 });
 
 /**

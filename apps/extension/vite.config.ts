@@ -19,6 +19,9 @@ function manifest(): Plugin {
     generateBundle() {
       const m = JSON.parse(readFileSync(resolve(__dirname, "manifest.json"), "utf8"));
       m.host_permissions = [apiHost];
+      // A build for http://localhost or 127.0.0.1 would otherwise list its host twice, which
+      // Chrome reports as a manifest error on the extensions page.
+      m.optional_host_permissions = m.optional_host_permissions.filter((p: string) => p !== apiHost);
       this.emitFile({ type: "asset", fileName: "manifest.json", source: JSON.stringify(m, null, 2) });
     },
   };
