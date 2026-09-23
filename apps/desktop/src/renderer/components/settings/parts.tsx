@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export function Section({ title, description, children, id }: { title: string; description?: string; children: ReactNode; id: string }) {
   return (
-    <div className="flex flex-col gap-6" data-settings-section={id}>
+    <div className="flex flex-col gap-[18px]" data-settings-section={id}>
       {/* The window names the section in its title row and tabs: the heading is for assistive tech. */}
       <header>
         <h2 className="sr-only">{title}</h2>
@@ -26,8 +26,8 @@ export function Group({ title, footer, action, children, className }: { title?: 
           {action}
         </div>
       ) : null}
-      <div className={cn("divide-y divide-line/70 overflow-hidden rounded-xl border border-line/80 bg-grid-card", className)}>{children}</div>
-      {footer ? <div className="px-1 text-[13px] leading-snug text-grid-muted">{footer}</div> : null}
+      <div className={cn("settings-card", className)}>{children}</div>
+      {footer ? <div className="px-1 text-[12.5px] leading-snug text-grid-muted">{footer}</div> : null}
     </section>
   );
 }
@@ -51,13 +51,13 @@ export function Row({
 }) {
   const Label = htmlFor ? "label" : "div";
   return (
-    <div className={cn("flex min-h-12 items-center gap-3 px-4 py-2.5", className)} {...rest}>
+    <div className={cn("flex min-h-[52px] items-center gap-4 px-4 py-2.5", className)} {...rest}>
       {icon ? <span className="flex shrink-0 items-center justify-center text-grid-muted">{icon}</span> : null}
       <div className="min-w-0 flex-1">
         <Label htmlFor={htmlFor} className="block text-[14px] text-grid-fg">
           {label}
         </Label>
-        {hint ? <div className="mt-0.5 text-[13px] leading-snug text-grid-muted">{hint}</div> : null}
+        {hint ? <div className="mt-0.5 text-[12.5px] leading-snug text-grid-muted">{hint}</div> : null}
       </div>
       {children ? <div className="flex shrink-0 items-center gap-2">{children}</div> : null}
     </div>

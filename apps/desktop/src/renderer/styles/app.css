@@ -210,6 +210,26 @@ html[data-platform="darwin"]:not(.dark):not([data-fullscreen]):is([data-surface=
   outline-offset: 1px;
 }
 
+/* Settings cards (components/settings/parts.tsx), after Health Debug's: a raised box, rows divided by
+   hairlines that stop short of the edges (aligned with the rows' text), like System Settings. */
+.settings-card {
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--grid-line) 80%, transparent);
+  border-radius: 10px;
+  background: var(--grid-card);
+}
+.settings-card > * + * {
+  position: relative;
+}
+.settings-card > * + *::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 16px;
+  border-block-start: 1px solid color-mix(in oklab, var(--grid-line) 70%, transparent);
+  pointer-events: none;
+}
+
 /* ── Settings window (views/Settings.tsx): a macOS preferences toolbar — the section's name in the
    title row, then tabs with the icon over the label. The toolbar tints the window's material; the
    section below is solid. */
