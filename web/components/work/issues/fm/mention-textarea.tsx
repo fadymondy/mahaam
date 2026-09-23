@@ -141,7 +141,7 @@ export function MentionTextarea({
                   <span dir="ltr" className="font-mono">
                     {s.kind === "skill" ? s.label : "@" + s.label}
                   </span>
-                  <span className="ms-auto truncate text-xs text-grid-muted">
+                  <span className="ms-auto truncate text-meta text-grid-muted">
                     {s.kind === "agent" ? t("issues.mention.agent") : s.kind === "skill" ? t("issues.mention.skill") : s.hint}
                   </span>
                 </button>

@@ -69,7 +69,7 @@ export function NotificationBell() {
         <BellIcon />
         {unread ? (
           <span
-            className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-grid-action px-1 font-mono text-[10px] leading-none text-grid-on-action"
+            className="absolute -end-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-grid-action px-1 font-mono text-xs leading-none text-grid-on-action"
             data-unread={unread}
             dir="ltr"
           >
@@ -102,8 +102,8 @@ export function NotificationBell() {
                     <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read_at ? "bg-transparent" : "bg-grid-action")} aria-hidden />
                     <span className="min-w-0 space-y-0.5">
                       <span className="block text-sm font-medium text-grid-fg">{x.title}</span>
-                      {x.body ? <span className="block text-xs text-grid-muted">{x.body}</span> : null}
-                      <Ltr className="block text-[11px] text-grid-muted">{timeAgo(n.created_at, locale)}</Ltr>
+                      {x.body ? <span className="block text-meta text-grid-muted">{x.body}</span> : null}
+                      <Ltr className="block text-xs text-grid-muted">{timeAgo(n.created_at, locale)}</Ltr>
                     </span>
                   </button>
                 </li>

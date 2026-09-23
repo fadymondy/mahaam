@@ -52,7 +52,7 @@ export function IssueAgentSettings({
     <div className={cn("flex flex-col gap-4", className)}>
       {selects.map((field) => (
         <div key={field.key} className="flex flex-col gap-1.5">
-          <span className="flex items-center gap-1.5 font-mono text-[11px] tracking-wider text-grid-muted uppercase">{field.label}</span>
+          <span className="flex items-center gap-1.5 font-mono text-xs tracking-wider text-grid-muted uppercase">{field.label}</span>
           <Select
             value={field.value || DEFAULT}
             disabled={disabled}
@@ -79,7 +79,7 @@ export function IssueAgentSettings({
         if (field.value && !names.includes(field.value)) names.unshift(field.value)
         return (
           <div key={field.key} className="flex flex-col gap-1.5">
-            <span className="flex items-center gap-1.5 font-mono text-[11px] tracking-wider text-grid-muted uppercase">
+            <span className="flex items-center gap-1.5 font-mono text-xs tracking-wider text-grid-muted uppercase">
               <field.Icon className="size-3.5" />
               {field.label}
             </span>
@@ -138,7 +138,7 @@ function CatalogueFooter({ projectId, agents, skills, onAdded }: { projectId: st
     }
   }
   return (
-    <div className="flex flex-col gap-2 font-mono text-[11px] text-grid-muted">
+    <div className="flex flex-col gap-2 font-mono text-xs text-grid-muted">
       <p className="flex flex-wrap items-center justify-between gap-2">
         <span>{t("issues.agent.counts", { agents, skills })}</span>
         <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 hover:text-grid-fg">

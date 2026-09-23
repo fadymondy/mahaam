@@ -262,7 +262,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         {mode === "register" ? (
           // Links rather than a checkbox: submitting the form is the agreement, and a box that
           // must be ticked before the button works adds a step without adding consent.
-          <p className="mt-4 text-center text-xs text-grid-muted" data-consent>
+          <p className="mt-4 text-center text-meta text-grid-muted" data-consent>
             {t("auth.consent")
               .split(/(\{terms\}|\{privacy\})/)
               .map((part, i) =>

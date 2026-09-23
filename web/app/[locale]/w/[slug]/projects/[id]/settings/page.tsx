@@ -136,7 +136,7 @@ export default function ProjectSettingsPage() {
   return (
     <ActiveSection.Provider value={sec}>
       <div className="border-b border-line px-6 py-3">
-        <Link href={`${base}/settings`} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+        <Link href={`${base}/settings`} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
           <ChevronLeftIcon className="size-3.5 rtl:-scale-x-100" />
           {t("projectTab.settings")}
         </Link>
@@ -217,7 +217,7 @@ export default function ProjectSettingsPage() {
                 <li key={x.team_id} className="flex items-center gap-3 px-6 py-2.5 text-sm">
                   <ColorDot color={x.color} />
                   <span className="min-w-0 flex-1 truncate">{x.name}</span>
-                  <span className="text-xs text-grid-muted">{t("teams.memberCount", { n: x.member_ids.length })}</span>
+                  <span className="text-meta text-grid-muted">{t("teams.memberCount", { n: x.member_ids.length })}</span>
                   <Button variant="ghost" size="sm" onClick={() => run(() => w.del(ws.id, `/api/w/projects/${p.id}/teams/${x.team_id}`))}>
                     {t("settings.detach")}
                   </Button>
@@ -255,7 +255,7 @@ export default function ProjectSettingsPage() {
             <label key={k} className="flex cursor-pointer items-start justify-between gap-4 px-6 py-3" data-share={k}>
               <span className="min-w-0">
                 <span className="block text-sm font-medium">{t(`settings.${k}`)}</span>
-                <span className="block text-xs text-grid-muted">{t(`settings.${k}Hint`)}</span>
+                <span className="block text-meta text-grid-muted">{t(`settings.${k}Hint`)}</span>
               </span>
               <Switch
                 checked={p[k]}
@@ -319,7 +319,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
             <ColorDot color={s.color} />
             <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
             <Badge variant="outline">{t(`issues.status.${s.stage ?? "todo"}`)}</Badge>
-            <span className="w-16 text-end text-xs text-grid-muted">{t("settings.taskCount", { n: s.task_count })}</span>
+            <span className="w-16 text-end text-meta text-grid-muted">{t("settings.taskCount", { n: s.task_count })}</span>
             <Button variant="ghost" size="icon-sm" aria-label={t("settings.moveUp")} disabled={i === 0} onClick={() => run(() => w.patch(ws.id, `/api/w/statuses/${s.id}`, { index: i - 1 }))}>
               <ArrowUpIcon />
             </Button>

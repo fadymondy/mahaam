@@ -60,7 +60,7 @@ export default function AdminUserPage() {
           <span className="flex flex-wrap items-center gap-3">
             <StatusBadge status={u.status} />
             {u.is_admin ? (
-              <span className="inline-flex items-center gap-1 text-xs">
+              <span className="inline-flex items-center gap-1 text-meta">
                 <ShieldIcon className="size-3" />
                 {t("admin.users.isAdmin")}
               </span>
@@ -128,8 +128,8 @@ export default function AdminUserPage() {
             onConfirm={() => run(() => adminApi.signOutUser(u.id), t("admin.users.signedOut"))}
           />
         </div>
-        {self ? <p className="px-6 text-xs text-grid-muted">{t("admin.users.selfNote")}</p> : null}
-        <p className="flex items-start gap-2 px-6 text-xs text-grid-muted" data-no-reset>
+        {self ? <p className="px-6 text-meta text-grid-muted">{t("admin.users.selfNote")}</p> : null}
+        <p className="flex items-start gap-2 px-6 text-meta text-grid-muted" data-no-reset>
           <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
           {t("admin.users.noReset")}
         </p>
@@ -156,7 +156,7 @@ export default function AdminUserPage() {
                       <Link href={`/${locale}/admin/workspaces/${w.id}`} className="font-medium hover:underline">
                         {w.name}
                       </Link>{" "}
-                      <Ltr className="text-xs text-grid-muted">{w.slug}</Ltr>
+                      <Ltr className="text-meta text-grid-muted">{w.slug}</Ltr>
                     </TableCell>
                     <TableCell>{t(`role.${w.role}`)}</TableCell>
                     <TableCell className="pe-6">

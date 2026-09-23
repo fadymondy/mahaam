@@ -30,9 +30,9 @@ export function BillingStatusBadge({ billing }: { billing: Billing | null | unde
         {t(`billing.status.${status}`)}
       </Badge>
       {billing?.period_end && (billing.cancel_at_period_end || status === "canceled") ? (
-        <span className="text-xs text-(--grid-warn-text)">{t("billing.cancelsOn", { date: formatDay(billing.period_end, locale) })}</span>
+        <span className="text-meta text-(--grid-warn-text)">{t("billing.cancelsOn", { date: formatDay(billing.period_end, locale) })}</span>
       ) : billing?.period_end && status === "active" ? (
-        <span className="text-xs text-grid-muted">{t("billing.renewsOn", { date: formatDay(billing.period_end, locale) })}</span>
+        <span className="text-meta text-grid-muted">{t("billing.renewsOn", { date: formatDay(billing.period_end, locale) })}</span>
       ) : null}
     </span>
   )

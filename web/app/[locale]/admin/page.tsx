@@ -29,7 +29,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
     <div className="space-y-1 bg-grid-card px-5 py-4">
       <p className="grid-micro">{label}</p>
       <Ltr className="block text-2xl font-semibold text-grid-fg tabular-nums">{value}</Ltr>
-      {sub ? <p className="text-xs text-grid-muted">{sub}</p> : null}
+      {sub ? <p className="text-meta text-grid-muted">{sub}</p> : null}
     </div>
   )
 }
@@ -64,7 +64,7 @@ function Dashboard({ s }: { s: AdminStats }) {
           {(s.plans ?? []).map((p) => (
             <li key={p.plan} className="flex items-center justify-between px-6 py-2.5 text-sm">
               <span>
-                {planName(p, locale)} <Ltr className="text-xs text-grid-muted">{p.plan}</Ltr>
+                {planName(p, locale)} <Ltr className="text-meta text-grid-muted">{p.plan}</Ltr>
               </span>
               <Ltr className="tabular-nums">{n(p.count)}</Ltr>
             </li>

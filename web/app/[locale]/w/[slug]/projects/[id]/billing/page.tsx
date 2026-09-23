@@ -134,7 +134,7 @@ export default function BillingPage() {
             ) : null}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-start text-xs text-grid-muted">
+                <thead className="text-start text-meta text-grid-muted">
                   <tr>
                     <th className="py-2 text-start font-medium">{t("billing.model")}</th>
                     <th className="py-2 text-end font-medium">{t("billing.input")}</th>
@@ -195,11 +195,11 @@ export default function BillingPage() {
                 {!x.billable ? <Badge variant="outline">{t("billing.notBillable")}</Badge> : null}
                 <span className="ms-auto tabular-nums">
                   {money(x.price_minor, x.currency, locale)} / {t(`billing.int.${x.interval}`)}
-                  <span className="ms-2 text-xs text-grid-muted">
+                  <span className="ms-2 text-meta text-grid-muted">
                     {t("billing.costIs", { cost: money(x.cost_minor, x.currency, locale) })}
                   </span>
                 </span>
-                <span className="w-full text-xs text-grid-muted">
+                <span className="w-full text-meta text-grid-muted">
                   {x.next_period ? t("billing.nextPeriod", { date: x.next_period }) : t("billing.fullyBilled")}
                   {x.billed_until ? ` · ${t("billing.billedUntil", { date: x.billed_until })}` : ""}
                 </span>

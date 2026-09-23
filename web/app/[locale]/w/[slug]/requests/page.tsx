@@ -110,11 +110,11 @@ export default function RequestsPage() {
                     <span className="truncate font-medium">{r.title}</span>
                     <Badge variant="outline">{t(`portal.request.kind.${r.kind}`)}</Badge>
                   </span>
-                  <span className="mt-0.5 block text-xs text-grid-muted">
+                  <span className="mt-0.5 block text-meta text-grid-muted">
                     {t("requests.from", { project: r.project_name ?? "—", date: timeAgo(r.created_at, locale) })}
                     {r.desired_on ? ` · ${t("portal.request.wantedBy", { date: formatDay(r.desired_on, locale) })}` : ""}
                   </span>
-                  {r.reply ? <span className="mt-1 line-clamp-1 block text-xs text-grid-muted">↳ {r.reply}</span> : null}
+                  {r.reply ? <span className="mt-1 line-clamp-1 block text-meta text-grid-muted">↳ {r.reply}</span> : null}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <IssuePriorityMark priority={r.priority} />
@@ -173,7 +173,7 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
         ) : (
           <>
             <div className="space-y-3 border-b border-line p-5 pe-12">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-grid-muted">
+              <div className="flex flex-wrap items-center gap-2 text-meta text-grid-muted">
                 <IssueTypeIcon type={r.issue_type} />
                 <code dir="ltr">{r.key}</code>
                 <Badge variant="outline">{t(`portal.request.kind.${r.kind}`)}</Badge>
@@ -234,7 +234,7 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
                 <Button size="sm" variant="outline" onClick={() => setActing("reopen")} data-action="reopen">
                   <RotateCcwIcon /> {t("requests.reopen")}
                 </Button>
-                <span className="text-xs text-grid-muted">{t("requests.reopenHint")}</span>
+                <span className="text-meta text-grid-muted">{t("requests.reopenHint")}</span>
               </div>
             )}
 
@@ -258,7 +258,7 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
                 <ul className="space-y-2">
                   {r.comments.map((c) => (
                     <li key={c.id} className="rounded-md border border-line px-3 py-2">
-                      <p className="text-xs text-grid-muted">
+                      <p className="text-meta text-grid-muted">
                         {c.author_id && c.author_id === r.reporter_id ? t("requests.customer") : t("portal.team")} · {timeAgo(c.created_at, locale)}
                       </p>
                       <p className="text-sm whitespace-pre-wrap" dir="auto">
@@ -366,10 +366,10 @@ function History({ r }: { r: RequestDetail }) {
             <span className="absolute -start-[21px] top-1.5 size-2.5 rounded-full border-2 border-background bg-grid-action" aria-hidden />
             <p className="text-sm">
               {i === 0 ? t("requests.event.filed") : h.state === "pending" ? t("requests.event.reopened") : t(`requests.event.${h.state}`)}
-              <span className="ms-2 text-xs text-grid-muted">{formatDay(h.at, locale)} · {timeAgo(h.at, locale)}</span>
+              <span className="ms-2 text-meta text-grid-muted">{formatDay(h.at, locale)} · {timeAgo(h.at, locale)}</span>
             </p>
             {h.note ? (
-              <p className="text-xs whitespace-pre-wrap text-grid-muted" dir="auto">
+              <p className="text-meta whitespace-pre-wrap text-grid-muted" dir="auto">
                 {h.note}
               </p>
             ) : null}

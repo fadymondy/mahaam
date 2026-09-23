@@ -53,7 +53,7 @@ export function IssuePriorityMark({ priority, withLabel, className }: { priority
   return (
     <span className={cn("inline-flex items-center gap-1", m.tone, className)} title={label}>
       <m.Icon className="size-3.5 shrink-0" aria-hidden />
-      {withLabel ? <span className="text-xs font-medium">{label}</span> : <span className="sr-only">{label}</span>}
+      {withLabel ? <span className="text-meta font-medium">{label}</span> : <span className="sr-only">{label}</span>}
     </span>
   )
 }
@@ -85,7 +85,7 @@ export function HumanOnlyMark({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-1 text-(--pal-orange)", className)} title={t("issues.humanOnlyHint")}>
       <HandIcon className="size-3" aria-hidden />
-      <span className="text-[10px] font-medium uppercase">{t("issues.humanOnly")}</span>
+      <span className="text-xs font-medium uppercase">{t("issues.humanOnly")}</span>
     </span>
   )
 }
@@ -99,7 +99,7 @@ export function AuthorKindBadge({ kind }: { kind: string }) {
     <Badge
       variant="outline"
       className={cn(
-        "gap-1 text-[10px]",
+        "gap-1 text-xs",
         kind === "agent" && "border-grid-action/40 text-grid-action",
         kind === "admin" && "border-(--pal-orange)/40 text-(--pal-orange)",
       )}
@@ -120,7 +120,7 @@ export function IssueSourceChip({ issue }: { issue: { type: string; source: stri
   return (
     <span className="inline-flex items-center gap-1" data-issue-source={issue.source}>
       <IssueTypeIcon type={issue.type} />
-      <span className="rounded-sm border border-line px-1 text-[10px] uppercase tracking-wide">
+      <span className="rounded-sm border border-line px-1 text-xs uppercase tracking-wide">
         {known.includes(issue.source) ? t(`issues.source.${issue.source}`) : issue.source}
       </span>
       {issue.screenshot ? <ImageIcon className="size-3" aria-label={t("issues.hasScreenshot")} role="img" /> : null}

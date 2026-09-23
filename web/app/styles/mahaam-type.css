@@ -1,0 +1,38 @@
+/* Repo-owned (NOT generated): the type floor. The grid's files are synced copies and stay
+   untouched; the overrides below win because this file is imported after them.
+
+   The scale, Latin (Inter):
+     text-xs   12px   floor: badges, counts, keys, dates, mono codes, uppercase labels
+     text-meta 13px   secondary content people read: hints, descriptions, meta lines
+     text-sm   14px   body and table text
+   Arabic (Lusail) reads smaller than Inter at the same size, so its small steps go up one pixel:
+   xs and micro 13px, meta 14px. Body stays 14px so layouts don't grow. */
+
+@theme {
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.25rem;
+}
+
+html:lang(ar) {
+  --text-xs: 0.8125rem;
+  --text-meta: 0.875rem;
+}
+
+/* grid.css ships the micro label at 10.5px (Latin) and 11.5px (Arabic). */
+.grid-micro {
+  font-size: 0.75rem;
+}
+:lang(ar) .grid-micro,
+.grid-micro:lang(ar) {
+  font-size: 0.8125rem;
+}
+
+/* grid.css ships meta lines and chips at 12px; they carry content. */
+.grid-meta,
+.grid-chip {
+  font-size: 0.8125rem;
+}
+:lang(ar) .grid-meta,
+:lang(ar) .grid-chip {
+  font-size: 0.875rem;
+}

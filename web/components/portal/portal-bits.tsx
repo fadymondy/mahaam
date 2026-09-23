@@ -308,7 +308,7 @@ export function ScrollTabs({
             {it.count !== undefined ? (
               <span
                 className={cn(
-                  "min-w-5 rounded-full px-1.5 text-center text-[11px] leading-5 tabular-nums",
+                  "min-w-5 rounded-full px-1.5 text-center text-xs leading-5 tabular-nums",
                   active ? "bg-grid-action text-white" : "bg-muted text-grid-muted",
                 )}
               >
@@ -360,7 +360,7 @@ export function PersonBadge({ name, initials, size = "md", ring }: { name: strin
       aria-label={name}
       className={cn(
         "inline-grid shrink-0 place-items-center rounded-full bg-grid-action/15 font-semibold text-grid-action",
-        size === "sm" ? "size-6 text-[10px]" : "size-8 text-xs",
+        size === "sm" ? "size-6 text-xs" : "size-8 text-xs",
         ring && "ring-2 ring-background",
       )}
     >
@@ -401,7 +401,7 @@ export function ProgressRing({ value, size = 64, label }: { value: number; size?
 export function StatTile({ label, value, children, icon }: { label: string; value: ReactNode; children?: ReactNode; icon?: ReactNode }) {
   return (
     <div className="flex h-full min-w-0 flex-col gap-2 rounded-xl border border-line bg-card p-4">
-      <p className="flex items-center gap-1.5 text-xs font-medium text-grid-muted">
+      <p className="flex items-center gap-1.5 text-meta font-medium text-grid-muted">
         {icon}
         {label}
       </p>

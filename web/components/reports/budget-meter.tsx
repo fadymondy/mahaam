@@ -61,7 +61,7 @@ export function Meter({
   const pct = percent ?? 0
   return (
     <div className="min-w-0 space-y-1.5" data-meter={data} data-percent={percent != null ? pct.toFixed(1) : ""}>
-      <div className="flex items-baseline justify-between gap-3 text-xs">
+      <div className="flex items-baseline justify-between gap-3 text-meta">
         <span className="text-grid-muted">{label}</span>
         <span className={cn("font-medium tabular-nums", TEXT[level])}>
           <Ltr>{pct.toFixed(0)}%</Ltr>
@@ -75,7 +75,7 @@ export function Meter({
           INDICATOR[level],
         )}
       />
-      <p className="text-xs text-grid-body">
+      <p className="text-meta text-grid-body">
         {t("budget.spentOf", { spent: "⁨" + spent + "⁩", budget: "⁨" + budget + "⁩" })}
       </p>
     </div>
@@ -91,7 +91,7 @@ export function BudgetMeters({ b, finance, className }: { b: Budget; finance: bo
       {b.budget_minutes ? (
         <Meter label={t("budget.hours")} percent={b.hours_percent} spent={hmCell(b.spent_s)} budget={hmCell(b.budget_minutes * 60)} data="hours" />
       ) : (
-        <p className="self-center text-xs text-grid-muted">{t("budget.noHours")}</p>
+        <p className="self-center text-meta text-grid-muted">{t("budget.noHours")}</p>
       )}
       {finance ? (
         b.budget_minor ? (
@@ -103,7 +103,7 @@ export function BudgetMeters({ b, finance, className }: { b: Budget; finance: bo
             data="money"
           />
         ) : (
-          <p className="self-center text-xs text-grid-muted">{t("budget.noMoney")}</p>
+          <p className="self-center text-meta text-grid-muted">{t("budget.noMoney")}</p>
         )
       ) : null}
     </div>

@@ -39,7 +39,7 @@ function Stat({ label, children, data }: { label: string; children: ReactNode; d
 
 function Note({ children, data }: { children: ReactNode; data?: string }) {
   return (
-    <p className="flex items-start gap-2 border-b border-line bg-grid-soft px-6 py-2.5 text-xs text-grid-body" data-note={data}>
+    <p className="flex items-start gap-2 border-b border-line bg-grid-soft px-6 py-2.5 text-meta text-grid-body" data-note={data}>
       <InfoIcon className="mt-px size-3.5 shrink-0 text-grid-muted" />
       <span>{children}</span>
     </p>
@@ -161,7 +161,7 @@ function GroupName({ row, group }: { row: ReportRow; group: TimeReport["group_by
         <Ltr mono data-cell-name>
           {row.name}
         </Ltr>
-        <span className="text-xs text-grid-muted" data-print-hide>
+        <span className="text-meta text-grid-muted" data-print-hide>
           {group === "week" ? t("reports.weekOf", { date: dayLabel(row.key, locale) }) : dayLabel(row.key, locale)}
         </span>
       </span>

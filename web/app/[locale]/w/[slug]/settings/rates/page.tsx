@@ -101,7 +101,7 @@ export default function RatesPage() {
                             <PersonAvatar id={m.user_id} dir={dir} />
                             <span className="min-w-0">
                               <Ltr className="block truncate">{dir.name(m.user_id)}</Ltr>
-                              <span className="text-xs text-grid-muted">{t(`role.${m.role}`)}</span>
+                              <span className="text-meta text-grid-muted">{t(`role.${m.role}`)}</span>
                             </span>
                           </span>
                         </TableCell>

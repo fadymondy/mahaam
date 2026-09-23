@@ -150,7 +150,7 @@ function Row({
 }) {
   return (
     <div className="grid grid-cols-[7.5rem_1fr] items-center gap-3 px-6 py-1.5">
-      <label htmlFor={htmlFor} className="text-xs text-grid-muted">
+      <label htmlFor={htmlFor} className="text-meta text-grid-muted">
         {label}
       </label>
       <div className="flex min-w-0 items-center">{children}</div>
@@ -173,7 +173,7 @@ function Section({
     <section className="border-t border-line">
       <div className="flex items-center gap-2 px-6 pt-4 pb-2">
         <h3 className="text-sm font-medium text-grid-fg">{title}</h3>
-        {count != null ? <span className="text-xs text-grid-muted">{count}</span> : null}
+        {count != null ? <span className="text-meta text-grid-muted">{count}</span> : null}
         <span className="ms-auto">{action}</span>
       </div>
       {children}
@@ -279,9 +279,9 @@ export function TaskBody({
     <>
       <HeaderWrap className="gap-1 border-b border-line px-6 pt-5 pb-4">
         {page ? (
-          <p className="flex items-center gap-2 text-xs text-grid-muted">{meta}</p>
+          <p className="flex items-center gap-2 text-meta text-grid-muted">{meta}</p>
         ) : (
-          <SheetDescription className="flex items-center gap-2 text-xs">{meta}</SheetDescription>
+          <SheetDescription className="flex items-center gap-2 text-meta">{meta}</SheetDescription>
         )}
         {page ? (
           <h1 className="sr-only">{d.title}</h1>
@@ -315,7 +315,7 @@ export function TaskBody({
           <button
             type="button"
             onClick={() => onOpen(d.parent!.key)}
-            className="text-start text-xs text-grid-muted hover:text-grid-fg"
+            className="text-start text-meta text-grid-muted hover:text-grid-fg"
           >
             {t("task.subtaskOf")} <Ltr mono>{d.parent.key}</Ltr> {d.parent.title}
           </button>
@@ -388,7 +388,7 @@ export function TaskBody({
                 if (n !== (d.estimate_minutes ?? 0)) void patch({ estimate_minutes: n });
               }}
             />
-            <span className="text-xs text-grid-muted">{t("task.minutes")}</span>
+            <span className="text-meta text-grid-muted">{t("task.minutes")}</span>
           </div>
         </Row>
       </div>
@@ -439,7 +439,7 @@ export function TaskBody({
           />
         </div>
       ) : null}
-      <p className="px-6 pb-6 text-xs text-grid-muted">
+      <p className="px-6 pb-6 text-meta text-grid-muted">
         {t("task.createdBy", { name: "" })}
         <span dir="ltr">{useDirectoryName(dir, d.created_by)}</span> ·{" "}
         <Ltr>{timeAgo(d.created_at, locale)}</Ltr>
@@ -737,7 +737,7 @@ function Attachments({
                 <p className="truncate font-medium" dir="auto">
                   {a.file_name}
                 </p>
-                <p className="text-xs text-grid-muted">
+                <p className="text-meta text-grid-muted">
                   <Ltr>{fileSize(a.size)}</Ltr> · <span dir="ltr">{dir.name(a.uploaded_by)}</span> ·{" "}
                   <Ltr>{timeAgo(a.created_at, locale)}</Ltr>
                 </p>
@@ -920,7 +920,7 @@ function Comments({
             <li key={c.id} className="flex gap-3" data-comment={c.id}>
               <PersonAvatar id={c.author_id} dir={dir} className="mt-0.5" />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-grid-muted">
+                <div className="flex flex-wrap items-center gap-2 text-meta text-grid-muted">
                   <span className="font-medium text-grid-fg" dir="ltr">
                     {dir.name(c.author_id)}
                   </span>
@@ -1034,7 +1034,7 @@ function Comments({
                   <span className="font-medium" dir="ltr">
                     @{handleFor(m.email, emails)}
                   </span>
-                  <span className="truncate text-xs text-grid-muted" dir="ltr">
+                  <span className="truncate text-meta text-grid-muted" dir="ltr">
                     {m.email}
                   </span>
                 </li>
@@ -1042,7 +1042,7 @@ function Comments({
             </ul>
           ) : null}
           <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-xs text-grid-muted">{t("task.commentHint")}</p>
+            <p className="text-meta text-grid-muted">{t("task.commentHint")}</p>
             <Button size="sm" disabled={busy || !body.trim()} onClick={() => void send()}>
               {busy ? t("common.working") : t("task.addComment")}
             </Button>
@@ -1078,7 +1078,7 @@ function useCard(taskKey: string) {
 
 function MicroLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="font-mono text-[11px] tracking-wider text-grid-muted uppercase">{children}</span>
+    <span className="font-mono text-xs tracking-wider text-grid-muted uppercase">{children}</span>
   );
 }
 
@@ -1150,7 +1150,7 @@ export function CardPlanning({ taskKey }: { taskKey: string }) {
               if (n !== (d.estimate_minutes ?? 0)) void patch({ estimate_minutes: n });
             }}
           />
-          <span className="text-xs text-grid-muted">{t("task.minutes")}</span>
+          <span className="text-meta text-grid-muted">{t("task.minutes")}</span>
         </div>
       </div>
     </div>

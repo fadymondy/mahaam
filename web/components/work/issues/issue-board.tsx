@@ -205,7 +205,7 @@ function IssueColumn({
     >
       <header className="flex items-center gap-2 border-b border-line px-3 py-2">
         <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-grid-fg">{label}</h2>
-        <span className="text-xs text-grid-muted tabular-nums">
+        <span className="text-meta text-grid-muted tabular-nums">
           <Ltr>{column.issues.length}</Ltr>
         </span>
       </header>
@@ -215,7 +215,7 @@ function IssueColumn({
             <IssueCard key={issue.key} issue={issue} draggable={canWrite} projectName={projectName} href={hrefFor(issue.key)} />
           ))}
         </SortableContext>
-        {column.issues.length === 0 ? <p className="px-1 py-4 text-center text-xs text-grid-muted">{t("issues.emptyColumn")}</p> : null}
+        {column.issues.length === 0 ? <p className="px-1 py-4 text-center text-meta text-grid-muted">{t("issues.emptyColumn")}</p> : null}
       </div>
     </section>
   )
@@ -226,7 +226,7 @@ export function IssueCardBody({ issue, projectName }: { issue: Issue; projectNam
   const project = projectName(issue.project_id)
   return (
     <>
-      <div className="flex items-center gap-2 text-xs text-grid-muted">
+      <div className="flex items-center gap-2 text-meta text-grid-muted">
         <IssueTypeIcon type={issue.issue_type} />
         <Ltr mono>{issue.key}</Ltr>
         <IssuePriorityMark priority={issue.priority} className="ms-auto" />
@@ -234,7 +234,7 @@ export function IssueCardBody({ issue, projectName }: { issue: Issue; projectNam
       <p className={cn("mt-1 text-sm font-medium break-words text-grid-fg", issue.status === "done" && "text-grid-muted line-through")} dir="auto">
         {issue.title}
       </p>
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-grid-muted">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-grid-muted">
         {project ? (
           <span className="flex min-w-0 items-center gap-1">
             <FolderIcon className="size-3 shrink-0" aria-hidden />

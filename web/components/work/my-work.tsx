@@ -61,7 +61,7 @@ export function MyWork({ meId }: { meId: string | undefined }) {
                   <span className="min-w-0 flex-1 truncate" dir="auto">
                     {x.title}
                   </span>
-                  {x.due_at ? <span className="text-xs text-grid-muted">{x.due_at.slice(0, 10)}</span> : null}
+                  {x.due_at ? <span className="text-meta text-grid-muted">{x.due_at.slice(0, 10)}</span> : null}
                 </Link>
               </li>
             ))}

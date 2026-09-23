@@ -216,7 +216,7 @@ export function ExportButtons({ query, label, id }: { query: string; label?: str
   }
   return (
     <div className="flex items-center gap-1" role="group" aria-label={label ? `${t("reports.export")} · ${label}` : t("reports.export")}>
-      {label ? <span className="me-1 text-xs text-grid-muted">{label}</span> : null}
+      {label ? <span className="me-1 text-meta text-grid-muted">{label}</span> : null}
       {EXPORT_FORMATS.map((f) => {
         const Icon = EXPORT_ICONS[f]
         return (
@@ -252,10 +252,10 @@ export function PrintHeader({ title, meta }: { title: string; meta: string }) {
   const now = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" }).format(new Date())
   return (
     <div className="hidden print:block" data-print-only data-print-header>
-      <p className="text-xs">{ws.summary.name}</p>
+      <p className="text-meta">{ws.summary.name}</p>
       <h1 className="text-xl font-semibold">{title}</h1>
       <p className="text-sm">{meta}</p>
-      <p className="text-xs">{t("reports.printedAt", { date: now })}</p>
+      <p className="text-meta">{t("reports.printedAt", { date: now })}</p>
     </div>
   )
 }

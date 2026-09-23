@@ -18,7 +18,7 @@ import { Switch } from "@/components/ui/switch"
 import { SectionHeader } from "@/components/public-frame"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
-import { LOCALE_NAMES } from "@/lib/i18n-locale"
+import { LOCALES, LOCALE_NAMES } from "@/lib/i18n-locale"
 import { intlTag } from "@/lib/i18n-locale"
 import { useTranslations } from "@/lib/i18n"
 import { timeApi, useRefreshTime, useTimeSettings, type TimeSettings } from "@/lib/time"
@@ -42,7 +42,7 @@ function Row({ label, hint, htmlFor, children }: { label: string; hint?: string;
         <label htmlFor={htmlFor} className="text-sm font-medium text-grid-fg">
           {label}
         </label>
-        {hint ? <p className="mt-1 text-xs text-grid-muted">{hint}</p> : null}
+        {hint ? <p className="mt-1 text-meta text-grid-muted">{hint}</p> : null}
       </div>
       <div className="flex max-w-xl items-center">{children}</div>
     </div>
@@ -101,7 +101,7 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
     [locale],
   )
   const roundings = ROUNDING.map((n) => ({ value: String(n), label: n ? t("timeSettings.roundingMinutes", { n }) : t("timeSettings.roundingNone") }))
-  const languages = (["en", "ar"] as const).map((l) => ({ value: l, label: LOCALE_NAMES[l] }))
+  const languages = LOCALES.map((l) => ({ value: l, label: LOCALE_NAMES[l] }))
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -216,14 +216,14 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
         {canRates ? (
           <Row label={t("timeSettings.rates")} hint={t("timeSettings.defaultsHint")}>
             <div className="grid w-full gap-3 sm:grid-cols-2">
-              <label className="space-y-1.5 text-xs text-grid-muted">
+              <label className="space-y-1.5 text-meta text-grid-muted">
                 <span>{t("timeSettings.defaultBill")}</span>
                 <span className="flex items-center gap-2">
                   <Input dir="ltr" inputMode="decimal" disabled={!ratesEditable} value={v.bill} onChange={(e) => setV((s) => ({ ...s, bill: e.target.value }))} placeholder="0.00" />
                   <span className="font-mono text-grid-muted">{v.currency}</span>
                 </span>
               </label>
-              <label className="space-y-1.5 text-xs text-grid-muted">
+              <label className="space-y-1.5 text-meta text-grid-muted">
                 <span>{t("timeSettings.defaultCost")}</span>
                 <span className="flex items-center gap-2">
                   <Input dir="ltr" inputMode="decimal" disabled={!ratesEditable} value={v.cost} onChange={(e) => setV((s) => ({ ...s, cost: e.target.value }))} placeholder="0.00" />

@@ -184,7 +184,7 @@ function InviteSection() {
           <p className="text-sm font-medium">
             {t("members.linkReady")} <Ltr>{link.email}</Ltr>
           </p>
-          <p className="text-xs text-grid-warn-text">{t("members.linkOnce")}</p>
+          <p className="text-meta text-grid-warn-text">{t("members.linkOnce")}</p>
           <CopyField value={link.url} label={t("members.acceptLink")} />
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={() => setLink(null)}>

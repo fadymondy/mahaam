@@ -169,14 +169,14 @@ function PlanForm({ plan, catalog, integrations, onSaved }: { plan?: Plan; catal
         </div>
         <div className="divide-y divide-line border-y border-line">
           <div className="hidden gap-3 px-6 py-2 md:grid md:grid-cols-[12rem_1fr]">
-            <span className="text-xs text-grid-muted">{t("plan.col.limit")}</span>
+            <span className="text-meta text-grid-muted">{t("plan.col.limit")}</span>
             <RuleHeader currency={f.currency} />
           </div>
           {catalog.map((k) => (
             <div key={k} className="grid gap-2 px-6 py-2.5 md:grid-cols-[12rem_1fr] md:items-center md:gap-3" data-plan-limit={k}>
               <span className="text-sm">
                 {t(`plan.limit.${k}`)}
-                <span className="block text-xs text-grid-muted">{t(`plan.kind.${kindOf(k)}`)}</span>
+                <span className="block text-meta text-grid-muted">{t(`plan.kind.${kindOf(k)}`)}</span>
               </span>
               <RuleFields id={k} draft={drafts[k]} currency={f.currency} onChange={(d) => setDrafts({ ...drafts, [k]: d })} />
             </div>

@@ -84,7 +84,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
         <span className="min-w-0 flex-1 truncate" dir="auto">
           {v.name}
         </span>
-        <span className="shrink-0 text-[11px] text-grid-muted">{t(`saved.kind.${v.kind}`)}</span>
+        <span className="shrink-0 text-xs text-grid-muted">{t(`saved.kind.${v.kind}`)}</span>
         {v.shared ? (
           <Badge variant="outline" className="shrink-0 gap-1">
             <UsersIcon />

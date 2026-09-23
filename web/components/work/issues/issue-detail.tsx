@@ -74,7 +74,7 @@ export function IssueDetailView({ issueKey: key, back, backLabel }: { issueKey: 
 
   return (
     <>
-      <div className="flex items-center gap-2 px-6 pt-5 text-xs text-grid-muted">
+      <div className="flex items-center gap-2 px-6 pt-5 text-meta text-grid-muted">
         <Link href={back} className="inline-flex items-center gap-1 hover:text-grid-fg">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {backLabel}
@@ -290,7 +290,7 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
       <Row label={t("issues.humanOnly")}>
         <label className="flex items-start gap-3">
           <Switch checked={issue.human_only} disabled={!canWrite || busy} onCheckedChange={(v) => void run({ human_only: v })} className="mt-0.5" />
-          <span className="text-xs text-grid-muted">{t("issues.humanOnlyHint")}</span>
+          <span className="text-meta text-grid-muted">{t("issues.humanOnlyHint")}</span>
         </label>
       </Row>
       {picker(
@@ -331,7 +331,7 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
           {spent ? <Ltr>{spent}</Ltr> : <span className="text-grid-muted">{t("issues.noAgentTime")}</span>}
         </span>
         {issue.started_at ? (
-          <span className="mt-1 block text-xs text-grid-muted">
+          <span className="mt-1 block text-meta text-grid-muted">
             {t("issues.startedAt", { when: timeAgo(issue.started_at, locale) })}
             {issue.finished_at ? ` · ${t("issues.finishedAt", { when: timeAgo(issue.finished_at, locale) })}` : null}
           </span>
@@ -353,7 +353,7 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
         ) : (
           <span className="text-grid-muted">{t("issues.anonymous")}</span>
         )}
-        <span className="mt-1 block text-xs text-grid-muted">
+        <span className="mt-1 block text-meta text-grid-muted">
           {t(`issues.source.${["portal", "embed", "monitor", "mcp", "github", "jira", "linear"].includes(issue.source) ? issue.source : "app"}`)} · {formatDay(issue.created_at, locale)}
         </span>
       </Row>
@@ -379,7 +379,7 @@ export function ContextPanel({ issue }: { issue: Pick<IssueDetail, "route" | "se
       <summary className="grid-micro cursor-pointer px-6 py-3 hover:bg-grid-soft">{t("issues.ctx.title")}</summary>
       <div className="space-y-4 px-6 pb-5">
         {issue.page_url ? (
-          <div className="text-xs">
+          <div className="text-meta">
             <p className="grid-micro mb-1">{t("issues.ctx.pageUrl")}</p>
             {safeUrl ? (
               <a href={safeUrl} target="_blank" rel="noreferrer noopener" className="inline-flex max-w-full items-center gap-1 break-all text-grid-action hover:underline">
@@ -391,7 +391,7 @@ export function ContextPanel({ issue }: { issue: Pick<IssueDetail, "route" | "se
             )}
           </div>
         ) : null}
-        <dl className="space-y-2 text-xs">
+        <dl className="space-y-2 text-meta">
           {rows.map(([label, value]) =>
             value ? (
               <div key={label}>
@@ -423,11 +423,11 @@ function LogBlock({ label, value }: { label: string; value: string }) {
   const lines = value.split("\n").filter(Boolean).length
   return (
     <details className="border border-line">
-      <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs hover:bg-grid-soft">
+      <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-meta hover:bg-grid-soft">
         <span className="grid-micro">{label}</span>
         <Ltr className="text-grid-muted tabular-nums">{lines}</Ltr>
       </summary>
-      <pre dir="ltr" className="ltr-isolate max-h-72 overflow-auto border-t border-line bg-grid-card p-3 font-mono text-[11px] leading-5 whitespace-pre-wrap text-grid-body">
+      <pre dir="ltr" className="ltr-isolate max-h-72 overflow-auto border-t border-line bg-grid-card p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-grid-body">
         {value}
       </pre>
     </details>
@@ -494,7 +494,7 @@ function CommentThread({ issue, onChanged }: { issue: IssueDetail; onChanged: ()
             <SendIcon className="rtl:-scale-x-100" />
             {posting ? t("common.working") : t("issues.postComment")}
           </Button>
-          <span className="text-xs text-grid-muted">{t("issues.mentionHint")}</span>
+          <span className="text-meta text-grid-muted">{t("issues.mentionHint")}</span>
         </div>
       </form>
     </section>
@@ -506,7 +506,7 @@ function CommentItem({ comment, dir, locale }: { comment: IssueComment; dir: Ret
   const agent = comment.author_kind === "agent"
   return (
     <li className={cn("px-6 py-4", agent && "bg-grid-soft/60")}>
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-grid-muted">
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-meta text-grid-muted">
         {comment.author_id ? <PersonAvatar id={comment.author_id} dir={dir} /> : <BotIcon className="size-4" aria-hidden />}
         <Ltr>{comment.author_id ? dir.name(comment.author_id) : t("issues.kind.agent")}</Ltr>
         <AuthorKindBadge kind={comment.author_kind} />

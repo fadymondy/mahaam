@@ -238,12 +238,12 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
       <div className="space-y-1.5">
         <p className="grid-micro">{t("mcp.claudeDesktopCursor")}</p>
         <CopyField value={desktopConfig} label={t("mcp.claudeDesktopCursor")} />
-        <p className="text-xs text-grid-muted">{t("mcp.claudeDesktopCursorHint")}</p>
+        <p className="text-meta text-grid-muted">{t("mcp.claudeDesktopCursorHint")}</p>
       </div>
 
       <div className="space-y-1.5">
         <p className="grid-micro">{t("mcp.genericClient")}</p>
-        <div className="space-y-1 text-xs text-grid-muted">
+        <div className="space-y-1 text-meta text-grid-muted">
           <p>
             {t("mcp.serverUrl")}: <Ltr mono>{MCP_ORIGIN}/api/mcp</Ltr>
           </p>
@@ -253,7 +253,7 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
         </div>
       </div>
 
-      <p className="flex items-start gap-2 text-xs text-grid-muted">
+      <p className="flex items-start gap-2 text-meta text-grid-muted">
         <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
         {t("mcp.oauthClientsHint")}
       </p>

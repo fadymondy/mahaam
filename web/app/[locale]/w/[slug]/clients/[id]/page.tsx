@@ -61,7 +61,7 @@ export default function ClientDetailPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+        <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.clients")}
         </Link>
@@ -136,7 +136,7 @@ export default function ClientDetailPage() {
             <>
               <div className="flex items-center justify-between gap-2 border-t border-line px-6 pt-5 pb-3">
                 <h2 className="text-base font-medium">{t("clientDetail.invoices")}</h2>
-                <Link href={`/${locale}/w/${ws.slug}/invoices`} className="text-xs text-grid-brand hover:underline">
+                <Link href={`/${locale}/w/${ws.slug}/invoices`} className="text-meta text-grid-brand hover:underline">
                   {t("clientDetail.newInvoice")}
                 </Link>
               </div>
@@ -146,7 +146,7 @@ export default function ClientDetailPage() {
                 </Stat>
               </dl>
               {(clientInvoices.data?.invoices ?? []).length === 0 ? (
-                <p className="px-6 py-4 text-xs text-grid-muted">{t("clientDetail.noInvoices")}</p>
+                <p className="px-6 py-4 text-meta text-grid-muted">{t("clientDetail.noInvoices")}</p>
               ) : (
                 <ul className="divide-y divide-line border-b border-line">
                   {(clientInvoices.data?.invoices ?? []).map((iv) => (

@@ -121,7 +121,7 @@ function WorkspaceSwitcher({ active, all }: { active: WorkspaceSummary; all: Wor
             {all.map((w) => (
               <DropdownMenuItem key={w.id} onClick={() => router.push(hrefFor(w.slug))}>
                 <span className="min-w-0 flex-1 truncate">{w.name}</span>
-                <span className="text-xs text-grid-muted">{t(`role.${w.role}`)}</span>
+                <span className="text-meta text-grid-muted">{t(`role.${w.role}`)}</span>
                 {w.id === active.id ? <CheckIcon /> : null}
               </DropdownMenuItem>
             ))}

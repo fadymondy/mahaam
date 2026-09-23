@@ -76,7 +76,7 @@ export default function AdminPlansPage() {
                     <Link href={`/${locale}/admin/plans/${encodeURIComponent(p.key)}`} className="font-medium hover:underline">
                       {planName(p, locale)}
                     </Link>{" "}
-                    <Ltr className="text-xs text-grid-muted">{p.key}</Ltr>
+                    <Ltr className="text-meta text-grid-muted">{p.key}</Ltr>
                     {!p.active ? (
                       <Badge variant="outline" className="ms-2">
                         {t("admin.plans.inactive")}
@@ -85,9 +85,9 @@ export default function AdminPlansPage() {
                   </TableCell>
                   <TableCell>
                     <Ltr>{money(p.base_fee_minor, p.currency, locale)}</Ltr>
-                    <span className="block text-xs text-grid-muted">{locale === "ar" ? p.price_label_ar : p.price_label_en}</span>
+                    <span className="block text-meta text-grid-muted">{locale === "ar" ? p.price_label_ar : p.price_label_en}</span>
                   </TableCell>
-                  <TableCell className="hidden text-xs text-grid-body lg:table-cell">
+                  <TableCell className="hidden text-meta text-grid-body lg:table-cell">
                     {SUMMARY.map((k) => {
                       const r = p.limits?.[k]
                       return (
@@ -103,7 +103,7 @@ export default function AdminPlansPage() {
                         {plans.data.polar_products[p.key]}
                       </Ltr>
                     ) : (
-                      <span className="text-xs text-grid-muted">{t("billing.notSynced")}</span>
+                      <span className="text-meta text-grid-muted">{t("billing.notSynced")}</span>
                     )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">

@@ -31,7 +31,7 @@ export function ColorChip({ color, children, className }: { color?: string | nul
   const style: CSSProperties = { background: soft(color), color: solid(color), borderColor: soft(color) }
   return (
     <span
-      className={cn("inline-flex h-5 max-w-40 items-center gap-1 truncate border px-1.5 text-[11px] leading-none font-medium", className)}
+      className={cn("inline-flex h-5 max-w-40 items-center gap-1 truncate border px-1.5 text-xs leading-none font-medium", className)}
       style={style}
     >
       {children}

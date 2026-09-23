@@ -250,7 +250,7 @@ function NewInvoiceForm({ onDone }: { onDone: (iv?: Invoice) => void }) {
             </SelectContent>
           </Select>
           {v.client ? (
-            <p className="mt-1 text-xs text-grid-muted" data-unbilled-preview>
+            <p className="mt-1 text-meta text-grid-muted" data-unbilled-preview>
               {u
                 ? u.entry_count === 0
                   ? t("newInvoice.noUnbilled")

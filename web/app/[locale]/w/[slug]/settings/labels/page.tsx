@@ -68,7 +68,7 @@ export default function LabelsPage() {
           {list.map((l) => (
             <li key={l.id} className="flex items-center gap-3 px-6 py-2.5 text-sm" data-label={l.id}>
               <ColorChip color={l.color}>{l.name}</ColorChip>
-              <span className="flex-1 text-xs text-grid-muted">
+              <span className="flex-1 text-meta text-grid-muted">
                 {t("labels.taskCount", { n: l.task_count })}
                 <Ltr> </Ltr>
               </span>
@@ -97,7 +97,7 @@ export default function LabelsPage() {
           ))}
         </ul>
       )}
-      {!canManage ? <p className="px-6 py-4 text-xs text-grid-muted">{t("labels.manageHint")}</p> : null}
+      {!canManage ? <p className="px-6 py-4 text-meta text-grid-muted">{t("labels.manageHint")}</p> : null}
       <EditLabel
         label={editing}
         onClose={() => setEditing(null)}

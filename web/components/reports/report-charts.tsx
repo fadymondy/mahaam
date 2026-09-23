@@ -88,7 +88,7 @@ export function BreakdownChart({ items, colored }: { items: BreakdownItem[]; col
           tick={({ x, y, payload }: { x: number | string; y: number | string; payload: { value: string } }) => {
             const v = String(payload.value)
             return (
-              <text x={Number(x)} y={Number(y)} dx={isRtl ? 6 : -6} dy={4} textAnchor="end" className="fill-muted-foreground" fontSize={12}>
+              <text x={Number(x)} y={Number(y)} dx={isRtl ? 6 : -6} dy={4} textAnchor="end" className="fill-muted-foreground text-xs">
                 {v.length > 20 ? v.slice(0, 19) + "…" : v}
               </text>
             )

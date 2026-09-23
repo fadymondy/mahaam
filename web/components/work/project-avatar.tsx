@@ -82,7 +82,7 @@ export function ProjectAvatarField({ project, onChanged }: { project: { id: stri
             </Button>
           ) : null}
         </div>
-        <p className="text-xs text-grid-muted">{t("project.avatarHint")}</p>
+        <p className="text-meta text-grid-muted">{t("project.avatarHint")}</p>
       </div>
       <input
         ref={input}

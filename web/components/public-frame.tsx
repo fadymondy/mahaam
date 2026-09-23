@@ -9,6 +9,7 @@ import { CubeMark } from "@/components/brand/cube-mark"
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls"
 import { MAHAAM_MARK } from "@/lib/brand/mark"
 import { useTranslations } from "@/lib/i18n"
+import { LOCALES, LOCALE_NAMES } from "@/lib/i18n-locale"
 
 /*
   The signed-out frame, copied from fadymondy.com's /en/login anatomy
@@ -90,7 +91,14 @@ export function PublicFrame({
             <FooterCell label={t("footer.stack")}>
               <span dir="ltr">Go · Next.js</span>
             </FooterCell>
-            <FooterCell label={t("footer.languages")}>English · العربية</FooterCell>
+            <FooterCell label={t("footer.languages")}>
+              {LOCALES.map((l, i) => (
+                <span key={l}>
+                  {i > 0 ? " · " : null}
+                  <span lang={l}>{LOCALE_NAMES[l]}</span>
+                </span>
+              ))}
+            </FooterCell>
           </dl>
           <div className="grid-screen-line-top grid-screen-line-bottom mt-4 flex items-center gap-4 px-4 py-3 text-sm text-grid-muted">
             <Link href={`/${locale}`} aria-label={brandName(locale)}>

@@ -230,7 +230,7 @@ export function IssueDetailView({
           </div>
 
           <section id="comments">
-            <h2 className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-3 font-mono text-[11px] tracking-wider text-grid-muted uppercase">
+            <h2 className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-3 font-mono text-xs tracking-wider text-grid-muted uppercase">
               {t("issues.comments")}
               <span dir="ltr" className="tabular-nums">
                 {comments.length}
@@ -241,7 +241,7 @@ export function IssueDetailView({
               <ul>
                 {comments.map((comment) => (
                   <li key={comment.id} className="border-b border-line p-4">
-                    <p className="flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-grid-muted">
+                    <p className="flex flex-wrap items-center gap-x-2 font-mono text-xs text-grid-muted">
                       <span dir="ltr">{author(comment)}</span>
                       <span aria-hidden className="text-grid-muted/50">
                         ·
@@ -270,7 +270,7 @@ export function IssueDetailView({
                   disabled={form.posting}
                   placeholder={t("issues.commentPlaceholder")}
                 />
-                <p className="text-xs text-grid-muted">{t("issues.mentionHint")}</p>
+                <p className="text-meta text-grid-muted">{t("issues.mentionHint")}</p>
 
                 {form.error ? (
                   <p role="alert" className="text-sm text-destructive">
@@ -304,7 +304,7 @@ export function IssueDetailView({
                   "border-line",
                 )}
               >
-                <dt className="font-mono text-[11px] tracking-wider text-grid-muted uppercase">
+                <dt className="font-mono text-xs tracking-wider text-grid-muted uppercase">
                   {field.label}
                 </dt>
                 <dd>
@@ -336,7 +336,7 @@ export function IssueDetailView({
           </section>
 
           <section className="border-b border-line p-4">
-            <h2 className="mb-4 font-mono text-[11px] tracking-wider text-grid-muted uppercase">
+            <h2 className="mb-4 font-mono text-xs tracking-wider text-grid-muted uppercase">
               {t("issues.agent.title")}
             </h2>
             <IssueAgentSettings issue={report} onPatch={patch} disabled={!canWrite} />

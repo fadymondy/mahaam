@@ -150,7 +150,7 @@ export default function ProjectsPage() {
                       <Badge variant="outline">{t(`projectStatus.${p.status}`)}</Badge>
                       {p.visibility === "members" ? <LockIcon className="size-3.5 text-grid-muted" aria-label={t("project.private")} /> : null}
                     </span>
-                    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-grid-muted">
+                    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-grid-muted">
                       {p.client_name ? (
                         <span className="inline-flex items-center gap-1" dir="auto">
                           <BriefcaseIcon className="size-3" /> {p.client_name}
@@ -175,7 +175,7 @@ export default function ProjectsPage() {
                         issues[x] ? <span key={x} style={{ flexGrow: issues[x], background: STATUS_TONE[x] }} title={`${t(`issues.status.${x}`)}: ${issues[x]}`} /> : null,
                       )}
                     </span>
-                    <span className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[11px] text-grid-muted">
+                    <span className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-xs text-grid-muted">
                       {ISSUE_STATUSES.filter((x) => issues[x]).map((x) => (
                         <span key={x} className="inline-flex items-center gap-1">
                           <span className="size-1.5" style={{ background: STATUS_TONE[x] }} aria-hidden />
@@ -189,7 +189,7 @@ export default function ProjectsPage() {
                   <span className="flex w-24 shrink-0 flex-col items-end gap-1">
                     <Ltr className="text-sm tabular-nums text-grid-fg">{pct}%</Ltr>
                     <Progress value={pct} className="h-1 w-full" />
-                    <Ltr className="text-xs tabular-nums text-grid-muted">
+                    <Ltr className="text-meta tabular-nums text-grid-muted">
                       {p.tasks.done}/{total}
                     </Ltr>
                   </span>

@@ -80,8 +80,8 @@ export function StatusBadge({ status }: { status: string }) {
     <span
       className={
         status === "suspended"
-          ? "inline-flex items-center gap-1.5 text-xs text-grid-danger-text"
-          : "inline-flex items-center gap-1.5 text-xs text-(--grid-ok-text)"
+          ? "inline-flex items-center gap-1.5 text-meta text-grid-danger-text"
+          : "inline-flex items-center gap-1.5 text-meta text-(--grid-ok-text)"
       }
       data-status={status}
     >
