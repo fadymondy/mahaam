@@ -25,7 +25,7 @@ export function Segmented<V extends string>({
 }) {
   const { number } = useI18n();
   return (
-    <div role="tablist" aria-label={label} className={cn("inline-flex h-7 shrink-0 items-center gap-px rounded-md border border-line bg-grid-card p-[2px]", className)}>
+    <div role="tablist" aria-label={label} className={cn("seg shrink-0", className)}>
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -37,14 +37,11 @@ export function Segmented<V extends string>({
             title={o.title}
             data-segment={o.value}
             onClick={() => onChange(o.value)}
-            className={cn(
-              "flex h-[22px] items-center gap-1.5 rounded-[5px] px-2 text-[13px] leading-none [&_svg]:size-3.5",
-              active ? "bg-background font-medium text-grid-fg shadow-[0_0_0_1px_var(--grid-line)]" : "text-grid-muted hover:text-grid-fg",
-            )}
+            className="seg-item"
           >
             {o.icon}
             {o.label}
-            {o.count !== undefined ? <span className={cn("tabular-nums", active ? "text-grid-muted" : "text-grid-muted/80")}>{number(o.count)}</span> : null}
+            {o.count !== undefined ? <span className="tabular-nums text-grid-muted">{number(o.count)}</span> : null}
           </button>
         );
       })}

@@ -83,7 +83,11 @@
    macOS vibrancy and Windows 11 Mica are the windows' own material; the renderer lets it show where
    a native app would (the sidebar, the popover, the quick palette) and paints solid ground where
    content is read (the view). */
+/* Both the root and the body: the grid paints its ground on html.grid-surface, and any opaque
+   layer there hides the material entirely (the sidebar was tinting solid navy, not the desktop). */
+html[data-platform="darwin"]:is([data-surface="main"], [data-surface="popover"], [data-surface="palette"], [data-surface="settings"]),
 html[data-platform="darwin"]:is([data-surface="main"], [data-surface="popover"], [data-surface="palette"], [data-surface="settings"]) body,
+html[data-platform="win32"][data-surface="main"],
 html[data-platform="win32"][data-surface="main"] body {
   background: transparent;
 }
@@ -155,6 +159,55 @@ html[data-platform="darwin"]:not(.dark):not([data-fullscreen]):is([data-surface=
   border-radius: 26px;
   pointer-events: none;
   z-index: 2147483647;
+}
+
+/* ── Segmented controls (List | Board, filters, the theme): a macOS segmented control — a soft
+   track with no border, the chosen segment a raised chip (lighter than the track in dark too). */
+.seg {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: color-mix(in oklab, var(--grid-fg) 7%, transparent);
+}
+.seg-item {
+  display: flex;
+  height: 24px;
+  align-items: center;
+  gap: 6px;
+  padding-inline: 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--grid-muted);
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.seg-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.seg-item:hover {
+  color: var(--grid-fg);
+}
+.seg-item:is([aria-selected="true"], [aria-checked="true"]) {
+  color: var(--grid-fg);
+  font-weight: 500;
+  background: var(--grid-card);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.12),
+    0 0 0 0.5px rgb(0 0 0 / 0.08);
+}
+.dark .seg-item:is([aria-selected="true"], [aria-checked="true"]) {
+  background: color-mix(in oklab, var(--grid-fg) 15%, transparent);
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
+}
+.seg-item:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--grid-action) 60%, transparent);
+  outline-offset: 1px;
 }
 
 /* ── Settings window (views/Settings.tsx): a macOS preferences toolbar — the section's name in the

@@ -99,7 +99,7 @@ export function Segmented<V extends string>({
   attr?: `data-${string}`;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex h-7 items-center rounded-md border border-line bg-grid-soft/60 p-0.5">
+    <div role="radiogroup" aria-label={label} className="seg">
       {options.map((o) => (
         <button
           key={o.value}
@@ -111,10 +111,7 @@ export function Segmented<V extends string>({
           dir={o.dir}
           lang={o.lang}
           onClick={() => onChange(o.value)}
-          className={cn(
-            "h-[22px] rounded-[4px] px-2.5 text-[13.5px]",
-            value === o.value ? "bg-background font-medium text-grid-fg shadow-[0_0_0_1px_var(--grid-line)]" : "text-grid-muted hover:text-grid-fg",
-          )}
+          className="seg-item"
         >
           {o.label}
         </button>
