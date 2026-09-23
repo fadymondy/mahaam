@@ -50,6 +50,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     "expo-router",
     "./plugins/with-scene-lifecycle",
+    // Android release builds need more Gradle/Kotlin daemon memory than the template gives.
+    "./plugins/with-gradle-memory",
     // OTA through Codemagic Patch; inert until the deployment keys exist.
     "./plugins/with-app-updates",
     "expo-secure-store",
