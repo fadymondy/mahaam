@@ -26,8 +26,13 @@ export function useRequireAuth() {
   return me
 }
 
-/** Only same-app relative paths are honoured as a post-login destination. */
+/**
+ * Only same-app relative paths are honoured as a post-login destination: one leading "/", never
+ * "//host" or "/\host", and no backslash, whitespace or control character a browser might
+ * normalise into something else. The same rule as the API's safeNext (internal/server/oauth_return.go).
+ */
 export function safeNext(next: string | null | undefined, fallback: string): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback
+  if (!next || next.length > 2048 || !next.startsWith("/") || next.startsWith("//")) return fallback
+  if (/[\\\s\u0000-\u001f\u007f-\u009f]/.test(next)) return fallback
   return next
 }
