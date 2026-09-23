@@ -43,6 +43,7 @@ func Register(api huma.API, a *app.App) {
 	r.catalogue()     // per-project agents and skills
 	r.monitorKeys()   // per-project backend error-monitoring DSN keys
 	r.sync()          // delta sync for offline clients: rows + tombstones since a cursor
+	r.widgets()       // MH-355: project progress + the running timer, for home-screen widgets
 }
 
 type routes struct {

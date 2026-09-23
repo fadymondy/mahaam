@@ -81,24 +81,39 @@ func (f *fakeFCM) handler(t *testing.T) http.Handler {
 	return mux
 }
 
+func (f *fakeFCM) anyTo(token string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, m := range f.messages {
+		if m["token"] == token {
+			return true
+		}
+	}
+	return false
+}
+
+// sentTo returns the notifications (banners) sent to token. Background pushes, such as the widget
+// refresh (MH-355), are not counted.
 func (f *fakeFCM) sentTo(token string) []map[string]any {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	var out []map[string]any
 	for _, m := range f.messages {
-		if m["token"] == token {
+		if _, banner := m["notification"]; banner && m["token"] == token {
 			out = append(out, m)
 		}
 	}
 	return out
 }
 
-func TestNativePush(t *testing.T) {
+// withFakeFCM points the API's FCM sender at a fake, with a freshly generated service account.
+func withFakeFCM(t *testing.T) *fakeFCM {
+	t.Helper()
 	key, _ := rsa.GenerateKey(rand.Reader, 2048)
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: must(x509.MarshalPKCS8PrivateKey(key))})
 	fake := &fakeFCM{pub: &key.PublicKey, email: "push@test-proj.iam.gserviceaccount.com"}
 	fcm := httptest.NewServer(fake.handler(t))
-	defer fcm.Close()
+	t.Cleanup(fcm.Close)
 	sa, _ := json.Marshal(map[string]string{
 		"type": "service_account", "project_id": "test-proj", "client_email": fake.email,
 		"private_key": string(pemKey), "token_uri": fcm.URL + "/token",
@@ -106,6 +121,11 @@ func TestNativePush(t *testing.T) {
 	t.Setenv("FCM_PROJECT_ID", "test-proj")
 	t.Setenv("FCM_SERVICE_ACCOUNT", string(sa))
 	t.Setenv("FCM_ENDPOINT", fcm.URL)
+	return fake
+}
+
+func TestNativePush(t *testing.T) {
+	fake := withFakeFCM(t)
 
 	a, srv := bootStack(t)
 	alice, _, _ := signup(t, a, srv.URL, "push-alice")
@@ -141,7 +161,9 @@ func TestNativePush(t *testing.T) {
 	alice.must("POST", "/api/w/projects/"+project+"/tasks", map[string]any{"title": "Ship the push", "assignee_ids": []string{bobID}}, 201)
 
 	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) && (len(fake.sentTo("bob-phone")) == 0 || len(fake.sentTo("dead-token")) == 0) {
+	// The dead token may first hear the widget refresh (MH-355), be deleted on UNREGISTERED, and so
+	// never get the banner: any message to it will do.
+	for time.Now().Before(deadline) && (len(fake.sentTo("bob-phone")) == 0 || !fake.anyTo("dead-token")) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	got := fake.sentTo("bob-phone")

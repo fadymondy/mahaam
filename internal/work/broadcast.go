@@ -130,8 +130,13 @@ var recipientsSQL = `
 // Broadcast sends event to everyone who may see project (see the rule at the top). Best effort:
 // realtime is a hint, and a failure here must never fail the change that caused it.
 func (sv *Service) Broadcast(ctx context.Context, workspace, project, event string, data map[string]any) {
+	sv.broadcast(ctx, workspace, project, event, data)
+}
+
+// broadcast is Broadcast, returning who it went to.
+func (sv *Service) broadcast(ctx context.Context, workspace, project, event string, data map[string]any) []string {
 	if sv.Live == nil || sv.Sys == nil || workspace == "" {
-		return
+		return nil
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -140,7 +145,7 @@ func (sv *Service) Broadcast(ctx context.Context, workspace, project, event stri
 		if sv.Log != nil {
 			sv.Log.Warn("realtime: recipients", "event", event, "err", err)
 		}
-		return
+		return nil
 	}
 	var users []string
 	for rows.Next() {
@@ -159,6 +164,7 @@ func (sv *Service) Broadcast(ctx context.Context, workspace, project, event stri
 	for _, u := range users {
 		sv.Live.Publish(workspace, u, event, data)
 	}
+	return users
 }
 
 // BroadcastProject announces project.updated with its progress.
@@ -167,8 +173,12 @@ func (sv *Service) BroadcastProject(ctx context.Context, workspace, project stri
 		return
 	}
 	var total, done int
+	// "Done" by the task's column, the same as the projects list counts it (countBy).
 	_ = sv.Sys.QueryRowContext(ctx, `
-		SELECT count(*), count(*) FILTER (WHERE completed_at IS NOT NULL)
-		FROM tasks WHERE workspace_id = $1 AND project_id = $2`, workspace, project).Scan(&total, &done)
-	sv.Broadcast(ctx, workspace, project, "project.updated", map[string]any{"tasks_total": total, "tasks_done": done})
+		SELECT count(*), count(*) FILTER (WHERE st.category = 'done')
+		FROM tasks t JOIN task_statuses st ON st.workspace_id = t.workspace_id AND st.id = t.status_id
+		WHERE t.workspace_id = $1 AND t.project_id = $2`, workspace, project).Scan(&total, &done)
+	users := sv.broadcast(ctx, workspace, project, "project.updated", map[string]any{"tasks_total": total, "tasks_done": done})
+	// MH-355: the home-screen widgets draw progress; tell the phones to reload (throttled).
+	sv.Push.WidgetsChanged(users)
 }

@@ -105,6 +105,16 @@ func (sv *Service) publish(workspace, user, event string, data any) {
 	if sv.Live != nil {
 		sv.Live.Publish(workspace, user, event, data)
 	}
+	// MH-355: the lock-screen timer follows the timer wherever it was started or stopped.
+	if e, _ := data.(*TimeEntry); event == "timer.started" && e != nil {
+		st := &push.TimerState{StartedAt: e.StartedAt, Label: e.Description, Project: sval(e.ProjectName), Key: sval(e.TaskKey)}
+		if st.Label == "" {
+			st.Label = sval(e.TaskTitle)
+		}
+		sv.Push.TimerActivity(user, st)
+	} else if event == "timer.stopped" {
+		sv.Push.TimerActivity(user, nil)
+	}
 	// Every inbox notification also goes to the user's installed apps and browsers (internal/push).
 	if n, ok := data.(*Notification); ok && event == "notification.created" {
 		m := push.Message{Title: n.Title, Tag: n.Kind}

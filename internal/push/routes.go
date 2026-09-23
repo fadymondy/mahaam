@@ -2,6 +2,7 @@ package push
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -119,6 +120,59 @@ func RegisterDevices(api huma.API, s *Service) {
 				if err := s.RemoveDevice(ctx, id, in.Token); err != nil {
 					return nil, huma.Error500InternalServerError("could not remove the device")
 				}
+			}
+			return nil, nil
+		})
+}
+
+// RegisterLiveActivity mounts /api/me/devices/{token}/live-activity (MH-355).
+func RegisterLiveActivity(api huma.API, s *Service) {
+	huma.Register(api, huma.Operation{OperationID: "me-device-live-activity", Method: http.MethodPost,
+		Path: "/api/me/devices/{token}/live-activity", DefaultStatus: http.StatusNoContent, Tags: []string{"Push"},
+		Summary: "Register a Live Activity token for this phone",
+		Description: "activity_token: the token of the activity the app is showing now (send it whenever iOS hands out a new one). " +
+			"push_to_start_token: the app's push-to-start token (iOS 17.2+), so a timer started elsewhere can start the activity. Either or both."},
+		func(ctx context.Context, in *struct {
+			Token string `path:"token" maxLength:"4096"`
+			Body  struct {
+				Kind             string `json:"kind" enum:"timer"`
+				ActivityToken    string `json:"activity_token,omitempty" maxLength:"4096"`
+				PushToStartToken string `json:"push_to_start_token,omitempty" maxLength:"4096"`
+			}
+		}) (*struct{}, error) {
+			id, err := who(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if in.Body.ActivityToken == "" && in.Body.PushToStartToken == "" {
+				return nil, huma.Error422UnprocessableEntity("send activity_token, push_to_start_token, or both")
+			}
+			for typ, tok := range map[string]string{"update": in.Body.ActivityToken, "start": in.Body.PushToStartToken} {
+				if tok == "" {
+					continue
+				}
+				if err := s.SaveLiveActivityToken(ctx, id, in.Token, in.Body.Kind, typ, tok); err != nil {
+					if errors.Is(err, errNoDevice) {
+						return nil, huma.Error404NotFound("register the device first (POST /api/me/devices)")
+					}
+					return nil, huma.Error500InternalServerError("could not save the token")
+				}
+			}
+			return nil, nil
+		})
+
+	huma.Register(api, huma.Operation{OperationID: "me-device-live-activity-end", Method: http.MethodDelete,
+		Path: "/api/me/devices/{token}/live-activity", DefaultStatus: http.StatusNoContent, Tags: []string{"Push"},
+		Summary: "The activity ended on the phone: forget its token"},
+		func(ctx context.Context, in *struct {
+			Token string `path:"token" maxLength:"4096"`
+		}) (*struct{}, error) {
+			id, err := who(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if err := s.ForgetLiveActivity(ctx, id, in.Token, "timer"); err != nil {
+				return nil, huma.Error500InternalServerError("could not forget the token")
 			}
 			return nil, nil
 		})

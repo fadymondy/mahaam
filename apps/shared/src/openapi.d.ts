@@ -830,6 +830,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/devices/{token}/live-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a Live Activity token for this phone
+         * @description activity_token: the token of the activity the app is showing now (send it whenever iOS hands out a new one). push_to_start_token: the app's push-to-start token (iOS 17.2+), so a timer started elsewhere can start the activity. Either or both.
+         */
+        post: operations["me-device-live-activity"];
+        /** The activity ended on the phone: forget its token */
+        delete: operations["me-device-live-activity-end"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/email": {
         parameters: {
             query?: never;
@@ -4242,6 +4263,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/w/widgets/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project progress and the running timer, for home-screen widgets */
+        get: operations["w-widgets-projects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/workspace": {
         parameters: {
             query?: never;
@@ -6760,6 +6798,18 @@ export interface components {
             locale?: "en" | "ar" | "";
             password: string;
             recovery_code?: string;
+        };
+        "Me-device-live-activityRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-device-live-activityRequest.json
+             */
+            readonly $schema?: string;
+            activity_token?: string;
+            /** @enum {string} */
+            kind: "timer";
+            push_to_start_token?: string;
         };
         "Me-email-changeRequest": {
             /**
@@ -10526,6 +10576,33 @@ export interface components {
              */
             theme?: "auto" | "light" | "dark" | "";
         };
+        WidgetProject: {
+            color: string;
+            id: string;
+            name: string;
+            /** Format: int64 */
+            tasks_done: number;
+            /** Format: int64 */
+            tasks_total: number;
+        };
+        WidgetTimer: {
+            key: string;
+            label: string;
+            project: string;
+            /** Format: date-time */
+            started_at: string;
+        };
+        Widgets: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Widgets.json
+             */
+            readonly $schema?: string;
+            projects: components["schemas"]["WidgetProject"][] | null;
+            /** @description null when no timer runs */
+            timer: components["schemas"]["WidgetTimer"];
+        };
         Workflow: {
             /** Format: int64 */
             id: number;
@@ -12822,6 +12899,68 @@ export interface operations {
         };
     };
     "me-device-remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-live-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-device-live-activityRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-live-activity-end": {
         parameters: {
             query?: never;
             header?: never;
@@ -23297,6 +23436,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultItem"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-widgets-projects": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Widgets"];
                 };
             };
             /** @description Error */

@@ -162,10 +162,6 @@ const (
 
 // send delivers one message to one device token.
 func (f *fcmSender) send(ctx context.Context, token string, m Message, locale string) (sendResult, error) {
-	access, err := f.token(ctx)
-	if err != nil {
-		return sentFailed, err
-	}
 	title, body := m.Title, m.Body
 	if t, ok := m.Titles[locale]; ok && t != "" {
 		title = t
@@ -188,6 +184,15 @@ func (f *fcmSender) send(ctx context.Context, token string, m Message, locale st
 		msg["android"] = map[string]any{"collapse_key": tag, "notification": map[string]string{"tag": tag}}
 		msg["apns"] = map[string]any{"headers": map[string]string{"apns-collapse-id": tag},
 			"payload": map[string]any{"aps": map[string]any{"thread-id": m.Tag}}}
+	}
+	return f.post(ctx, msg)
+}
+
+// post sends one FCM v1 message (the "message" object) and classifies the answer.
+func (f *fcmSender) post(ctx context.Context, msg map[string]any) (sendResult, error) {
+	access, err := f.token(ctx)
+	if err != nil {
+		return sentFailed, err
 	}
 	payload, _ := json.Marshal(map[string]any{"message": msg})
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost,

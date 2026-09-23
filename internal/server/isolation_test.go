@@ -431,6 +431,7 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 		"ai-usage": true, // the workspace AI usage summary (manager+)
 		"current":  true, "members": true, "activity": true, "me": true, "graphql": true,
 		"sync": true, // GET /api/w/sync: the delta for offline clients, scoped to the caller
+		"widgets": true, // GET /api/w/widgets/projects: the caller's own visible projects and timer
 		"feedback": true, // the signed-in "Report a problem" intake (reports land in the platform workspace)
 		"events":   true, // P2: the per-user realtime stream (read with a timeout, see send)
 		// P5: /api/w/report/{time,export,budgets,profitability}, /api/w/notification-settings

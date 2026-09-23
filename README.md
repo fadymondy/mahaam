@@ -510,6 +510,14 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   `actor_id`), so an event is a cue to refetch through the reads that apply access. Recipients are managers+ and
   members with full access to the project (`fullAccessSQL`, one query per event); task-grant-only members and clients
   get none. At most once, no replay: clients refetch on reconnect (the web does, in `useLiveStream`).
+- **Live Activities and widgets** (MH-355, `internal/push/live_activity.go`): `live_activity_tokens` per device
+  (`update` = the running activity's token, `start` = the iOS 17.2+ push-to-start token), set via `POST/DELETE
+  /api/me/devices/{token}/live-activity`. timer.started updates the running activity or starts one; timer.stopped
+  ends it. It goes through FCM's `apns.live_activity_token` (no extra credential), coalesced per person over 500 ms
+  so a stop-then-start switch becomes one update. content-state is `{started_at (unix), label, project, key}` and
+  `LIVE_ACTIVITY_ATTRIBUTES_TYPE` names the Swift type. Widgets: `GET /api/w/widgets/projects` (progress + running
+  timer, one request), plus a background (content-available) push on project.updated, throttled per person
+  (`WIDGET_REFRESH_SECONDS`, default 600). The throttle is taken only by a push that actually reaches a phone.
 - **Native push** (MH-352, `internal/push/native.go`): `devices` (owner pool; one row per install, UNIQUE push token,
   so a phone that changes hands moves rather than receiving both people's notifications). `POST /api/me/devices`
   (with `previous_token` for FCM's token rotation) and `DELETE /api/me/devices/{token}`. Every inbox notification that

@@ -163,10 +163,12 @@ func registerPush(api huma.API, a *app.App) {
 	if a == nil {
 		push.Register(api, push.New(nil, nil))
 		push.RegisterDevices(api, push.New(nil, nil))
+		push.RegisterLiveActivity(api, push.New(nil, nil))
 		return
 	}
 	push.Register(api, push.New(a.SysDB, a.Log))
-	push.RegisterDevices(api, push.New(a.SysDB, a.Log)) // /api/me/devices: native push (FCM)
+	push.RegisterDevices(api, push.New(a.SysDB, a.Log))      // /api/me/devices: native push (FCM)
+	push.RegisterLiveActivity(api, push.New(a.SysDB, a.Log)) // /api/me/devices/{token}/live-activity
 }
 
 func registerAccount(api huma.API, a *app.App) {
