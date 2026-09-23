@@ -13,6 +13,8 @@
 @import "./styles/mahaam-brand.css";
 /* Repo-owned: tokens for user-chosen colours (projects, teams, statuses, labels). */
 @import "./styles/mahaam-palette.css";
+/* Repo-owned: the desktop app's window chrome (apps/desktop). */
+@import "./styles/mahaam-desktop.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

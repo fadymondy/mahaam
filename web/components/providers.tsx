@@ -4,6 +4,8 @@ import { useEffect, type ReactNode } from "react"
 import { ThemeProvider, useTheme } from "next-themes"
 import { Toaster } from "sonner"
 
+import { DesktopBridge } from "@/components/desktop/desktop-bridge"
+
 import { I18nProvider } from "@/lib/i18n"
 import { dirForLocale } from "@/lib/i18n-locale"
 import { installDiagnostics } from "@/lib/feedback/core"
@@ -38,6 +40,7 @@ export function Providers({ locale, children }: { locale: string; children: Reac
       <I18nProvider locale={locale}>
         {children}
         <ThemedToaster locale={locale} />
+        <DesktopBridge />
       </I18nProvider>
     </ThemeProvider>
   )
