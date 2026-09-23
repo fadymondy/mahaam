@@ -12,11 +12,17 @@ const app = await electron.launch({
   env: { ...env, MAHAAM_E2E: "1", MAHAAM_API_URL: process.env.MAHAAM_API_URL ?? "http://127.0.0.1:3020", MAHAAM_USER_DATA: mkdtempSync(join(tmpdir(), "mahaam-desktop-")) },
 });
 const shot = async (path) => {
-  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getMediaSourceId().split(":")[1]);
+  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).getMediaSourceId().split(":")[1]);
   await new Promise((r) => setTimeout(r, 500));
   execFileSync("screencapture", ["-x", "-o", "-l", id, path]);
 };
-const page = await app.firstWindow();
+await app.firstWindow();
+// The main window (the popover and other surfaces are windows too).
+let page;
+for (let i = 0; i < 40 && !page; i++) {
+  page = app.windows().find((w) => w.url().includes("surface=main"));
+  if (!page) await new Promise((r) => setTimeout(r, 250));
+}
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
@@ -29,7 +35,7 @@ await page.locator("[data-signin-form] button[type=submit]").click();
 await page.locator("aside[data-sidebar]").waitFor({ timeout: 20000 });
 await page.waitForTimeout(1500);
 await shot("e2e-shots/smoke-2-shell.png");
-await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send("command", { type: "palette" }));
+await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).webContents.send("command", { type: "palette" }));
 await page.locator("[data-palette]").waitFor({ timeout: 5000 });
 await page.keyboard.type("MH");
 await page.waitForTimeout(800);

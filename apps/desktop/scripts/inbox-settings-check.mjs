@@ -22,7 +22,7 @@ const app = await electron.launch({
   env: { ...env, MAHAAM_E2E: "1", MAHAAM_API_URL: API, MAHAAM_USER_DATA: mkdtempSync(join(tmpdir(), "mahaam-desktop-")) },
 });
 const shot = async (name) => {
-  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getMediaSourceId().split(":")[1]);
+  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).getMediaSourceId().split(":")[1]);
   await new Promise((r) => setTimeout(r, 450));
   execFileSync("screencapture", ["-x", "-o", "-l", id, `e2e-shots/${name}.png`]);
   console.log("shot", name);
@@ -33,15 +33,21 @@ const check = (ok, what) => {
   if (!ok) failures.push(what);
 };
 
-const page = await app.firstWindow();
+await app.firstWindow();
+// The main window (the popover and other surfaces are windows too).
+let page;
+for (let i = 0; i < 40 && !page; i++) {
+  page = app.windows().find((w) => w.url().includes("surface=main"));
+  if (!page) await new Promise((r) => setTimeout(r, 250));
+}
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 await page.waitForLoadState("load");
-await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1280, 820));
+await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).setSize(1280, 820));
 
 // Helpers: the main process's own channels, as the renderer uses them.
-const cmd = (c) => app.evaluate(({ BrowserWindow }, c) => BrowserWindow.getAllWindows()[0].webContents.send("command", c), c);
+const cmd = (c) => app.evaluate(({ BrowserWindow }, c) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).webContents.send("command", c), c);
 const invoke = (channel, ...args) => page.evaluate(([ch, a]) => window.mahaam.invoke(ch, ...a), [channel, args]);
 const call = async (method, ...args) => {
   const out = await invoke("api", method, args);

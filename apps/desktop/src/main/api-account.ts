@@ -3,9 +3,9 @@
 // The account lives outside any workspace (/api/me/*, /api/auth/tokens), so none of these send
 // X-Workspace-ID. Devices are the person's personal access tokens: every desktop, phone and browser
 // extension that signed in holds one, named after the device.
-import { hostname } from "node:os";
-import { basename } from "node:path";
 import { ApiError, type MahaamClient } from "@mahaam/client";
+
+import { deviceName } from "./session";
 
 import type { components } from "../../../shared/src/openapi";
 
@@ -26,12 +26,6 @@ export interface Device {
   current: boolean;
   kind: "desktop" | "mobile" | "extension" | "browser" | "other";
 }
-
-// The name session.ts mints this device's token under (keep the two in step). Only used to tell
-// which row in the list is this device.
-const deviceName = () =>
-  `Mahaam for ${process.platform === "darwin" ? "Mac" : process.platform === "win32" ? "Windows" : "Linux"} — ${hostname()}` +
-  (process.env.MAHAAM_USER_DATA ? ` (${basename(process.env.MAHAAM_USER_DATA)})` : "");
 
 function kindOf(name: string): Device["kind"] {
   const n = name.toLowerCase();

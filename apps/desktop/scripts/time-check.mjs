@@ -39,14 +39,20 @@ const app = await electron.launch({
   args: ["."],
   env: { ...env, MAHAAM_E2E: "1", MAHAAM_API_URL: process.env.MAHAAM_API_URL ?? "http://127.0.0.1:3020", MAHAAM_USER_DATA: mkdtempSync(join(tmpdir(), "mahaam-time-")) },
 });
-const page = await app.firstWindow();
+await app.firstWindow();
+// The main window (the popover and other surfaces are windows too).
+let page;
+for (let i = 0; i < 40 && !page; i++) {
+  page = app.windows().find((w) => w.url().includes("surface=main"));
+  if (!page) await new Promise((r) => setTimeout(r, 250));
+}
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1280, 840));
+await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).setSize(1280, 840));
 
 const shot = async (name) => {
-  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getMediaSourceId().split(":")[1]);
+  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).getMediaSourceId().split(":")[1]);
   await page.waitForTimeout(450);
   execFileSync("screencapture", ["-x", "-o", "-l", id, `e2e-shots/time-${name}.png`]);
   log("shot", name);
@@ -59,7 +65,7 @@ const api = (method, ...args) =>
     return out.value;
   }, [method, args]);
 const prefs = (p) => page.evaluate((x) => window.mahaam.invoke("app:prefs", x), p);
-const send = (cmd) => app.evaluate(({ BrowserWindow }, c) => BrowserWindow.getAllWindows()[0].webContents.send("command", c), cmd);
+const send = (cmd) => app.evaluate(({ BrowserWindow }, c) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).webContents.send("command", c), cmd);
 
 // ── sign in, pick the workspace, open Time ──
 await page.waitForLoadState("load");
