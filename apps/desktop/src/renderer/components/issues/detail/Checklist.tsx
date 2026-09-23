@@ -137,7 +137,7 @@ export function Checklist({ task, readOnly }: { task: TaskDetail; readOnly?: boo
               }
             }}
             placeholder={t("issue.addItemPlaceholder")}
-            className="h-7 min-w-0 flex-1 bg-transparent text-[13px] text-grid-fg outline-none placeholder:text-grid-muted"
+            className="h-7 min-w-0 flex-1 bg-transparent text-[14px] text-grid-fg outline-none placeholder:text-grid-muted"
             data-checklist-add
           />
         </form>
@@ -178,13 +178,13 @@ function Item({ item, readOnly, onToggle, onRename, onRemove }: { item: Checklis
               setEditing(false);
             }
           }}
-          className="h-7 min-w-0 flex-1 bg-transparent text-[13px] text-grid-fg outline-none"
+          className="h-7 min-w-0 flex-1 bg-transparent text-[14px] text-grid-fg outline-none"
         />
       ) : (
         <span
           dir="auto"
           onClick={() => !readOnly && !pending && (setDraft(item.title), setEditing(true))}
-          className={cn("min-w-0 flex-1 py-1 text-[13px] break-words", item.done ? "text-grid-muted line-through decoration-grid-muted/60" : "text-grid-fg")}
+          className={cn("min-w-0 flex-1 py-1 text-[14px] break-words", item.done ? "text-grid-muted line-through decoration-grid-muted/60" : "text-grid-fg")}
         >
           {item.title}
         </span>

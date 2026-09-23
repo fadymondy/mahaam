@@ -103,7 +103,7 @@ export function LogTime({ open, onOpenChange, preset, today }: { open: boolean; 
         <DialogHeader className="flex-row items-center gap-2 px-4 pt-3.5 pb-1">
           <TargetPicker value={target} onChange={setTarget} className="max-w-72" />
           <span className="text-grid-muted">›</span>
-          <DialogTitle className="text-[12.5px] font-normal text-grid-muted">{t("time.logTime")}</DialogTitle>
+          <DialogTitle className="text-[13.5px] font-normal text-grid-muted">{t("time.logTime")}</DialogTitle>
           <DialogDescription className="sr-only">{t("time.logHint")}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 px-4 pt-2 pb-4">
@@ -119,7 +119,7 @@ export function LogTime({ open, onOpenChange, preset, today }: { open: boolean; 
               }
             }}
             placeholder={t("time.whatDidYouDo")}
-            className="h-9 w-full bg-transparent text-[16px] font-medium text-grid-fg outline-none placeholder:text-grid-muted/70"
+            className="h-9 w-full bg-transparent text-[17px] font-medium text-grid-fg outline-none placeholder:text-grid-muted/70"
             data-log-description
           />
           <div className="flex flex-wrap items-center gap-2">
@@ -135,7 +135,7 @@ export function LogTime({ open, onOpenChange, preset, today }: { open: boolean; 
                   role="radio"
                   aria-checked={mode === m}
                   onClick={() => setMode(m)}
-                  className={cn("h-full rounded-[5px] px-2.5 text-[12px]", mode === m ? "bg-grid-soft text-grid-fg" : "text-grid-muted hover:text-grid-fg")}
+                  className={cn("h-full rounded-[5px] px-2.5 text-[13px]", mode === m ? "bg-grid-soft text-grid-fg" : "text-grid-muted hover:text-grid-fg")}
                   data-log-mode={m}
                 >
                   {m === "duration" ? t("time.duration") : t("time.startEnd")}
@@ -162,16 +162,16 @@ export function LogTime({ open, onOpenChange, preset, today }: { open: boolean; 
             )}
             <Span seconds={(mode === "duration" ? minutes : rangeMinutes) * 60} />
           </div>
-          {mode === "duration" ? <p className="text-[11.5px] text-grid-muted">{t("time.durationHint")}</p> : null}
+          {mode === "duration" ? <p className="text-[12.5px] text-grid-muted">{t("time.durationHint")}</p> : null}
           {error ? (
-            <div role="alert" className="flex items-start gap-2 rounded-md border border-grid-danger/40 bg-grid-danger/8 px-2.5 py-2 text-[12.5px] text-grid-fg" data-log-error>
+            <div role="alert" className="flex items-start gap-2 rounded-md border border-grid-danger/40 bg-grid-danger/8 px-2.5 py-2 text-[13.5px] text-grid-fg" data-log-error>
               <AlertCircleIcon className="mt-px size-3.5 shrink-0 text-grid-danger" />
               <span className="min-w-0 flex-1">{error}</span>
             </div>
           ) : null}
         </div>
         <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5">
-          <label className="flex items-center gap-2 text-[12px] text-grid-muted">
+          <label className="flex items-center gap-2 text-[13px] text-grid-muted">
             <Switch checked={billableShown} onCheckedChange={(v) => setBillable(v)} size="sm" data-log-billable />
             {t("time.billable")}
           </label>
@@ -194,7 +194,7 @@ export function LogTime({ open, onOpenChange, preset, today }: { open: boolean; 
 export function Span({ seconds }: { seconds: number }) {
   if (!seconds) return null;
   return (
-    <span className="flex items-center gap-1 text-[12px] text-grid-muted" data-span>
+    <span className="flex items-center gap-1 text-[13px] text-grid-muted" data-span>
       <TimerIcon className="size-3.5" />
       <LtrText className="font-mono tabular-nums">{hm(seconds)}</LtrText>
     </span>

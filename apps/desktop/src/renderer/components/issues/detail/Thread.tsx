@@ -73,7 +73,7 @@ export function Thread({ taskKey, memberMap, readOnly }: { taskKey: string; memb
               {i === 1 && hidden ? (
                 <li className="flex min-h-7 items-center gap-2.5 py-0.5">
                   <span className="flex w-6 shrink-0 justify-center text-grid-muted">⋯</span>
-                  <button type="button" onClick={() => setAll(true)} className="rounded px-1 text-[12px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg" data-thread-more>
+                  <button type="button" onClick={() => setAll(true)} className="rounded px-1 text-[13px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg" data-thread-more>
                     {t("issue.showMore", { n: number(hidden) })}
                   </button>
                 </li>
@@ -99,7 +99,7 @@ function ActivityLine({ activity: a, memberMap, sentence }: { activity: Activity
   if (!sentence) return null;
   const email = who(a.actor_id, memberMap);
   return (
-    <li className="flex min-h-7 items-center gap-2.5 py-0.5 text-[12px] text-grid-muted" data-activity={a.action}>
+    <li className="flex min-h-7 items-center gap-2.5 py-0.5 text-[13px] text-grid-muted" data-activity={a.action}>
       <span className="flex w-6 shrink-0 justify-center">
         <Avatar id={a.actor_id} email={email} size={16} />
       </span>
@@ -139,10 +139,10 @@ function CommentItem({ comment: c, memberMap, taskKey }: { comment: Comment; mem
     <li className={cn("group my-1.5 flex gap-2.5 rounded-lg border border-line bg-grid-card/60 px-3 py-2.5", pending && "opacity-60")} data-comment={c.id}>
       <Avatar id={c.author_id} email={email} size={22} className="mt-px" />
       <div className="min-w-0 flex-1">
-        <div className="flex h-5 items-center gap-2 text-[12px]">
+        <div className="flex h-5 items-center gap-2 text-[13px]">
           <LtrText className="truncate font-medium text-grid-fg">{email}</LtrText>
           {c.author_kind === "agent" ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-line px-1.5 text-[10.5px] text-grid-muted">
+            <span className="inline-flex items-center gap-1 rounded-full border border-line px-1.5 text-[11.5px] text-grid-muted">
               <BotIcon className="size-3" />
               {t("issue.agent")}
             </span>
@@ -224,10 +224,10 @@ function Composer({ taskKey }: { taskKey: string }) {
         }}
         placeholder={t("issue.commentPlaceholder")}
         aria-label={t("issue.commentPlaceholder")}
-        className="min-h-[68px] w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] leading-relaxed text-grid-fg outline-none placeholder:text-grid-muted"
+        className="min-h-[68px] w-full resize-none bg-transparent px-3 pt-2.5 text-[14px] leading-relaxed text-grid-fg outline-none placeholder:text-grid-muted"
       />
       <div className="flex items-center justify-end gap-2 px-2 pb-2">
-        <span className="me-auto ps-1 text-[11px] text-grid-muted" dir="ltr">
+        <span className="me-auto ps-1 text-[12px] text-grid-muted" dir="ltr">
           {session?.email}
         </span>
         <Button size="sm" onClick={() => void send()} disabled={!body.trim() || busy} data-comment-send>

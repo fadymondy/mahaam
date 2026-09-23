@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useApp } from "@/lib/app";
 import { api, desktop } from "@/lib/bridge";
 import { useProjectMap, useProjects } from "@/lib/data";
-import { useI18n } from "@/lib/i18n";
+import { LOCALES, useI18n } from "@/lib/i18n";
 import { qk } from "@/lib/query";
 import { useRouter } from "@/lib/router";
 
@@ -93,7 +93,12 @@ export function CommandPalette({
       ? { label: t("timer.stop"), icon: <SquareIcon />, do: () => void stop() }
       : { label: t("timer.start"), icon: <PlayIcon />, do: onTimer, combo: "mod+shift+t" },
     { label: t("palette.theme"), icon: dark ? <SunIcon /> : <MoonIcon />, do: () => void setPrefs({ theme: dark ? "light" : "dark" }) },
-    { label: t("palette.language"), icon: <LanguagesIcon />, do: () => void setPrefs({ locale: locale === "ar" ? "en" : "ar" }) },
+    // Every language as its own row (a list, never a toggle): "Language: العربية".
+    ...LOCALES.filter((l) => l.code !== locale).map((l) => ({
+      label: `${t("settings.language")}: ${l.native}`,
+      icon: <LanguagesIcon />,
+      do: () => void setPrefs({ locale: l.code }),
+    })),
     { label: t("nav.settings"), icon: <SettingsIcon />, do: () => void desktop.openSettings(), combo: "mod+," },
     { label: t("common.openInBrowser"), icon: <ExternalLinkIcon />, do: () => void desktop.openWeb() },
     { label: t("nav.signOut"), icon: <LogOutIcon />, do: () => void signOut() },
@@ -125,7 +130,7 @@ export function CommandPalette({
                   return (
                     <CommandItem key={task.id} value={`issue:${task.key}`} onSelect={() => go({ name: "issue", key: task.key })}>
                       <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
-                      <LtrText className="w-16 shrink-0 font-mono text-[11px] text-grid-muted">{task.key}</LtrText>
+                      <LtrText className="w-16 shrink-0 font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
                       <span className="truncate">{task.title}</span>
                     </CommandItem>
                   );

@@ -49,9 +49,9 @@ export function EntryList({
       {groups.map((g) => (
         <section key={g.day} data-entry-day={g.day}>
           <header className="sticky top-0 z-10 flex h-8 items-center gap-2 border-b border-line bg-grid-card ps-4 pe-4">
-            <span className="text-[12px] font-medium text-grid-fg">{dayName(g.day)}</span>
-            <span className="text-[11.5px] text-grid-muted">{g.entries.length === 1 ? t("time.entryOne") : t("time.entryCount", { n: g.entries.length })}</span>
-            <LtrText className="ms-auto font-mono text-[12px] font-medium text-grid-fg tabular-nums">
+            <span className="text-[13px] font-medium text-grid-fg">{dayName(g.day)}</span>
+            <span className="text-[12.5px] text-grid-muted">{g.entries.length === 1 ? t("time.entryOne") : t("time.entryCount", { n: g.entries.length })}</span>
+            <LtrText className="ms-auto font-mono text-[13px] font-medium text-grid-fg tabular-nums">
               <span data-day-total>{hm(g.total, "0:00")}</span>
             </LtrText>
           </header>
@@ -101,11 +101,11 @@ function EntryRow({ entry: e, tz, now, focused, onFocus, onEdit, onDelete, onCon
       >
         {focused ? <span className="absolute inset-y-0 start-0 w-0.5 bg-grid-action" aria-hidden /> : null}
         {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} size={14} /> : <span className="size-3.5 shrink-0 rounded-[4px] border border-dashed border-line" />}
-        <span className={cn("min-w-0 truncate text-[13px]", title ? "text-grid-fg" : "text-grid-muted")} dir="auto">
+        <span className={cn("min-w-0 truncate text-[14px]", title ? "text-grid-fg" : "text-grid-muted")} dir="auto">
           {title || t("time.noDescription")}
         </span>
-        {e.task_key ? <LtrText className="shrink-0 font-mono text-[11px] text-grid-muted">{e.task_key}</LtrText> : null}
-        {e.project_name ? <span className="min-w-0 shrink truncate text-[12px] text-grid-muted">{e.project_name}</span> : null}
+        {e.task_key ? <LtrText className="shrink-0 font-mono text-[12px] text-grid-muted">{e.task_key}</LtrText> : null}
+        {e.project_name ? <span className="min-w-0 shrink truncate text-[13px] text-grid-muted">{e.project_name}</span> : null}
         <span className="flex-1" />
         {e.billable ? (
           <span title={t("time.billable")} className="flex size-4 shrink-0 items-center justify-center text-grid-muted" data-billable>
@@ -117,11 +117,11 @@ function EntryRow({ entry: e, tz, now, focused, onFocus, onEdit, onDelete, onCon
             <LockIcon className="size-3.5" />
           </span>
         ) : null}
-        <LtrText className="w-[104px] shrink-0 text-end font-mono text-[12px] text-grid-muted tabular-nums">
+        <LtrText className="w-[104px] shrink-0 text-end font-mono text-[13px] text-grid-muted tabular-nums">
           {timeIn(e.started_at, tz)}–{running ? t("time.now") : timeIn(e.ended_at!, tz)}
-          {crosses ? <sup className="ms-px text-[9px]">+1</sup> : null}
+          {crosses ? <sup className="ms-px text-[11px]">+1</sup> : null}
         </LtrText>
-        <LtrText className={cn("w-[64px] shrink-0 text-end font-mono text-[13px] tabular-nums", running ? "font-medium text-grid-action" : "text-grid-fg")}>
+        <LtrText className={cn("w-[64px] shrink-0 text-end font-mono text-[14px] tabular-nums", running ? "font-medium text-grid-action" : "text-grid-fg")}>
           {running ? clockShort(secs) : hm(secs, "0:00")}
         </LtrText>
         <button
@@ -154,7 +154,7 @@ function EntryRow({ entry: e, tz, now, focused, onFocus, onEdit, onDelete, onCon
 
 function MenuItem({ icon, label, combo, onClick, disabled, destructive }: { icon: ReactNode; label: string; combo: string; onClick: () => void; disabled?: boolean; destructive?: boolean }) {
   return (
-    <ContextMenuItem onClick={onClick} disabled={disabled} variant={destructive ? "destructive" : "default"} className="text-[12.5px] [&_svg]:size-3.5">
+    <ContextMenuItem onClick={onClick} disabled={disabled} variant={destructive ? "destructive" : "default"} className="text-[13.5px] [&_svg]:size-3.5">
       {icon}
       <span className="flex-1">{label}</span>
       <Kbd combo={combo === "backspace" ? "⌫" : combo} className="border-transparent bg-transparent" />
@@ -241,7 +241,7 @@ function EntryEditor({ entry: e, tz, onDone, onDelete }: { entry: TimeEntry; tz:
           value={desc}
           onChange={(ev) => setDesc(ev.target.value)}
           placeholder={e.task_title || t("time.whatDidYouDo")}
-          className="h-8 min-w-0 flex-1 rounded-md border border-line bg-background px-2 text-[13px] text-grid-fg outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+          className="h-8 min-w-0 flex-1 rounded-md border border-line bg-background px-2 text-[14px] text-grid-fg outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
           data-edit-description
         />
         <TargetPicker value={target} onChange={setTarget} className="max-w-64" />
@@ -257,10 +257,10 @@ function EntryEditor({ entry: e, tz, onDone, onDelete }: { entry: TimeEntry; tz:
           )}
         </div>
         <Span seconds={durMin * 60} />
-        <span className="text-[11.5px] text-grid-muted" title={tz}>
+        <span className="text-[12.5px] text-grid-muted" title={tz}>
           {tz}
         </span>
-        <label className="ms-2 flex items-center gap-2 text-[12px] text-grid-muted">
+        <label className="ms-2 flex items-center gap-2 text-[13px] text-grid-muted">
           <Switch checked={billable} onCheckedChange={setBillable} size="sm" data-edit-billable />
           {t("time.billable")}
         </label>
@@ -278,7 +278,7 @@ function EntryEditor({ entry: e, tz, onDone, onDelete }: { entry: TimeEntry; tz:
         </Button>
       </div>
       {error ? (
-        <p role="alert" className="mt-2 text-[12.5px] text-grid-danger" data-edit-error>
+        <p role="alert" className="mt-2 text-[13.5px] text-grid-danger" data-edit-error>
           {error}
         </p>
       ) : null}

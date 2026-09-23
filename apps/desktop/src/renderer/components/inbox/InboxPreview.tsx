@@ -30,7 +30,7 @@ function OpenButton({ label, onClick, external }: { label: string; onClick: () =
       type="button"
       onClick={onClick}
       data-open-issue
-      className="inline-flex h-7 items-center gap-1.5 rounded-md bg-grid-action ps-2.5 pe-1.5 text-[12.5px] font-medium text-grid-on-action hover:opacity-90"
+      className="inline-flex h-7 items-center gap-1.5 rounded-md bg-grid-action ps-2.5 pe-1.5 text-[13.5px] font-medium text-grid-on-action hover:opacity-90"
     >
       {label}
       {external ? (
@@ -56,14 +56,14 @@ function Context({ note }: { note: Note }) {
     <div className="mb-6 flex gap-3 rounded-lg border border-line bg-grid-card px-3.5 py-3 [--row:var(--grid-card)]" data-note-context>
       <NoteGlyph note={note} size={22} />
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 text-[12.5px] text-grid-body">
+        <p className="flex items-center gap-1.5 text-[13.5px] text-grid-body">
           <span className="min-w-0 truncate">{line}</span>
           <span className="text-grid-muted">·</span>
           <span className="shrink-0 text-grid-muted">{age(note.created_at)}</span>
         </p>
-        {excerpt ? <p dir="auto" className="selectable mt-1 text-[13px] leading-relaxed text-grid-fg rtl:text-right">{excerpt}</p> : null}
+        {excerpt ? <p dir="auto" className="selectable mt-1 text-[14px] leading-relaxed text-grid-fg rtl:text-right">{excerpt}</p> : null}
         {actor ? (
-          <p className="mt-1 text-[11.5px] text-grid-muted">
+          <p className="mt-1 text-[12.5px] text-grid-muted">
             <LtrText>{actor.email}</LtrText>
           </p>
         ) : null}
@@ -74,7 +74,7 @@ function Context({ note }: { note: Note }) {
 
 function Chip({ children, title }: { children: ReactNode; title?: string }) {
   return (
-    <span title={title} className="inline-flex h-6 max-w-60 items-center gap-1.5 rounded-md border border-line bg-background px-2 text-[12px] text-grid-body">
+    <span title={title} className="inline-flex h-6 max-w-60 items-center gap-1.5 rounded-md border border-line bg-background px-2 text-[13px] text-grid-body">
       {children}
     </span>
   );
@@ -91,7 +91,7 @@ function IssuePreview({ note, issueKey, onOpen }: { note: Note; issueKey: string
   return (
     <section className="flex min-w-0 flex-1 flex-col" aria-label={issueKey} data-inbox-preview={issueKey}>
       <PaneHeader>
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[12.5px] text-grid-muted">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px] text-grid-muted">
           {task ? (
             <>
               <ProjectMark name={task.project.name} color={task.project.color} />
@@ -99,7 +99,7 @@ function IssuePreview({ note, issueKey, onOpen }: { note: Note; issueKey: string
               <ChevronRightIcon className="size-3.5 shrink-0 opacity-60 rtl:-scale-x-100" />
             </>
           ) : null}
-          <LtrText className="font-mono text-[12px] text-grid-fg">{issueKey}</LtrText>
+          <LtrText className="font-mono text-[13px] text-grid-fg">{issueKey}</LtrText>
         </div>
         {gone ? null : <OpenButton label={t("inbox.openIssue")} onClick={() => onOpen(note)} />}
       </PaneHeader>
@@ -115,9 +115,9 @@ function IssuePreview({ note, issueKey, onOpen }: { note: Note; issueKey: string
             </div>
           ) : gone ? (
             <div className="rounded-lg border border-dashed border-line px-4 py-6 text-center">
-              <p className="text-[13px] font-medium text-grid-fg">{headline(note, t)}</p>
-              <p className="mt-1 text-[12.5px] text-grid-muted">{t("inbox.issueGone")}</p>
-              {note.body ? <p className="selectable mt-3 text-[13px] text-grid-body">{note.body}</p> : null}
+              <p className="text-[14px] font-medium text-grid-fg">{headline(note, t)}</p>
+              <p className="mt-1 text-[13.5px] text-grid-muted">{t("inbox.issueGone")}</p>
+              {note.body ? <p className="selectable mt-3 text-[14px] text-grid-body">{note.body}</p> : null}
             </div>
           ) : q.error || !task ? (
             <ErrorState error={q.error} onRetry={() => void q.refetch()} />
@@ -166,11 +166,11 @@ function IssuePreview({ note, issueKey, onOpen }: { note: Note; issueKey: string
                 {task.description?.trim() ? (
                   <Prose source={task.description} />
                 ) : (
-                  <p className="text-[13px] text-grid-muted italic">{t("inbox.noDescription")}</p>
+                  <p className="text-[14px] text-grid-muted italic">{t("inbox.noDescription")}</p>
                 )}
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-[11.5px] text-grid-muted">
+              <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-[12.5px] text-grid-muted">
                 <span>{t("inbox.created", { when: relative(task.created_at) })}</span>
                 <span>{t("inbox.updated", { when: relative(task.updated_at) })}</span>
                 {task.comment_count ? (
@@ -210,7 +210,7 @@ function NotePreview({ note, onOpen }: { note: Note; onOpen: (n: Note) => void }
   return (
     <section className="flex min-w-0 flex-1 flex-col" data-inbox-preview="note">
       <PaneHeader>
-        <div className="flex min-w-0 flex-1 items-center gap-2 text-[12.5px] text-grid-muted">
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-[13.5px] text-grid-muted">
           <KindIcon note={note} />
           <span className="truncate">{t(`inbox.kind.${k === "assigned" || k === "mentioned" || k === "done" ? "other" : k}`)}</span>
         </div>
@@ -220,8 +220,8 @@ function NotePreview({ note, onOpen }: { note: Note; onOpen: (n: Note) => void }
         <div className="mx-auto max-w-[760px] px-8 pt-10 pb-12">
           <NoteGlyph note={note} size={36} />
           <h2 dir="auto" className="selectable mt-4 text-[20px] leading-snug font-semibold text-grid-fg rtl:text-right">{headline(note, t)}</h2>
-          <p className="mt-1 text-[12px] text-grid-muted">{date(note.created_at, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</p>
-          <p className="selectable mt-5 text-[13.5px] leading-relaxed text-grid-body">{subline(note, t)}</p>
+          <p className="mt-1 text-[13px] text-grid-muted">{date(note.created_at, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</p>
+          <p className="selectable mt-5 text-[14.5px] leading-relaxed text-grid-body">{subline(note, t)}</p>
         </div>
       </div>
       <KeyHints />
@@ -233,7 +233,7 @@ function NotePreview({ note, onOpen }: { note: Note; onOpen: (n: Note) => void }
 function KeyHints() {
   const { t } = useI18n();
   return (
-    <footer className="flex h-8 shrink-0 items-center gap-4 border-t border-line px-4 text-[11.5px] text-grid-muted">
+    <footer className="flex h-8 shrink-0 items-center gap-4 border-t border-line px-4 text-[12.5px] text-grid-muted">
       <span className="flex items-center gap-1.5">
         <Kbd combo="j" />
         <Kbd combo="k" />

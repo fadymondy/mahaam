@@ -17,14 +17,14 @@ function KeysView({ keys }: { keys: Keys }) {
   const { t } = useI18n();
   if ("range" in keys)
     return (
-      <span className="flex items-center gap-1 text-[11px] text-grid-muted" dir="ltr">
+      <span className="flex items-center gap-1 text-[12px] text-grid-muted" dir="ltr">
         <Kbd combo={keys.range[0]} />
         <span>–</span>
         <Kbd combo={keys.range[1]} />
       </span>
     );
   return (
-    <span className="flex items-center gap-1.5 text-[11px] text-grid-muted">
+    <span className="flex items-center gap-1.5 text-[12px] text-grid-muted">
       {keys.any.map((combo, i) => (
         <Fragment key={combo}>
           {i > 0 ? <span>{t("settings.sc.or")}</span> : null}
@@ -32,7 +32,7 @@ function KeysView({ keys }: { keys: Keys }) {
             {combo.split(" ").map((step, j) => (
               <Fragment key={j}>
                 {j > 0 ? <span className="px-0.5">{t("settings.sc.then")}</span> : null}
-                <Kbd combo={step} className="min-w-5 text-[11px]" />
+                <Kbd combo={step} className="min-w-5 text-[12px]" />
               </Fragment>
             ))}
           </span>
@@ -107,9 +107,9 @@ export function ShortcutSettings() {
         <Group key={g.title} title={g.title}>
           {g.entries.map((e) => (
             <div key={e.label} className="flex h-9 items-center gap-3 px-4" data-shortcut>
-              <span className="min-w-0 flex-1 truncate text-[13px] text-grid-fg">
+              <span className="min-w-0 flex-1 truncate text-[14px] text-grid-fg">
                 {e.label}
-                {e.hint ? <span className="ms-2 text-[12px] text-grid-muted">{e.hint}</span> : null}
+                {e.hint ? <span className="ms-2 text-[13px] text-grid-muted">{e.hint}</span> : null}
               </span>
               <KeysView keys={e.keys} />
             </div>

@@ -17,12 +17,12 @@ import type { RowMenu } from "../IssueList";
 import { dateInputValue, dueTone, fmtEstimate, parseEstimate } from "../util";
 
 const TRIGGER =
-  "flex h-7 w-full min-w-0 items-center gap-2 rounded-md px-1.5 text-start text-[12.5px] text-grid-fg outline-none hover:bg-grid-soft focus-visible:bg-grid-soft aria-expanded:bg-grid-soft disabled:hover:bg-transparent [&_svg]:shrink-0";
+  "flex h-7 w-full min-w-0 items-center gap-2 rounded-md px-1.5 text-start text-[13.5px] text-grid-fg outline-none hover:bg-grid-soft focus-visible:bg-grid-soft aria-expanded:bg-grid-soft disabled:hover:bg-transparent [&_svg]:shrink-0";
 
 function Row({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
     <div className={cn("flex min-h-8 items-center gap-1", className)}>
-      <span className="w-[76px] shrink-0 truncate text-[12px] text-grid-muted">{label}</span>
+      <span className="w-[76px] shrink-0 truncate text-[13px] text-grid-muted">{label}</span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
@@ -125,7 +125,7 @@ export function Properties({
             trigger={
               labelList.length ? (
                 labelList.map((l) => (
-                  <span key={l.id} className="inline-flex h-5 max-w-full items-center gap-1 rounded-full border border-line px-1.5 text-[11px] text-grid-body">
+                  <span key={l.id} className="inline-flex h-5 max-w-full items-center gap-1 rounded-full border border-line px-1.5 text-[12px] text-grid-body">
                     <ColorDot color={l.color} className="size-2" />
                     <span className="truncate">{l.name}</span>
                   </span>
@@ -173,7 +173,7 @@ export function Properties({
               parent ? (
                 <>
                   <GitBranchIcon className="size-3.5 text-grid-muted" />
-                  <LtrText className="font-mono text-[11.5px] text-grid-muted">{parent.key}</LtrText>
+                  <LtrText className="font-mono text-[12.5px] text-grid-muted">{parent.key}</LtrText>
                   <span className="truncate">{parent.title}</span>
                 </>
               ) : (
@@ -183,7 +183,7 @@ export function Properties({
           />
         </Row>
       </div>
-      <dl className="flex flex-col gap-1.5 px-3 py-3 text-[12px]">
+      <dl className="flex flex-col gap-1.5 px-3 py-3 text-[13px]">
         <div className="flex items-center gap-1">
           <dt className="w-[76px] shrink-0 text-grid-muted">{t("issue.created")}</dt>
           <dd className="min-w-0 truncate text-grid-body" title={date(task.created_at, { dateStyle: "medium", timeStyle: "short" })}>
@@ -225,7 +225,7 @@ function TimerButton({ task }: { task: TaskDetail }) {
       disabled={timer.busy}
       onClick={() => void timer.toggle(task)}
       className={cn(
-        "flex h-9 w-full items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-colors disabled:opacity-70",
+        "flex h-9 w-full items-center gap-2 rounded-lg px-3 text-[14px] font-medium transition-colors disabled:opacity-70",
         on ? "bg-grid-action text-grid-on-action hover:opacity-90" : "border border-line bg-background text-grid-fg hover:bg-grid-soft",
       )}
       data-issue-timer={on ? "running" : "idle"}
@@ -240,7 +240,7 @@ function TimerButton({ task }: { task: TaskDetail }) {
       )}
       <span className="flex-1 text-start">{on ? t("issue.stopTimer") : t("issue.startTimer")}</span>
       {on ? (
-        <LtrText className="font-mono text-[12px] tabular-nums">
+        <LtrText className="font-mono text-[13px] tabular-nums">
           <span data-issue-clock>{clock(secs)}</span>
         </LtrText>
       ) : null}

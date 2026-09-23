@@ -26,7 +26,7 @@ export function ColorDot({ color, className, square }: { color?: string | null; 
 export function ColorChip({ color, children, className }: { color?: string | null; children: ReactNode; className?: string }) {
   return (
     <span
-      className={cn("inline-flex h-5 max-w-40 items-center gap-1 truncate rounded-[4px] border px-1.5 text-[11px] leading-none font-medium", className)}
+      className={cn("inline-flex h-5 max-w-40 items-center gap-1 truncate rounded-[4px] border px-1.5 text-[12px] leading-none font-medium", className)}
       style={{ background: soft(color), color: solid(color), borderColor: soft(color) }}
     >
       {children}
@@ -141,7 +141,7 @@ export function AvatarStack({ people, size = 18, max = 3 }: { people: { id: stri
       {shown.map((p) => (
         <Avatar key={p.id} id={p.id} email={p.email} size={size} />
       ))}
-      {people.length > max ? <span className="ps-2 text-[11px] text-grid-muted">+{people.length - max}</span> : null}
+      {people.length > max ? <span className="ps-2 text-[12px] text-grid-muted">+{people.length - max}</span> : null}
     </span>
   );
 }
@@ -150,7 +150,7 @@ export function AvatarStack({ people, size = 18, max = 3 }: { people: { id: stri
 
 export function Kbd({ combo, className }: { combo: string; className?: string }) {
   return (
-    <kbd dir="ltr" className={cn("inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[4px] border border-line bg-grid-card px-1 font-mono text-[10.5px] leading-none text-grid-muted", className)}>
+    <kbd dir="ltr" className={cn("inline-flex h-5 min-w-5 items-center justify-center rounded-[4px] border border-line bg-grid-card px-1 font-mono text-[11.5px] leading-none text-grid-muted", className)}>
       {kbd(combo)}
     </kbd>
   );
@@ -177,7 +177,7 @@ export function ViewHeader({ title, icon, children, actions, className }: { titl
         </button>
       ) : null}
       {icon}
-      {title ? <h1 className="truncate text-[13px] font-medium text-grid-fg">{title}</h1> : null}
+      {title ? <h1 className="truncate text-[14px] font-medium text-grid-fg">{title}</h1> : null}
       <div className="flex min-w-0 flex-1 items-center gap-2">{children}</div>
       {actions ? <div className="flex items-center gap-1">{actions}</div> : null}
     </header>
@@ -188,8 +188,8 @@ export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; ti
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
       {icon ? <div className="text-grid-muted [&_svg]:size-8 [&_svg]:stroke-[1.4]">{icon}</div> : null}
-      <p className="text-[13px] font-medium text-grid-fg">{title}</p>
-      {body ? <p className="max-w-sm text-[12.5px] text-grid-muted">{body}</p> : null}
+      <p className="text-[14px] font-medium text-grid-fg">{title}</p>
+      {body ? <p className="max-w-sm text-[13.5px] text-grid-muted">{body}</p> : null}
       {action}
     </div>
   );
@@ -199,9 +199,9 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   const { t } = useI18n();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center" role="alert">
-      <p className="text-[13px] text-grid-fg">{error instanceof Error && error.message ? error.message : t("common.error")}</p>
+      <p className="text-[14px] text-grid-fg">{error instanceof Error && error.message ? error.message : t("common.error")}</p>
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="rounded-md border border-line px-3 py-1 text-[12.5px] hover:bg-grid-soft">
+        <button type="button" onClick={onRetry} className="rounded-md border border-line px-3 py-1 text-[13.5px] hover:bg-grid-soft">
           {t("common.retry")}
         </button>
       ) : null}

@@ -46,8 +46,8 @@ export function QuickPalette() {
     <div className="qp flex h-full flex-col overflow-hidden rounded-[14px] border border-line" data-quick-palette>
       {!session?.workspace ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6">
-          <p className="text-[13px] text-grid-muted">{t("pop.signedOut")}</p>
-          <button type="button" className="rounded-md bg-grid-action px-3 py-1.5 text-[12.5px] text-grid-on-action" onClick={() => void desktop.openMain().then(hide)}>
+          <p className="text-[14px] text-grid-muted">{t("pop.signedOut")}</p>
+          <button type="button" className="rounded-md bg-grid-action px-3 py-1.5 text-[13.5px] text-grid-on-action" onClick={() => void desktop.openMain().then(hide)}>
             {t("auth.signIn")}
           </button>
         </div>
@@ -113,7 +113,7 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
         }
       }}
     >
-      <div className="border-b border-line px-2 py-2 [&_[data-slot=command-input-wrapper]]:p-0 [&_[data-slot=input-group]]:h-10! [&_[data-slot=input-group]]:border-0! [&_[data-slot=input-group]]:bg-transparent! [&_input]:text-[16px]">
+      <div className="border-b border-line px-2 py-2 [&_[data-slot=command-input-wrapper]]:p-0 [&_[data-slot=input-group]]:h-10! [&_[data-slot=input-group]]:border-0! [&_[data-slot=input-group]]:bg-transparent! [&_input]:text-[17px]">
         <CommandInput autoFocus placeholder={t("qp.placeholder")} value={query} onValueChange={setQuery} data-qp-input />
       </div>
       <CommandList className="max-h-none min-h-0 flex-1 overflow-y-auto p-1.5">
@@ -133,7 +133,7 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
               return (
                 <CommandItem key={task.id} value={`issue:${task.key}:${task.id}`} onSelect={() => open(task.key)}>
                   <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
-                  <LtrText className="w-16 shrink-0 font-mono text-[11px] text-grid-muted">{task.key}</LtrText>
+                  <LtrText className="w-16 shrink-0 font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
                   <span className="flex-1 truncate">{task.title}</span>
                 </CommandItem>
               );
@@ -149,7 +149,7 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
           ))}
         </CommandGroup>
       </CommandList>
-      <footer className="flex items-center gap-4 border-t border-line px-3 py-2 text-[11px] text-grid-muted">
+      <footer className="flex items-center gap-4 border-t border-line px-3 py-2 text-[12px] text-grid-muted">
         <span className="flex items-center gap-1.5">
           <Kbd combo="enter" /> {t("qp.open")}
         </span>
@@ -203,7 +203,7 @@ function QuickCreate({ seed, onBack }: { seed: string; onBack: () => void }) {
           <ArrowLeftIcon className="size-4 rtl:-scale-x-100" />
         </button>
         <ProjectPicker projects={projects.data ?? []} value={project} onChange={setProject} />
-        <span className="text-[12px] text-grid-muted">› {t("nav.newIssue")}</span>
+        <span className="text-[13px] text-grid-muted">› {t("nav.newIssue")}</span>
       </div>
       <input
         autoFocus
@@ -215,8 +215,8 @@ function QuickCreate({ seed, onBack }: { seed: string; onBack: () => void }) {
         data-qp-title
       />
       <div className="flex-1" />
-      {create.error ? <p className="px-4 pb-2 text-[12px] text-destructive">{(create.error as Error).message}</p> : null}
-      <footer className="flex items-center justify-between border-t border-line px-3 py-2 text-[11px] text-grid-muted">
+      {create.error ? <p className="px-4 pb-2 text-[13px] text-destructive">{(create.error as Error).message}</p> : null}
+      <footer className="flex items-center justify-between border-t border-line px-3 py-2 text-[12px] text-grid-muted">
         {done ? (
           <span className="text-grid-fg" data-qp-created>
             {t("create.created", { key: done })}
@@ -226,7 +226,7 @@ function QuickCreate({ seed, onBack }: { seed: string; onBack: () => void }) {
             <Kbd combo="esc" /> {t("common.back")}
           </span>
         )}
-        <button type="submit" disabled={!ready} className="flex items-center gap-2 rounded-md bg-grid-action px-3 py-1.5 text-[12px] font-medium text-grid-on-action disabled:opacity-50">
+        <button type="submit" disabled={!ready} className="flex items-center gap-2 rounded-md bg-grid-action px-3 py-1.5 text-[13px] font-medium text-grid-on-action disabled:opacity-50">
           {t("create.submit")}
           <Kbd combo="enter" className="border-transparent bg-transparent text-grid-on-action/80" />
         </button>

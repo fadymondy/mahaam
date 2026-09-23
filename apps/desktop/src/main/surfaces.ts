@@ -89,7 +89,7 @@ function panel(surface: "popover" | "palette", size: { width: number; height: nu
 
 // ── popover ──────────────────────────────────────────────────────────────────────────────────
 
-const POPOVER = { width: 360, height: 520 };
+const POPOVER = { width: 380, height: 580 };
 
 /** Built early, hidden, so the first click on the tray opens it instantly. */
 export function prewarmPopover(): void {

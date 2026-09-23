@@ -136,7 +136,7 @@ export function InboxView() {
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-inbox="zero">
         <PaneHeader start>
-          <h1 className="text-[13px] font-medium text-grid-fg">{t("nav.inbox")}</h1>
+          <h1 className="text-[14px] font-medium text-grid-fg">{t("nav.inbox")}</h1>
         </PaneHeader>
         <EmptyState
           icon={
@@ -154,8 +154,8 @@ export function InboxView() {
     <div className="flex min-h-0 flex-1" data-inbox>
       <section className="flex w-[360px] shrink-0 flex-col border-e border-line" aria-label={t("nav.inbox")}>
         <PaneHeader start>
-          <h1 className="text-[13px] font-medium text-grid-fg">{t("nav.inbox")}</h1>
-          {unread ? <span className="text-[12px] text-grid-muted tabular-nums">{number(unread)}</span> : null}
+          <h1 className="text-[14px] font-medium text-grid-fg">{t("nav.inbox")}</h1>
+          {unread ? <span className="text-[13px] text-grid-muted tabular-nums">{number(unread)}</span> : null}
           <div className="ms-auto flex items-center gap-1">
             <div role="radiogroup" aria-label={t("inbox.filter")} className="flex h-7 items-center rounded-md border border-line bg-grid-card p-0.5">
               {(["all", "unread"] as const).map((f) => (
@@ -168,7 +168,7 @@ export function InboxView() {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setFilter(f)}
                   className={cn(
-                    "h-[22px] rounded-[4px] px-2 text-[12px]",
+                    "h-[22px] rounded-[4px] px-2 text-[13px]",
                     filter === f ? "bg-background font-medium text-grid-fg shadow-[0_0_0_1px_var(--grid-line)]" : "text-grid-muted hover:text-grid-fg",
                   )}
                 >
@@ -205,7 +205,7 @@ export function InboxView() {
             title={t("inbox.noUnreadTitle")}
             body={t("inbox.noUnreadBody")}
             action={
-              <button type="button" onClick={() => setFilter("all")} className="rounded-md border border-line px-3 py-1 text-[12.5px] hover:bg-grid-soft">
+              <button type="button" onClick={() => setFilter("all")} className="rounded-md border border-line px-3 py-1 text-[13.5px] hover:bg-grid-soft">
                 {t("inbox.showAll")}
               </button>
             }

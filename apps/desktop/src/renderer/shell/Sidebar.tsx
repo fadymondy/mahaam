@@ -35,6 +35,7 @@ import { useRouter } from "@/lib/router";
 import { cn } from "@/lib/utils";
 
 import { TimerPill } from "./Timer";
+import { UpdatePill } from "./UpdatePill";
 
 export function Sidebar({ onSearch, onCreate, onCollapse }: { onSearch: () => void; onCreate: () => void; onCollapse: () => void }) {
   const { t } = useI18n();
@@ -63,7 +64,7 @@ export function Sidebar({ onSearch, onCreate, onCollapse }: { onSearch: () => vo
         <button
           type="button"
           onClick={onSearch}
-          className="flex h-7 flex-1 items-center gap-2 rounded-md border border-line bg-background px-2 text-[12.5px] text-grid-muted hover:text-grid-fg"
+          className="flex h-7 flex-1 items-center gap-2 rounded-md border border-line bg-background px-2 text-[13.5px] text-grid-muted hover:text-grid-fg"
           data-open-palette
         >
           <SearchIcon className="size-3.5" />
@@ -93,7 +94,7 @@ export function Sidebar({ onSearch, onCreate, onCollapse }: { onSearch: () => vo
           </>
         ) : null}
 
-        <p className="grid-micro mt-4 mb-1 px-2 text-[10.5px]">{t("nav.projects")}</p>
+        <p className="grid-micro mt-4 mb-1 px-2 text-[11.5px]">{t("nav.projects")}</p>
         <Item to={{ name: "projects" }} active={route.name === "projects"} icon={<LayersIcon />} label={t("nav.allProjects")} />
         {(projects.data ?? []).map((p) => (
           <Item
@@ -105,9 +106,10 @@ export function Sidebar({ onSearch, onCreate, onCollapse }: { onSearch: () => vo
             data-project={p.id}
           />
         ))}
-        {projects.data && projects.data.length === 0 ? <p className="px-2 py-1 text-[12px] text-grid-muted">{t("nav.noProjects")}</p> : null}
+        {projects.data && projects.data.length === 0 ? <p className="px-2 py-1 text-[13px] text-grid-muted">{t("nav.noProjects")}</p> : null}
       </nav>
 
+      <UpdatePill />
       <TimerPill />
     </aside>
   );
@@ -135,7 +137,7 @@ function Item({
       onClick={() => navigate(to)}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "nav-item group flex h-[30px] w-full items-center gap-2.5 rounded-[7px] px-2 text-start text-[13px] [&_svg]:size-4 [&_svg]:shrink-0",
+        "nav-item group flex h-8 w-full items-center gap-2.5 rounded-[7px] px-2 text-start text-[14px] [&_svg]:size-4 [&_svg]:shrink-0",
         active ? "font-medium text-grid-fg" : "text-grid-body hover:text-grid-fg",
       )}
       {...rest}
@@ -143,7 +145,7 @@ function Item({
       <span className={cn("nav-icon flex size-4 items-center justify-center", active ? "" : "text-grid-muted group-hover:text-grid-fg")}>{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {badge ? (
-        <span className="rounded-full bg-grid-action px-1.5 text-[10.5px] leading-4 font-medium text-grid-on-action" data-unread={badge}>
+        <span className="rounded-full bg-grid-action px-1.5 text-[11.5px] leading-4 font-medium text-grid-on-action" data-unread={badge}>
           {badge > 99 ? "99+" : badge}
         </span>
       ) : null}
@@ -161,12 +163,12 @@ function WorkspaceSwitcher() {
         render={
           <button
             type="button"
-            className="flex h-7 min-w-0 items-center gap-2 rounded-md px-1.5 text-[13px] font-medium text-grid-fg hover:bg-grid-soft"
+            className="flex h-7 min-w-0 items-center gap-2 rounded-md px-1.5 text-[14px] font-medium text-grid-fg hover:bg-grid-soft"
             data-workspace-switcher
           />
         }
       >
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-[5px] bg-grid-action text-[11px] font-semibold text-grid-on-action">
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-[5px] bg-grid-action text-[12px] font-semibold text-grid-on-action">
           {workspace.name.slice(0, 1).toUpperCase()}
         </span>
         <span className="min-w-0 truncate">{workspace.name}</span>
@@ -184,7 +186,7 @@ function WorkspaceSwitcher() {
           {(session?.workspaces ?? []).map((w) => (
             <DropdownMenuItem key={w.id} onClick={() => void selectWorkspace(w.id)}>
               <span className="min-w-0 flex-1 truncate">{w.name}</span>
-              <span className="text-[11px] text-grid-muted">{t(`role.${w.role}`)}</span>
+              <span className="text-[12px] text-grid-muted">{t(`role.${w.role}`)}</span>
               {w.id === workspace.id ? <CheckIcon /> : null}
             </DropdownMenuItem>
           ))}

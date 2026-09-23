@@ -21,6 +21,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ApiError, liveStream, type LiveEvent, type LiveHandle } from "@mahaam/client";
 
+import { LOCALES } from "../shared/locales";
 import type { AppConfig, Command, Prefs, Route, TimeEntry } from "../shared/types";
 import { makeApi, type Api } from "./api";
 import { startIdleWatch } from "./idle-watch";
@@ -28,7 +29,7 @@ import * as session from "./session";
 import * as store from "./store";
 import { idleStrings, menuStrings, trayStrings } from "./strings";
 import { createTray, getRecent, getRunning, refreshTray, setRecent, setRunning, trayProbe } from "./tray";
-import { startUpdates, stopUpdates } from "./updates";
+import { checkNow, installNow, readyNotification, startUpdates, stopUpdates, updateState } from "./updates";
 import { initSurfaces, load, prewarmPopover, retintSurfaces, showPalette, showSettings, surfaceWindow, togglePopover, webPreferences } from "./surfaces";
 
 const DEV_URL = process.env.MAHAAM_DEV_URL; // the Vite dev server (npm run dev)
@@ -265,6 +266,7 @@ function buildMenu(): void {
             label: "Mahaam",
             submenu: [
               { role: "about" as const, label: s.about },
+              { label: s.checkUpdates, click: () => void checkNow() },
               { type: "separator" as const },
               { label: s.settings, accelerator: "Cmd+,", click: () => showSettings() },
               { type: "separator" as const },
@@ -319,10 +321,7 @@ function buildMenu(): void {
         },
         {
           label: s.language,
-          submenu: [
-            { label: "English", type: "radio", checked: prefs.locale === "en", click: () => setPrefs({ locale: "en" }) },
-            { label: "العربية", type: "radio", checked: prefs.locale === "ar", click: () => setPrefs({ locale: "ar" }) },
-          ],
+          submenu: LOCALES.map((l) => ({ label: l.native, type: "radio" as const, checked: prefs.locale === l.code, click: () => setPrefs({ locale: l.code }) })),
         },
         { type: "separator" },
         { role: "resetZoom", label: s.actualSize },
@@ -348,6 +347,7 @@ function buildMenu(): void {
       role: "help",
       submenu: [
         { label: s.website, click: () => openExternal("https://mahaam.app") },
+        ...(IS_MAC ? [] : [{ label: s.checkUpdates, click: () => void checkNow() }]),
         { label: s.privacy, click: () => openExternal(`${session.apiUrl()}/${prefs.locale}/legal/privacy`) },
         { label: s.terms, click: () => openExternal(`${session.apiUrl()}/${prefs.locale}/legal/terms`) },
       ],
@@ -423,7 +423,7 @@ function registerIpc(): void {
   handle("app:prefs", (patch: Partial<Prefs>) => {
     const clean: Partial<Prefs> = {};
     if (patch?.theme === "system" || patch?.theme === "light" || patch?.theme === "dark") clean.theme = patch.theme;
-    if (patch?.locale === "en" || patch?.locale === "ar") clean.locale = patch.locale;
+    if (LOCALES.some((l) => l.code === patch?.locale)) clean.locale = patch.locale;
     if (typeof patch?.notify === "boolean") clean.notify = patch.notify;
     if (typeof patch?.idle === "boolean") clean.idle = patch.idle;
     if (patch?.sidebar === "open" || patch?.sidebar === "collapsed") clean.sidebar = patch.sidebar;
@@ -450,6 +450,9 @@ function registerIpc(): void {
   handle("session:selectWorkspace", (id: string) => session.selectWorkspace(String(id)));
 
   handle("timer:running", () => getRunning());
+  handle("update:state", () => updateState());
+  handle("update:check", () => checkNow());
+  handle("update:install", () => installNow());
 
   // The extra windows (surfaces.ts).
   handle("surface:settings", (section?: string) => showSettings(typeof section === "string" ? section : undefined));
@@ -545,11 +548,16 @@ app.whenReady().then(async () => {
       else command({ type: "timer-palette" });
     }
   });
-  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe, mahaamPalette: showPalette });
+  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe, mahaamPalette: showPalette, mahaamCheckUpdates: checkNow });
 
   win = createWindow();
   prewarmPopover();
-  startUpdates(() => win);
+  startUpdates({
+    notify: (version) => {
+      const s = menuStrings(prefs.locale);
+      readyNotification(s.updateReadyTitle, s.updateReadyBody.replace("{version}", version), installNow);
+    },
+  });
 });
 
 

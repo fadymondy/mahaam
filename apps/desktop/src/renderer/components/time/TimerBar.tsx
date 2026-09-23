@@ -53,7 +53,7 @@ function Composer() {
           } else if (e.key === "Escape") (e.target as HTMLInputElement).blur();
         }}
         placeholder={t("time.whatAreYouDoing")}
-        className="h-9 min-w-0 flex-1 bg-transparent text-[14px] text-grid-fg outline-none placeholder:text-grid-muted/80"
+        className="h-9 min-w-0 flex-1 bg-transparent text-[15px] text-grid-fg outline-none placeholder:text-grid-muted/80"
         data-time-composer-input
       />
       <TargetPicker value={target} onChange={setTarget} variant="ghost" className="max-w-64" />
@@ -111,11 +111,11 @@ function Running({ entry, tz, onDiscard }: { entry: TimeEntry; tz: string; onDis
           }
         }}
         placeholder={entry.task_title || t("time.whatAreYouDoing")}
-        className="h-9 min-w-0 flex-1 rounded-md bg-transparent px-1 text-[14px] text-grid-fg outline-none placeholder:text-grid-muted hover:bg-grid-soft/60 focus:bg-background"
+        className="h-9 min-w-0 flex-1 rounded-md bg-transparent px-1 text-[15px] text-grid-fg outline-none placeholder:text-grid-muted hover:bg-grid-soft/60 focus:bg-background"
         data-time-running-description
       />
       <TargetPicker value={targetOf(entry)} onChange={retarget} variant="ghost" className="max-w-64" />
-      <span className="hidden shrink-0 text-[12px] text-grid-muted md:inline">
+      <span className="hidden shrink-0 text-[13px] text-grid-muted md:inline">
         {t("time.since")} <LtrText className="font-mono tabular-nums">{timeIn(entry.started_at, tz)}</LtrText>
       </span>
       <LtrText className="min-w-[76px] text-end font-mono text-[18px] font-medium text-grid-fg tabular-nums">

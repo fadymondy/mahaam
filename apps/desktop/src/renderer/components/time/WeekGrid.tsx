@@ -40,7 +40,7 @@ export function WeekGrid({
       <div className="min-w-[720px]" role="table">
         {/* Header: the days */}
         <div className="grid h-9 items-stretch border-b border-line" style={{ gridTemplateColumns: COLS }} role="row">
-          <div className="flex items-center ps-4 text-[11.5px] text-grid-muted" role="columnheader">
+          <div className="flex items-center ps-4 text-[12.5px] text-grid-muted" role="columnheader">
             {t("time.projectTask")}
           </div>
           {days.map((d, i) => (
@@ -49,7 +49,7 @@ export function WeekGrid({
               role="columnheader"
               data-day={d}
               data-today={i === ti || undefined}
-              className={cn("flex items-center justify-end gap-1 border-s border-line pe-2.5 text-[11.5px]", lit(i), i === ti ? "text-grid-fg" : "text-grid-muted")}
+              className={cn("flex items-center justify-end gap-1 border-s border-line pe-2.5 text-[12.5px]", lit(i), i === ti ? "text-grid-fg" : "text-grid-muted")}
             >
               <span>{date(dayDate(d), { weekday: "short", timeZone: "UTC", numberingSystem: "latn" })}</span>
               <span className={cn("tabular-nums", i === ti && "flex h-[18px] min-w-[18px] items-center justify-center rounded-[4px] bg-grid-action px-1 font-medium text-grid-on-action")}>
@@ -57,7 +57,7 @@ export function WeekGrid({
               </span>
             </div>
           ))}
-          <div className="flex items-center justify-end border-s border-line pe-4 text-[11.5px] text-grid-muted" role="columnheader">
+          <div className="flex items-center justify-end border-s border-line pe-4 text-[12.5px] text-grid-muted" role="columnheader">
             {t("time.total")}
           </div>
         </div>
@@ -69,9 +69,9 @@ export function WeekGrid({
             <div key={k} className="group/row grid h-9 items-stretch border-b border-line hover:bg-grid-soft/30" style={{ gridTemplateColumns: COLS }} role="row" data-grid-row={k}>
               <div className="flex min-w-0 items-center gap-2 ps-4 pe-2" role="rowheader" title={[r.project_name, r.task_key, r.task_title].filter(Boolean).join(" · ")}>
                 {r.project_id ? <ProjectMark name={r.project_name ?? "?"} color={r.project_color} size={14} /> : <span className="size-3.5 shrink-0 rounded-[4px] border border-dashed border-line" />}
-                {r.task_key ? <LtrText className="shrink-0 font-mono text-[11px] text-grid-muted">{r.task_key}</LtrText> : null}
-                <span className={cn("truncate text-[12.5px]", r.project_id || r.task_id ? "text-grid-fg" : "text-grid-muted")}>{label}</span>
-                {r.task_id && r.project_name ? <span className="hidden shrink truncate text-[11.5px] text-grid-muted xl:inline">{r.project_name}</span> : null}
+                {r.task_key ? <LtrText className="shrink-0 font-mono text-[12px] text-grid-muted">{r.task_key}</LtrText> : null}
+                <span className={cn("truncate text-[13.5px]", r.project_id || r.task_id ? "text-grid-fg" : "text-grid-muted")}>{label}</span>
+                {r.task_id && r.project_name ? <span className="hidden shrink truncate text-[12.5px] text-grid-muted xl:inline">{r.project_name}</span> : null}
                 {k === runningKey ? <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-grid-action motion-reduce:animate-none" aria-hidden /> : null}
               </div>
               {days.map((d, i) => {
@@ -85,7 +85,7 @@ export function WeekGrid({
                     title={t("time.logOn", { day: date(dayDate(d), { weekday: "long", day: "numeric", month: "short", timeZone: "UTC", numberingSystem: "latn" }) })}
                     data-cell={d}
                     className={cn(
-                      "group/cell flex items-center justify-end border-s border-line pe-2.5 font-mono text-[12.5px] tabular-nums outline-none hover:bg-grid-soft focus-visible:bg-grid-soft focus-visible:ring-1 focus-visible:ring-ring/60 focus-visible:ring-inset",
+                      "group/cell flex items-center justify-end border-s border-line pe-2.5 font-mono text-[13.5px] tabular-nums outline-none hover:bg-grid-soft focus-visible:bg-grid-soft focus-visible:ring-1 focus-visible:ring-ring/60 focus-visible:ring-inset",
                       lit(i),
                       s ? "text-grid-fg" : "text-grid-muted/50",
                     )}
@@ -101,7 +101,7 @@ export function WeekGrid({
                   </button>
                 );
               })}
-              <div className="flex items-center justify-end border-s border-line pe-4 font-mono text-[12.5px] font-medium text-grid-fg tabular-nums" role="cell">
+              <div className="flex items-center justify-end border-s border-line pe-4 font-mono text-[13.5px] font-medium text-grid-fg tabular-nums" role="cell">
                 <LtrText>{hm(r.total_s, "–")}</LtrText>
               </div>
             </div>
@@ -110,7 +110,7 @@ export function WeekGrid({
 
         {/* An empty row to log against no project, so a blank week can still be filled in. */}
         <div className="grid h-9 items-stretch border-b border-line" style={{ gridTemplateColumns: COLS }} role="row" data-grid-add>
-          <div className="flex items-center gap-2 ps-4 text-[12px] text-grid-muted" role="rowheader">
+          <div className="flex items-center gap-2 ps-4 text-[13px] text-grid-muted" role="rowheader">
             <PlusIcon className="size-3.5" />
             {rows.length ? t("time.logOther") : t("time.logFirst")}
           </div>
@@ -131,7 +131,7 @@ export function WeekGrid({
 
         {/* Footer: the day totals */}
         <div className="grid h-9 items-stretch bg-grid-card" style={{ gridTemplateColumns: COLS }} role="row" data-grid-totals>
-          <div className="flex items-center ps-4 text-[11.5px] font-medium text-grid-muted" role="rowheader">
+          <div className="flex items-center ps-4 text-[12.5px] font-medium text-grid-muted" role="rowheader">
             {t("time.dayTotal")}
           </div>
           {days.map((d, i) => (
@@ -139,12 +139,12 @@ export function WeekGrid({
               key={d}
               role="cell"
               data-total={d}
-              className={cn("flex items-center justify-end border-s border-line pe-2.5 font-mono text-[12.5px] font-medium tabular-nums", lit(i), dayTotals[i] ? "text-grid-fg" : "text-grid-muted/50")}
+              className={cn("flex items-center justify-end border-s border-line pe-2.5 font-mono text-[13.5px] font-medium tabular-nums", lit(i), dayTotals[i] ? "text-grid-fg" : "text-grid-muted/50")}
             >
               <LtrText>{hm(dayTotals[i] ?? 0, "–")}</LtrText>
             </div>
           ))}
-          <div className="flex items-center justify-end border-s border-line pe-4 font-mono text-[13px] font-semibold text-grid-fg tabular-nums" role="cell" data-total-week>
+          <div className="flex items-center justify-end border-s border-line pe-4 font-mono text-[14px] font-semibold text-grid-fg tabular-nums" role="cell" data-total-week>
             <LtrText>{hm(total, "0:00")}</LtrText>
           </div>
         </div>

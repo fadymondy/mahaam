@@ -215,8 +215,8 @@ function GroupHeader({ group, collapsed, onToggle, onAdd }: { group: IssueGroup;
         <ChevronDownIcon className={cn("size-3.5 transition-transform duration-150", collapsed && "-rotate-90 rtl:rotate-90")} />
       </button>
       {group.icon}
-      <span className="truncate text-[12.5px] font-medium text-grid-fg">{group.title}</span>
-      <span className="text-[12px] text-grid-muted tabular-nums">{number(group.tasks.length)}</span>
+      <span className="truncate text-[13.5px] font-medium text-grid-fg">{group.title}</span>
+      <span className="text-[13px] text-grid-muted tabular-nums">{number(group.tasks.length)}</span>
       <span className="flex-1" />
       {onAdd ? (
         <button
@@ -275,7 +275,7 @@ const IssueRow = memo(function IssueRow({ task, status, statuses, project, proje
       onClick={() => onOpen(task)}
       onMouseMove={(e) => pointerMoved(e) && !focused && onHover(task.id)}
       className={cn(
-        "relative flex h-9 items-center gap-2 border-b border-line/50 ps-3 pe-4 text-[13px]",
+        "relative flex h-9 items-center gap-2 border-b border-line/50 ps-3 pe-4 text-[14px]",
         focused && "bg-grid-soft/70 before:absolute before:inset-y-0 before:start-0 before:w-0.5 before:bg-grid-action",
       )}
     >
@@ -291,7 +291,7 @@ const IssueRow = memo(function IssueRow({ task, status, statuses, project, proje
           <ProjectMark name={project.name} color={project.color} size={14} />
         </span>
       ) : null}
-      <LtrText className="w-[52px] shrink-0 truncate font-mono text-[11.5px] text-grid-muted">{task.key}</LtrText>
+      <LtrText className="w-[52px] shrink-0 truncate font-mono text-[12.5px] text-grid-muted">{task.key}</LtrText>
       {menu === "status" ? (
         <StatusPicker
           statuses={statuses}
@@ -314,7 +314,7 @@ const IssueRow = memo(function IssueRow({ task, status, statuses, project, proje
         {task.title}
       </span>
       {task.subtask_count > 0 ? (
-        <span className="hidden shrink-0 items-center gap-1 text-[11px] text-grid-muted @xl:flex" title={t("issue.subtasks")}>
+        <span className="hidden shrink-0 items-center gap-1 text-[12px] text-grid-muted @xl:flex" title={t("issue.subtasks")}>
           <GitBranchIcon className="size-3" />
           <LtrText className="tabular-nums">
             {task.subtask_done}/{task.subtask_count}
@@ -336,7 +336,7 @@ const IssueRow = memo(function IssueRow({ task, status, statuses, project, proje
         <LabelChips ids={task.label_ids} labels={labelMap} className="hidden @2xl:flex" />
       )}
       {projectStyle === "chip" && project ? (
-        <span className="hidden h-5 max-w-36 shrink-0 items-center gap-1.5 rounded-full border border-line ps-1 pe-2 text-[11px] text-grid-body @2xl:inline-flex" title={project.name}>
+        <span className="hidden h-5 max-w-36 shrink-0 items-center gap-1.5 rounded-full border border-line ps-1 pe-2 text-[12px] text-grid-body @2xl:inline-flex" title={project.name}>
           <ProjectMark name={project.name} color={project.color} size={12} />
           <span className="truncate">{project.name}</span>
         </span>
@@ -367,7 +367,7 @@ const IssueRow = memo(function IssueRow({ task, status, statuses, project, proje
       <time
         dateTime={task.updated_at}
         title={date(task.updated_at, { dateStyle: "medium", timeStyle: "short" })}
-        className="hidden w-[68px] shrink-0 truncate text-end text-[11.5px] text-grid-muted @3xl:block"
+        className="hidden w-[68px] shrink-0 truncate text-end text-[12.5px] text-grid-muted @3xl:block"
       >
         {relative(task.updated_at)}
       </time>

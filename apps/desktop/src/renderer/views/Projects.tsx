@@ -77,14 +77,14 @@ export function ProjectsView() {
         title={t("nav.allProjects")}
         icon={<LayersIcon className="size-3.5 text-grid-muted" />}
         actions={
-          <label className="flex h-7 items-center gap-2 rounded-md px-2 text-[12px] text-grid-muted hover:text-grid-fg" data-archived-toggle>
+          <label className="flex h-7 items-center gap-2 rounded-md px-2 text-[13px] text-grid-muted hover:text-grid-fg" data-archived-toggle>
             <ArchiveIcon className="size-3.5" />
             {t("issues.projects.archived")}
             <Switch size="sm" checked={archived} onCheckedChange={setArchived} />
           </label>
         }
       >
-        {active.data ? <span className="text-[12px] text-grid-muted tabular-nums">{number(rows.length)}</span> : null}
+        {active.data ? <span className="text-[13px] text-grid-muted tabular-nums">{number(rows.length)}</span> : null}
       </ViewHeader>
       {q.isError ? (
         <ErrorState error={q.error} onRetry={() => void q.refetch()} />
@@ -94,7 +94,7 @@ export function ProjectsView() {
         <EmptyState icon={<LayersIcon />} title={t("issues.projects.empty")} body={t("issues.projects.emptyBody")} />
       ) : (
         <div ref={scroller} className="@container min-h-0 flex-1 overflow-y-auto" role="grid" aria-label={t("nav.allProjects")} data-projects>
-          <div className={cn(COLS, "sticky top-0 z-[1] h-8 border-b border-line bg-background ps-4 pe-4 text-[11.5px] text-grid-muted")} role="row">
+          <div className={cn(COLS, "sticky top-0 z-[1] h-8 border-b border-line bg-background ps-4 pe-4 text-[12.5px] text-grid-muted")} role="row">
             <span role="columnheader">{t("issues.projects.name")}</span>
             <span role="columnheader" className="hidden @2xl:block">
               {t("issues.project.client")}
@@ -132,7 +132,7 @@ function ProjectRow({ project: p, focused, onOpen, onHover }: { project: Project
       onMouseMove={(e) => pointerMoved(e) && onHover()}
       className={cn(
         COLS,
-        "relative h-9 border-b border-line/50 ps-4 pe-4 text-[13px]",
+        "relative h-9 border-b border-line/50 ps-4 pe-4 text-[14px]",
         focused && "bg-grid-soft/70 before:absolute before:inset-y-0 before:start-0 before:w-0.5 before:bg-grid-action",
         p.archived_at && "text-grid-muted",
       )}
@@ -142,7 +142,7 @@ function ProjectRow({ project: p, focused, onOpen, onHover }: { project: Project
         <span className={cn("truncate font-medium", p.archived_at ? "text-grid-muted" : "text-grid-fg")}>{p.name}</span>
         {p.archived_at ? <ArchiveIcon className="size-3 shrink-0 text-grid-muted" aria-label={t("issues.projects.archivedOne")} /> : null}
       </span>
-      <span className="hidden truncate text-[12.5px] text-grid-body @2xl:block" role="gridcell">
+      <span className="hidden truncate text-[13.5px] text-grid-body @2xl:block" role="gridcell">
         {p.client_name ?? <span className="text-grid-muted">—</span>}
       </span>
       <span role="gridcell">
@@ -150,15 +150,15 @@ function ProjectRow({ project: p, focused, onOpen, onHover }: { project: Project
       </span>
       <span className="flex items-center gap-2.5" role="gridcell" title={t("issues.project.doneOf", { done: number(p.tasks.done), total: number(total) })}>
         <ProgressBar value={p.tasks.done} total={total} className="flex-1" />
-        <LtrText className="w-11 shrink-0 text-end text-[11.5px] text-grid-muted tabular-nums">
+        <LtrText className="w-11 shrink-0 text-end text-[12.5px] text-grid-muted tabular-nums">
           {p.tasks.done}/{total}
         </LtrText>
       </span>
-      <span className="hidden items-center justify-end gap-1 text-[12px] text-grid-muted @2xl:flex" role="gridcell">
+      <span className="hidden items-center justify-end gap-1 text-[13px] text-grid-muted @2xl:flex" role="gridcell">
         <UsersIcon className="size-3.5" />
         <span className="tabular-nums">{number(p.member_count)}</span>
       </span>
-      <span className="hidden truncate text-[12px] text-grid-muted @4xl:block" role="gridcell">
+      <span className="hidden truncate text-[13px] text-grid-muted @4xl:block" role="gridcell">
         {p.starts_on || p.ends_on ? (
           <LtrText>
             {day(p.starts_on, !sameYear(p.starts_on))} – {day(p.ends_on, !sameYear(p.ends_on))}

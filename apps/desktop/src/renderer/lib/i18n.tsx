@@ -11,7 +11,9 @@ import * as time from "../lang/time";
 const EN = { ...core.en, ...issues.en, ...time.en, ...inbox.en, ...settings.en };
 const AR = { ...core.ar, ...issues.ar, ...time.ar, ...inbox.ar, ...settings.ar } as Record<string, string>;
 
-export type Locale = "en" | "ar";
+import { LOCALES, type Locale } from "../../shared/locales";
+
+export { LOCALES, type Locale };
 export type TKey = keyof typeof core.en | (string & {});
 
 export function translate(locale: Locale, key: TKey, vars?: Record<string, string | number>): string {

@@ -3,6 +3,9 @@ export type Locale = "en" | "ar";
 
 const en = {
   about: "About Mahaam",
+  checkUpdates: "Check for Updates…",
+  updateReadyTitle: "Mahaam is up to date on restart",
+  updateReadyBody: "Version {version} is ready. Click to restart now — or it installs when you quit.",
   settings: "Settings…",
   services: "Services",
   hide: "Hide Mahaam",
@@ -52,6 +55,9 @@ const en = {
 
 const ar: typeof en = {
   about: "حول مهام",
+  checkUpdates: "البحث عن تحديثات…",
+  updateReadyTitle: "تحديث مهام جاهز",
+  updateReadyBody: "الإصدار {version} جاهز. انقر لإعادة التشغيل الآن — أو يُثبَّت عند الإنهاء.",
   settings: "الإعدادات…",
   services: "الخدمات",
   hide: "إخفاء مهام",

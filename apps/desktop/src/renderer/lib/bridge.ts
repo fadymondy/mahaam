@@ -57,6 +57,11 @@ export const desktop = {
   signOut: () => call<void>("session:signOut"),
   selectWorkspace: (id: string) => call<SessionOut>("session:selectWorkspace", id),
   running: () => call<TimeEntry | null>("timer:running"),
+  update: {
+    state: () => call<import("../../main/updates").UpdateState>("update:state"),
+    check: () => call<void>("update:check"),
+    install: () => call<void>("update:install"),
+  },
   /** Hide the window this renderer is in (the popover, the palette). */
   hideSurface: () => call<null>("surface:hide"),
   openSettings: (section?: string) => call<void>("surface:settings", section),
@@ -78,6 +83,7 @@ type Events = {
   command: [Command];
   window: [{ fullscreen: boolean }];
   "surface:shown": [];
+  update: [import("../../main/updates").UpdateState];
 };
 
 export function on<K extends keyof Events>(event: K, cb: (...args: Events[K]) => void): () => void {

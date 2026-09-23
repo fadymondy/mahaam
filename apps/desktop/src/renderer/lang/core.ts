@@ -90,6 +90,11 @@ export const en = {
   "qp.createNamed": "New issue “{text}”",
   "qp.open": "Open",
   "qp.startTimer": "Start timer",
+
+  "update.downloading": "Downloading update {version}",
+  "update.ready": "Mahaam {version} is ready",
+  "update.readyHint": "Restart now, or it installs when you quit.",
+  "update.restart": "Restart to update",
 };
 
 export const ar: Record<keyof typeof en, string> = {
@@ -182,4 +187,9 @@ export const ar: Record<keyof typeof en, string> = {
   "qp.createNamed": "مهمة جديدة «{text}»",
   "qp.open": "فتح",
   "qp.startTimer": "ابدأ المؤقّت",
+
+  "update.downloading": "جارٍ تنزيل التحديث {version}",
+  "update.ready": "مهام {version} جاهز",
+  "update.readyHint": "أعد التشغيل الآن، أو يُثبَّت عند الإنهاء.",
+  "update.restart": "أعد التشغيل للتحديث",
 };

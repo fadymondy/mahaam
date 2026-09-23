@@ -72,7 +72,7 @@ function NameField({ profile }: { profile: Profile }) {
   };
   return (
     <span className="flex items-center gap-2">
-      <span className={cn("flex items-center gap-1 text-[12px] text-grid-ok transition-opacity", saved ? "opacity-100" : "opacity-0")} aria-live="polite">
+      <span className={cn("flex items-center gap-1 text-[13px] text-grid-ok transition-opacity", saved ? "opacity-100" : "opacity-0")} aria-live="polite">
         <CheckIcon className="size-3.5" />
         {saved ? t("settings.saved") : null}
       </span>
@@ -93,7 +93,7 @@ function NameField({ profile }: { profile: Profile }) {
             requestAnimationFrame(() => (e.target as HTMLInputElement).blur());
           }
         }}
-        className="h-7 w-56 rounded-md border border-line bg-background px-2 text-[13px] text-grid-fg outline-none placeholder:text-grid-muted focus:border-grid-action/60 focus:ring-2 focus:ring-grid-action/20"
+        className="h-7 w-56 rounded-md border border-line bg-background px-2 text-[14px] text-grid-fg outline-none placeholder:text-grid-muted focus:border-grid-action/60 focus:ring-2 focus:ring-grid-action/20"
       />
     </span>
   );
@@ -212,7 +212,7 @@ function Devices() {
           type="button"
           onClick={() => setAll((v) => !v)}
           data-devices-toggle
-          className="flex h-9 w-full items-center justify-center gap-1 text-[12.5px] text-grid-muted hover:bg-grid-soft/60 hover:text-grid-fg"
+          className="flex h-9 w-full items-center justify-center gap-1 text-[13.5px] text-grid-muted hover:bg-grid-soft/60 hover:text-grid-fg"
         >
           {all ? t("settings.devicesFewer") : t("settings.devicesAll", { count: number(list.length) })}
           <ChevronDownIcon className={cn("size-3.5 transition-transform", all && "rotate-180")} />
@@ -221,8 +221,8 @@ function Devices() {
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && !revoke.isPending && setConfirm(null)}>
         <AlertDialogContent size="sm" data-revoke-dialog>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[14px]">{t("settings.revokeTitle")}</AlertDialogTitle>
-            <AlertDialogDescription className="text-[12.5px]">{t("settings.revokeBody", { name: confirm?.name ?? "" })}</AlertDialogDescription>
+            <AlertDialogTitle className="text-[15px]">{t("settings.revokeTitle")}</AlertDialogTitle>
+            <AlertDialogDescription className="text-[13.5px]">{t("settings.revokeBody", { name: confirm?.name ?? "" })}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel size="sm">{t("common.cancel")}</AlertDialogCancel>
@@ -255,10 +255,10 @@ export function AccountSettings() {
             <Avatar id={session?.userId ?? email} email={email} size={56} />
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold text-grid-fg" data-profile-display>
+            <p className="truncate text-[16px] font-semibold text-grid-fg" data-profile-display>
               {p?.name || email.split("@")[0]}
             </p>
-            <p className="mt-0.5 flex items-center gap-2 text-[12.5px] text-grid-muted">
+            <p className="mt-0.5 flex items-center gap-2 text-[13.5px] text-grid-muted">
               <LtrText className="truncate">{email}</LtrText>
               {p ? <Badge tone={p.email_verified ? "ok" : "warn"}>{p.email_verified ? t("settings.verified") : t("settings.unverified")}</Badge> : null}
             </p>

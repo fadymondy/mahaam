@@ -20,7 +20,7 @@
     /* A desktop app, not a document: no rubber-band, no text selection on chrome by default. */
     overscroll-behavior: none;
     overflow: hidden;
-    font-size: 13px;
+    font-size: 14px;
     cursor: default;
     -webkit-user-select: none;
     user-select: none;

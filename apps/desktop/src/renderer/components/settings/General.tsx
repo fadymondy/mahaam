@@ -1,6 +1,7 @@
 // General: appearance (theme tiles with previews, language) and how the app behaves on this
 // computer (launch at login, notifications, idle detection). All are device preferences held by the
 // main process, so the whole app — menus and the menu-bar timer included — follows at once.
+import { LanguageMenu } from "@/components/LanguageMenu";
 import { CheckIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -11,7 +12,7 @@ import { desktop } from "@/lib/bridge";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-import { Group, Row, Section, Segmented } from "./parts";
+import { Group, Row, Section } from "./parts";
 
 // The grid's own light and dark grounds, so each preview shows that theme whatever the app is in.
 const LOOK = {
@@ -75,7 +76,7 @@ function ThemeTile({ theme, active, onPick }: { theme: Prefs["theme"]; active: b
           </>
         )}
       </span>
-      <span className={cn("flex items-center gap-1 text-[12.5px]", active ? "font-medium text-grid-fg" : "text-grid-body")}>
+      <span className={cn("flex items-center gap-1 text-[13.5px]", active ? "font-medium text-grid-fg" : "text-grid-body")}>
         {active ? <CheckIcon className="size-3.5 text-grid-action" /> : null}
         {t(`settings.theme.${theme}`)}
       </span>
@@ -97,24 +98,16 @@ export function GeneralSettings() {
     <Section id="general" title={t("settings.general")} description={t("settings.generalHint")}>
       <Group title={t("settings.appearance")}>
         <div className="px-4 pt-3.5 pb-3">
-          <p className="text-[13px] text-grid-fg">{t("settings.theme")}</p>
+          <p className="text-[14px] text-grid-fg">{t("settings.theme")}</p>
           <div role="radiogroup" aria-label={t("settings.theme")} className="mt-3 flex gap-3">
             {(["system", "light", "dark"] as const).map((theme) => (
               <ThemeTile key={theme} theme={theme} active={prefs.theme === theme} onPick={() => void setPrefs({ theme })} />
             ))}
           </div>
-          <p className="mt-2 text-[12px] text-grid-muted">{t("settings.themeHint")}</p>
+          <p className="mt-2 text-[13px] text-grid-muted">{t("settings.themeHint")}</p>
         </div>
         <Row label={t("settings.language")} hint={t("settings.languageHint")} data-row="language">
-          <Segmented
-            label={t("settings.language")}
-            value={prefs.locale}
-            onChange={(locale) => void setPrefs({ locale })}
-            options={[
-              { value: "en", label: "English", dir: "ltr", lang: "en" },
-              { value: "ar", label: "العربية", dir: "rtl", lang: "ar" },
-            ]}
-          />
+          <LanguageMenu />
         </Row>
       </Group>
 

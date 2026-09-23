@@ -68,7 +68,7 @@ export function TimerPill() {
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event("mahaam:timer-palette"))}
-          className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-[12.5px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg"
+          className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-[13.5px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg"
           data-timer-start
         >
           <PlayIcon className="size-3.5" />
@@ -89,12 +89,12 @@ export function TimerPill() {
           <ColorDot color={running.project_color ?? "violet"} className="relative size-2" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12.5px] text-grid-fg" title={label}>
+          <p className="truncate text-[13.5px] text-grid-fg" title={label}>
             {label}
           </p>
-          {where ? <p className="truncate text-[11px] text-grid-muted">{where}</p> : null}
+          {where ? <p className="truncate text-[12px] text-grid-muted">{where}</p> : null}
         </div>
-        <LtrText className="font-mono text-[12px] text-grid-fg tabular-nums" >
+        <LtrText className="font-mono text-[13px] text-grid-fg tabular-nums" >
           <span data-timer-clock>{clock(secs)}</span>
         </LtrText>
         <button
@@ -200,8 +200,8 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
                   >
                     {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} size={14} /> : <HistoryIcon className="text-grid-muted" />}
                     <span className="min-w-0 truncate">{e.description || e.task_title || e.project_name || t("timer.untitled")}</span>
-                    {e.task_key ? <LtrText className="shrink-0 font-mono text-[11px] text-grid-muted">{e.task_key}</LtrText> : null}
-                    {e.project_name && (e.description || e.task_title) ? <span className="min-w-0 shrink truncate text-[11.5px] text-grid-muted">{e.project_name}</span> : null}
+                    {e.task_key ? <LtrText className="shrink-0 font-mono text-[12px] text-grid-muted">{e.task_key}</LtrText> : null}
+                    {e.project_name && (e.description || e.task_title) ? <span className="min-w-0 shrink truncate text-[12.5px] text-grid-muted">{e.project_name}</span> : null}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -213,7 +213,7 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
                   return (
                     <CommandItem className={ITEM} key={task.id} value={`t:${task.id}`} onSelect={() => void go({ task: task.id, ...(text ? { description: text } : {}) })}>
                       <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
-                      <LtrText className="font-mono text-[11px] text-grid-muted">{task.key}</LtrText>
+                      <LtrText className="font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
                       <span className="truncate">{task.title}</span>
                     </CommandItem>
                   );

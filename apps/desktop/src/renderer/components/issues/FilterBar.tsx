@@ -38,7 +38,7 @@ export function applyFilters(tasks: Task[], f: Filters): Task[] {
 
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-const PILL = "inline-flex h-6 items-center gap-1.5 rounded-md border border-dashed border-line px-2 text-[12px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg [&_svg]:size-3.5 [&_svg]:shrink-0";
+const PILL = "inline-flex h-6 items-center gap-1.5 rounded-md border border-dashed border-line px-2 text-[13px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg [&_svg]:size-3.5 [&_svg]:shrink-0";
 const PILL_ON = "border-solid bg-grid-soft text-grid-fg";
 
 export function FilterBar({
@@ -81,7 +81,7 @@ export function FilterBar({
           }}
           placeholder={t("issues.find.placeholder")}
           dir="auto"
-          className="h-6 min-w-0 flex-1 bg-transparent text-[12.5px] text-grid-fg outline-none placeholder:text-grid-muted"
+          className="h-6 min-w-0 flex-1 bg-transparent text-[13.5px] text-grid-fg outline-none placeholder:text-grid-muted"
           data-filter-text
         />
       </label>
@@ -139,7 +139,7 @@ export function FilterBar({
       />
       {active ? (
         <>
-          <span className="text-[11.5px] text-grid-muted tabular-nums" data-filter-count>
+          <span className="text-[12.5px] text-grid-muted tabular-nums" data-filter-count>
             {t("issues.find.shown", { n: number(shown), total: number(total) })}
           </span>
           <button

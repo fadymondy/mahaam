@@ -24,8 +24,8 @@ export function Confirm({ request, onClose }: { request: ConfirmRequest | null; 
     <AlertDialog open={!!request} onOpenChange={(o) => !o && onClose()}>
       <AlertDialogContent size="sm" data-time-confirm className="gap-3">
         <AlertDialogHeader className="place-items-start text-start">
-          <AlertDialogTitle className="text-[13.5px]">{request?.title}</AlertDialogTitle>
-          {request?.body ? <AlertDialogDescription className="text-[12.5px]">{request.body}</AlertDialogDescription> : null}
+          <AlertDialogTitle className="text-[14.5px]">{request?.title}</AlertDialogTitle>
+          {request?.body ? <AlertDialogDescription className="text-[13.5px]">{request.body}</AlertDialogDescription> : null}
         </AlertDialogHeader>
         <AlertDialogFooter className="flex! flex-row! justify-end! gap-2 px-4 py-3">
           <AlertDialogCancel size="sm">{t("common.cancel")}</AlertDialogCancel>

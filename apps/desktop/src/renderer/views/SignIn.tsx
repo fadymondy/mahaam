@@ -83,8 +83,8 @@ export function SignIn() {
         <div className="w-full max-w-[380px] border border-line bg-grid-card">
           <div className="flex flex-col items-center gap-3 border-b border-line px-8 pt-8 pb-6 text-center">
             <Mark />
-            <h1 className="text-[17px] font-medium text-grid-fg">{step === "mfa" ? t("auth.mfaTitle") : t("auth.title")}</h1>
-            <p className="text-[12.5px] text-grid-muted">
+            <h1 className="text-[18px] font-medium text-grid-fg">{step === "mfa" ? t("auth.mfaTitle") : t("auth.title")}</h1>
+            <p className="text-[13.5px] text-grid-muted">
               {step === "mfa" ? t(recovery ? "auth.mfaRecoveryBody" : "auth.mfaBody") : t("auth.subtitle")}
             </p>
           </div>
@@ -143,7 +143,7 @@ export function SignIn() {
             )}
 
             {error ? (
-              <p role="alert" className="text-[12.5px] text-destructive" data-signin-error>
+              <p role="alert" className="text-[13.5px] text-destructive" data-signin-error>
                 {error}
               </p>
             ) : null}
@@ -158,7 +158,7 @@ export function SignIn() {
             </Button>
 
             {step === "mfa" ? (
-              <div className="flex items-center justify-between pt-1 text-[12.5px]">
+              <div className="flex items-center justify-between pt-1 text-[13.5px]">
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 text-grid-muted hover:text-grid-fg"
@@ -183,19 +183,19 @@ export function SignIn() {
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-3 py-1 text-[11px] text-grid-muted uppercase">
+                <div className="flex items-center gap-3 py-1 text-[12px] text-grid-muted uppercase">
                   <span className="h-px flex-1 bg-line" />
                   {t("auth.orContinue")}
                   <span className="h-px flex-1 bg-line" />
                 </div>
                 {busy === "browser" ? (
                   <div className="flex flex-col items-center gap-2 border border-line bg-background px-4 py-3 text-center" role="status" data-signin-waiting>
-                    <span className="flex items-center gap-2 text-[12.5px] font-medium text-grid-fg">
+                    <span className="flex items-center gap-2 text-[13.5px] font-medium text-grid-fg">
                       <Spinner />
                       {t("auth.waiting")}
                     </span>
-                    <p className="text-[11.5px] leading-relaxed text-grid-muted">{t("auth.waitingHint")}</p>
-                    <div className="flex gap-3 text-[12px]">
+                    <p className="text-[12.5px] leading-relaxed text-grid-muted">{t("auth.waitingHint")}</p>
+                    <div className="flex gap-3 text-[13px]">
                       <button type="button" className="text-grid-muted hover:text-grid-fg" onClick={() => void browser()}>
                         {t("auth.reopen")}
                       </button>
@@ -210,7 +210,7 @@ export function SignIn() {
                       <GlobeIcon />
                       {t("auth.browser")}
                     </Button>
-                    <p className="text-center text-[11.5px] leading-relaxed text-grid-muted">{t("auth.browserHint")}</p>
+                    <p className="text-center text-[12.5px] leading-relaxed text-grid-muted">{t("auth.browserHint")}</p>
                   </>
                 )}
               </>
@@ -218,7 +218,7 @@ export function SignIn() {
           </form>
 
           {step === "credentials" ? (
-            <div className="flex items-center justify-between border-t border-line px-8 py-3 text-[12px] text-grid-muted">
+            <div className="flex items-center justify-between border-t border-line px-8 py-3 text-[13px] text-grid-muted">
               <button type="button" className="hover:text-grid-fg" onClick={() => void desktop.openExternal(`${server}/${locale}/forgot-password`)}>
                 {t("auth.forgot")}
               </button>
@@ -241,7 +241,7 @@ export function SignIn() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="grid-micro text-[10.5px]">{label}</span>
+      <span className="grid-micro text-[11.5px]">{label}</span>
       <span className="relative block">{children}</span>
     </label>
   );

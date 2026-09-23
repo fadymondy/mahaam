@@ -101,11 +101,11 @@ export function InboxList({
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="flex min-w-0 items-baseline gap-2">
-                    <span dir="auto" className={cn("min-w-0 flex-1 truncate text-[13px] rtl:text-right", unread ? "font-medium text-grid-fg" : "text-grid-body")}>{headline(n, t)}</span>
-                    <span className="shrink-0 text-[11.5px] text-grid-muted tabular-nums">{age(n.created_at)}</span>
+                    <span dir="auto" className={cn("min-w-0 flex-1 truncate text-[14px] rtl:text-right", unread ? "font-medium text-grid-fg" : "text-grid-body")}>{headline(n, t)}</span>
+                    <span className="shrink-0 text-[12.5px] text-grid-muted tabular-nums">{age(n.created_at)}</span>
                   </span>
-                  <span className="flex min-w-0 items-baseline gap-1.5 text-[12px] text-grid-muted">
-                    {key ? <LtrText className="shrink-0 font-mono text-[11px]">{key}</LtrText> : null}
+                  <span className="flex min-w-0 items-baseline gap-1.5 text-[13px] text-grid-muted">
+                    {key ? <LtrText className="shrink-0 font-mono text-[12px]">{key}</LtrText> : null}
                     <Subline note={n} />
                   </span>
                 </span>

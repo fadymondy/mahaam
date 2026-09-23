@@ -73,7 +73,7 @@ export function IssueView({ issueKey }: { issueKey: string }) {
           title={t("issue.notFound")}
           body={t("issue.notFoundBody", { key: issueKey })}
           action={
-            <button type="button" onClick={goBack} className="flex items-center gap-2 rounded-md border border-line px-3 py-1 text-[12.5px] hover:bg-grid-soft" data-issue-back>
+            <button type="button" onClick={goBack} className="flex items-center gap-2 rounded-md border border-line px-3 py-1 text-[13.5px] hover:bg-grid-soft" data-issue-back>
               {t("common.back")} <Kbd combo="Esc" />
             </button>
           }
@@ -109,19 +109,19 @@ export function IssueView({ issueKey }: { issueKey: string }) {
                   <MoreHorizontalIcon className="size-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem className="gap-2 text-[12.5px]" onClick={() => void actions.copyKey(task)}>
+                  <DropdownMenuItem className="gap-2 text-[13.5px]" onClick={() => void actions.copyKey(task)}>
                     <CopyIcon />
                     {t("issue.copyKey")}
                     <Kbd combo="mod+shift+c" className="ms-auto" />
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2 text-[12.5px]" onClick={() => actions.openInBrowser(task)}>
+                  <DropdownMenuItem className="gap-2 text-[13.5px]" onClick={() => actions.openInBrowser(task)}>
                     <ExternalLinkIcon />
                     {t("common.openInBrowser")}
                   </DropdownMenuItem>
                   {task.can_delete ? (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" className="gap-2 text-[12.5px]" onClick={() => setConfirmDelete(true)}>
+                      <DropdownMenuItem variant="destructive" className="gap-2 text-[13.5px]" onClick={() => setConfirmDelete(true)}>
                         <Trash2Icon />
                         {t("issue.delete")}
                         <Kbd combo="mod+⌫" className="ms-auto" />
@@ -135,7 +135,7 @@ export function IssueView({ issueKey }: { issueKey: string }) {
         }
       >
         {task ? (
-          <nav className="flex min-w-0 items-center gap-1.5 text-[13px]" aria-label={t("issue.breadcrumb")}>
+          <nav className="flex min-w-0 items-center gap-1.5 text-[14px]" aria-label={t("issue.breadcrumb")}>
             <button
               type="button"
               onClick={() => navigate({ name: "project", id: task.project.id })}
@@ -146,10 +146,10 @@ export function IssueView({ issueKey }: { issueKey: string }) {
               <span className="truncate">{task.project.name}</span>
             </button>
             <ChevronRightIcon className="size-3.5 shrink-0 text-grid-muted rtl:-scale-x-100" />
-            <LtrText className="font-mono text-[12.5px] font-medium text-grid-fg">{task.key}</LtrText>
+            <LtrText className="font-mono text-[13.5px] font-medium text-grid-fg">{task.key}</LtrText>
           </nav>
         ) : (
-          <LtrText className="font-mono text-[12.5px] text-grid-muted">{issueKey}</LtrText>
+          <LtrText className="font-mono text-[13.5px] text-grid-muted">{issueKey}</LtrText>
         )}
       </ViewHeader>
 
@@ -163,7 +163,7 @@ export function IssueView({ issueKey }: { issueKey: string }) {
                 <button
                   type="button"
                   onClick={() => navigate({ name: "issue", key: parent.key })}
-                  className="mb-2 flex max-w-full items-center gap-1.5 self-start rounded-md px-1 py-0.5 text-[12px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg"
+                  className="mb-2 flex max-w-full items-center gap-1.5 self-start rounded-md px-1 py-0.5 text-[13px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg"
                   data-parent-link
                 >
                   <CornerLeftUpIcon className="size-3.5 rtl:-scale-x-100" />
@@ -196,10 +196,10 @@ export function IssueView({ issueKey }: { issueKey: string }) {
                         <button
                           type="button"
                           onClick={() => navigate({ name: "issue", key: s.key })}
-                          className="flex h-9 w-full items-center gap-2.5 border-b border-line/60 px-1 text-start text-[13px] hover:bg-grid-soft/60"
+                          className="flex h-9 w-full items-center gap-2.5 border-b border-line/60 px-1 text-start text-[14px] hover:bg-grid-soft/60"
                         >
                           <StatusIcon status={statusById.get(s.status_id) ?? { category: s.done ? "done" : "todo", stage: s.done ? "done" : "todo", color: "slate" }} />
-                          <LtrText className="w-[52px] shrink-0 font-mono text-[11.5px] text-grid-muted">{s.key}</LtrText>
+                          <LtrText className="w-[52px] shrink-0 font-mono text-[12.5px] text-grid-muted">{s.key}</LtrText>
                           <span className={s.done ? "truncate text-grid-muted" : "truncate text-grid-fg"} dir="auto">
                             {s.title}
                           </span>

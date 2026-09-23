@@ -64,7 +64,7 @@ export function useIssueTimer() {
   return { running: timer.running, busy: timer.busy, isRunning, start, stop, toggle };
 }
 
-const ITEM = "text-[12.5px] gap-2";
+const ITEM = "text-[13.5px] gap-2";
 
 export function IssueContextArea({
   resolve,
@@ -128,7 +128,7 @@ export function IssueContextArea({
         </ContextMenuTrigger>
         {task ? (
           <ContextMenuContent className="w-56" onClick={(e) => e.stopPropagation()} data-issue-menu={task.key}>
-            <div className="flex items-center gap-2 px-2 pt-1 pb-1.5 text-[11.5px] text-grid-muted">
+            <div className="flex items-center gap-2 px-2 pt-1 pb-1.5 text-[12.5px] text-grid-muted">
               <LtrText className="shrink-0 font-mono whitespace-nowrap">{task.key}</LtrText>
               <span className="truncate">{task.title}</span>
             </div>
@@ -261,8 +261,8 @@ export function DeleteIssueDialog({ task, onClose, actions, onDeleted }: { task:
     <AlertDialog open={!!task} onOpenChange={(o) => (o ? null : onClose())}>
       <AlertDialogContent size="sm" data-confirm-delete>
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-[14px]">{task ? t("issue.deleteConfirm", { key: task.key }) : ""}</AlertDialogTitle>
-          <AlertDialogDescription className="text-[12.5px]">{t("issue.deleteBody")}</AlertDialogDescription>
+          <AlertDialogTitle className="text-[15px]">{task ? t("issue.deleteConfirm", { key: task.key }) : ""}</AlertDialogTitle>
+          <AlertDialogDescription className="text-[13.5px]">{t("issue.deleteBody")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel size="sm">{t("common.cancel")}</AlertDialogCancel>

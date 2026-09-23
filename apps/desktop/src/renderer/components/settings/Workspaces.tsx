@@ -39,7 +39,7 @@ export function WorkspaceSettings() {
               key={w.id}
               data-row="workspace"
               icon={
-                <span className="flex size-8 items-center justify-center rounded-md bg-grid-action text-[13px] font-semibold text-grid-on-action">
+                <span className="flex size-8 items-center justify-center rounded-md bg-grid-action text-[14px] font-semibold text-grid-on-action">
                   {w.name.slice(0, 1).toUpperCase()}
                 </span>
               }

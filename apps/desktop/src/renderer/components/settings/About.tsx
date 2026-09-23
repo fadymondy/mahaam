@@ -28,22 +28,22 @@ export function AboutSettings() {
           <Mark size={40} />
         </span>
         <div>
-          <p className="text-[15px] font-semibold text-grid-fg">{t(`settings.for.${config.platform === "win32" || config.platform === "linux" ? config.platform : "darwin"}`)}</p>
-          <p className="mt-0.5 text-[12.5px] text-grid-muted">{t("settings.tagline")}</p>
+          <p className="text-[16px] font-semibold text-grid-fg">{t(`settings.for.${config.platform === "win32" || config.platform === "linux" ? config.platform : "darwin"}`)}</p>
+          <p className="mt-0.5 text-[13.5px] text-grid-muted">{t("settings.tagline")}</p>
         </div>
       </div>
 
       <Group>
         <Row label={t("settings.version")}>
-          <LtrText className="font-mono text-[12px] text-grid-body" data-version>
+          <LtrText className="font-mono text-[13px] text-grid-body" data-version>
             {config.version}
           </LtrText>
         </Row>
         <Row label={t("settings.server")}>
-          <LtrText className="font-mono text-[12px] text-grid-body">{server}</LtrText>
+          <LtrText className="font-mono text-[13px] text-grid-body">{server}</LtrText>
         </Row>
         <Row label={t("settings.connection")}>
-          <span className="flex items-center gap-2 text-[12.5px] text-grid-body" data-live={live}>
+          <span className="flex items-center gap-2 text-[13.5px] text-grid-body" data-live={live}>
             <span
               aria-hidden
               className={cn(
@@ -72,7 +72,7 @@ export function AboutSettings() {
           </SmallButton>
         </Row>
       </Group>
-      <p className="text-center text-[11.5px] text-grid-muted">© 2026 Fady Mondy</p>
+      <p className="text-center text-[12.5px] text-grid-muted">© 2026 Fady Mondy</p>
     </Section>
   );
 }

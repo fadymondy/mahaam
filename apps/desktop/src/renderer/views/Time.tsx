@@ -153,7 +153,7 @@ export function TimeView() {
       title={t("nav.time")}
       icon={<ClockIcon className="size-4 text-grid-muted" />}
       actions={
-        <Button size="sm" onClick={() => openLog()} className="h-7 gap-1.5 text-[12.5px]" data-time-log>
+        <Button size="sm" onClick={() => openLog()} className="h-7 gap-1.5 text-[13.5px]" data-time-log>
           <PlusIcon />
           {t("time.logTime")}
           <Kbd combo="l" className="border-primary-foreground/30 bg-transparent text-primary-foreground/80" />
@@ -167,13 +167,13 @@ export function TimeView() {
         <button type="button" className={navBtn} onClick={() => days[0] && setWeek(addDays(days[0], 7))} title={`${t("time.nextWeek")} (])`} aria-label={t("time.nextWeek")} data-week-next>
           <ChevronRightIcon className="size-4 rtl:rotate-180" />
         </button>
-        <span className="ms-1.5 flex items-baseline gap-2 truncate text-[12.5px]" data-week-label>
+        <span className="ms-1.5 flex items-baseline gap-2 truncate text-[13.5px]" data-week-label>
           {weekName ? <span className="font-medium text-grid-fg">{weekName}</span> : null}
           <span className={cn(weekName ? "text-grid-muted" : "font-medium text-grid-fg")}>{rangeLabel}</span>
         </span>
         {sheet.isFetching && sheet.isPlaceholderData ? <Spinner className="ms-2" /> : null}
         {!isCurrent && days.length ? (
-          <Button size="xs" variant="outline" className="ms-2 h-6 text-[12px]" onClick={() => setWeek(undefined)} data-week-today>
+          <Button size="xs" variant="outline" className="ms-2 h-6 text-[13px]" onClick={() => setWeek(undefined)} data-week-today>
             {t("time.today")}
             <Kbd combo="t" className="h-4 border-transparent bg-transparent" />
           </Button>
@@ -212,7 +212,7 @@ export function TimeView() {
         <div className={cn("min-h-0 flex-1 overflow-y-auto transition-opacity", sheet.isPlaceholderData && "opacity-60")} data-time-body data-week-start={days[0]}>
           <Summary stats={stats} />
 
-          <SectionTitle label={t("time.timesheet")} right={tz !== localTz() ? <span className="text-[11px] text-grid-muted">{tz}</span> : null} />
+          <SectionTitle label={t("time.timesheet")} right={tz !== localTz() ? <span className="text-[12px] text-grid-muted">{tz}</span> : null} />
           <WeekGrid
             days={days}
             rows={live.rows}
@@ -232,7 +232,7 @@ export function TimeView() {
             label={t("time.entries")}
             right={
               flat.length ? (
-                <span className="hidden items-center gap-1.5 text-[11px] text-grid-muted md:flex">
+                <span className="hidden items-center gap-1.5 text-[12px] text-grid-muted md:flex">
                   <Kbd combo="j" />
                   <Kbd combo="k" />
                   {t("time.hintMove")}

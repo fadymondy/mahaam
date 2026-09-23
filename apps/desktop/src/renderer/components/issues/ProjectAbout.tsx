@@ -55,8 +55,8 @@ export function ProjectAbout({ project, memberMap }: { project: ProjectDetail | 
         <div className="flex items-center gap-2.5">
           <ProjectMark name={project.name} color={project.color} size={28} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-semibold text-grid-fg">{project.name}</p>
-            {project.client_name ? <p className="truncate text-[12px] text-grid-muted">{project.client_name}</p> : null}
+            <p className="truncate text-[15px] font-semibold text-grid-fg">{project.name}</p>
+            {project.client_name ? <p className="truncate text-[13px] text-grid-muted">{project.client_name}</p> : null}
           </div>
           <ProjectStatusChip status={project.status} />
         </div>
@@ -64,13 +64,13 @@ export function ProjectAbout({ project, memberMap }: { project: ProjectDetail | 
 
       <div className="flex flex-col gap-2 border-b border-line p-4" data-progress>
         <SectionTitle>{t("issues.project.progress")}</SectionTitle>
-        <div className="flex items-baseline justify-between text-[12.5px]">
+        <div className="flex items-baseline justify-between text-[13.5px]">
           <span className="text-grid-fg">{t("issues.project.doneOf", { done: number(counts.done), total: number(total) })}</span>
           <LtrText className="text-grid-muted tabular-nums">{number(pct)}%</LtrText>
         </div>
         <ProgressBar value={counts.done} total={total} className="h-1.5" />
         {stages.length ? (
-          <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px]">
+          <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[13px]">
             {stages.map(([stage, n]) => (
               <div key={stage} className="flex items-center justify-between gap-2">
                 <dt className="truncate text-grid-muted">{t(`issues.stage.${stage}`)}</dt>
@@ -83,10 +83,10 @@ export function ProjectAbout({ project, memberMap }: { project: ProjectDetail | 
 
       <div className="flex flex-col gap-1.5 border-b border-line p-4">
         <SectionTitle>{t("issues.project.description")}</SectionTitle>
-        {project.description?.trim() ? <Markdown source={project.description} className="text-[12.5px]" /> : <p className="text-[12.5px] text-grid-muted">{t("issues.project.noDescription")}</p>}
+        {project.description?.trim() ? <Markdown source={project.description} className="text-[13.5px]" /> : <p className="text-[13.5px] text-grid-muted">{t("issues.project.noDescription")}</p>}
       </div>
 
-      <dl className="flex flex-col gap-2 border-b border-line p-4 text-[12.5px]">
+      <dl className="flex flex-col gap-2 border-b border-line p-4 text-[13.5px]">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-grid-muted">{t("issues.project.starts")}</dt>
           <dd className="text-grid-body">
@@ -114,17 +114,17 @@ export function ProjectAbout({ project, memberMap }: { project: ProjectDetail | 
         {people.length ? (
           <ul className="flex flex-col gap-1.5">
             {people.map((m) => (
-              <li key={m.user_id} className="flex items-center gap-2 text-[12.5px]">
+              <li key={m.user_id} className="flex items-center gap-2 text-[13.5px]">
                 <Avatar id={m.user_id} email={m.email} size={20} />
                 <span className="min-w-0 flex-1 truncate text-grid-body" dir="ltr">
                   {m.email}
                 </span>
-                {m.role === "lead" ? <span className="text-[11px] text-grid-muted">{t("issues.project.lead")}</span> : null}
+                {m.role === "lead" ? <span className="text-[12px] text-grid-muted">{t("issues.project.lead")}</span> : null}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-[12.5px] text-grid-muted">{t("issues.project.noMembers")}</p>
+          <p className="text-[13.5px] text-grid-muted">{t("issues.project.noMembers")}</p>
         )}
       </div>
 
@@ -132,7 +132,7 @@ export function ProjectAbout({ project, memberMap }: { project: ProjectDetail | 
         <button
           type="button"
           onClick={() => void desktop.openWeb(webPath.project(project.id))}
-          className="flex h-7 w-full items-center gap-2 rounded-md px-2 text-[12px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg"
+          className="flex h-7 w-full items-center gap-2 rounded-md px-2 text-[13px] text-grid-muted hover:bg-grid-soft hover:text-grid-fg"
         >
           <ExternalLinkIcon className="size-3.5" />
           {t("common.openInBrowser")}

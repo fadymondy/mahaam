@@ -121,10 +121,10 @@ export const DescriptionEditor = forwardRef<DescriptionHandle, { value: string; 
               cancel();
             }
           }}
-          className="-mx-2 w-[calc(100%+16px)] resize-none rounded-md border border-line bg-grid-card px-2 py-1.5 font-mono text-[12.5px] leading-[1.6] text-grid-fg outline-none focus:border-[color-mix(in_oklab,var(--grid-action)_55%,var(--grid-line))]"
+          className="-mx-2 w-[calc(100%+16px)] resize-none rounded-md border border-line bg-grid-card px-2 py-1.5 font-mono text-[13.5px] leading-[1.6] text-grid-fg outline-none focus:border-[color-mix(in_oklab,var(--grid-action)_55%,var(--grid-line))]"
         />
         <div className="flex items-center justify-end gap-2">
-          <span className="me-auto flex items-center gap-1.5 text-[11.5px] text-grid-muted">
+          <span className="me-auto flex items-center gap-1.5 text-[12.5px] text-grid-muted">
             <Kbd combo="mod+enter" /> {t("common.save")} · <Kbd combo="Esc" /> {t("common.cancel")}
           </span>
           <Button size="sm" variant="ghost" onClick={cancel}>
@@ -156,7 +156,7 @@ export const DescriptionEditor = forwardRef<DescriptionHandle, { value: string; 
       className={cn("-mx-2 min-h-9 rounded-md px-2 py-1.5 outline-none", !readOnly && "hover:bg-grid-soft/40 focus-visible:bg-grid-soft/40")}
       data-description
     >
-      {value.trim() ? <Markdown source={value} /> : <p className="text-[13px] text-grid-muted">{readOnly ? t("issue.noDescription") : t("issue.addDescription")}</p>}
+      {value.trim() ? <Markdown source={value} /> : <p className="text-[14px] text-grid-muted">{readOnly ? t("issue.noDescription") : t("issue.addDescription")}</p>}
     </div>
   );
 });

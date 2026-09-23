@@ -79,7 +79,7 @@ export function AppShell() {
           <View route={route} />
           {live === "reconnecting" ? (
             // The live stream dropped (network, sleep): say so quietly; it reconnects by itself.
-            <div role="status" className="pointer-events-none absolute bottom-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full border border-line bg-grid-card px-3 py-1 text-[11.5px] text-grid-muted shadow-sm" data-live-status>
+            <div role="status" className="pointer-events-none absolute bottom-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full border border-line bg-grid-card px-3 py-1 text-[12.5px] text-grid-muted shadow-sm" data-live-status>
               {t("common.reconnecting")}
             </div>
           ) : null}

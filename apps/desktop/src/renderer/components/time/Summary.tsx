@@ -23,7 +23,7 @@ export function Summary({ stats }: { stats: Stat[] }) {
             <LtrText className={cn("font-mono text-[22px] leading-none font-medium tabular-nums", s.accent ? "text-grid-fg" : "text-grid-fg/90")}>
               {hm(s.seconds, "0:00")}
             </LtrText>
-            {s.hint ? <span className="truncate text-[11.5px] text-grid-muted">{s.hint}</span> : null}
+            {s.hint ? <span className="truncate text-[12.5px] text-grid-muted">{s.hint}</span> : null}
           </div>
         </div>
       ))}

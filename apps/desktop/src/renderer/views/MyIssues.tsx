@@ -155,7 +155,7 @@ export function MyIssuesView() {
               title={t(`issues.empty.${filter}`)}
               body={t(`issues.empty.${filter}Body`)}
               action={
-                <p className="flex items-center gap-1.5 text-[12px] text-grid-muted">
+                <p className="flex items-center gap-1.5 text-[13px] text-grid-muted">
                   {t("issues.empty.create")} <Kbd combo="c" />
                 </p>
               }
@@ -177,9 +177,9 @@ function DisplayMenu({ grouping, onGrouping }: { grouping: Grouping; onGrouping:
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-[11.5px]">{t("issues.groupBy")}</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-[12.5px]">{t("issues.groupBy")}</DropdownMenuLabel>
           {(["status", "project"] as const).map((g) => (
-            <DropdownMenuItem key={g} onClick={() => onGrouping(g)} className="gap-2 text-[12.5px]" data-grouping={g}>
+            <DropdownMenuItem key={g} onClick={() => onGrouping(g)} className="gap-2 text-[13.5px]" data-grouping={g}>
               <span className="flex-1">{t(`issues.groupBy.${g}`)}</span>
               {grouping === g ? <CheckIcon className="size-3.5" /> : null}
             </DropdownMenuItem>

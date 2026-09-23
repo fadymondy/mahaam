@@ -250,8 +250,8 @@ function Column({ status, ids, quiet, onAdd, children }: { status: Status; ids: 
     <section className="flex h-full w-[272px] shrink-0 flex-col" data-column={status.name} aria-label={status.name}>
       <header className="group/col flex h-8 shrink-0 items-center gap-2 px-1.5">
         <StatusIcon status={status} />
-        <span className="truncate text-[12.5px] font-medium text-grid-fg">{status.name}</span>
-        <span className="text-[12px] text-grid-muted tabular-nums">{number(ids.length)}</span>
+        <span className="truncate text-[13.5px] font-medium text-grid-fg">{status.name}</span>
+        <span className="text-[13px] text-grid-muted tabular-nums">{number(ids.length)}</span>
         <span className="flex-1" />
         <button
           type="button"
@@ -275,7 +275,7 @@ function Column({ status, ids, quiet, onAdd, children }: { status: Status; ids: 
             <button
               type="button"
               onClick={onAdd}
-              className="flex h-16 items-center justify-center rounded-lg border border-dashed border-line text-[12px] text-grid-muted hover:bg-grid-soft/60 hover:text-grid-fg"
+              className="flex h-16 items-center justify-center rounded-lg border border-dashed border-line text-[13px] text-grid-muted hover:bg-grid-soft/60 hover:text-grid-fg"
             >
               <PlusIcon className="me-1 size-3.5" />
               {t("issues.addHere")}
@@ -371,18 +371,18 @@ function CardBody({
   return (
     <div
       className={cn(
-        "flex flex-col gap-1.5 rounded-lg border border-line bg-grid-card px-2.5 pt-2 pb-2.5 text-[12.5px] transition-[border-color,box-shadow] duration-100",
+        "flex flex-col gap-1.5 rounded-lg border border-line bg-grid-card px-2.5 pt-2 pb-2.5 text-[13.5px] transition-[border-color,box-shadow] duration-100",
         "hover:border-[color-mix(in_oklab,var(--grid-muted)_45%,transparent)]",
         focused && "border-grid-action/70 shadow-[0_0_0_1px_color-mix(in_oklab,var(--grid-action)_60%,transparent)]",
         lifted && "shadow-lg shadow-black/10 dark:shadow-black/40",
       )}
     >
       <div className="flex h-5 items-center gap-2">
-        <LtrText className="font-mono text-[11px] text-grid-muted">{task.key}</LtrText>
+        <LtrText className="font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
         <span className="flex-1" />
         {people.length ? <AvatarStack people={people} size={18} max={3} /> : null}
       </div>
-      <p className={cn("line-clamp-2 text-[13px] leading-snug", done ? "text-grid-muted" : "text-grid-fg")} dir="auto">
+      <p className={cn("line-clamp-2 text-[14px] leading-snug", done ? "text-grid-muted" : "text-grid-fg")} dir="auto">
         {task.title}
       </p>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -391,7 +391,7 @@ function CardBody({
         </span>
         <DueDate due={task.due_at} done={done} />
         {task.subtask_count > 0 ? (
-          <span className="inline-flex h-5 items-center gap-1 rounded-[4px] border border-line px-1.5 text-[11px] text-grid-muted">
+          <span className="inline-flex h-5 items-center gap-1 rounded-[4px] border border-line px-1.5 text-[12px] text-grid-muted">
             <GitBranchIcon className="size-3" />
             <LtrText className="tabular-nums">
               {task.subtask_done}/{task.subtask_count}
@@ -399,7 +399,7 @@ function CardBody({
           </span>
         ) : null}
         {task.checklist_total > 0 ? (
-          <span className="inline-flex h-5 items-center gap-1 rounded-[4px] border border-line px-1.5 text-[11px] text-grid-muted">
+          <span className="inline-flex h-5 items-center gap-1 rounded-[4px] border border-line px-1.5 text-[12px] text-grid-muted">
             <ListChecksIcon className="size-3" />
             <LtrText className="tabular-nums">
               {task.checklist_done}/{task.checklist_total}

@@ -38,7 +38,7 @@ export function Segmented<V extends string>({
             data-segment={o.value}
             onClick={() => onChange(o.value)}
             className={cn(
-              "flex h-[22px] items-center gap-1.5 rounded-[5px] px-2 text-[12px] leading-none [&_svg]:size-3.5",
+              "flex h-[22px] items-center gap-1.5 rounded-[5px] px-2 text-[13px] leading-none [&_svg]:size-3.5",
               active ? "bg-background font-medium text-grid-fg shadow-[0_0_0_1px_var(--grid-line)]" : "text-grid-muted hover:text-grid-fg",
             )}
           >
@@ -53,7 +53,7 @@ export function Segmented<V extends string>({
 }
 
 export const HEADER_BTN =
-  "flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-grid-body hover:bg-grid-soft hover:text-grid-fg aria-expanded:bg-grid-soft [&_svg]:size-3.5 [&_svg]:shrink-0";
+  "flex h-7 items-center gap-1.5 rounded-md px-2 text-[13px] text-grid-body hover:bg-grid-soft hover:text-grid-fg aria-expanded:bg-grid-soft [&_svg]:size-3.5 [&_svg]:shrink-0";
 
 /** A quiet header button: icon, optional label and shortcut hint. */
 export function HeaderButton({
@@ -105,7 +105,7 @@ export function DueDate({ due, done, className }: { due: string | null | undefin
   return (
     <span
       className={cn(
-        "inline-flex h-5 shrink-0 items-center gap-1 rounded-[4px] border border-line px-1.5 text-[11px] leading-none text-grid-body",
+        "inline-flex h-5 shrink-0 items-center gap-1 rounded-[4px] border border-line px-1.5 text-[12px] leading-none text-grid-body",
         tone === "overdue" && "border-grid-danger/40 text-grid-danger",
         tone === "soon" && "border-grid-warn/50 text-grid-warn",
         className,
@@ -125,12 +125,12 @@ export function LabelChips({ ids, labels, max = 2, className }: { ids: string[] 
   return (
     <span className={cn("flex min-w-0 shrink items-center gap-1", className)}>
       {list.slice(0, max).map((l) => (
-        <span key={l.id} className="inline-flex h-5 max-w-28 items-center gap-1 rounded-full border border-line px-1.5 text-[11px] leading-none text-grid-body" data-label={l.name}>
+        <span key={l.id} className="inline-flex h-5 max-w-28 items-center gap-1 rounded-full border border-line px-1.5 text-[12px] leading-none text-grid-body" data-label={l.name}>
           <ColorDot color={l.color} className="size-2" />
           <span className="truncate">{l.name}</span>
         </span>
       ))}
-      {list.length > max ? <span className="text-[11px] text-grid-muted">+{list.length - max}</span> : null}
+      {list.length > max ? <span className="text-[12px] text-grid-muted">+{list.length - max}</span> : null}
     </span>
   );
 }
@@ -148,7 +148,7 @@ export function ProgressBar({ value, total, className, color }: { value: number;
 export function SectionTitle({ children, actions, className }: { children: ReactNode; actions?: ReactNode; className?: string }) {
   return (
     <div className={cn("flex h-7 items-center gap-2", className)}>
-      <h2 className="text-[12px] font-medium text-grid-muted">{children}</h2>
+      <h2 className="text-[13px] font-medium text-grid-muted">{children}</h2>
       <div className="flex flex-1 items-center justify-end gap-1">{actions}</div>
     </div>
   );

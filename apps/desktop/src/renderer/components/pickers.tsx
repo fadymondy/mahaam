@@ -23,7 +23,7 @@ export interface PickerChrome {
 }
 
 const PILL =
-  "inline-flex h-7 max-w-56 items-center gap-1.5 rounded-md border border-line bg-background px-2 text-[12px] text-grid-body hover:bg-grid-soft hover:text-grid-fg [&_svg]:shrink-0";
+  "inline-flex h-7 max-w-56 items-center gap-1.5 rounded-md border border-line bg-background px-2 text-[13px] text-grid-body hover:bg-grid-soft hover:text-grid-fg [&_svg]:shrink-0";
 
 /** A pill trigger + menu. `multiple` keeps the menu open and toggles. */
 export function PropertyMenu<V extends string>({
@@ -105,20 +105,20 @@ export function PropertyMenu<V extends string>({
                 if (e.key !== "Escape") e.stopPropagation();
               }}
               placeholder={placeholder}
-              className="h-7 w-full rounded-md border border-line bg-background px-2 text-[12.5px] outline-none placeholder:text-grid-muted"
+              className="h-7 w-full rounded-md border border-line bg-background px-2 text-[13.5px] outline-none placeholder:text-grid-muted"
             />
           </div>
         ) : null}
         <DropdownMenuGroup>
           {shown.map((o) => (
-            <DropdownMenuItem key={o.value} closeOnClick={!multiple} onClick={() => onChange(o.value)} className="gap-2 text-[12.5px]" data-option={o.value}>
+            <DropdownMenuItem key={o.value} closeOnClick={!multiple} onClick={() => onChange(o.value)} className="gap-2 text-[13.5px]" data-option={o.value}>
               <span className="flex size-4 items-center justify-center">{o.icon}</span>
               <span className="min-w-0 flex-1 truncate">{o.label}</span>
-              {o.hint ? <span className="text-[11px] text-grid-muted">{o.hint}</span> : null}
+              {o.hint ? <span className="text-[12px] text-grid-muted">{o.hint}</span> : null}
               <CheckIcon className={cn("size-3.5", selected(o.value) ? "opacity-100" : "opacity-0")} />
             </DropdownMenuItem>
           ))}
-          {shown.length === 0 ? <p className="px-2 py-1.5 text-[12px] text-grid-muted">{placeholder}</p> : null}
+          {shown.length === 0 ? <p className="px-2 py-1.5 text-[13px] text-grid-muted">{placeholder}</p> : null}
         </DropdownMenuGroup>
         {footer}
       </DropdownMenuContent>

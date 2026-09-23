@@ -90,7 +90,7 @@ export function TargetPicker({
             type="button"
             data-target-picker
             className={cn(
-              "inline-flex h-7 max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-grid-body outline-none hover:bg-grid-soft hover:text-grid-fg focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 [&_svg]:shrink-0",
+              "inline-flex h-7 max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-[13.5px] text-grid-body outline-none hover:bg-grid-soft hover:text-grid-fg focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 [&_svg]:shrink-0",
               variant === "pill" && "border border-line bg-background",
               className,
             )}
@@ -100,7 +100,7 @@ export function TargetPicker({
         {cur ? <ProjectMark name={cur.name} color={cur.color} size={14} /> : <FolderIcon className="size-3.5 text-grid-muted" />}
         {value.task ? (
           <>
-            <LtrText className="font-mono text-[11px] text-grid-muted">{value.task.key}</LtrText>
+            <LtrText className="font-mono text-[12px] text-grid-muted">{value.task.key}</LtrText>
             <span className="truncate">{value.task.title}</span>
           </>
         ) : (
@@ -111,10 +111,10 @@ export function TargetPicker({
         <Command shouldFilter={false} className="rounded-lg!">
           <CommandInput autoFocus placeholder={t("time.pickTarget")} value={q} onValueChange={setQ} />
           <CommandList className="max-h-80">
-            <CommandEmpty className="py-4 text-[12.5px] text-grid-muted">{t("palette.noResults")}</CommandEmpty>
+            <CommandEmpty className="py-4 text-[13.5px] text-grid-muted">{t("palette.noResults")}</CommandEmpty>
             {value.project || value.task ? (
               <CommandGroup>
-                <CommandItem value="__none" onSelect={() => pick({ project: null, task: null })} className="text-[12.5px] text-grid-muted data-[selected=false]:bg-transparent!">
+                <CommandItem value="__none" onSelect={() => pick({ project: null, task: null })} className="text-[13.5px] text-grid-muted data-[selected=false]:bg-transparent!">
                   <XIcon className="size-3.5" />
                   {t("time.clearTarget")}
                 </CommandItem>
@@ -130,10 +130,10 @@ export function TargetPicker({
                       value={`t:${task.id}`}
                       data-checked={value.task?.id === task.id}
                       onSelect={() => pick({ project: task.project_id, task: { id: task.id, key: task.key, title: task.title } })}
-                      className="text-[12.5px] data-[selected=false]:bg-transparent!"
+                      className="text-[13.5px] data-[selected=false]:bg-transparent!"
                     >
                       <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
-                      <LtrText className="font-mono text-[11px] text-grid-muted">{task.key}</LtrText>
+                      <LtrText className="font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
                       <span className="truncate">{task.title}</span>
                     </CommandItem>
                   );
@@ -148,7 +148,7 @@ export function TargetPicker({
                     value={`p:${p.id}`}
                     data-checked={!value.task && value.project === p.id}
                     onSelect={() => pick({ project: p.id, task: null })}
-                    className="text-[12.5px] data-[selected=false]:bg-transparent!"
+                    className="text-[13.5px] data-[selected=false]:bg-transparent!"
                   >
                     <ProjectMark name={p.name} color={p.color} size={14} />
                     <span className="truncate">{p.name}</span>

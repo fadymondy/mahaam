@@ -111,11 +111,11 @@ export function CreateIssue({ open, onOpenChange, projectId }: { open: boolean; 
         <DialogHeader className="flex-row items-center gap-2 px-4 pt-3.5 pb-1">
           <ProjectPicker projects={projects.data ?? []} value={project} onChange={setProject} />
           <span className="text-grid-muted">›</span>
-          <DialogTitle className="text-[12.5px] font-normal text-grid-muted">{t("create.title")}</DialogTitle>
+          <DialogTitle className="text-[13.5px] font-normal text-grid-muted">{t("create.title")}</DialogTitle>
           <DialogDescription className="sr-only">{t("create.titlePlaceholder")}</DialogDescription>
         </DialogHeader>
         {noProjects ? (
-          <p className="px-4 py-6 text-[13px] text-grid-muted">{t("create.noProject")}</p>
+          <p className="px-4 py-6 text-[14px] text-grid-muted">{t("create.noProject")}</p>
         ) : (
           <div className="flex flex-col gap-1 px-4 pt-2">
             <input
@@ -125,7 +125,7 @@ export function CreateIssue({ open, onOpenChange, projectId }: { open: boolean; 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t("create.titlePlaceholder")}
-              className="h-9 w-full bg-transparent text-[17px] font-medium text-grid-fg outline-none placeholder:text-grid-muted/70"
+              className="h-9 w-full bg-transparent text-[18px] font-medium text-grid-fg outline-none placeholder:text-grid-muted/70"
               data-create-title
             />
             <textarea
@@ -134,7 +134,7 @@ export function CreateIssue({ open, onOpenChange, projectId }: { open: boolean; 
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t("create.descriptionPlaceholder")}
               rows={4}
-              className="min-h-24 w-full resize-none bg-transparent text-[13px] leading-relaxed text-grid-body outline-none placeholder:text-grid-muted/70"
+              className="min-h-24 w-full resize-none bg-transparent text-[14px] leading-relaxed text-grid-body outline-none placeholder:text-grid-muted/70"
             />
             <div className="flex flex-wrap items-center gap-1.5 pb-3">
               <StatusPicker statuses={statuses} value={status} onChange={setStatus} />
@@ -148,7 +148,7 @@ export function CreateIssue({ open, onOpenChange, projectId }: { open: boolean; 
           </div>
         )}
         <div className="flex items-center justify-end gap-3 border-t border-line px-4 py-2.5">
-          <label className="flex items-center gap-2 text-[12px] text-grid-muted">
+          <label className="flex items-center gap-2 text-[13px] text-grid-muted">
             <Switch checked={more} onCheckedChange={setMore} size="sm" />
             {t("create.more")}
           </label>

@@ -93,14 +93,14 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
       body={filtering ? t("issues.find.noMatchBody") : t("issues.project.emptyBody")}
       action={
         filtering ? (
-          <button type="button" onClick={() => setFilters(NO_FILTERS)} className="rounded-md border border-line px-3 py-1 text-[12.5px] hover:bg-grid-soft">
+          <button type="button" onClick={() => setFilters(NO_FILTERS)} className="rounded-md border border-line px-3 py-1 text-[13.5px] hover:bg-grid-soft">
             {t("issues.find.clear")}
           </button>
         ) : (
           <button
             type="button"
             onClick={() => shell.openCreate(id)}
-            className="flex items-center gap-2 rounded-md border border-line px-3 py-1 text-[12.5px] hover:bg-grid-soft"
+            className="flex items-center gap-2 rounded-md border border-line px-3 py-1 text-[13.5px] hover:bg-grid-soft"
           >
             {t("create.title")} <Kbd combo="c" />
           </button>
@@ -120,7 +120,7 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
             <button
               type="button"
               onClick={() => shell.openCreate(id)}
-              className="ms-1 flex h-7 items-center gap-1.5 rounded-md bg-grid-action ps-2 pe-1.5 text-[12px] font-medium text-grid-on-action hover:opacity-90"
+              className="ms-1 flex h-7 items-center gap-1.5 rounded-md bg-grid-action ps-2 pe-1.5 text-[13px] font-medium text-grid-on-action hover:opacity-90"
               data-new-issue-here
             >
               <PlusIcon className="size-3.5" />

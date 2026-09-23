@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export const fieldClass =
-  "h-8 rounded-md border border-line bg-background px-2 text-[12.5px] text-grid-fg outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 [color-scheme:light] dark:[color-scheme:dark] aria-invalid:border-grid-danger";
+  "h-8 rounded-md border border-line bg-background px-2 text-[13.5px] text-grid-fg outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 [color-scheme:light] dark:[color-scheme:dark] aria-invalid:border-grid-danger";
 
 export function normalizeTime(v: string): string {
   const s = v.trim().replace(/\s+/g, "");

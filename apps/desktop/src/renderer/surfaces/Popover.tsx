@@ -35,8 +35,8 @@ export function Popover() {
       <header className="flex items-center gap-2.5 border-b border-line px-3.5 py-2.5">
         <Mark size={18} />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] leading-tight font-medium text-grid-fg">{t("app.name")}</p>
-          {workspace ? <p className="truncate text-[11px] text-grid-muted">{workspace.name}</p> : null}
+          <p className="text-[14px] leading-tight font-medium text-grid-fg">{t("app.name")}</p>
+          {workspace ? <p className="truncate text-[12px] text-grid-muted">{workspace.name}</p> : null}
         </div>
         <IconAction label={t("pop.openApp")} onClick={() => void desktop.openMain().then(() => desktop.hideSurface())}>
           <ArrowUpRightIcon />
@@ -49,10 +49,10 @@ export function Popover() {
         <Signed />
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-          <p className="text-[13px] text-grid-muted">{t("pop.signedOut")}</p>
+          <p className="text-[14px] text-grid-muted">{t("pop.signedOut")}</p>
           <button
             type="button"
-            className="rounded-md bg-grid-action px-3 py-1.5 text-[12.5px] font-medium text-grid-on-action"
+            className="rounded-md bg-grid-action px-3 py-1.5 text-[13.5px] font-medium text-grid-on-action"
             onClick={() => void desktop.openMain().then(() => desktop.hideSurface())}
           >
             {t("auth.signIn")}
@@ -115,7 +115,7 @@ function Signed() {
         {running ? (
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1.5 text-[11px] text-grid-muted">
+              <p className="flex items-center gap-1.5 text-[12px] text-grid-muted">
                 <span className="relative flex size-1.5">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-grid-action opacity-70 motion-reduce:animate-none" />
                   <span className="relative inline-flex size-1.5 rounded-full bg-grid-action" />
@@ -125,10 +125,10 @@ function Signed() {
               <LtrText className="pop-clock block font-mono text-[28px] leading-tight font-medium tracking-tight text-grid-action tabular-nums">
                 <span data-pop-clock>{clock((now - Date.parse(running.started_at)) / 1000)}</span>
               </LtrText>
-              <p className="truncate text-[12.5px] text-grid-fg" title={label}>
+              <p className="truncate text-[13.5px] text-grid-fg" title={label}>
                 {label}
               </p>
-              {where ? <p className="truncate text-[11px] text-grid-muted">{where}</p> : null}
+              {where ? <p className="truncate text-[12px] text-grid-muted">{where}</p> : null}
             </div>
             <button
               type="button"
@@ -156,7 +156,7 @@ function Signed() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={t("pop.whatNow")}
-              className="h-9 min-w-0 flex-1 rounded-md border border-line bg-background px-2.5 text-[13px] outline-none placeholder:text-grid-muted focus:border-grid-action"
+              className="h-9 min-w-0 flex-1 rounded-md border border-line bg-background px-2.5 text-[14px] outline-none placeholder:text-grid-muted focus:border-grid-action"
               data-pop-input
             />
             <button
@@ -205,7 +205,7 @@ function Signed() {
         ) : null}
       </div>
 
-      <footer className="flex items-center justify-between border-t border-line px-3.5 py-2 text-[11.5px] text-grid-muted">
+      <footer className="flex items-center justify-between border-t border-line px-3.5 py-2 text-[12.5px] text-grid-muted">
         <span>
           {t("pop.today")}{" "}
           <LtrText className="font-mono text-grid-fg tabular-nums">{todaySecs === null ? "—" : hm(todaySecs)}</LtrText>
@@ -222,7 +222,7 @@ function Signed() {
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="py-1">
-      <p className="grid-micro px-3.5 pt-1.5 pb-1 text-[10px]">{title}</p>
+      <p className="grid-micro px-3.5 pt-1.5 pb-1 text-[11.5px]">{title}</p>
       {children}
     </section>
   );
@@ -249,10 +249,10 @@ function Row({
     <div className="group mx-1.5 flex items-center gap-2.5 rounded-[7px] px-2 py-1.5 hover:bg-[color-mix(in_oklab,var(--grid-fg)_7%,transparent)]">
       <span className="flex size-4 items-center justify-center">{icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[12.5px] text-grid-fg" dir="auto">
+        <p className="truncate text-[13.5px] text-grid-fg" dir="auto">
           {title}
         </p>
-        {sub ? <p className="truncate text-[11px] text-grid-muted">{sub}</p> : null}
+        {sub ? <p className="truncate text-[12px] text-grid-muted">{sub}</p> : null}
       </div>
       {onOpen ? (
         <button type="button" onClick={onOpen} aria-label={openLabel} title={openLabel} className="hidden size-6 items-center justify-center rounded text-grid-muted group-hover:flex hover:text-grid-fg">

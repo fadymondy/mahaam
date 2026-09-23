@@ -42,7 +42,7 @@ export function SettingsView({ section }: { section?: string }) {
     <>
       <ViewHeader title={t("nav.settings")}>
         <ChevronRightIcon className="size-3.5 text-grid-muted rtl:-scale-x-100" />
-        <span className="truncate text-[13px] text-grid-muted">{t(`settings.${current}`)}</span>
+        <span className="truncate text-[14px] text-grid-muted">{t(`settings.${current}`)}</span>
       </ViewHeader>
       <div className="flex min-h-0 flex-1" data-settings={current}>
         <nav
@@ -68,7 +68,7 @@ export function SettingsView({ section }: { section?: string }) {
                 aria-current={active ? "page" : undefined}
                 onClick={() => go(id)}
                 className={cn(
-                  "flex h-7 w-full items-center gap-2 rounded-md px-2 text-start text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-grid-action/40",
+                  "flex h-7 w-full items-center gap-2 rounded-md px-2 text-start text-[14px] outline-none focus-visible:ring-2 focus-visible:ring-grid-action/40",
                   active ? "bg-grid-soft font-medium text-grid-fg" : "text-grid-body hover:bg-grid-soft/70 hover:text-grid-fg",
                 )}
               >
