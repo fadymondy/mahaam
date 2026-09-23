@@ -6,6 +6,7 @@ package migrate
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -112,11 +113,29 @@ func ensureAppRole(ctx context.Context, db *sql.DB, appURL string, logf func(str
 		fmt.Sprintf(`GRANT SELECT, INSERT, UPDATE, DELETE ON %s TO %s`, strings.Join(TenantTables, ", "), role),
 		fmt.Sprintf(`REVOKE ALL ON users, admin_mcp_tokens, plans, workspace_usage, platform_users, admin_audit, platform_meta FROM %s`, role),
 	}
-	for _, s := range stmts {
+	for i, s := range stmts {
 		if _, err := db.ExecContext(ctx, s); err != nil {
+			// A managed Postgres (production's shared cluster) may not give the owner CREATEROLE, so
+			// it cannot ALTER an app role an administrator created. That role already exists; its
+			// attributes are the administrator's to set, and the API's boot check still refuses to
+			// start if it could bypass RLS. Stopping here would skip every constraint and RLS file
+			// below, so carry on — for this statement and this error only.
+			if i == 1 && isInsufficientPrivilege(err) {
+				logf("app role %s: cannot ALTER ROLE here (%v) — keeping its current attributes and password", role, err)
+				continue
+			}
 			return fmt.Errorf("app role: %w", err)
 		}
 	}
 	logf("app role %s: login, no superuser, no BYPASSRLS, DML on %d tenant tables", role, len(TenantTables))
 	return nil
+}
+
+// isInsufficientPrivilege is SQLSTATE 42501.
+func isInsufficientPrivilege(err error) bool {
+	var pg interface{ SQLState() string }
+	if errors.As(err, &pg) {
+		return pg.SQLState() == "42501"
+	}
+	return strings.Contains(err.Error(), "SQLSTATE 42501")
 }
