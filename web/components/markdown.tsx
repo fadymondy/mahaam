@@ -58,10 +58,30 @@ const components: Components = {
   strong: ({ children }) => <strong className="font-semibold text-grid-fg">{children}</strong>,
 }
 
-export function Markdown({ children, className }: { children: string; className?: string }) {
+// For our own text (the legal and help pages), not user content: a link to one of our pages, an
+// anchor or an email address opens where you are; only other sites open in a new tab.
+const trustedComponents: Components = {
+  ...components,
+  // `node` is react-markdown's syntax-tree node, not an attribute; keep it out of the HTML.
+  a: ({ node, href, children, ...props }) => {
+    const local = !!href && (href.startsWith("/") || href.startsWith("#") || href.startsWith("mailto:"))
+    return (
+      <a
+        {...props}
+        href={href}
+        {...(local ? {} : { target: "_blank", rel: "noreferrer noopener" })}
+        className="text-grid-action underline underline-offset-2 hover:no-underline"
+      >
+        {children}
+      </a>
+    )
+  },
+}
+
+export function Markdown({ children, className, trusted = false }: { children: string; className?: string; trusted?: boolean }) {
   return (
     <div dir="auto" className={cn("text-sm text-grid-body [word-break:break-word]", className)}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={trusted ? trustedComponents : components}>
         {children}
       </ReactMarkdown>
     </div>

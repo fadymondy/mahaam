@@ -101,16 +101,24 @@ export function PublicFrame({
             </FooterCell>
           </dl>
           <div className="grid-screen-line-top grid-screen-line-bottom mt-4 flex items-center gap-4 px-4 py-3 text-sm text-grid-muted">
-            <Link href={`/${locale}`} aria-label={brandName(locale)}>
+            <Link href={`/${locale}`} aria-label={brandName(locale)} className="shrink-0">
               <CubeMark mark={MAHAAM_MARK} size={16} />
             </Link>
             <div className="flex-1" />
-            <Link href={`/${locale}/legal/terms`} className="underline-offset-4 hover:text-grid-fg hover:underline">
-              {t("legal.terms")}
-            </Link>
-            <Link href={`/${locale}/legal/privacy`} className="underline-offset-4 hover:text-grid-fg hover:underline">
-              {t("legal.privacy")}
-            </Link>
+            <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
+              <Link href={`/${locale}/support`} className="underline-offset-4 hover:text-grid-fg hover:underline">
+                {t("footer.support")}
+              </Link>
+              <Link href={`/${locale}/delete-account`} className="underline-offset-4 hover:text-grid-fg hover:underline">
+                {t("footer.deleteAccount")}
+              </Link>
+              <Link href={`/${locale}/legal/terms`} className="underline-offset-4 hover:text-grid-fg hover:underline">
+                {t("legal.terms")}
+              </Link>
+              <Link href={`/${locale}/legal/privacy`} className="underline-offset-4 hover:text-grid-fg hover:underline">
+                {t("legal.privacy")}
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

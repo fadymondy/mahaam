@@ -52,7 +52,9 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
                   {s.heading}
                 </a>
               </h2>
-              <Markdown className="text-[15px]">{s.body}</Markdown>
+              <Markdown trusted className="text-[15px]">
+                {s.body}
+              </Markdown>
             </section>
           ))}
         </article>
