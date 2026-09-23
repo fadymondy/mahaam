@@ -204,23 +204,16 @@ func (s *Service) TwoFA(ctx context.Context, userID string) (TwoFAState, error) 
 	return st, err
 }
 
-// checkPassword compares against the account's bcrypt hash.
-func (s *Service) checkPassword(ctx context.Context, userID, password string) (email string, err error) {
-	var hash string
-	if err := s.DB.QueryRowContext(ctx, `SELECT email, password_hash FROM users WHERE id = $1`, userID).Scan(&email, &hash); err != nil {
-		return "", err
-	}
-	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
-		return "", errWrongPassword
-	}
-	return email, nil
-}
-
 // Enroll starts setup: a new secret, not yet enforced. It needs the password, because turning 2FA
 // on is also a way to lock the owner out: someone at an unlocked laptop could otherwise enrol their
-// own phone.
-func (s *Service) Enroll(ctx context.Context, userID, password string) (secret, uri string, err error) {
-	email, err := s.checkPassword(ctx, userID, password)
+// own phone. An account without a password proves itself with a mailed code instead (reauth.go).
+func (s *Service) Enroll(ctx context.Context, userID, password, emailCode string) (secret, uri string, err error) {
+	// With an email code, refuse what would fail anyway BEFORE the code is spent (a password is
+	// not used up, so password accounts keep the original order).
+	if emailCode != "" && TwoFAEnabled(ctx, s.DB, userID) {
+		return "", "", ErrTOTPEnabled
+	}
+	email, err := s.reauth(ctx, userID, password, emailCode)
 	if err != nil {
 		return "", "", err
 	}
@@ -357,8 +350,11 @@ func (s *Service) SecondFactor(ctx context.Context, userID, code, recovery strin
 
 // RegenerateRecovery replaces the recovery codes. Password and a current code both, because the
 // old codes stop working and the new ones are shown.
-func (s *Service) RegenerateRecovery(ctx context.Context, userID, password, code string) ([]string, error) {
-	if _, err := s.checkPassword(ctx, userID, password); err != nil {
+func (s *Service) RegenerateRecovery(ctx context.Context, userID, password, emailCode, code string) ([]string, error) {
+	if emailCode != "" && strings.TrimSpace(code) == "" {
+		return nil, ErrTOTPInvalid // checked before the email code is spent
+	}
+	if _, err := s.reauth(ctx, userID, password, emailCode); err != nil {
 		return nil, err
 	}
 	if err := s.SecondFactor(ctx, userID, code, ""); err != nil {
@@ -376,10 +372,19 @@ func (s *Service) RegenerateRecovery(ctx context.Context, userID, password, code
 	return codes, tx.Commit()
 }
 
-// DisableTwoFA turns it off: the password and a code (or a recovery code), so neither a stolen
-// session nor a stolen password alone can remove the second factor.
-func (s *Service) DisableTwoFA(ctx context.Context, userID, password, code, recovery string) error {
-	if _, err := s.checkPassword(ctx, userID, password); err != nil {
+// DisableTwoFA turns it off: the password (or, without one, a mailed code) and a code (or a
+// recovery code), so neither a stolen session nor a stolen password alone can remove the second
+// factor.
+func (s *Service) DisableTwoFA(ctx context.Context, userID, password, emailCode, code, recovery string) error {
+	if emailCode != "" { // checked before the email code is spent
+		if !TwoFAEnabled(ctx, s.DB, userID) {
+			return ErrTOTPNotEnabled
+		}
+		if strings.TrimSpace(code) == "" && strings.TrimSpace(recovery) == "" {
+			return ErrTOTPInvalid
+		}
+	}
+	if _, err := s.reauth(ctx, userID, password, emailCode); err != nil {
 		return err
 	}
 	if err := s.SecondFactor(ctx, userID, code, recovery); err != nil {

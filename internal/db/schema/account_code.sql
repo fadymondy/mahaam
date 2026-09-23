@@ -1,10 +1,11 @@
--- One-time codes mailed to a person: a password reset today, email verification next (MH-340,
+-- One-time codes mailed to a person: password reset, email verification and change, and 'reauth' (the
+-- password stand-in for accounts without one, internal/account/reauth.go) (MH-340,
 -- MH-342). Not tenant data. An account exists outside any workspace, so this runs on the owner
 -- pool only (internal/account) with no RLS policy and no grant to the app role.
 CREATE TABLE IF NOT EXISTS account_codes (
     id         text        PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id    text        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    purpose    text        NOT NULL CHECK (purpose IN ('password_reset', 'email_verify', 'email_change')),
+    purpose    text        NOT NULL CHECK (purpose IN ('password_reset', 'email_verify', 'email_change', 'reauth')),
     -- HMAC of purpose, user and code under MAHAAM_SECRET_KEY, never the code itself. A six-digit
     -- code has a million values, so a plain hash would fall to a laptop in a second if this table
     -- leaked. Keyed, it is useless without the server's key as well.
