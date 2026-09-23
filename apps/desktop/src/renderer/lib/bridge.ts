@@ -65,7 +65,9 @@ export const desktop = {
   /** Hide the window this renderer is in (the popover, the palette). */
   hideSurface: () => call<null>("surface:hide"),
   openSettings: (section?: string) => call<void>("surface:settings", section),
-  openPalette: () => call<void>("surface:palette"),
+  openPalette: (mode?: "search" | "create") => call<void>("surface:palette", mode),
+  /** The palette sizes its window to what it shows. */
+  resizeSelf: (height: number) => call<null>("surface:resize", height),
   /** Bring the main window forward, optionally at a route. */
   openMain: (to?: import("../../shared/types").Route) => call<void>("surface:main", to),
   /** A command for the main window (e.g. open quick create there). */
@@ -82,7 +84,7 @@ type Events = {
   prefs: [Prefs];
   command: [Command];
   window: [{ fullscreen: boolean }];
-  "surface:shown": [];
+  "surface:shown": [{ mode?: "search" | "create" }];
   update: [import("../../main/updates").UpdateState];
 };
 

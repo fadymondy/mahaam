@@ -115,6 +115,16 @@ function place(w: BrowserWindow, anchor: Rectangle | null): void {
   w.setPosition(x, y, false);
 }
 
+let paletteMode: "search" | "create" = "search";
+
+/** The palette keeps its window exactly as tall as what it shows (from the renderer). */
+export function resizeSurface(w: BrowserWindow, height: number): void {
+  if (surfaceWindow("palette") !== w) return;
+  const h = Math.round(Math.min(Math.max(height, 64), 560));
+  const [width] = w.getSize() as [number, number];
+  if (w.getSize()[1] !== h) w.setSize(width, h, false);
+}
+
 function present(w: BrowserWindow): void {
   // Opened from the tray or a global shortcut while another app is in front: take the keyboard
   // first, or the panel would blur — and hide — the instant it appears.
@@ -122,7 +132,7 @@ function present(w: BrowserWindow): void {
   shownAt.set(w, Date.now());
   w.show();
   w.focus();
-  w.webContents.send("surface:shown");
+  w.webContents.send("surface:shown", surfaceWindow("palette") === w ? { mode: paletteMode } : {});
 }
 
 export function togglePopover(anchor: Rectangle | null): void {
@@ -138,10 +148,16 @@ export function togglePopover(anchor: Rectangle | null): void {
 
 // ── palette ──────────────────────────────────────────────────────────────────────────────────
 
-export function showPalette(): void {
-  const w = surfaceWindow("palette") ?? panel("palette", { width: 640, height: 420 }, "hud");
+const PALETTE_WIDTH = 680;
+
+/** `mode`: "search" (⌘⇧Space) or "create" (⌥⌘N, straight into a new issue). */
+export function showPalette(mode: "search" | "create" = "search"): void {
+  // "popover", not "hud": hud is a dark material in every appearance, which showed as a black
+  // edge around the palette in light mode. popover follows the app's light/dark.
+  const w = surfaceWindow("palette") ?? panel("palette", { width: PALETTE_WIDTH, height: 420 }, "popover");
   const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-  w.setPosition(Math.round(area.x + (area.width - 640) / 2), Math.round(area.y + area.height * 0.2), false);
+  w.setPosition(Math.round(area.x + (area.width - PALETTE_WIDTH) / 2), Math.round(area.y + area.height * 0.2), false);
+  paletteMode = mode;
   // Over full-screen apps too, like Spotlight.
   if (IS_MAC) w.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   if (w.webContents.isLoading()) w.once("ready-to-show", () => present(w));

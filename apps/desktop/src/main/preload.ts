@@ -21,6 +21,7 @@ const INVOKE = new Set([
   "update:check",
   "update:install",
   "surface:hide",
+  "surface:resize",
   "surface:settings",
   "surface:palette",
   "surface:main",

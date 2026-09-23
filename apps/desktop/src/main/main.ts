@@ -30,7 +30,7 @@ import * as store from "./store";
 import { idleStrings, menuStrings, trayStrings } from "./strings";
 import { createTray, getRecent, getRunning, refreshTray, setRecent, setRunning, trayProbe } from "./tray";
 import { checkNow, installNow, readyNotification, startUpdates, stopUpdates, updateState } from "./updates";
-import { initSurfaces, load, prewarmPopover, retintSurfaces, showPalette, showSettings, surfaceWindow, togglePopover, webPreferences } from "./surfaces";
+import { initSurfaces, load, prewarmPopover, resizeSurface, retintSurfaces, showPalette, showSettings, surfaceWindow, togglePopover, webPreferences } from "./surfaces";
 
 const DEV_URL = process.env.MAHAAM_DEV_URL; // the Vite dev server (npm run dev)
 const SERVER_ARG = process.argv.find((a) => a.startsWith("--server="))?.slice("--server=".length);
@@ -38,6 +38,7 @@ const PROTOCOL = "mahaam";
 const IS_MAC = process.platform === "darwin";
 const TIMER_SHORTCUT = "CommandOrControl+Alt+Shift+M";
 const PALETTE_SHORTCUT = "CommandOrControl+Shift+Space";
+const CREATE_SHORTCUT = "CommandOrControl+Alt+N";
 const IS_WIN = process.platform === "win32";
 
 // Its own directory: the tray app (apps/tray, productName "Mahaam" too) lives in the default one,
@@ -406,6 +407,11 @@ function handle(channel: string, fn: (...args: any[]) => unknown): void {
 }
 
 function registerIpc(): void {
+  ipcMain.handle("surface:resize", (e, height: unknown) => {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    if (trusted(e) && w && typeof height === "number" && Number.isFinite(height)) resizeSurface(w, height);
+    return { ok: true, value: null };
+  });
   ipcMain.handle("surface:hide", (e) => {
     if (!trusted(e)) return { ok: false, status: 0, message: "untrusted sender" };
     BrowserWindow.fromWebContents(e.sender)?.hide();
@@ -456,7 +462,7 @@ function registerIpc(): void {
 
   // The extra windows (surfaces.ts).
   handle("surface:settings", (section?: string) => showSettings(typeof section === "string" ? section : undefined));
-  handle("surface:palette", () => showPalette());
+  handle("surface:palette", (mode?: string) => showPalette(mode === "create" ? "create" : "search"));
   handle("surface:main", (to?: Route) => (to && typeof to === "object" && typeof (to as Route).name === "string" ? command({ type: "navigate", to }) : show()));
   handle("surface:command", (c: Command) => {
     if (c && typeof c === "object" && typeof c.type === "string") command(c);
@@ -538,7 +544,9 @@ app.whenReady().then(async () => {
   });
   // Stop the running timer, or resume the last thing worked on — from anywhere.
   // The quick palette from any app, like Spotlight.
-  globalShortcut.register(PALETTE_SHORTCUT, () => showPalette());
+  globalShortcut.register(PALETTE_SHORTCUT, () => showPalette("search"));
+  // A new issue from any app, without switching to Mahaam.
+  globalShortcut.register(CREATE_SHORTCUT, () => showPalette("create"));
   globalShortcut.register(TIMER_SHORTCUT, () => {
     if (!api) return show();
     if (getRunning()) void api.stop();
@@ -548,7 +556,7 @@ app.whenReady().then(async () => {
       else command({ type: "timer-palette" });
     }
   });
-  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe, mahaamPalette: showPalette, mahaamCheckUpdates: checkNow });
+  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe, mahaamPalette: (mode?: "search" | "create") => showPalette(mode), mahaamCheckUpdates: checkNow });
 
   win = createWindow();
   prewarmPopover();

@@ -31,7 +31,7 @@ export function Popover() {
   }, []);
 
   return (
-    <div className="pop flex h-full flex-col overflow-hidden rounded-[12px] border border-line" data-popover>
+    <div className="pop flex h-full flex-col overflow-hidden" data-popover>
       <header className="flex items-center gap-2.5 border-b border-line px-3.5 py-2.5">
         <Mark size={18} />
         <div className="min-w-0 flex-1">

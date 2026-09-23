@@ -202,16 +202,36 @@ try {
   await pop.evaluate(() => window.mahaam.invoke("surface:hide"));
 
   // ── the quick palette (⌘⇧Space from any app) ──
-  await app.evaluate(() => globalThis.mahaamPalette());
+  await app.evaluate(() => globalThis.mahaamPalette("search"));
   const qp = await surface("palette");
   await qp.locator("[data-qp-input]").waitFor({ timeout: 10000 });
+  await shot("e2e-shots/e2e-6a-palette-empty.png", "palette");
   await qp.locator("[data-qp-input]").fill("MH");
-  await qp.locator("[cmdk-item][data-value^='issue:']").first().waitFor({ timeout: 8000 });
+  await qp.locator("[role=option][data-value^='issue:']").first().waitFor({ timeout: 8000 });
+  const h = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=palette")).getSize()[1]);
+  log("palette: window sized to its content:", h, "px");
   await shot("e2e-shots/e2e-6-palette.png", "palette");
-  const firstKey = (await qp.locator("[cmdk-item][data-value^='issue:']").first().getAttribute("data-value")).split(":")[1];
+  const first = await qp.locator("[role=option][data-value^='issue:']").first();
+  const firstKey = (await first.getAttribute("data-value")).split(":")[1];
+  await first.hover();
   await qp.keyboard.press("Enter");
   await until("the palette to open the issue in the main window", () => page.evaluate(() => document.querySelector("main")?.getAttribute("data-route") === "issue"));
   log("palette: Enter on", firstKey, "opened it in the main window");
+
+  // ── ⌥⌘N: a new issue from any app ──
+  await app.evaluate(() => globalThis.mahaamPalette("create"));
+  await qp.locator("[data-qp-title]").waitFor({ timeout: 8000 });
+  await qp.locator("[data-qp-title]").fill("Created from the quick palette (desktop e2e)");
+  await shot("e2e-shots/e2e-7-quick-create.png", "palette");
+  await qp.keyboard.press("Meta+Enter");
+  await qp.locator("[data-qp-created]").waitFor({ timeout: 10000 });
+  const createdText = await qp.locator("[data-qp-created]").innerText();
+  const createdKey = /([A-Z][A-Z0-9]*-\d+)/.exec(createdText)?.[1];
+  await shot("e2e-shots/e2e-8-quick-created.png", "palette");
+  const made = await page.evaluate((k) => window.mahaam.invoke("api", "task", [k]), createdKey);
+  if (!made.ok || made.value.title !== "Created from the quick palette (desktop e2e)") fail("the quick palette's issue is not on the server");
+  log("quick create: ⌥⌘N →", createdKey, "is on the server");
+  await page.evaluate((k) => window.mahaam.invoke("api", "deleteTask", [k]), createdKey);
 
   // ── Arabic, dark ──
   await command({ type: "navigate", to: { name: "my-issues" } });
