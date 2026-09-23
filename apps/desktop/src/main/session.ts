@@ -3,9 +3,12 @@
 //
 // Signing in mints a personal access token for this device (revocable in Settings → Devices on the
 // web, and on the next sign-in here), so the password is never stored. Google/GitHub accounts have
-// no password; they sign in on the Mahaam sign-in page in a separate window, and the token is
-// minted from that page's session cookie.
-import { BrowserWindow, session as electronSession } from "electron";
+// no password; they sign in on the web in the system browser, which redirects back here, and the token is
+// minted through a one-time code bound to this process's PKCE verifier (signInWithBrowser).
+import { shell } from "electron";
+import { createHash, randomBytes } from "node:crypto";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { hostname } from "node:os";
 import { basename } from "node:path";
 import {
@@ -28,8 +31,6 @@ export interface SessionOut {
 }
 
 type Listener = (s: SessionOut | null, reason: "signed-in" | "signed-out" | "workspace" | "expired") => void;
-
-const AUTH_PARTITION = "persist:mahaam-auth";
 
 let client: MahaamClient | null = null;
 let stored: Omit<store.Stored, "secret"> | null = null;
@@ -168,66 +169,106 @@ async function adopt(url: string, email: string, t: string): Promise<SignInResul
 }
 
 /**
- * Google, GitHub or Apple: the Mahaam sign-in page in its own window, on its own cookie jar.
- * Once it lands in the console, the device token is minted from that session and the window
- * closes. Resolves null if the person closes the window first.
+ * Google, GitHub or Apple — in the person's own browser, never an embedded one (RFC 8252). The
+ * app listens on a loopback port, opens <web>/<locale>/app-signin in the default browser with a
+ * PKCE challenge, and waits: the person signs in on the web as usual, confirms, and the browser is
+ * redirected to http://127.0.0.1:<port>/callback with a one-time code. The code and the verifier
+ * (which never left this process) are traded for this device's token
+ * (internal/account/appsignin.go). Resolves null if cancelled or after ten minutes.
  */
-export function signInWithBrowser(apiUrlIn: string, parent: BrowserWindow | null, locale: string): Promise<SignInResult | null> {
+let pendingBrowser: { cancel: () => void } | null = null;
+
+export function cancelBrowserSignIn(): void {
+  pendingBrowser?.cancel();
+}
+
+export function signInWithBrowser(apiUrlIn: string, locale: string, onReturn: () => void): Promise<SignInResult | null> {
+  pendingBrowser?.cancel();
   const url = normalizeApiUrl(apiUrlIn);
-  const ses = electronSession.fromPartition(AUTH_PARTITION);
-  // A clean jar every time: this window is for signing in, not for browsing as someone.
-  return ses.clearStorageData().then(
-    () =>
-      new Promise<SignInResult | null>((resolve, reject) => {
-        const win = new BrowserWindow({
-          width: 520,
-          height: 720,
-          parent: parent ?? undefined,
-          modal: process.platform !== "darwin" && !!parent,
-          title: "Mahaam",
-          autoHideMenuBar: true,
-          webPreferences: { partition: AUTH_PARTITION, sandbox: true, contextIsolation: true, nodeIntegration: false },
+  const verifier = randomBytes(32).toString("base64url");
+  const challenge = createHash("sha256").update(verifier).digest("base64url");
+  const state = randomBytes(16).toString("hex");
+
+  return new Promise<SignInResult | null>((resolve, reject) => {
+    let settled = false;
+    const server = createServer();
+    const finish = (v: SignInResult | null, err?: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      pendingBrowser = null;
+      server.close();
+      if (err) reject(err);
+      else resolve(v);
+    };
+    const timer = setTimeout(() => finish(null), 10 * 60_000);
+    pendingBrowser = { cancel: () => finish(null) };
+
+    server.on("request", (req, res) => {
+      const u = new URL(req.url ?? "/", "http://127.0.0.1");
+      if (u.pathname !== "/callback") {
+        res.writeHead(404).end();
+        return;
+      }
+      const code = u.searchParams.get("code");
+      // The state ties this redirect to the sign-in this app started; anything else is ignored.
+      if (!code || u.searchParams.get("state") !== state) {
+        res.writeHead(400, { "Content-Type": "text/html; charset=utf-8" }).end(page(locale, false));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }).end(page(locale, true));
+      onReturn();
+      const redirect = `http://127.0.0.1:${(server.address() as AddressInfo).port}/callback`;
+      void (async () => {
+        const r = await fetch(`${url}/api/auth/app/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ code, code_verifier: verifier, redirect_uri: redirect }),
         });
-        // Google refuses sign-in inside anything that announces itself as Electron.
-        win.webContents.setUserAgent(win.webContents.getUserAgent().replace(/ Electron\/\S+/, "").replace(/ @mahaam\/desktop\/\S+/, ""));
-        let done = false;
-        const finish = (v: SignInResult | null, err?: unknown) => {
-          if (done) return;
-          done = true;
-          if (!win.isDestroyed()) win.close();
-          if (err) reject(err);
-          else resolve(v);
-        };
-        const check = async (target: string) => {
-          if (done) return;
-          let path = "";
-          try {
-            const u = new URL(target);
-            if (u.origin !== new URL(url).origin) return;
-            path = u.pathname;
-          } catch {
-            return;
-          }
-          if (!/^\/(en|ar)\/(workspaces|w\/)/.test(path)) return;
-          try {
-            const boot = new MahaamClient({
-              baseUrl: url,
-              csrf: "browser",
-              fetch: ((input: RequestInfo | URL, init?: RequestInit) => ses.fetch(String(input), { ...init, credentials: "include" })) as typeof fetch,
-            });
-            const out = await boot.tokenFromBrowserSession(deviceName());
-            await ses.clearStorageData();
-            finish(await adopt(url, out.email, out.token));
-          } catch (e) {
-            finish(null, e);
-          }
-        };
-        win.webContents.on("did-navigate", (_e, u) => void check(u));
-        win.webContents.on("did-navigate-in-page", (_e, u) => void check(u));
-        win.on("closed", () => finish(null));
-        void win.loadURL(`${url}/${locale === "ar" ? "ar" : "en"}/login`);
-      }),
-  );
+        const body = (await r.json().catch(() => ({}))) as { token?: string; email?: string; detail?: string };
+        if (!r.ok || !body.token) throw new ApiError(r.status, body.detail || `sign-in failed (HTTP ${r.status})`, body);
+        return adopt(url, body.email ?? "", body.token);
+      })().then(
+        (v) => finish(v),
+        (e) => finish(null, e),
+      );
+    });
+
+    // 127.0.0.1 only, on a port the OS picks: nothing off this machine can reach it.
+    server.listen(0, "127.0.0.1", () => {
+      const port = (server.address() as AddressInfo).port;
+      const q = new URLSearchParams({
+        redirect_uri: `http://127.0.0.1:${port}/callback`,
+        code_challenge: challenge,
+        code_challenge_method: "S256",
+        state,
+        device: deviceName(),
+      });
+      void shell.openExternal(`${url}/${locale === "ar" ? "ar" : "en"}/app-signin?${q}`);
+    });
+    server.on("error", (e) => finish(null, e));
+  });
+}
+
+/** What the browser tab shows after the redirect: done, go back to the app. */
+function page(locale: string, ok: boolean): string {
+  const ar = locale === "ar";
+  const title = ok ? (ar ? "تمّ تسجيل الدخول" : "You're signed in") : ar ? "تعذّر تسجيل الدخول" : "Sign-in didn't complete";
+  const body = ok
+    ? ar
+      ? "عد إلى تطبيق مهام. يمكنك إغلاق هذه الصفحة."
+      : "Go back to the Mahaam app. You can close this tab."
+    : ar
+      ? "ابدأ تسجيل الدخول من جديد من تطبيق مهام."
+      : "Start signing in again from the Mahaam app.";
+  return `<!doctype html><html lang="${ar ? "ar" : "en"}" dir="${ar ? "rtl" : "ltr"}"><head><meta charset="utf-8"><title>Mahaam</title>
+<style>:root{color-scheme:light dark;--bg:#f0ebe1;--fg:#0e1a3c;--muted:#6e6551;--line:#ded5c4;--card:#f7f4ec}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1429;--fg:#f0ebe1;--muted:#8a97b8;--line:#25355c;--card:#0e1a3c}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:15px/1.6 Inter,-apple-system,system-ui,sans-serif}
+main{border:1px solid var(--line);background:var(--card);padding:32px 40px;max-width:380px;text-align:center}
+h1{font-size:18px;font-weight:500;margin:14px 0 6px}p{color:var(--muted);margin:0}</style></head>
+<body><main><svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><rect x="29" y="29" width="21" height="21" fill="#8C3FB5"/><rect x="71" y="29" width="21" height="21" fill="#C9A227"/><rect x="8" y="50" width="21" height="21" fill="#8C3FB5"/><rect x="50" y="50" width="21" height="21" fill="#8C3FB5"/></svg>
+<h1>${title}</h1><p>${body}</p></main></body></html>`;
 }
 
 export async function signOut(): Promise<void> {

@@ -53,6 +53,7 @@ export const desktop = {
   signIn: (apiUrl: string, email: string, password: string, second?: { code?: string; recovery_code?: string }) =>
     call<SignInResult>("session:signIn", apiUrl, email, password, second),
   signInWithBrowser: (apiUrl: string) => call<SignInResult | null>("session:signInBrowser", apiUrl),
+  cancelBrowserSignIn: () => call<void>("session:cancelBrowser"),
   signOut: () => call<void>("session:signOut"),
   selectWorkspace: (id: string) => call<SessionOut>("session:selectWorkspace", id),
   running: () => call<TimeEntry | null>("timer:running"),

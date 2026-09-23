@@ -443,7 +443,9 @@ function registerIpc(): void {
   handle("session:signIn", (apiUrl: string, email: string, password: string, second?: { code?: string; recovery_code?: string }) =>
     session.signIn(String(apiUrl), String(email), String(password), second),
   );
-  handle("session:signInBrowser", (apiUrl: string) => session.signInWithBrowser(String(apiUrl), win, prefs.locale));
+  // The system browser, never an embedded one; the browser redirects back to a loopback port.
+  handle("session:signInBrowser", (apiUrl: string) => session.signInWithBrowser(String(apiUrl), prefs.locale, show));
+  handle("session:cancelBrowser", () => session.cancelBrowserSignIn());
   handle("session:signOut", () => session.signOut());
   handle("session:selectWorkspace", (id: string) => session.selectWorkspace(String(id)));
 

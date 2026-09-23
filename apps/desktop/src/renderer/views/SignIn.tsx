@@ -2,7 +2,7 @@
 // app asks for an account — email and password, the second factor when the account has one, or
 // Google/GitHub through the Mahaam sign-in page in its own window.
 import { ArrowLeftIcon, GlobeIcon, KeyRoundIcon, LockIcon, MailIcon } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import { BRAND, MARK_RECTS } from "@mahaam/client/brand";
 
@@ -58,17 +58,21 @@ export function SignIn() {
     }
   }
 
+  // Each browser attempt gets a number; re-opening cancels the previous one, whose settling must not
+  // touch the screen of the one now waiting.
+  const attempt = useRef(0);
   async function browser() {
-    if (busy) return;
+    if (busy === "password") return;
+    const mine = ++attempt.current;
     setBusy("browser");
     setError(null);
     try {
       const out = await desktop.signInWithBrowser(server);
-      if (out?.ok) setSession(out.session);
+      if (mine === attempt.current && out?.ok) setSession(out.session);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("common.error"));
+      if (mine === attempt.current) setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
-      setBusy(null);
+      if (mine === attempt.current) setBusy(null);
     }
   }
 
@@ -184,11 +188,31 @@ export function SignIn() {
                   {t("auth.orContinue")}
                   <span className="h-px flex-1 bg-line" />
                 </div>
-                <Button type="button" variant="outline" className="h-9 w-full" disabled={!!busy} onClick={browser} data-signin-browser>
-                  {busy === "browser" ? <Spinner /> : <GlobeIcon />}
-                  {t("auth.browser")}
-                </Button>
-                <p className="text-center text-[11.5px] leading-relaxed text-grid-muted">{t("auth.browserHint")}</p>
+                {busy === "browser" ? (
+                  <div className="flex flex-col items-center gap-2 border border-line bg-background px-4 py-3 text-center" role="status" data-signin-waiting>
+                    <span className="flex items-center gap-2 text-[12.5px] font-medium text-grid-fg">
+                      <Spinner />
+                      {t("auth.waiting")}
+                    </span>
+                    <p className="text-[11.5px] leading-relaxed text-grid-muted">{t("auth.waitingHint")}</p>
+                    <div className="flex gap-3 text-[12px]">
+                      <button type="button" className="text-grid-muted hover:text-grid-fg" onClick={() => void browser()}>
+                        {t("auth.reopen")}
+                      </button>
+                      <button type="button" className="text-grid-muted hover:text-grid-fg" onClick={() => void desktop.cancelBrowserSignIn()}>
+                        {t("common.cancel")}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Button type="button" variant="outline" className="h-9 w-full" disabled={!!busy} onClick={browser} data-signin-browser>
+                      <GlobeIcon />
+                      {t("auth.browser")}
+                    </Button>
+                    <p className="text-center text-[11.5px] leading-relaxed text-grid-muted">{t("auth.browserHint")}</p>
+                  </>
+                )}
               </>
             )}
           </form>

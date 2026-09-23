@@ -188,6 +188,7 @@ func registerAccount(api huma.API, a *app.App) {
 		account.RegisterDelete(api, &account.Service{})
 		account.RegisterVerify(api, &account.Service{})
 		account.RegisterTwoFA(api, &account.Service{})
+		account.RegisterAppSignin(api, &account.Service{})
 		return
 	}
 	s := &account.Service{DB: a.SysDB, Mail: mailer.FromKernel(a.Kernel), Log: a.Log}
@@ -204,6 +205,7 @@ func registerAccount(api huma.API, a *app.App) {
 	account.RegisterDelete(api, s)
 	account.RegisterVerify(api, s)
 	account.RegisterTwoFA(api, s) // /api/me/2fa/*, /api/auth/2fa/challenge
+	account.RegisterAppSignin(api, s) // /api/me/app-signin, /api/auth/app/token: apps sign in via the system browser
 	account.OnRegistered(a.Kernel, s) // the first verification code, when the auth plugin creates an account
 }
 

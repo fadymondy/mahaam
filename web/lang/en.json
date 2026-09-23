@@ -302,5 +302,15 @@
   "twofa.regenerate": "New recovery codes",
   "twofa.disable": "Turn off",
   "twofa.disabled": "Two-factor sign-in is off",
-  "twofa.orRecovery": "Or a recovery code"
+  "twofa.orRecovery": "Or a recovery code",
+  "appSignin.title": "Sign in to the Mahaam app",
+  "appSignin.hint": "You signed in here, in your browser. Confirm to finish signing in to the app.",
+  "appSignin.anApp": "A Mahaam app",
+  "appSignin.wantsToSignIn": "wants to sign in to your account.",
+  "appSignin.as": "Continue as",
+  "appSignin.continue": "Continue to the app",
+  "appSignin.switch": "Use another account",
+  "appSignin.notYou": "Only continue if you just started signing in from the Mahaam app on this computer or phone.",
+  "appSignin.done": "Done — you can go back to the Mahaam app. This tab can be closed.",
+  "appSignin.badRequest": "This sign-in link is incomplete or has expired. Start signing in again from the Mahaam app."
 }

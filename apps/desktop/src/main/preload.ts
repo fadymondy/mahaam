@@ -13,6 +13,7 @@ const INVOKE = new Set([
   "session:get",
   "session:signIn",
   "session:signInBrowser",
+  "session:cancelBrowser",
   "session:signOut",
   "session:selectWorkspace",
   "timer:running",
