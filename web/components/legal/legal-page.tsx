@@ -1,20 +1,23 @@
 "use client"
 
+// DRAFT — the legal text this page shows must be reviewed by the owner before launch
+// (web/content/legal.ts, LEGAL_REVIEWED; the words are in web/lang/legal.{en,ar}.json).
+
 import Link from "next/link"
 
 import { Markdown } from "@/components/markdown"
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
-import { LEGAL, LEGAL_DOCS, LEGAL_REVIEWED, LEGAL_UPDATED, type LegalDoc } from "@/content/legal"
+import { LEGAL_DOCS, LEGAL_REVIEWED, LEGAL_UPDATED, legalText, type LegalDoc } from "@/content/legal"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
 import { cn } from "@/lib/utils"
 
 // The Terms and the Privacy Policy on the signed-out frame (MH-345). Readable column, the other
-// document one click away, and a plain "draft" notice for as long as the owner hasn't signed the
-// text off (content/legal.ts, LEGAL_REVIEWED).
+// document one click away, one anchored section per heading, and a plain "draft" notice for as
+// long as the owner hasn't signed the text off.
 export function LegalPage({ doc }: { doc: LegalDoc }) {
   const { t, locale, formatDate } = useTranslations()
-  const text = LEGAL[doc][locale === "ar" ? "ar" : "en"]
+  const text = legalText(doc, locale)
   useDocumentTitle(text.title)
 
   return (
@@ -31,7 +34,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
                 d === doc ? "font-medium text-grid-fg" : "text-grid-muted hover:text-grid-fg hover:underline",
               )}
             >
-              {LEGAL[d][locale === "ar" ? "ar" : "en"].title}
+              {legalText(d, locale).title}
             </Link>
           ))}
           <span className="grid-micro ms-auto">{t("legal.updated", { date: formatDate(LEGAL_UPDATED) })}</span>
@@ -42,7 +45,16 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
           </p>
         ) : null}
         <article className="max-w-[68ch] text-[15px] leading-relaxed" data-legal-doc={doc}>
-          <Markdown className="text-[15px]">{text.body}</Markdown>
+          {text.sections.map((s) => (
+            <section key={s.id} id={s.id} aria-labelledby={`${s.id}-heading`} className="mt-8 scroll-mt-20 first:mt-0">
+              <h2 id={`${s.id}-heading`} className="mb-2 text-base font-semibold text-grid-fg">
+                <a href={`#${s.id}`} className="underline-offset-4 hover:underline">
+                  {s.heading}
+                </a>
+              </h2>
+              <Markdown className="text-[15px]">{s.body}</Markdown>
+            </section>
+          ))}
         </article>
       </PublicPanel>
     </PublicFrame>

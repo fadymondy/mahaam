@@ -1,7 +1,7 @@
 # Mahaam browser extension — privacy
 
-*The public policy is `https://mahaam.app/en/legal/privacy` (`web/content/legal.ts`), whose
-extension section agrees with this file; link that from both store listings. This file is the
+*The public policy is `https://mahaam.app/en/legal/privacy` (text in `web/lang/legal.{en,ar}.json`),
+whose extension section agrees with this file; link that from both store listings. This file is the
 extension's detail, kept in the repo so it changes in the same commit as the behaviour it
 describes.*
 
@@ -74,4 +74,4 @@ live in your workspace — delete them there, as you would any other.
 
 ## Contact
 
-support@mahaam.app
+info@3x1.io

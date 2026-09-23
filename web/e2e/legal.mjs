@@ -31,13 +31,13 @@ try {
         const res = await page.goto(`${WEB}/${locale}/legal/${doc}`, { waitUntil: "load" })
         if (res?.status() !== 200) fail(`${locale}/${doc}: HTTP ${res?.status()}`)
         if (page.url().includes("/login")) fail(`${locale}/${doc} redirected to sign-in`)
-        await page.locator(`[data-legal-doc="${doc}"] h3`).first().waitFor()
+        await page.locator(`[data-legal-doc="${doc}"] h2`).first().waitFor()
         if (!(await page.locator("[data-legal-draft]").isVisible())) fail(`${locale}/${doc}: no draft notice while unreviewed`)
         if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail(`${locale}/${doc}/${scheme}: horizontal overflow`)
         await page.screenshot({ path: `e2e/shots/legal-${doc}-${locale}-${scheme}.png`, fullPage: scheme === "light" })
       }
       const title = await page.title()
-      const sections = await page.locator(`[data-legal-doc="${doc}"] h3`).count()
+      const sections = await page.locator(`[data-legal-doc="${doc}"] h2`).count()
       log(`${locale}/${doc}: "${title}", ${sections} sections`)
       if (sections < 6) fail(`${locale}/${doc} has only ${sections} sections`)
     }
