@@ -14,6 +14,9 @@ import type {
   Label,
   Member,
   PortalActivityItem,
+  Profile,
+  TwoFAState,
+  VerifyState,
   PortalBoard,
   PortalTimeReport,
   ProjectReport,
@@ -53,6 +56,40 @@ export interface Attachment {
 export function api(c: MahaamClient) {
   return {
     workspaces: () => c.get<{ workspaces: Workspace[] | null }>("/api/me/workspaces", { workspace: false }),
+
+    /** Signed-out account routes (CSRF double-submit, like sign-in). */
+    auth: {
+      forgot: (email: string, locale: string) => c.publicPost("/api/auth/password/forgot", { email, locale }),
+      reset: (input: { email: string; code: string; new_password: string; locale: string }) => c.publicPost("/api/auth/password/reset", input),
+      changePassword: (old_password: string, new_password: string) =>
+        c.post<unknown>("/api/auth/change-password", { old_password, new_password }, { workspace: false }),
+    },
+
+    /** The signed-in person (no workspace). */
+    me: {
+      profile: () => c.get<Profile>("/api/me/profile", { workspace: false }),
+      update: (patch: { name?: string; locale?: string; timezone?: string }) => c.patch<Profile>("/api/me/profile", patch),
+      uploadAvatar: (photo: Attachment) => {
+        const form = new FormData();
+        if (photo.blob) form.append("file", photo.blob, photo.name);
+        else form.append("file", { uri: photo.uri, name: photo.name, type: photo.type } as unknown as Blob);
+        return c.request<Profile>("/api/me/avatar", { method: "POST", form, workspace: false });
+      },
+      removeAvatar: () => c.del<Profile>("/api/me/avatar"),
+      changeEmail: (email: string, password: string, locale: string) => c.post<unknown>("/api/me/email", { email, password, locale }, { workspace: false }),
+      confirmEmail: (code: string, locale: string) => c.post<Profile>("/api/me/email/confirm", { code, locale }, { workspace: false }),
+      verifyState: () => c.get<VerifyState>("/api/me/verify-email", { workspace: false }),
+      verifyEmail: (code: string) => c.post<VerifyState>("/api/me/verify-email", { code }, { workspace: false }),
+      resendVerify: (locale: string) => c.post<unknown>("/api/me/verify-email/resend", { locale }, { workspace: false }),
+      twoFA: () => c.get<TwoFAState>("/api/me/2fa", { workspace: false }),
+      twoFAEnroll: (password: string) => c.post<{ secret: string; otpauth_url: string }>("/api/me/2fa/enroll", { password }, { workspace: false }),
+      twoFAConfirm: (code: string) => c.post<{ recovery_codes: string[] | null }>("/api/me/2fa/confirm", { code }, { workspace: false }),
+      twoFADisable: (input: { password: string; code?: string; recovery_code?: string }) => c.post<unknown>("/api/me/2fa/disable", input, { workspace: false }),
+      twoFARecovery: (password: string, code: string) =>
+        c.post<{ recovery_codes: string[] | null }>("/api/me/2fa/recovery-codes", { password, code }, { workspace: false }),
+      deleteAccount: (input: { password: string; code?: string; recovery_code?: string; locale: string }) =>
+        c.post<{ purge_after: string }>("/api/me/delete", input, { workspace: false }),
+    },
 
     time: {
       running: () => c.get<{ timer: TimeEntry | null }>("/api/w/time/running"),

@@ -1,0 +1,135 @@
+# Account smoke pass (local stack): forgot password from sign-in, then as staff — the Profile hub and
+# each page, 2FA set-up's first step, preferences, and the issue screen's actions.
+#   .maestro/run.sh <udid> .maestro/account-smoke.yaml
+appId: com.fadymondy.mahaam
+---
+- tapOn:
+    text: "Cancel"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*English"
+    timeout: 60000
+- tapOn: ".*English"
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 10000
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible:
+      id: "email"
+    timeout: 30000
+# Forgot password: the screen and its first step.
+- tapOn: "Forgot password?"
+- extendedWaitUntil:
+    visible: "Reset password"
+    timeout: 10000
+- takeScreenshot: shots/a01-forgot
+- hideKeyboard
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Back"
+- waitForAnimationToEnd
+- tapOn:
+    id: "email"
+- inputText: "qa@mahaam.local"
+- tapOn:
+    below: "Password"
+- inputText: "Qa-Test-2026!"
+- hideKeyboard
+- tapOn:
+    text: "Sign in"
+    index: 1
+- extendedWaitUntil:
+    notVisible:
+      id: "email"
+    timeout: 30000
+- waitForAnimationToEnd
+# System alerts after sign-in, in no fixed order or timing: notification permission (in our tree)
+# and "Save Password?" (drawn by the Passwords process, so tapped by position — "Not Now"). Until the
+# projects list is on screen: dismiss what's there, and back out if a stray tap opened a project.
+- repeat:
+    while:
+      notVisible: ".*Atlas Website.*"
+    times: 5
+    commands:
+      - tapOn:
+          text: "Don.t Allow"
+          optional: true
+      - extendedWaitUntil:
+          visible: "__never__"
+          timeout: 2500
+          optional: true
+      - tapOn:
+          point: "31%,63%"
+      - runFlow:
+          when:
+            visible: "Back"
+          commands:
+            - tapOn: "Back"
+- extendedWaitUntil:
+    visible: ".*Atlas Website.*"
+    timeout: 30000
+# The Profile hub (the header's gear) and its pages.
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Profile"
+    timeout: 10000
+- takeScreenshot: shots/a02-hub
+- tapOn: "Name & photo.*"
+- takeScreenshot: shots/a03-details
+- waitForAnimationToEnd
+- tapOn: "Back"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "Two-step verification.*"
+    direction: DOWN
+- tapOn: "Two-step verification.*"
+- takeScreenshot: shots/a04-security
+- tapOn: "Set up two-step verification"
+- tapOn:
+    below: "Password"
+- inputText: "Qa-Test-2026!"
+- hideKeyboard
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Setup key"
+    timeout: 10000
+- takeScreenshot: shots/a05-2fa-key
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Cancel"
+    direction: DOWN
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+- tapOn: "Back"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "Delete account.*"
+    direction: DOWN
+- takeScreenshot: shots/a06-hub-bottom
+- tapOn: "Delete account.*"
+- takeScreenshot: shots/a07-delete
+- waitForAnimationToEnd
+- tapOn: "Back"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- tapOn: "Back"
+- waitForAnimationToEnd
+# An issue's actions.
+- tapOn: ".*Atlas Website.*"
+- extendedWaitUntil:
+    visible: "Issues.*"
+    timeout: 15000
+- tapOn: "List view"
+- scrollUntilVisible:
+    element: ".*Login button does nothing.*"
+    direction: DOWN
+- tapOn: ".*Login button does nothing.*"
+- extendedWaitUntil:
+    visible: "Move to|MOVE TO"
+    timeout: 15000
+- takeScreenshot: shots/a08-issue
+- scrollUntilVisible:
+    element: "Assign people"
+    direction: DOWN
+- takeScreenshot: shots/a09-issue-actions

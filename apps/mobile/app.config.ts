@@ -47,6 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-router",
     "./plugins/with-scene-lifecycle",
     "expo-secure-store",
+    ["expo-local-authentication", { faceIDPermission: "Unlock Mahaam with Face ID. Your face data never leaves this device." }],
     "expo-localization",
     ["expo-notifications", { color: "#8C3FB5" }],
     ["expo-image-picker", { photosPermission: "Attach a photo to an issue or request you file." }],

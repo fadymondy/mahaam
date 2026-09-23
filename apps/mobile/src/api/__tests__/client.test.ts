@@ -1,4 +1,4 @@
-import { ApiError, MahaamClient, jwtExpiry, type KeyValueStore } from "../client";
+import { ApiError, MahaamClient, MfaRequired, jwtExpiry, type KeyValueStore } from "../client";
 
 function memStore(init: Record<string, string> = {}): KeyValueStore & { data: Record<string, string> } {
   const data = { ...init };
@@ -206,6 +206,45 @@ describe("MahaamClient auth dance", () => {
     c.token = pat;
     await expect(c.get("/x")).rejects.toMatchObject({ status: 401 });
     expect(lost).toHaveBeenCalledTimes(1);
+    expect(c.token).toBeNull();
+    expect(store.data["mahaam.token"]).toBeUndefined();
+  });
+
+  it("asks for the 2FA code when the account has it on, then finishes with the challenge", async () => {
+    // A right password on a 2FA account is answered 401 {code: mfa_required, challenge}, no session.
+    const token = jwt(future());
+    const pat = "togo_pat_" + "e".repeat(48);
+    const { f, calls } = mockFetch((c) => {
+      if (c.url.endsWith("/api/auth/login")) return json(401, { error: "two-factor code required", code: "mfa_required", challenge: "ch1" });
+      if (c.url.endsWith("/api/auth/2fa/challenge")) return json(200, { token, user: { id: "u1", email: "a@b.c" } });
+      if (c.url.endsWith("/api/auth/tokens")) return json(201, { token: pat });
+      return json(404, {});
+    });
+    const store = memStore();
+    const c = new MahaamClient({ baseUrl: "", store, fetch: f, randomToken: () => "x" });
+    const err = await c.login("a@b.c", "pw").catch((e) => e);
+    expect(err).toBeInstanceOf(MfaRequired);
+    expect((err as MfaRequired).challenge).toBe("ch1");
+    expect(c.token).toBeFalsy();
+
+    await c.completeMfa("ch1", { code: "123456" });
+    const step = calls.find((x) => x.url.endsWith("/api/auth/2fa/challenge"))!;
+    expect(JSON.parse(String(step.init.body))).toEqual({ challenge: "ch1", code: "123456" });
+    expect(header(step, "X-CSRF-Token")).toBe("x");
+    expect(c.token).toBe(pat);
+    expect(store.data["mahaam.creds"]).toBeUndefined();
+  });
+
+  it("signing out revokes this device's token on the server, then forgets it", async () => {
+    const pat = "togo_pat_" + "f".repeat(48);
+    const { f, calls } = mockFetch(() => new Response(null, { status: 204 }));
+    const store = memStore({ "mahaam.token": pat });
+    const c = new MahaamClient({ baseUrl: "", store, fetch: f });
+    c.token = pat;
+    await c.signOut();
+    expect(calls[0]!.url).toBe("/api/me/token");
+    expect(calls[0]!.init.method).toBe("DELETE");
+    expect(header(calls[0]!, "Authorization")).toBe(`Bearer ${pat}`);
     expect(c.token).toBeNull();
     expect(store.data["mahaam.token"]).toBeUndefined();
   });

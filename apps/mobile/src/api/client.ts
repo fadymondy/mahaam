@@ -57,6 +57,14 @@ export class ApiError extends Error {
   }
 }
 
+/** The password was right and the account has two-factor on: finish with completeMfa(challenge). */
+export class MfaRequired extends Error {
+  constructor(readonly challenge: string) {
+    super("two-factor code required");
+    this.name = "MfaRequired";
+  }
+}
+
 export interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -147,11 +155,49 @@ export class MahaamClient {
     else await this.o.store.del(K.ws);
   }
 
+  /** Credentials held in memory between a password that asked for 2FA and the code. */
+  private pendingMfa: { email: string; password: string } | null = null;
+
+  /**
+   * Sign in. An account with two-factor on answers a right password with 401
+   * {code: "mfa_required", challenge} and no session; that surfaces as MfaRequired, and
+   * completeMfa() finishes the sign-in with the code (or a recovery code).
+   */
   async login(email: string, password: string): Promise<User> {
-    const out = await this.authPost("/api/auth/login", { email, password });
+    let out: { token: string; user?: User };
+    try {
+      out = await this.authPost("/api/auth/login", { email, password });
+    } catch (e) {
+      const d = e instanceof ApiError ? (e.body as { code?: string; challenge?: string } | undefined) : undefined;
+      if (e instanceof ApiError && e.status === 401 && d?.code === "mfa_required" && d.challenge) {
+        this.pendingMfa = { email, password };
+        throw new MfaRequired(d.challenge);
+      }
+      throw e;
+    }
     await this.saveSession(out, { email, password });
     await this.upgradeToAccessToken(this.o.deviceName ?? "Mahaam mobile");
     return this.user!;
+  }
+
+  /** The second step of a 2FA sign-in: the authenticator code or a one-time recovery code. */
+  async completeMfa(challenge: string, answer: { code: string } | { recovery_code: string }): Promise<User> {
+    const out = await this.authPost("/api/auth/2fa/challenge", { challenge, ...answer });
+    await this.saveSession(out, this.pendingMfa ?? { email: "", password: "" });
+    this.pendingMfa = null;
+    await this.upgradeToAccessToken(this.o.deviceName ?? "Mahaam mobile");
+    return this.user!;
+  }
+
+  /** An unauthenticated POST that needs the CSRF double-submit (forgot / reset password). */
+  async publicPost<T = unknown>(path: string, body: unknown): Promise<T> {
+    return (await this.csrfPost(path, body)) as T;
+  }
+
+  /** Sign out: revoke this device's access token on the server, then forget it locally. */
+  async signOut() {
+    if (this.token) await this.request("/api/me/token", { method: "DELETE" }).catch(() => undefined);
+    await this.logout();
   }
 
   async register(name: string, email: string, password: string): Promise<User> {
@@ -208,6 +254,13 @@ export class MahaamClient {
   }
 
   private async authPost(path: string, body: unknown): Promise<{ token: string; user?: User }> {
+    const data = await this.csrfPost(path, body);
+    const out = data as { token?: string; user?: User };
+    if (!out?.token) throw new ApiError(200, "no token in response", data);
+    return out as { token: string; user?: User };
+  }
+
+  private async csrfPost(path: string, body: unknown): Promise<unknown> {
     const csrf = (this.o.randomToken ?? randomCsrf)();
     const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json", "X-CSRF-Token": csrf };
     if (this.o.setCsrfCookie) this.o.setCsrfCookie(csrf);
@@ -220,9 +273,7 @@ export class MahaamClient {
     }
     const data = await readBody(res);
     if (!res.ok) throw new ApiError(res.status, errorMessage(data, res.status), data, retryAfter(res));
-    const out = data as { token?: string; user?: User };
-    if (!out?.token) throw new ApiError(res.status, "no token in response", data);
-    return out as { token: string; user?: User };
+    return data;
   }
 
   /** Sign in again with the stored credentials. Concurrent callers share one attempt. */
@@ -333,6 +384,10 @@ export class MahaamClient {
   patch<T>(path: string, body: unknown) {
     return this.request<T>(path, { method: "PATCH", body });
   }
+  del<T>(path: string) {
+    return this.request<T>(path, { method: "DELETE" });
+  }
+
   put<T>(path: string, body?: unknown) {
     return this.request<T>(path, { method: "PUT", body: body ?? {} });
   }

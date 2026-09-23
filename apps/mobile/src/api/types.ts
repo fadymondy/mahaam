@@ -257,3 +257,9 @@ export type PortalBoard = components["schemas"]["PortalBoard"];
 export type PortalBoardTask = components["schemas"]["PortalTask"];
 export type PortalTimeReport = components["schemas"]["PortalTimeReport"];
 export type PortalActivityItem = components["schemas"]["PortalActivityItem"];
+
+// ---- Account ------------------------------------------------------------------------------------
+
+export type Profile = components["schemas"]["Profile"];
+export type TwoFAState = components["schemas"]["TwoFAState"];
+export type VerifyState = components["schemas"]["VerifyStateBody"];

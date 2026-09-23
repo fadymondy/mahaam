@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Platform } from "react-native";
 
-import { MahaamClient } from "@/api/client";
+import { MahaamClient, MfaRequired } from "@/api/client";
 import { api, type Api } from "@/api/endpoints";
 import { secureStore } from "@/api/store";
 import type { User, Workspace } from "@/api/types";
@@ -35,7 +35,9 @@ interface SessionCtx {
   user: User | null;
   workspace: Workspace | null;
   notice: string | null;
-  signIn(email: string, password: string): Promise<void>;
+  /** Resolves "mfa" with the challenge when the account has two-factor on. */
+  signIn(email: string, password: string): Promise<{ mfa?: string }>;
+  completeMfa(challenge: string, answer: { code: string } | { recovery_code: string }): Promise<void>;
   register(name: string, email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
   chooseWorkspace(ws: Workspace | null): Promise<void>;
@@ -87,7 +89,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       workspace,
       notice,
       async signIn(email, password) {
-        const u = await client.login(email.trim(), password);
+        try {
+          const u = await client.login(email.trim(), password);
+          setNotice(null);
+          setUser(u);
+          setStatus("signedIn");
+          return {};
+        } catch (e) {
+          if (e instanceof MfaRequired) return { mfa: e.challenge };
+          throw e;
+        }
+      },
+      async completeMfa(challenge, answer) {
+        const u = await client.completeMfa(challenge, answer);
         setNotice(null);
         setUser(u);
         setStatus("signedIn");
@@ -99,7 +113,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setStatus("signedIn");
       },
       async signOut() {
-        await client.logout();
+        // Revokes this device's token on the server, not just locally.
+        await client.signOut();
         await reset();
       },
       async chooseWorkspace(ws) {

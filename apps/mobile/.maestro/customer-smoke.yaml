@@ -35,6 +35,11 @@ appId: com.fadymondy.mahaam
       id: "email"
     timeout: 30000
 - waitForAnimationToEnd
+# The "Save Password?" sheet can take a few seconds to appear; give it time before dismissing.
+- extendedWaitUntil:
+    visible: "__never__"
+    timeout: 4000
+    optional: true
 - tapOn:
     point: "31%,63%"
 - runFlow:

@@ -45,16 +45,28 @@ appId: com.fadymondy.mahaam
     text: "Don.t Allow"
     optional: true
 - waitForAnimationToEnd
-- tapOn:
-    point: "31%,63%"
-- tapOn:
-    text: "Don.t Allow"
-    optional: true
-- runFlow:
-    when:
-      visible: "Back"
+# System alerts after sign-in, in no fixed order or timing: notification permission (in our tree)
+# and "Save Password?" (drawn by the Passwords process, so tapped by position — "Not Now"). Until the
+# projects list is on screen: dismiss what's there, and back out if a stray tap opened a project.
+- repeat:
+    while:
+      notVisible: ".*Atlas Website.*"
+    times: 5
     commands:
-      - tapOn: "Back"
+      - tapOn:
+          text: "Don.t Allow"
+          optional: true
+      - extendedWaitUntil:
+          visible: "__never__"
+          timeout: 2500
+          optional: true
+      - tapOn:
+          point: "31%,63%"
+      - runFlow:
+          when:
+            visible: "Back"
+          commands:
+            - tapOn: "Back"
 - extendedWaitUntil:
     visible: ".*Atlas Website.*"
     timeout: 30000

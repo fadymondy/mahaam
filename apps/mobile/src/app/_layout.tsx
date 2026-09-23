@@ -13,6 +13,8 @@ import { dirStyle, PrefsProvider, StringsProvider, useGridReady, useNavTheme, us
 import { APP } from "@/grid.config";
 import { strings } from "@/i18n";
 import { persister, queryClient } from "@/lib/query";
+import { BiometricGate } from "@/lib/biometric";
+import { MonitorBoundary, useMonitor } from "@/lib/monitor";
 import { SessionProvider, useSession } from "@/lib/session";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -46,6 +48,7 @@ function MigratePrefs({ children }: { children: ReactNode }) {
 }
 
 function Navigator() {
+  useMonitor();
   const ready = useGridReady();
   const navTheme = useNavTheme();
   const { theme, colors, isRTL } = usePrefs();
@@ -85,7 +88,11 @@ export default function RootLayout() {
           <PrefsProvider app={APP}>
             <StringsProvider strings={strings}>
               <SessionProvider>
-                <Navigator />
+                <BiometricGate>
+                  <MonitorBoundary>
+                    <Navigator />
+                  </MonitorBoundary>
+                </BiometricGate>
               </SessionProvider>
             </StringsProvider>
           </PrefsProvider>
