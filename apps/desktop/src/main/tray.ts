@@ -45,14 +45,25 @@ export const entryLabel = (e: Pick<TimeEntry, "description" | "task_title" | "pr
 
 const elapsed = (e: TimeEntry) => (Date.now() - Date.parse(e.started_at)) / 1000;
 
+/**
+ * The menu-bar / tray icon, light or dark to match where it sits — not the app's own theme (Mahaam
+ * in Dark on a light menu bar must still draw a dark icon).
+ *
+ * macOS: a template image (black + alpha). The system tints it for the menu bar's actual look —
+ * light, dark, tinted by the wallpaper, and inverted while its menu is open. The running dot is a
+ * shape, so it survives the tint (the clock beside it says the rest).
+ * Windows/Linux: the brand colours for the taskbar's light or dark, redrawn when that changes.
+ */
 function icon(on: boolean): Electron.NativeImage {
   const mac = process.platform === "darwin";
-  const dark = mac ? nativeTheme.shouldUseDarkColors : nativeTheme.shouldUseDarkColorsForSystemIntegratedUI;
+  const dark = nativeTheme.shouldUseDarkColorsForSystemIntegratedUI;
   const img = nativeImage.createEmpty();
   for (const scale of [1, 2]) {
     const size = (mac ? 18 : 16) * scale;
-    img.addRepresentation({ scaleFactor: scale, width: size, height: size, buffer: encodePng(rasterMark(size, { dark, dot: on ? "#4E9A3E" : null }), size, size) });
+    const px = mac ? rasterMark(size, { mono: "#000000", dot: on ? "#000000" : null }) : rasterMark(size, { dark, dot: on ? "#4E9A3E" : null });
+    img.addRepresentation({ scaleFactor: scale, width: size, height: size, buffer: encodePng(px, size, size) });
   }
+  if (mac) img.setTemplateImage(true);
   return img;
 }
 
@@ -154,4 +165,6 @@ export const trayProbe = {
   click: (label: string) => menu?.items.find((i) => i.label === label)?.click(),
   /** A left click on the menu-bar icon (opens the popover on macOS and Windows). */
   open: () => tray?.emit("click", {}, tray.getBounds()),
+  bounds: () => tray?.getBounds() ?? null,
+  template: () => icon(!!running).isTemplateImage(),
 };

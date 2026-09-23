@@ -29,7 +29,10 @@ export function markSvg(opts: { dark?: boolean; size?: number; title?: string } 
  * accepted). `dot` adds a small status dot in the empty bottom-right corner — beside the mark,
  * never on it.
  */
-export function rasterMark(size: number, opts: { dark?: boolean; dot?: string | null; background?: string | null; padding?: number } = {}): Uint8Array {
+export function rasterMark(
+  size: number,
+  opts: { dark?: boolean; dot?: string | null; background?: string | null; padding?: number; /** One colour for every cell (a macOS template image: black, tinted by the system). */ mono?: string } = {},
+): Uint8Array {
   const px = new Uint8Array(size * size * 4);
   const hex = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as const;
   const pad = opts.padding ?? 0;
@@ -57,8 +60,9 @@ export function rasterMark(size: number, opts: { dark?: boolean; dot?: string | 
     }
   };
   if (opts.background) fill(0, 0, size, size, opts.background);
-  const body = opts.dark ? BRAND.brandOnDark : BRAND.brand;
-  for (const [x, y, s, part] of MARK_RECTS) fill(pad + x * scale, pad + y * scale, pad + (x + s) * scale, pad + (y + s) * scale, part === "body" ? body : BRAND.accent);
+  const body = opts.mono ?? (opts.dark ? BRAND.brandOnDark : BRAND.brand);
+  const accent = opts.mono ?? BRAND.accent;
+  for (const [x, y, s, part] of MARK_RECTS) fill(pad + x * scale, pad + y * scale, pad + (x + s) * scale, pad + (y + s) * scale, part === "body" ? body : accent);
   if (opts.dot) fill(pad + 74 * scale, pad + 74 * scale, pad + 98 * scale, pad + 98 * scale, opts.dot, true);
   return px;
 }
