@@ -7,6 +7,8 @@
 @import "./grid/grid-tokens.css";
 @import "./grid/grid.css";
 @import "./grid/grid-tailwind.css";
+/* Repo-owned: Inter for the English UI (Arabic stays Lusail). */
+@import "./inter.css";
 
 /* After the imports: CSS requires @import statements to be consecutive, and Tailwind is happy
    to take @source later. Scans this package so Panel's utility classes are emitted. */

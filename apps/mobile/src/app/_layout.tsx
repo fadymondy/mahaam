@@ -1,3 +1,5 @@
+// First: swaps the grid's sans faces for Inter in English before anything renders (lib/fonts.ts).
+import { useUiFonts } from "@/lib/fonts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { focusManager } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -49,7 +51,9 @@ function MigratePrefs({ children }: { children: ReactNode }) {
 
 function Navigator() {
   useMonitor();
-  const ready = useGridReady();
+  const gridReady = useGridReady();
+  const uiFonts = useUiFonts();
+  const ready = gridReady && uiFonts;
   const navTheme = useNavTheme();
   const { theme, colors, isRTL } = usePrefs();
   const { status } = useSession();
