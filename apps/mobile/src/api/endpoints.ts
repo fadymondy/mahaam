@@ -4,10 +4,19 @@ import type { MahaamClient } from "./client";
 import type {
   ChecklistItem,
   Comment,
+  Activity,
+  Budget,
   Inbox,
   Invoice,
   Issue,
   IssueDetail,
+  IssueRow,
+  Label,
+  Member,
+  PortalActivityItem,
+  PortalBoard,
+  PortalTimeReport,
+  ProjectReport,
   PortalComment,
   PortalIssueDetail,
   PortalProject,
@@ -75,19 +84,40 @@ export function api(c: MahaamClient) {
     },
 
     projects: {
-      list: () => c.get<{ projects: Project[] | null }>("/api/w/projects"),
+      list: (archived = false) => c.get<{ projects: Project[] | null }>(`/api/w/projects${q({ archived: archived ? "true" : undefined })}`),
       get: (id: string) => c.get<ProjectDetail>(`/api/w/projects/${e(id)}`),
+      /** % done, tasks by status, budget, hours by member and week, open issues, activity. */
+      report: (id: string) => c.get<ProjectReport>(`/api/w/projects/${e(id)}/report${q({ format: "json" })}`),
+      reportText: (id: string, format: "md", lang: string) =>
+        c.request<string>(`/api/w/projects/${e(id)}/report${q({ format, lang })}`, { text: true }),
+      budget: (id: string) => c.get<Budget>(`/api/w/projects/${e(id)}/budget`),
+      activity: (id: string) => c.get<{ activity: Activity[] | null }>(`/api/w/projects/${e(id)}/activity`),
     },
+
+    members: () => c.get<{ members: Member[] | null }>("/api/w/members"),
+    labels: () => c.get<{ labels: Label[] | null }>("/api/w/labels"),
 
     issues: {
       list: () => c.get<{ issues: Issue[] | null }>(`/api/w/issues${q({ state: "open" })}`),
+      /** One project's board (include_board: items made on the board too), or a filtered queue. */
+      query: (p: { project?: string; q?: string; type?: string; priority?: string; state?: string; status?: string; board?: boolean }) =>
+        c.get<{ issues: IssueRow[] | null }>(
+          `/api/w/issues${q({ project: p.project, q: p.q, type: p.type, priority: p.priority, state: p.state, status: p.status, include_board: p.board ? "true" : undefined })}`,
+        ),
+      /** Into a board column (status id), as the web board does; the issue's stage follows the column. */
+      toColumn: (key: string, status: string) => c.post<unknown>(`/api/w/tasks/${e(key)}/move`, { status }),
+      update: (
+        key: string,
+        patch: { title?: string; body?: string; priority?: string; issue_type?: string; state?: string; resolution?: string; human_only?: boolean },
+      ) => c.patch<IssueDetail>(`/api/w/issues/${e(key)}`, patch),
+      assignees: (key: string, userIds: string[]) => c.put<unknown>(`/api/w/tasks/${e(key)}/assignees`, { user_ids: userIds }),
       // The team side was read-only: a list, with nothing behind it. These are what turn it into
       // something a member can work from. All four routes already exist on the server — only the
       // client was missing them.
       get: (key: string) => c.get<IssueDetail>(`/api/w/issues/${e(key)}`),
       comment: (key: string, body: string) => c.post<unknown>(`/api/w/issues/${e(key)}/comments`, { body }),
       move: (key: string, status: string) => c.patch<IssueDetail>(`/api/w/issues/${e(key)}`, { status }),
-      create: (input: { title: string; body?: string; project?: string; issue_type?: string; priority?: string }) =>
+      create: (input: { title: string; body?: string; project?: string; issue_type?: string; priority?: string; status?: string }) =>
         c.post<IssueDetail>("/api/w/issues", input),
     },
 
@@ -107,6 +137,9 @@ export function api(c: MahaamClient) {
       updateIssue: (key: string, status: "done" | "todo") => c.patch<PortalIssueDetail>(`/api/w/portal/issues/${e(key)}`, { status }),
       commentIssue: (key: string, body: string) => c.post<PortalComment>(`/api/w/portal/issues/${e(key)}/comments`, { body }),
       requests: (project?: string) => c.optional<{ requests: PortalRequest[] | null }>(`/api/w/portal/requests${q({ project })}`),
+      board: (project: string) => c.optional<PortalBoard>(`/api/w/portal/projects/${e(project)}/tasks`),
+      time: (project: string) => c.optional<PortalTimeReport>(`/api/w/portal/projects/${e(project)}/time`),
+      activity: (project: string) => c.optional<{ items: PortalActivityItem[] | null }>(`/api/w/portal/projects/${e(project)}/activity`),
       invoices: () => c.get<{ invoices: Invoice[] | null }>("/api/w/portal/invoices"),
       /** File an issue ("bug" | "feature" | "task") or a request, optionally with a photo. */
       file: (

@@ -1,22 +1,21 @@
 import { Redirect } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
-import { Bell, CalendarDays, ListChecks, PlusCircle, Timer } from "lucide-react-native";
+import { Bell, FolderKanban, ListChecks, Timer } from "lucide-react-native";
 import { useEffect } from "react";
 
-import { isTeam } from "@/config";
 import { useRunning, useTimeSettings } from "@/features/team";
 import { GridTabBar, type GridTab } from "@/grid";
 import { useT } from "@/i18n";
 import { LiveProvider, usePolling } from "@/lib/live";
 import { syncTimerReminder } from "@/lib/reminders";
-import { useSession } from "@/lib/session";
+import { isCustomer, useSession } from "@/lib/session";
 
 // Labels are string keys: the grid's tab bar translates them.
+// Projects first (the owner's flow): a project opens its board, overview and reports.
 const TABS: GridTab[] = [
-  { name: "today", label: "tabs.today", Icon: Timer },
-  { name: "tasks", label: "tabs.tasks", Icon: ListChecks },
-  { name: "log", label: "tabs.log", Icon: PlusCircle },
-  { name: "timesheet", label: "tabs.timesheet", Icon: CalendarDays },
+  { name: "projects", label: "tabs.projects", Icon: FolderKanban },
+  { name: "work", label: "tabs.work", Icon: ListChecks },
+  { name: "time", label: "tabs.time", Icon: Timer },
   { name: "notifications", label: "tabs.inbox", Icon: Bell },
 ];
 
@@ -37,9 +36,10 @@ function ReminderSync() {
   return null;
 }
 
-export default function TeamLayout() {
+/** Staff of the selected workspace (owner, admin, manager, member). A customer gets the portal. */
+export default function StaffLayout() {
   const { status, workspace } = useSession();
-  if (!isTeam || status !== "signedIn" || !workspace) return <Redirect href="/" />;
+  if (status !== "signedIn" || !workspace || isCustomer(workspace)) return <Redirect href="/" />;
   return (
     <LiveProvider>
       <ReminderSync />

@@ -1,17 +1,10 @@
-// Build-time configuration: which app this is (APP_VARIANT → EXPO_PUBLIC_APP_VARIANT, see
-// app.config.ts) and where the API lives. Nothing is hard-coded for production: EAS profiles set
-// EXPO_PUBLIC_API_URL (eas.json).
+// Build-time configuration: where the API lives. Nothing is hard-coded for production: EAS profiles
+// set EXPO_PUBLIC_API_URL (eas.json). Which experience the app shows (staff or customer) is not a
+// build setting — it follows the role in the selected workspace (src/lib/session.tsx).
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-export type Variant = "team" | "client";
-
-const extra = (Constants.expoConfig?.extra ?? {}) as { variant?: string; apiUrl?: string | null };
-
-export const variant: Variant =
-  (process.env.EXPO_PUBLIC_APP_VARIANT ?? extra.variant) === "client" ? "client" : "team";
-
-export const isTeam = variant === "team";
+const extra = (Constants.expoConfig?.extra ?? {}) as { apiUrl?: string | null };
 
 function devApiUrl(): string {
   // In development the API runs next to Metro: reuse the dev server's host so a phone on the LAN

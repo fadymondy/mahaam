@@ -4,10 +4,9 @@ import { LogOut } from "lucide-react-native";
 import { useEffect } from "react";
 
 import { Chip, useErrorText } from "@/components/kit";
-import { isTeam } from "@/config";
 import { AppText, ForwardChevron, Header, ListItem, Row, Rows, Screen, SecondaryButton, SkeletonRow, StateRow, useColors } from "@/grid";
 import { useT } from "@/i18n";
-import { fitsApp, mahaam, useSession } from "@/lib/session";
+import { mahaam, useSession } from "@/lib/session";
 
 export default function Workspaces() {
   const t = useT();
@@ -16,14 +15,11 @@ export default function Workspaces() {
   const { status, workspace, chooseWorkspace, signOut, user } = useSession();
   const q = useQuery({ queryKey: ["workspaces", user?.id], queryFn: mahaam.workspaces, enabled: status === "signedIn" });
   const list = q.data?.workspaces ?? [];
-  const fitting = list.filter(fitsApp);
 
-  // One workspace that fits and none chosen yet → take it.
+  // Only one workspace and none chosen yet → take it. (Staff or customer, the app fits both.)
   useEffect(() => {
-    if (!workspace && fitting.length === 1 && list.length === 1) {
-      void chooseWorkspace(fitting[0]!).then(() => router.replace("/"));
-    }
-  }, [workspace, fitting, list.length, chooseWorkspace]);
+    if (!workspace && list.length === 1) void chooseWorkspace(list[0]!).then(() => router.replace("/"));
+  }, [workspace, list, chooseWorkspace]);
 
   if (status === "signedOut") return <Redirect href="/sign-in" />;
 
@@ -35,25 +31,16 @@ export default function Workspaces() {
         {q.data && list.length === 0 ? <StateRow state="empty" message={t("ws.none")} /> : null}
         {list.length ? (
           <Row style={{ paddingVertical: 0 }}>
-            {list.map((w, i) => {
-              const ok = fitsApp(w);
-              return (
-                <ListItem
-                  key={w.id}
-                  last={i === list.length - 1}
-                  trailing={ok ? <ForwardChevron /> : undefined}
-                  onPress={ok ? () => void chooseWorkspace(w).then(() => router.replace("/")) : undefined}>
-                  <AppText variant="rowTitle">{w.name}</AppText>
-                  {ok ? (
-                    <Chip label={t(`ws.role.${w.role}` as "ws.role.member")} />
-                  ) : (
-                    <AppText variant="meta" color={c.dangerText}>
-                      {t(isTeam ? "ws.wrongAppTeam" : "ws.wrongAppClient")}
-                    </AppText>
-                  )}
-                </ListItem>
-              );
-            })}
+            {list.map((w, i) => (
+              <ListItem
+                key={w.id}
+                last={i === list.length - 1}
+                trailing={<ForwardChevron />}
+                onPress={() => void chooseWorkspace(w).then(() => router.replace("/"))}>
+                <AppText variant="rowTitle">{w.name}</AppText>
+                <Chip label={t(`ws.role.${w.role}` as "ws.role.member")} tone={w.role === "client" ? "gold" : "neutral"} />
+              </ListItem>
+            ))}
           </Row>
         ) : null}
         <Row>

@@ -35,7 +35,7 @@ function StartTimer({ running, busy, label, onPress }: { running: boolean; busy:
   );
 }
 
-export default function Tasks() {
+export default function Work() {
   const t = useT();
   const f = useFormat();
   const errText = useErrorText();
@@ -50,7 +50,7 @@ export default function Tasks() {
 
   return (
     <Screen
-      header={<TabHeader title="tabs.tasks" count={tasks.data?.length} inbox="/notifications" />}
+      header={<TabHeader title="tabs.work" count={tasks.data?.length} inbox="/notifications" />}
       refreshing={tasks.isRefetching || issues.isRefetching}
       onRefresh={() => {
         void tasks.refetch();

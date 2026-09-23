@@ -8,7 +8,7 @@ import { MahaamClient } from "@/api/client";
 import { api, type Api } from "@/api/endpoints";
 import { secureStore } from "@/api/store";
 import type { User, Workspace } from "@/api/types";
-import { apiUrl, isTeam } from "@/config";
+import { apiUrl } from "@/config";
 
 let lost: (() => void) | null = null;
 
@@ -120,5 +120,11 @@ export function useSession(): SessionCtx {
   return v;
 }
 
-/** Team app: staff roles. Client app: the customer role. */
-export const fitsApp = (w: Workspace) => (isTeam ? w.role !== "client" : w.role === "client");
+/** A customer in this workspace (the portal) rather than staff (projects, time, issues). */
+export const isCustomer = (w: Pick<Workspace, "role"> | null | undefined) => w?.role === "client";
+
+/** The current workspace's experience: "customer" shows the portal shell, "staff" the team shell. */
+export function useExperience(): "staff" | "customer" | null {
+  const { workspace } = useSession();
+  return workspace ? (isCustomer(workspace) ? "customer" : "staff") : null;
+}

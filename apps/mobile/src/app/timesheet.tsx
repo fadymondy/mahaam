@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { View } from "react-native";
 
-import { Micro, projectColor, StatCells, TabHeader, useErrorText } from "@/components/kit";
+import { Micro, projectColor, StatCells, useErrorText } from "@/components/kit";
 import { useTimeSettings } from "@/features/team";
-import { AppText, fonts, IconButton, ListItem, Meta, Row, Rows, Screen, SkeletonRow, StateRow, useChevrons, useColors } from "@/grid";
+import { AppText, fonts, IconButton, ListItem, Meta, Row, Rows, Screen, SkeletonRow, StackHeader, StateRow, useChevrons, useColors } from "@/grid";
 import { useFormat, useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { usePolling } from "@/lib/live";
@@ -48,7 +48,7 @@ export default function Timesheet() {
   const today = localDay(new Date(), tz);
 
   return (
-    <Screen header={<TabHeader title="tabs.timesheet" inbox="/notifications" />} refreshing={sheet.isRefetching} onRefresh={() => void sheet.refetch()}>
+    <Screen header={<StackHeader title={t("tabs.timesheet")} />} refreshing={sheet.isRefetching} onRefresh={() => void sheet.refetch()}>
       <Rows inset>
         <Row style={{ flexDirection: "row", alignItems: "center" }}>
           <IconButton label={t("sheet.prev")} onPress={() => setOffset(offset - 1)}>

@@ -3,6 +3,7 @@ import { focusManager } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as SystemUI from "expo-system-ui";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState, type ReactNode } from "react";
 import { AppState, Platform, View } from "react-native";
@@ -49,6 +50,12 @@ function Navigator() {
   const navTheme = useNavTheme();
   const { theme, colors, isRTL } = usePrefs();
   const { status } = useSession();
+  // Paint the native root view in the theme's ground. Switching to Arabic reloads the app once to
+  // flip the layout to RTL; without this the reload shows a bare white window for a second or two,
+  // which reads as a crash (it was reported as one).
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(colors.bg).catch(() => {});
+  }, [colors.bg]);
   // The splash stays up until fonts, prefs and the stored session are known: a first frame in the
   // wrong direction, face or screen is visible.
   if (!ready || status === "loading") return null;
@@ -61,8 +68,8 @@ function Navigator() {
           <Stack.Screen name="welcome" options={{ gestureEnabled: false, animation: "fade" }} />
           <Stack.Screen name="sign-in" options={{ gestureEnabled: false, animation: "fade" }} />
           <Stack.Screen name="workspaces" />
-          <Stack.Screen name="(team)" />
-          <Stack.Screen name="(client)" />
+          <Stack.Screen name="(staff)" />
+          <Stack.Screen name="(customer)" />
           <Stack.Screen name="file" options={{ presentation: "modal" }} />
         </Stack>
       </View>

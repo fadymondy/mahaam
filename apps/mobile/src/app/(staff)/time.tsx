@@ -1,15 +1,17 @@
+import { router } from "expo-router";
+import { CalendarDays, PlusCircle } from "lucide-react-native";
 import { View } from "react-native";
 
-import { Chip, Micro, projectColor, TabHeader, useErrorText } from "@/components/kit";
+import { Actions, Chip, Grow, Micro, projectColor, TabHeader, useErrorText } from "@/components/kit";
 import { TimerCard } from "@/components/timer-card";
 import { useRunning, useTimeSettings, useTodayEntries } from "@/features/team";
-import { AppText, fonts, ListItem, Meta, Row, Rows, Screen, SkeletonRow, StateRow, useColors } from "@/grid";
+import { AppText, fonts, ListItem, Meta, Row, Rows, Screen, SecondaryButton, SkeletonRow, StateRow, useColors } from "@/grid";
 import { useFormat, useT } from "@/i18n";
 import { useNow } from "@/lib/hooks";
 import { useLiveMode, usePolling } from "@/lib/live";
 import { entrySeconds, formatDuration, todaySummary } from "@/lib/time";
 
-export default function Today() {
+export default function Time() {
   const t = useT();
   const f = useFormat();
   const c = useColors();
@@ -25,7 +27,7 @@ export default function Today() {
 
   return (
     <Screen
-      header={<TabHeader title="tabs.today" inbox="/notifications" />}
+      header={<TabHeader title="tabs.time" inbox="/notifications" />}
       refreshing={running.isRefetching || entries.isRefetching}
       onRefresh={() => {
         void running.refetch();
@@ -34,6 +36,16 @@ export default function Today() {
       <Rows inset>
         {running.isError && !running.data ? <StateRow state="error" message={errText(running.error)} onRetry={() => void running.refetch()} /> : null}
         {running.isPending ? <SkeletonRow lines={3} /> : <TimerCard running={running.data ?? null} />}
+        <Row>
+          <Actions>
+            <Grow>
+              <SecondaryButton label={t("tabs.log")} icon={<PlusCircle size={17} color={c.muted} strokeWidth={1.6} />} onPress={() => router.push("/log")} />
+            </Grow>
+            <Grow>
+              <SecondaryButton label={t("tabs.timesheet")} icon={<CalendarDays size={17} color={c.muted} strokeWidth={1.6} />} onPress={() => router.push("/timesheet")} />
+            </Grow>
+          </Actions>
+        </Row>
         <Row style={{ paddingVertical: 0 }}>
           <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingBottom: 6 }}>
             <Micro style={{ flex: 1 }}>{t("timer.todayTotal")}</Micro>

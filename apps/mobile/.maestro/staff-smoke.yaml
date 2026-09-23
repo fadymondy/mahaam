@@ -1,0 +1,109 @@
+# Staff smoke pass on a local stack (never production): first run, sign in, the projects home, a
+# project's board / list / overview / reports, an issue, my work, time, inbox, settings, then Arabic.
+#   make db migrate && ./api (ADDR=:8120) · seed qa@mahaam.local · Metro on :8081 ·
+#   .maestro/run.sh <udid> .maestro/staff-smoke.yaml
+# takeScreenshot writes to shots/ under the cwd.
+appId: com.fadymondy.mahaam
+---
+# The build tool's "Open in …?" prompt can still be up from `expo run:ios`.
+- tapOn:
+    text: "Cancel"
+    optional: true
+# A notification-permission alert can outlive a reinstall on the simulator.
+- tapOn:
+    text: "Don.t Allow"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*English"
+    timeout: 60000
+- tapOn: ".*English"
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 10000
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible:
+      id: "email"
+    timeout: 30000
+- tapOn:
+    id: "email"
+- inputText: "qa@mahaam.local"
+- tapOn:
+    below: "Password"
+- inputText: "Qa-Test-2026!"
+- hideKeyboard
+- tapOn:
+    text: "Sign in"
+    index: 1
+# System alerts after sign-in: notification permission (in our tree), then "Save Password?" — drawn
+# by the Passwords process, not in the app's tree, so it is tapped by position ("Not Now"). Without
+# the sheet that point can land on a project row; back out if one opened.
+- extendedWaitUntil:
+    visible: "Don.t Allow|Projects"
+    timeout: 30000
+- tapOn:
+    text: "Don.t Allow"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    point: "31%,63%"
+- tapOn:
+    text: "Don.t Allow"
+    optional: true
+- runFlow:
+    when:
+      visible: "Back"
+    commands:
+      - tapOn: "Back"
+- extendedWaitUntil:
+    visible: ".*Atlas Website.*"
+    timeout: 30000
+- takeScreenshot: shots/01-projects
+# A project: its board first.
+- tapOn: ".*Atlas Website.*"
+- extendedWaitUntil:
+    visible: "Issues.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: shots/02-project-board
+- tapOn: "List view"
+- takeScreenshot: shots/03-project-list
+- tapOn: "Filters"
+- takeScreenshot: shots/04-project-filters
+- tapOn: "Done"
+- scrollUntilVisible:
+    element: ".*Login button does nothing.*"
+    direction: DOWN
+- tapOn: ".*Login button does nothing.*"
+- extendedWaitUntil:
+    visible: "(?i)comments.*"
+    timeout: 15000
+- takeScreenshot: shots/05-issue
+- tapOn: "Back"
+- scrollUntilVisible:
+    element: "Overview"
+    direction: UP
+- tapOn: "Overview"
+- waitForAnimationToEnd
+- takeScreenshot: shots/06-project-overview
+- tapOn: "Reports"
+- waitForAnimationToEnd
+- takeScreenshot: shots/07-project-reports
+- tapOn: "Back"
+- tapOn: "My work"
+- takeScreenshot: shots/08-work
+- tapOn: "Time"
+- takeScreenshot: shots/09-time
+- tapOn: "Inbox"
+- takeScreenshot: shots/10-inbox
+- tapOn: "Projects"
+- tapOn: "Settings"
+- tapOn: "العربية"
+- extendedWaitUntil:
+    visible: "المشاريع"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: shots/11-projects-ar
+- tapOn: ".*Atlas Website.*"
+- waitForAnimationToEnd
+- takeScreenshot: shots/12-project-ar

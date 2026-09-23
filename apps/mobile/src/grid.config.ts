@@ -1,6 +1,6 @@
 import { PRODUCT_MARKS, type GridApp } from '@/grid';
 
-import { apiUrl, isTeam } from '@/config';
+import { apiUrl } from '@/config';
 
 // Mahaam on the grid. The mark is the one drawn for it on the product-marks sheet (under its old
 // name, Managy); on a dark ground the body lifts to the lighter purple the web uses there.
@@ -11,7 +11,7 @@ import { apiUrl, isTeam } from '@/config';
 //   #B784D6 + ink   #0E1A3C  5.8:1  — dark ground
 export const APP: GridApp = {
   key: 'mahaam',
-  name: isTeam ? 'Mahaam Team' : 'Mahaam Client',
+  name: 'Mahaam',
   mark: { ...PRODUCT_MARKS.managy!, name: 'Mahaam', bodyOnDark: '#B784D6' },
   action: { light: '#8C3FB5', dark: '#B784D6' },
   onAction: { light: '#F0EBE1', dark: '#0E1A3C' },

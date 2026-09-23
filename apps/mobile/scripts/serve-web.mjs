@@ -1,20 +1,19 @@
-// Serve a web export of one variant and proxy /api/* to the Mahaam API on the same origin.
+// Serve the web export and proxy /api/* to the Mahaam API on the same origin.
 // The API's CORS list names only the Next app, and a browser can't send the CSRF cookie cross-site,
 // so the web target (used for QA) must be same-origin with /api.
 //
-//   node scripts/serve-web.mjs [team|client] [port] [api]
-//   defaults: team, 8091 (client 8092), http://localhost:8120
+//   node scripts/serve-web.mjs [port] [api]
+//   defaults: 8091, http://localhost:8120
 import { createReadStream, existsSync, statSync } from "node:fs";
 import http from "node:http";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const variant = process.argv[2] === "client" ? "client" : "team";
-const port = Number(process.argv[3] ?? (variant === "client" ? 8092 : 8091));
-const api = new URL(process.argv[4] ?? process.env.MAHAAM_API ?? "http://localhost:8120");
-const root = join(fileURLToPath(new URL("..", import.meta.url)), "dist", variant);
+const port = Number(process.argv[2] ?? 8091);
+const api = new URL(process.argv[3] ?? process.env.MAHAAM_API ?? "http://localhost:8120");
+const root = join(fileURLToPath(new URL("..", import.meta.url)), "dist", "web");
 if (!existsSync(join(root, "index.html"))) {
-  console.error(`no export at ${root} — run: npm run export:web:${variant}`);
+  console.error(`no export at ${root} — run: npm run export:web`);
   process.exit(1);
 }
 
@@ -46,4 +45,4 @@ http
     res.writeHead(200, { "Content-Type": TYPES[extname(file)] ?? "application/octet-stream" });
     createReadStream(file).pipe(res);
   })
-  .listen(port, () => console.log(`Mahaam ${variant} web on http://localhost:${port} → API ${api.origin}`));
+  .listen(port, () => console.log(`Mahaam web on http://localhost:${port} → API ${api.origin}`));

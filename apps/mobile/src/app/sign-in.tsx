@@ -7,7 +7,6 @@ import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 
 import { ApiError } from "@/api/client";
 import { useErrorText } from "@/components/kit";
-import { isTeam } from "@/config";
 import {
   AppText,
   CubeMark,
@@ -74,7 +73,7 @@ export default function SignIn() {
         <Rows>
           <Row>
             <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, lineHeight: 25, color: c.muted }}>
-              {t(isTeam ? "auth.subtitleTeam" : "auth.subtitleClient")}
+              {t("auth.subtitle")}
             </AppText>
           </Row>
           <Row>

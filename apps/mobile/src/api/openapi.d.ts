@@ -3517,6 +3517,23 @@ export interface paths {
         patch: operations["w-update-subscription"];
         trace?: never;
     };
+    "/api/w/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What changed since a cursor: rows plus tombstones (offline clients) */
+        get: operations["w-sync"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/tasks": {
         parameters: {
             query?: never;
@@ -8026,6 +8043,52 @@ export interface components {
             readonly $schema?: string;
             subscriptions: components["schemas"]["Subscription"][] | null;
         };
+        SyncComment: {
+            author_id: string | null;
+            body: string;
+            id: string;
+            task_id: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SyncIssue: {
+            issue_type: string;
+            key: string;
+            priority: string;
+            project_id: string | null;
+            state: string;
+            status: string;
+            title: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SyncPage: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SyncPage.json
+             */
+            readonly $schema?: string;
+            comments: components["schemas"]["SyncComment"][] | null;
+            deletions: components["schemas"]["Tombstone"][] | null;
+            issues: components["schemas"]["SyncIssue"][] | null;
+            /** Format: date-time */
+            next_since: string;
+            projects: components["schemas"]["SyncProject"][] | null;
+            tasks: components["schemas"]["SyncTask"][] | null;
+            time_entries: components["schemas"]["SyncTimeEntry"][] | null;
+            truncated: boolean;
+        };
+        SyncProject: {
+            archived: boolean;
+            client_id: string | null;
+            color: string;
+            id: string;
+            name: string;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
         SyncReport: {
             /**
              * Format: uri
@@ -8055,6 +8118,35 @@ export interface components {
             provider: string;
             /** Format: int64 */
             updated: number;
+        };
+        SyncTask: {
+            /** Format: date-time */
+            completed_at: string | null;
+            /** Format: date-time */
+            due_at: string | null;
+            id: string;
+            key: string;
+            priority: string;
+            project_id: string;
+            status_id: string;
+            title: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SyncTimeEntry: {
+            billable: boolean;
+            description: string;
+            /** Format: int64 */
+            duration_s: number | null;
+            /** Format: date-time */
+            ended_at: string | null;
+            id: string;
+            project_id: string | null;
+            /** Format: date-time */
+            started_at: string;
+            task_id: string | null;
+            /** Format: date-time */
+            updated_at: string;
         };
         Task: {
             assignee_ids: string[] | null;
@@ -8777,6 +8869,12 @@ export interface components {
             /** Format: date-time */
             revoked_at: string | null;
             scopes: string[] | null;
+        };
+        Tombstone: {
+            /** Format: date-time */
+            deleted_at: string;
+            entity: string;
+            id: string;
         };
         Unbilled: {
             /**
@@ -20628,6 +20726,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Subscription"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-sync": {
+        parameters: {
+            query?: {
+                /** @description next_since from the previous call (RFC 3339). Empty for a first sync. */
+                since?: string;
+            };
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncPage"];
                 };
             };
             /** @description Error */

@@ -84,9 +84,7 @@ export interface TaskCounts {
 
 export type Project = components["schemas"]["Project"];
 
-export interface ProjectDetail extends Project {
-  statuses: Status[];
-}
+export type ProjectDetail = components["schemas"]["ProjectDetail"];
 
 export interface Issue {
   key: string;
@@ -200,4 +198,62 @@ export interface PortalProjectPage extends PortalProject {
   invoices: Invoice[] | null;
   invoices_visible: boolean;
   weeks: { week: string; minutes: number }[] | null;
+  /** What the workspace shares with its customers on this project. */
+  share?: { board: boolean; team: boolean; money: boolean };
+  team?: { name: string; initials: string; role?: string }[] | null;
+  columns?: { id: string; name: string; color: string; category: string; task_count: number }[] | null;
+  budget_amount_minor?: number | null;
+  budget_currency?: string | null;
 }
+
+// ---- Projects, reports, the issue board (team) -------------------------------------------------
+
+/** A workspace issue as the list/board returns it (generated; issues are task cards on a board). */
+export type IssueRow = components["schemas"]["Issue"];
+export type Budget = components["schemas"]["Budget"];
+export type Activity = components["schemas"]["Activity"];
+export type Member = components["schemas"]["Member"];
+export type Label = components["schemas"]["Label"];
+
+export interface ReportRow {
+  key: string;
+  name: string;
+  color?: string;
+  seconds: number;
+  rounded_s: number;
+  billable_s: number;
+  entries: number;
+}
+
+export interface TimeReportSummary {
+  from: string;
+  to: string;
+  rows: ReportRow[] | null;
+  total: ReportRow;
+}
+
+/** GET /api/w/projects/{p}/report?format=json (internal/work/project_report.go). */
+export interface ProjectReport {
+  project: ProjectDetail;
+  from: string;
+  to: string;
+  timezone: string;
+  total_tasks: number;
+  percent_done: number;
+  statuses: Status[] | null;
+  budget: Budget | null;
+  by_member: TimeReportSummary | null;
+  by_week: TimeReportSummary | null;
+  issues_visible: boolean;
+  open_issue_count: number;
+  open_issues: { key: string; title: string; type: string; status: string; priority: string; created_at: string }[] | null;
+  activity: { at: string; actor: string; action: string; subject: string }[] | null;
+  generated_at: string;
+}
+
+// ---- Portal extras -------------------------------------------------------------------------------
+
+export type PortalBoard = components["schemas"]["PortalBoard"];
+export type PortalBoardTask = components["schemas"]["PortalTask"];
+export type PortalTimeReport = components["schemas"]["PortalTimeReport"];
+export type PortalActivityItem = components["schemas"]["PortalActivityItem"];

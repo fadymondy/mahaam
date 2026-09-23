@@ -1,0 +1,66 @@
+# Customer smoke pass (the portal shell) on a local stack: sign in as a customer of the QA
+# workspace, the projects home, a project's portal tabs, requests, invoices, updates.
+#   seed customer@mahaam.local (client role, contact of Acme Co on Atlas Website) ·
+#   .maestro/run.sh <udid> .maestro/customer-smoke.yaml
+appId: com.fadymondy.mahaam
+---
+- tapOn:
+    text: "Cancel"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*English"
+    timeout: 60000
+- tapOn: ".*English"
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 10000
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible:
+      id: "email"
+    timeout: 30000
+- tapOn:
+    id: "email"
+- inputText: "customer@mahaam.local"
+- tapOn:
+    below: "Password"
+- inputText: "Qa-Test-2026!"
+- hideKeyboard
+- tapOn:
+    text: "Sign in"
+    index: 1
+# "Save Password?" (not in the app's tree): "Not Now" by position; back out if it opened a project.
+- extendedWaitUntil:
+    notVisible:
+      id: "email"
+    timeout: 30000
+- waitForAnimationToEnd
+- tapOn:
+    point: "31%,63%"
+- runFlow:
+    when:
+      visible: "Back"
+    commands:
+      - tapOn: "Back"
+- extendedWaitUntil:
+    visible: ".*Atlas Website.*"
+    timeout: 30000
+- takeScreenshot: shots/c01-portal
+- tapOn: ".*Atlas Website.*"
+- waitForAnimationToEnd
+- takeScreenshot: shots/c02-overview
+- tapOn: "Issues.*"
+- takeScreenshot: shots/c03-issues
+- tapOn: "Board"
+- waitForAnimationToEnd
+- takeScreenshot: shots/c04-board
+- tapOn: "Time"
+- waitForAnimationToEnd
+- takeScreenshot: shots/c05-time
+- tapOn: "Back"
+- tapOn: "Requests"
+- takeScreenshot: shots/c06-requests
+- tapOn: "Invoices"
+- takeScreenshot: shots/c07-invoices
+- tapOn: "Inbox"
+- takeScreenshot: shots/c08-updates

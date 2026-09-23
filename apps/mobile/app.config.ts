@@ -1,33 +1,28 @@
-// One codebase, two store apps. APP_VARIANT=team|client picks the name, bundle id, icon, splash and
-// (via extra.variant / EXPO_PUBLIC_APP_VARIANT) which navigation tree the app mounts.
+// One app for everyone (MH-418): staff and customers install the same "Mahaam"; the shell it shows
+// follows the role in the selected workspace (src/lib/session.tsx), not a build-time variant.
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-type Variant = "team" | "client";
-
-const variant: Variant = process.env.APP_VARIANT === "client" ? "client" : "team";
-// Inline the variant into the JS bundle too (read by src/config.ts) so web exports and dev clients
-// agree with the native config.
-process.env.EXPO_PUBLIC_APP_VARIANT ??= variant;
-
-const V = {
-  team: { name: "Mahaam Team", slug: "mahaam-team", id: "com.fadymondy.mahaam.team", scheme: "mahaam-team", bg: "#F0EBE1" },
-  client: { name: "Mahaam Client", slug: "mahaam-client", id: "com.fadymondy.mahaam.client", scheme: "mahaam-client", bg: "#0B1429" },
-}[variant];
-
-const asset = (f: string) => `./assets/brand/${variant}-${f}.png`;
+const ID = "com.fadymondy.mahaam";
+const asset = (f: string) => `./assets/brand/mahaam-${f}.png`;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: V.name,
-  slug: V.slug,
+  name: "Mahaam",
+  slug: "mahaam",
   version: "1.0.0",
   orientation: "portrait",
   icon: asset("icon"),
-  scheme: V.scheme,
+  // mahaam:// — also the native redirect scheme the API's OAuth accepts (MH-79).
+  scheme: "mahaam",
   userInterfaceStyle: "automatic",
   ios: {
-    bundleIdentifier: V.id,
-    // Fady Nasef (individual). Automatic signing registers both bundle ids and their capabilities.
+    bundleIdentifier: ID,
+    // Icon Composer bundle (MH-339): the mark as two glass layers on the grid's grounds — paper in
+    // light, ink in dark — so iOS 26+ renders Default / Dark / Tinted / Clear with Liquid Glass.
+    // Older iOS gets the flat renders Xcode generates from it. Preview any appearance with:
+    //   ictool assets/brand/mahaam.icon --export-image --rendition Dark --output-file x.png …
+    icon: "./assets/brand/mahaam.icon",
+    // Fady Nasef (individual). Automatic signing registers the bundle id and its capabilities.
     appleTeamId: process.env.APPLE_TEAM_ID ?? "JW9HJH86GC",
     supportsTablet: true,
     infoPlist: {
@@ -37,9 +32,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   android: {
-    package: V.id,
+    package: ID,
     adaptiveIcon: {
-      backgroundColor: V.bg,
+      backgroundColor: "#F0EBE1",
       foregroundImage: asset("adaptive-fg"),
       backgroundImage: asset("adaptive-bg"),
       monochromeImage: asset("adaptive-mono"),
@@ -67,7 +62,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
   experiments: { typedRoutes: false, reactCompiler: true },
   extra: {
-    variant,
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? null,
     eas: process.env.EAS_PROJECT_ID ? { projectId: process.env.EAS_PROJECT_ID } : undefined,
   },

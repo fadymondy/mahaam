@@ -2,33 +2,20 @@
   "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
   "build": {
     "base": { "node": "24.19.0" },
-    "team-development": {
-      "extends": "base", "developmentClient": true, "distribution": "internal", "channel": "team-development",
-      "env": { "APP_VARIANT": "team", "EXPO_PUBLIC_APP_VARIANT": "team", "EXPO_PUBLIC_API_URL": "http://localhost:8120" }
+    "development": {
+      "extends": "base", "developmentClient": true, "distribution": "internal", "channel": "development",
+      "env": { "EXPO_PUBLIC_API_URL": "http://localhost:8120" }
     },
-    "team-preview": {
-      "extends": "base", "distribution": "internal", "channel": "team-preview",
-      "env": { "APP_VARIANT": "team", "EXPO_PUBLIC_APP_VARIANT": "team", "EXPO_PUBLIC_API_URL": "https://console.mahaam.app" }
+    "preview": {
+      "extends": "base", "distribution": "internal", "channel": "preview",
+      "env": { "EXPO_PUBLIC_API_URL": "https://console.mahaam.app" }
     },
-    "team-production": {
-      "extends": "base", "autoIncrement": true, "channel": "team-production",
-      "env": { "APP_VARIANT": "team", "EXPO_PUBLIC_APP_VARIANT": "team", "EXPO_PUBLIC_API_URL": "https://console.mahaam.app" }
-    },
-    "client-development": {
-      "extends": "base", "developmentClient": true, "distribution": "internal", "channel": "client-development",
-      "env": { "APP_VARIANT": "client", "EXPO_PUBLIC_APP_VARIANT": "client", "EXPO_PUBLIC_API_URL": "http://localhost:8120" }
-    },
-    "client-preview": {
-      "extends": "base", "distribution": "internal", "channel": "client-preview",
-      "env": { "APP_VARIANT": "client", "EXPO_PUBLIC_APP_VARIANT": "client", "EXPO_PUBLIC_API_URL": "https://console.mahaam.app" }
-    },
-    "client-production": {
-      "extends": "base", "autoIncrement": true, "channel": "client-production",
-      "env": { "APP_VARIANT": "client", "EXPO_PUBLIC_APP_VARIANT": "client", "EXPO_PUBLIC_API_URL": "https://console.mahaam.app" }
+    "production": {
+      "extends": "base", "autoIncrement": true, "channel": "production",
+      "env": { "EXPO_PUBLIC_API_URL": "https://console.mahaam.app" }
     }
   },
   "submit": {
-    "team-production": {},
-    "client-production": {}
+    "production": {}
   }
 }

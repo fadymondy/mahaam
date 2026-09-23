@@ -90,11 +90,9 @@ function render(size, { bg, body, accent, scale = 0.8, mono }) {
   return png(size, buf);
 }
 
-// Team: the mark on Paper. Client: the mark on Ink (dark-ground body colour). Distinct at a glance
-// on a home screen that has both installed.
+// One app (MH-418): the mark on Paper. (Light / dark / tinted variants are MH-339.)
 const variants = {
-  team: { bg: PAPER, body: BRAND, accent: ACCENT },
-  client: { bg: INK, body: BRAND_DARK, accent: ACCENT },
+  mahaam: { bg: PAPER, body: BRAND, accent: ACCENT },
 };
 
 for (const [name, v] of Object.entries(variants)) {

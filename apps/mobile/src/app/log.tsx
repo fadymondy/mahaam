@@ -3,10 +3,10 @@ import { Check } from "lucide-react-native";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, View } from "react-native";
 
-import { TabHeader, useErrorText } from "@/components/kit";
+import { useErrorText } from "@/components/kit";
 import { ProjectPicker } from "@/components/project-picker";
 import { useMyTasks, useProjects, useTimeSettings } from "@/features/team";
-import { AppText, Checkbox, ErrorLine, Field, fonts, FooterBar, PrimaryButton, Row, Rows, Screen, useColors } from "@/grid";
+import { AppText, Checkbox, ErrorLine, Field, fonts, FooterBar, PrimaryButton, Row, Rows, Screen, StackHeader, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { mahaam } from "@/lib/session";
@@ -62,7 +62,7 @@ export default function LogTime() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Screen
-        header={<TabHeader title="log.title" inbox="/notifications" />}
+        header={<StackHeader title={t("log.title")} />}
         footer={
           <FooterBar>
             <PrimaryButton
