@@ -59,8 +59,8 @@ Everything the two stores ask for that is not code, in one place. The listing te
 4. **Google Play Console:** create the app, then fill in:
    - the listing, the Data safety form (`privacy.md`) and the content rating;
    - the account deletion URL, target audience (18+ / business), and ads (none).
-5. **Demo accounts:** create them on production with `cmd/mahaam-admin` as described in
-   `review-notes.md`. They are not created automatically.
+5. **Demo accounts:** create them by hand on the production web console, as described in
+   `review-notes.md`. Nothing creates them automatically.
 6. **Push notifications:** Firebase config for `com.fadymondy.mahaam`
    (`google-services.json`, `GoogleService-Info.plist`) and the APNs key. The files in
    `apps/mobile/secrets/` are for the retired `.team` / `.client` apps. Until then the app sends
