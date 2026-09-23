@@ -27,9 +27,10 @@ var challengePerIP = ratelimit.Rate("2fa-challenge-ip", 30, 15*time.Minute)
 
 // twoFAError maps the 2FA errors to statuses.
 func (s *Service) twoFAError(err error) error {
+	if r := reauthRefusal(err); r != nil {
+		return r
+	}
 	switch {
-	case errors.Is(err, errWrongPassword):
-		return huma.Error403Forbidden(err.Error())
 	case errors.Is(err, ErrTOTPInvalid):
 		return huma.Error400BadRequest(err.Error())
 	case errors.Is(err, ErrTOTPLocked):
@@ -63,10 +64,11 @@ func RegisterTwoFA(api huma.API, s *Service) {
 
 	huma.Register(api, huma.Operation{OperationID: "me-2fa-enroll", Method: http.MethodPost, Path: "/api/me/2fa/enroll",
 		Summary: "Start setting up two-factor sign-in", Tags: []string{tag},
-		Description: "Needs your password. Returns the secret and an otpauth:// link (show it as a QR code, or open it on the same phone). Nothing is enforced until /api/me/2fa/confirm."},
+		Description: "Needs your password (an account without one: email_code, from POST /api/me/reauth/code). Returns the secret and an otpauth:// link (show it as a QR code, or open it on the same phone). Nothing is enforced until /api/me/2fa/confirm."},
 		func(ctx context.Context, in *struct {
 			Body struct {
-				Password string `json:"password" minLength:"1" maxLength:"200"`
+				Password  string `json:"password,omitempty" maxLength:"200" doc:"Required when the account has a password"`
+				EmailCode string `json:"email_code,omitempty" maxLength:"6" doc:"Instead of the password, for an account without one: the code from POST /api/me/reauth/code"`
 			}
 		}) (*struct {
 			Body struct {
@@ -78,7 +80,7 @@ func RegisterTwoFA(api huma.API, s *Service) {
 			if err != nil {
 				return nil, err
 			}
-			secret, uri, err := s.Enroll(ctx, id, in.Body.Password)
+			secret, uri, err := s.Enroll(ctx, id, in.Body.Password, in.Body.EmailCode)
 			if err != nil {
 				return nil, s.twoFAError(err)
 			}
@@ -113,18 +115,20 @@ func RegisterTwoFA(api huma.API, s *Service) {
 		})
 
 	huma.Register(api, huma.Operation{OperationID: "me-2fa-recovery", Method: http.MethodPost, Path: "/api/me/2fa/recovery-codes",
-		Summary: "Replace your recovery codes", Tags: []string{tag}},
+		Summary: "Replace your recovery codes", Tags: []string{tag},
+		Description: "Needs your password (an account without one: email_code, from POST /api/me/reauth/code) and a current code."},
 		func(ctx context.Context, in *struct {
 			Body struct {
-				Password string `json:"password" minLength:"1" maxLength:"200"`
-				Code     string `json:"code" pattern:"^[0-9]{6}$"`
+				Password  string `json:"password,omitempty" maxLength:"200" doc:"Required when the account has a password"`
+				EmailCode string `json:"email_code,omitempty" maxLength:"6" doc:"Instead of the password, for an account without one: the code from POST /api/me/reauth/code"`
+				Code      string `json:"code" pattern:"^[0-9]{6}$"`
 			}
 		}) (*recoveryOut, error) {
 			id, err := who(ctx)
 			if err != nil {
 				return nil, err
 			}
-			codes, err := s.RegenerateRecovery(ctx, id, in.Body.Password, in.Body.Code)
+			codes, err := s.RegenerateRecovery(ctx, id, in.Body.Password, in.Body.EmailCode, in.Body.Code)
 			if err != nil {
 				return nil, s.twoFAError(err)
 			}
@@ -135,10 +139,11 @@ func RegisterTwoFA(api huma.API, s *Service) {
 
 	huma.Register(api, huma.Operation{OperationID: "me-2fa-disable", Method: http.MethodPost, Path: "/api/me/2fa/disable",
 		DefaultStatus: http.StatusNoContent, Summary: "Turn two-factor sign-in off", Tags: []string{tag},
-		Description: "Needs your password and a current code (or a recovery code)."},
+		Description: "Needs your password (an account without one: email_code, from POST /api/me/reauth/code) and a current code (or a recovery code)."},
 		func(ctx context.Context, in *struct {
 			Body struct {
-				Password     string `json:"password" minLength:"1" maxLength:"200"`
+				Password     string `json:"password,omitempty" maxLength:"200" doc:"Required when the account has a password"`
+				EmailCode    string `json:"email_code,omitempty" maxLength:"6" doc:"Instead of the password, for an account without one: the code from POST /api/me/reauth/code"`
 				Code         string `json:"code,omitempty" maxLength:"6"`
 				RecoveryCode string `json:"recovery_code,omitempty" maxLength:"20"`
 			}
@@ -147,7 +152,7 @@ func RegisterTwoFA(api huma.API, s *Service) {
 			if err != nil {
 				return nil, err
 			}
-			if err := s.DisableTwoFA(ctx, id, in.Body.Password, in.Body.Code, in.Body.RecoveryCode); err != nil {
+			if err := s.DisableTwoFA(ctx, id, in.Body.Password, in.Body.EmailCode, in.Body.Code, in.Body.RecoveryCode); err != nil {
 				return nil, s.twoFAError(err)
 			}
 			return nil, nil

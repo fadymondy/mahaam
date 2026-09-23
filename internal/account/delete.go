@@ -12,7 +12,6 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/togo-framework/mail"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/fadymondy/mahaam/internal/platform"
 )
@@ -21,7 +20,7 @@ import (
 Deleting an account (MH-344). App Review 5.1.1(v): an app that creates accounts must let a
 person delete theirs from inside the app.
 
-	POST /api/me/delete {password}
+	POST /api/me/delete {password}      (an account without a password: {email_code}, reauth.go)
 	  409 sole_owner  with the workspaces they alone own: hand those over or delete them first
 	  202             {purge_after}: signed out everywhere now, gone after the grace period
 
@@ -95,13 +94,33 @@ func soleOwned(ctx context.Context, q interface {
 
 // RequestDeletion checks the password and the ownership rule, then signs the account out of
 // everything at once and schedules the purge.
-func (s *Service) RequestDeletion(ctx context.Context, userID, password, code, recovery, locale string) (time.Time, error) {
-	var email, hash string
-	if err := s.DB.QueryRowContext(ctx, `SELECT email, password_hash FROM users WHERE id = $1`, userID).Scan(&email, &hash); err != nil {
+//
+// An account without a password (Apple, Google, GitHub) proves itself with a mailed code
+// (emailCode, reauth.go) instead. That code works once, so for those accounts everything that
+// could refuse without spending anything is checked first.
+func (s *Service) RequestDeletion(ctx context.Context, userID, password, emailCode, code, recovery, locale string) (time.Time, error) {
+	noPassword, err := s.passwordless(ctx, userID)
+	if err != nil {
 		return time.Time{}, err
 	}
-	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
-		return time.Time{}, errWrongPassword
+	if noPassword {
+		if strings.TrimSpace(emailCode) == "" {
+			return time.Time{}, errReauthRequired
+		}
+		if TwoFAEnabled(ctx, s.DB, userID) && code == "" && recovery == "" {
+			return time.Time{}, errSecondFactorRequired
+		}
+		owned, err := soleOwned(ctx, s.DB, userID)
+		if err != nil {
+			return time.Time{}, err
+		}
+		if len(owned) > 0 {
+			return time.Time{}, &SoleOwnerError{Workspaces: owned}
+		}
+	}
+	email, err := s.reauth(ctx, userID, password, emailCode)
+	if err != nil {
+		return time.Time{}, err
 	}
 	// With 2FA on, the password alone doesn't delete the account (MH-341).
 	if TwoFAEnabled(ctx, s.DB, userID) {
@@ -246,6 +265,8 @@ func (s *Service) purge(ctx context.Context, userID string) error {
 		`DELETE FROM notifications WHERE user_id = $1`,
 		`DELETE FROM notification_prefs WHERE user_id = $1`,
 		`DELETE FROM user_github_accounts WHERE user_id = $1`,
+		// Sign in with Apple links: an anonymised row must not be reachable by its old Apple ID.
+		`DELETE FROM user_identities WHERE user_id = $1`,
 		`DELETE FROM account_codes WHERE user_id = $1`,
 		// Minted during the grace period and never used to sign in are not possible (that would
 		// cancel), but a purge is the last word, so it clears them regardless.
@@ -322,13 +343,15 @@ func RegisterDelete(api huma.API, s *Service) {
 	huma.Register(api, huma.Operation{OperationID: "me-delete", Method: http.MethodPost, Path: "/api/me/delete",
 		DefaultStatus: http.StatusAccepted, Tags: []string{"Account"},
 		Summary: "Delete your account",
-		Description: "Needs your password. Refused (409, code sole_owner, with the list) while you are the only owner of a workspace. " +
+		Description: "Needs your password; an account without one (has_password false) sends email_code, from POST /api/me/reauth/code. " +
+			"With two-factor sign-in on, code or recovery_code as well. Refused (409, code sole_owner, with the list) while you are the only owner of a workspace. " +
 			"Otherwise every session and token ends now, and the account is anonymised after the grace period (purge_after). " +
 			"Signing in again before then cancels the deletion.",
 		Errors: []int{http.StatusForbidden, http.StatusConflict}},
 		func(ctx context.Context, in *struct {
 			Body struct {
-				Password     string `json:"password" minLength:"1" maxLength:"200"`
+				Password     string `json:"password,omitempty" maxLength:"200" doc:"Required when the account has a password"`
+				EmailCode    string `json:"email_code,omitempty" maxLength:"6" doc:"Instead of the password, for an account without one: the code from POST /api/me/reauth/code"`
 				Code         string `json:"code,omitempty" maxLength:"6" doc:"Required when two-factor sign-in is on"`
 				RecoveryCode string `json:"recovery_code,omitempty" maxLength:"20"`
 				Locale       string `json:"locale,omitempty" enum:"en,ar,"`
@@ -338,11 +361,12 @@ func RegisterDelete(api huma.API, s *Service) {
 			if err != nil {
 				return nil, err
 			}
-			purge, err := s.RequestDeletion(ctx, id, in.Body.Password, in.Body.Code, in.Body.RecoveryCode, in.Body.Locale)
+			purge, err := s.RequestDeletion(ctx, id, in.Body.Password, in.Body.EmailCode, in.Body.Code, in.Body.RecoveryCode, in.Body.Locale)
 			var sole *SoleOwnerError
+			if r := reauthRefusal(err); r != nil {
+				return nil, r
+			}
 			switch {
-			case errors.Is(err, errWrongPassword):
-				return nil, huma.Error403Forbidden(err.Error())
 			case errors.Is(err, errSecondFactorRequired):
 				return nil, &Refusal{Status: http.StatusForbidden, Code: "mfa_required", Msg: err.Error()}
 			case errors.Is(err, ErrTOTPInvalid), errors.Is(err, ErrTOTPLocked):

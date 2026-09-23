@@ -13,7 +13,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/togo-framework/auth"
 	"github.com/togo-framework/ratelimit"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/fadymondy/mahaam/internal/platform"
 )
@@ -43,17 +42,22 @@ type Profile struct {
 	CreatedAt string  `json:"created_at"`
 	// EmailVerified: the address has been proven with a code (MH-342).
 	EmailVerified bool `json:"email_verified"`
+	// HasPassword is false for an account made with Apple, Google or GitHub. Where the others type
+	// their password (delete, email change, 2FA), it sends email_code from POST /api/me/reauth/code.
+	HasPassword bool `json:"has_password" doc:"false: an Apple/Google/GitHub account. Confirm with email_code (POST /api/me/reauth/code) where others give the password"`
 }
 
 // LoadProfile reads a profile. A person who never saved one has the empty profile.
 func LoadProfile(ctx context.Context, db *sql.DB, userID string) (*Profile, error) {
 	p := &Profile{ID: userID}
+	var hash string
 	err := db.QueryRowContext(ctx, `
 		SELECT u.email, u.created_at, coalesce(p.name, ''), p.avatar, p.locale, p.timezone,
-			coalesce(pu.email_verified_at IS NOT NULL, false)
+			coalesce(pu.email_verified_at IS NOT NULL, false), u.password_hash
 		FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id LEFT JOIN platform_users pu ON pu.user_id = u.id
 		WHERE u.id = $1`, userID,
-	).Scan(&p.Email, &p.CreatedAt, &p.Name, &p.Avatar, &p.Locale, &p.Timezone, &p.EmailVerified)
+	).Scan(&p.Email, &p.CreatedAt, &p.Name, &p.Avatar, &p.Locale, &p.Timezone, &p.EmailVerified, &hash)
+	p.HasPassword = HasPassword(hash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, platform.ErrNoUser
 	}
@@ -132,14 +136,20 @@ var (
 // An address already in use gets no code and no error. Saying "taken" would let any signed-in
 // account test whether an address is registered. The owner of a typo'd address simply never
 // receives a code, and a code for it would be refused at confirm anyway.
-func (s *Service) RequestEmailChange(ctx context.Context, userID, password, newEmail, locale string) error {
+//
+// An account without a password proves itself with emailCode (reauth.go) instead; that code works
+// once, so "same address" is refused before it is spent.
+func (s *Service) RequestEmailChange(ctx context.Context, userID, password, emailCode, newEmail, locale string) error {
 	newEmail = normEmail(newEmail)
 	var current, hash string
 	if err := s.DB.QueryRowContext(ctx, `SELECT email, password_hash FROM users WHERE id = $1`, userID).Scan(&current, &hash); err != nil {
 		return err
 	}
-	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
-		return errWrongPassword
+	if !HasPassword(hash) && strings.EqualFold(current, newEmail) {
+		return errSameEmail
+	}
+	if _, err := s.reauth(ctx, userID, password, emailCode); err != nil {
+		return err
 	}
 	if strings.EqualFold(current, newEmail) {
 		return errSameEmail
@@ -304,12 +314,13 @@ func RegisterProfile(api huma.API, s *Service) {
 
 	huma.Register(api, huma.Operation{OperationID: "me-email-change", Method: http.MethodPost, Path: "/api/me/email",
 		DefaultStatus: http.StatusAccepted, Summary: "Move your account to a new email address", Tags: []string{tag},
-		Description: "Needs your password. A six-digit code goes to the NEW address; confirm it with /api/me/email/confirm. Nothing changes until then."},
+		Description: "Needs your password (an account without one: email_code, from POST /api/me/reauth/code). A six-digit code goes to the NEW address; confirm it with /api/me/email/confirm. Nothing changes until then."},
 		func(ctx context.Context, in *struct {
 			Body struct {
-				Email    string `json:"email" format:"email" maxLength:"320"`
-				Password string `json:"password" minLength:"1" maxLength:"200"`
-				Locale   string `json:"locale,omitempty" enum:"en,ar,"`
+				Email     string `json:"email" format:"email" maxLength:"320"`
+				Password  string `json:"password,omitempty" maxLength:"200" doc:"Required when the account has a password"`
+				EmailCode string `json:"email_code,omitempty" maxLength:"6" doc:"Instead of the password, for an account without one: the code from POST /api/me/reauth/code"`
+				Locale    string `json:"locale,omitempty" enum:"en,ar,"`
 			}
 		}) (*struct{}, error) {
 			id, err := who(ctx)
@@ -321,9 +332,11 @@ func RegisterProfile(api huma.API, s *Service) {
 					return nil, huma.Error429TooManyRequests("too many attempts; try again later")
 				}
 			}
-			switch err := s.RequestEmailChange(ctx, id, in.Body.Password, in.Body.Email, in.Body.Locale); {
-			case errors.Is(err, errWrongPassword):
-				return nil, huma.Error403Forbidden(err.Error())
+			err = s.RequestEmailChange(ctx, id, in.Body.Password, in.Body.EmailCode, in.Body.Email, in.Body.Locale)
+			if r := reauthRefusal(err); r != nil {
+				return nil, r
+			}
+			switch {
 			case errors.Is(err, errSameEmail):
 				return nil, huma.Error422UnprocessableEntity(err.Error())
 			case err != nil:
