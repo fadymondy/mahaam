@@ -729,9 +729,40 @@ npm run icons                        # regenerate icons and splash from the mark
 - **Portal**: the richer endpoints (`/api/w/portal/projects…`, `/requests`) are feature-detected. On a 404 the app
   falls back to `/api/w/projects` and the issue intake. `GET /api/w/invoices/{id}/print` answers 403 to customers, so
   the invoice screen shows the details in the app instead.
-- **Build with EAS** (`eas.json`): the profiles are `team-development|preview|production` and
-  `client-development|preview|production`, e.g. `eas build -p ios --profile team-production`. Set `EAS_PROJECT_ID` and
-  check `EXPO_PUBLIC_API_URL` per profile before the first build.
+- **Build**: one app, `com.fadymondy.mahaam` (`eas.json` profiles development / preview / production). Pass
+  `EXPO_PUBLIC_API_URL=https://console.mahaam.app` for anything that leaves this machine.
+
+### Mobile updates — Codemagic Patch (OTA)
+
+Over-the-air JS updates go through our self-hosted **Codemagic Patch** server
+(`https://patch.fadymondy.com`), the same one the Fady Mondy and Health Debug apps use — not EAS
+Update. The build-time half is `apps/mobile/plugins/with-app-updates.js`; the runtime half is
+`apps/mobile/src/lib/updates.tsx` (check on launch and on foreground → download with a progress pill →
+install `ON_NEXT_RESTART` → "Update ready — Restart now / Later"; a mandatory release offers no Later
+and restarts itself after 10 s; the running bundle is confirmed so a release that fails to boot is
+rolled back).
+
+- **expo-updates stays installed but disabled** (the synced grid calls it for the RTL reload). With an
+  `updates.url` it would own bundle loading and Patch bundles would never boot; the plugin refuses that.
+- **Signed releases only.** `apps/mobile/patch-public-key.pem` (the public half, committed — the same
+  key as the other apps) is compiled into the binary and the SDK rejects anything it did not sign. The
+  private key lives only in Codemagic (`CODEMAGIC_PATCH_PRIVATE_KEY`, group `patch`). Never commit it.
+- **Until the deployment keys are set, OTA is off**: the plugin is not applied and the app never calls
+  the SDK.
+
+**One-time setup (owner):**
+1. On `patch.fadymondy.com` create two apps, `mahaam` (iOS) and `mahaam-android`, each with a
+   `Staging` and a `Production` deployment (`cmpatch app add …` or the dashboard).
+2. Put the four deployment keys (`cmpatch deployment list --app <app> --format table`, DEPLOYMENT_KEY)
+   into `PATCH_KEYS` in `apps/mobile/plugins/with-app-updates.js` — they are public identifiers — then
+   ship a store build (the keys are compiled into the binary).
+3. Point a Codemagic app at this repo (it reads `/codemagic.yaml`) and attach the groups `patch` and
+   `mahaam_env` (`EXPO_PUBLIC_API_URL`, …).
+
+**Publishing an OTA:** run the `ota-release` workflow in Codemagic. It checks both deployments are
+configured, prebuilds (for the native fingerprint), and runs `cmpatch release-react` for iOS and
+Android against the `version` in `app.config.ts`, signing each release. `PATCH_MANDATORY=true` makes
+it a required update. Anything native needs a store build and a new version instead.
 - **Not done yet**: device builds, store submission and remote push notifications. Reminders are local notifications
   only. The apps use the system font because Lusail ships in the repo only as woff2, with no licence file.
 

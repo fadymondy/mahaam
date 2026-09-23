@@ -5,26 +5,36 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GridBridge, StringsProvider } from "@/grid";
 import { APP } from "@/grid.config";
 import { strings } from "@/i18n";
-import { CHECK_INTERVAL_MS, previewView, shouldCheck, UpdateBanner, UpdateLoader, updateView, type UpdateView } from "../updates";
+import { act } from "@testing-library/react-native";
+import { __setPatchForTests, CHECK_INTERVAL_MS, MANDATORY_COUNTDOWN_S, previewView, shouldCheck, UpdateBanner, UpdateLoader, updateView, type UpdateView } from "../updates";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
-const mockUpdates = {
-  isDownloading: false,
-  isUpdatePending: false,
-  isRestarting: false,
-  downloadProgress: undefined as number | undefined,
-  downloadedUpdate: undefined as { updateId: string } | undefined,
-};
-jest.mock("expo-updates", () => ({
-  isEnabled: false,
-  useUpdates: () => mockUpdates,
-  checkForUpdateAsync: jest.fn(),
-  fetchUpdateAsync: jest.fn(),
-  reloadAsync: jest.fn(() => Promise.resolve()),
-}));
+jest.mock("expo-constants", () => ({ expoConfig: { extra: { appUpdates: { ota: { ios: true, android: true } } } } }));
+
+/** A stand-in for @codemagic/react-native-patch; each test decides what the server answers. */
+function fakePatch(answer: unknown) {
+  let finish: () => void = () => undefined;
+  const downloaded = new Promise<void>((r) => (finish = r));
+  const p = {
+    notifyAppReady: jest.fn(() => Promise.resolve()),
+    checkForUpdate: jest.fn(() => Promise.resolve(answer)),
+    downloadUpdate: jest.fn(async (_pkg: unknown, onProgress?: (d: { receivedBytes: number; totalBytes: number }) => void) => {
+      onProgress?.({ receivedBytes: 50, totalBytes: 100 });
+      await downloaded;
+      return { local: true };
+    }),
+    installUpdate: jest.fn(() => Promise.resolve()),
+    restartApp: jest.fn(() => Promise.resolve()),
+  };
+  return { p, finish };
+}
+const release = (over: Record<string, unknown> = {}) => ({
+  action: "ota-update",
+  remotePackage: { packageHash: "h1", isMandatory: false, previouslyFailed: false, ...over },
+});
 
 const base = { reason: "foreground" as const, dev: false, enabled: true, busy: false, pending: false, lastCheckAt: 0, now: CHECK_INTERVAL_MS };
 
@@ -124,36 +134,81 @@ describe("UpdateBanner", () => {
   });
 });
 
-describe("UpdateLoader", () => {
-  afterEach(() => Object.assign(mockUpdates, { isDownloading: false, isUpdatePending: false, downloadProgress: undefined, downloadedUpdate: undefined }));
-
-  it("follows the updater: downloading, then ready; Restart now reloads", async () => {
-    Object.assign(mockUpdates, { isDownloading: true, downloadProgress: 0.5 });
-    const r = await render(
+describe("UpdateLoader (Codemagic Patch)", () => {
+  afterEach(() => __setPatchForTests(null));
+  const mount = () =>
+    render(
       <Wrap locale="en">
         <UpdateLoader />
       </Wrap>,
     );
-    expect(screen.getByText("50%")).toBeTruthy();
 
-    Object.assign(mockUpdates, { isDownloading: false, isUpdatePending: true, downloadedUpdate: { updateId: "u1" } });
-    await r.rerender(
-      <Wrap locale="en">
-        <UpdateLoader />
-      </Wrap>,
-    );
-    await fireEvent.press(screen.getByText("Restart now"));
-    expect(require("expo-updates").reloadAsync).toHaveBeenCalled();
+  it("confirms the running bundle, downloads with progress, stages, and Restart now restarts", async () => {
+    const { p, finish } = fakePatch(release());
+    __setPatchForTests(p as never);
+    await mount();
+    expect(p.notifyAppReady).toHaveBeenCalled();
+    expect(await screen.findByText("50%")).toBeTruthy();
+    await act(async () => finish());
+    expect(p.installUpdate).toHaveBeenCalledWith({ local: true }, { installMode: "ON_NEXT_RESTART" });
+    await fireEvent.press(await screen.findByText("Restart now"));
+    expect(p.restartApp).toHaveBeenCalled();
   });
 
-  it("Later hides the prompt for that update", async () => {
-    Object.assign(mockUpdates, { isUpdatePending: true, downloadedUpdate: { updateId: "u1" } });
-    await render(
-      <Wrap locale="en">
-        <UpdateLoader />
-      </Wrap>,
-    );
-    await fireEvent.press(screen.getByText("Later"));
+  it("Later hides the prompt for that release", async () => {
+    const { p, finish } = fakePatch(release());
+    __setPatchForTests(p as never);
+    await mount();
+    await act(async () => finish());
+    await fireEvent.press(await screen.findByText("Later"));
     expect(screen.queryByText("Update ready")).toBeNull();
+    expect(p.restartApp).not.toHaveBeenCalled();
+  });
+
+  it("a mandatory release offers no Later and restarts itself", async () => {
+    jest.useFakeTimers();
+    const { p, finish } = fakePatch(release({ isMandatory: true }));
+    __setPatchForTests(p as never);
+    await mount();
+    await act(async () => finish());
+    expect(await screen.findByText(/This update is required/)).toBeTruthy();
+    expect(screen.queryByText("Later")).toBeNull();
+    await act(async () => jest.advanceTimersByTime(MANDATORY_COUNTDOWN_S * 1000));
+    expect(p.restartApp).toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it("a release that already failed here is not retried", async () => {
+    const { p } = fakePatch(release({ previouslyFailed: true }));
+    __setPatchForTests(p as never);
+    await mount();
+    await act(async () => undefined);
+    expect(p.downloadUpdate).not.toHaveBeenCalled();
+    expect(screen.queryByText(/update/i)).toBeNull();
+  });
+
+  it("a rollback to the binary's own bundle installs quietly, with no prompt", async () => {
+    const answer = { action: "embedded-revert" };
+    const { p } = fakePatch(answer);
+    __setPatchForTests(p as never);
+    await mount();
+    await act(async () => undefined);
+    expect(p.installUpdate).toHaveBeenCalledWith(answer, { installMode: "ON_NEXT_RESTART" });
+    expect(screen.queryByText("Update ready")).toBeNull();
+  });
+
+  it("is silent when the server has nothing, or cannot be reached", async () => {
+    const quiet = fakePatch({ action: "none" });
+    __setPatchForTests(quiet.p as never);
+    const r = await mount();
+    await act(async () => undefined);
+    expect(screen.queryByText(/update/i)).toBeNull();
+    r.unmount();
+    const offline = fakePatch(null);
+    offline.p.checkForUpdate.mockImplementation(() => Promise.reject(new Error("offline")));
+    __setPatchForTests(offline.p as never);
+    await mount();
+    await act(async () => undefined);
+    expect(screen.queryByText(/update/i)).toBeNull();
   });
 });

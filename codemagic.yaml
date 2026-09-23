@@ -1,0 +1,95 @@
+# Codemagic CI for the Mahaam phone app (apps/mobile, Expo + React Native).
+#
+# Mirrors fadymondy.com's and Health Debug's codemagic.yaml: this file lives at the repository root
+# because Codemagic only reads it from there, and the workflow runs inside apps/mobile through
+# `working_directory`. How updates reach phones: README.md → "Mobile updates — Codemagic Patch".
+#
+# NOTHING SECRET IS IN THIS FILE. The Patch token and signing key live in Codemagic (environment
+# group `patch`, the same group the other apps use) and are referenced by name only.
+
+definitions:
+  email: &email
+    email:
+      recipients:
+        - info@3x1.io
+      notify:
+        success: true
+        failure: true
+
+workflows:
+  # ---------------------------------------------------------------------------------------------
+  # OTA update through our self-hosted Codemagic Patch (https://patch.fadymondy.com): ships
+  # JS/asset-only changes to installed binaries with no store review. The app downloads it in the
+  # background and asks "Restart now / Later" (apps/mobile/src/lib/updates.tsx).
+  #
+  # Anything native — a package with native code, a config plugin, a permission, an Expo SDK bump —
+  # needs a STORE build and a new `version` in app.config.ts. The release targets exactly that
+  # binary version, and the Patch server refuses a release whose native fingerprint disagrees with
+  # the one installed for that version. NEVER add --allow-fingerprint-mismatch here.
+  #
+  # Group `patch`: CODEMAGIC_PATCH_TOKEN, CODEMAGIC_PATCH_SERVER_URL, CODEMAGIC_PATCH_PRIVATE_KEY
+  # (base64 PEM — the private half of apps/mobile/patch-public-key.pem).
+  # Group `mahaam_env`: EXPO_PUBLIC_API_URL (https://console.mahaam.app) and the other EXPO_PUBLIC_*
+  # the store builds use.
+  #
+  # Vars: PATCH_DEPLOYMENT (Production = what store builds embed; Staging = test binaries built with
+  # PATCH_DEPLOYMENT=Staging) and PATCH_MANDATORY ("true" = the app restarts itself after a 10 s
+  # countdown instead of offering Later — for fixes that cannot wait).
+  # ---------------------------------------------------------------------------------------------
+  ota-release:
+    name: Mahaam OTA — Codemagic Patch (iOS + Android)
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    working_directory: apps/mobile
+    environment:
+      groups:
+        - mahaam_env
+        - patch
+      node: 24
+      vars:
+        PATCH_DEPLOYMENT: Production
+        PATCH_MANDATORY: "false"
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+          npm install -g @codemagic/patch-cli
+      - name: Deployments are configured
+        # An OTA for a platform whose binaries embed no deployment key would never be fetched.
+        script: |
+          node -e '
+            const { execSync } = require("child_process");
+            const c = JSON.parse(execSync("npx expo config --type public --json", { encoding: "utf8" }));
+            const ota = (c.extra && c.extra.appUpdates && c.extra.appUpdates.ota) || {};
+            if (!ota.ios || !ota.android) {
+              console.error("OTA is not configured for", !ota.ios ? "iOS" : "", !ota.android ? "Android" : "",
+                "— fill PATCH_KEYS in apps/mobile/plugins/with-app-updates.js (README.md → Mobile updates).");
+              process.exit(1);
+            }'
+      - name: Signing key
+        script: echo "$CODEMAGIC_PATCH_PRIVATE_KEY" | base64 --decode > "$CM_BUILD_DIR/patch-private-key.pem"
+      - name: Generate the native projects
+        # release-react fingerprints the native project. --no-install: CocoaPods is not needed for that.
+        script: npx expo prebuild --non-interactive --no-install
+      - name: Release iOS
+        script: |
+          VERSION=$(npx expo config --type public --json | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version')
+          MANDATORY=$([ "$PATCH_MANDATORY" = "true" ] && echo --mandatory)
+          cmpatch release-react --server-url "$CODEMAGIC_PATCH_SERVER_URL" --token "$CODEMAGIC_PATCH_TOKEN" \
+            --app mahaam --platform ios --deployment "$PATCH_DEPLOYMENT" \
+            --target-binary-version "$VERSION" --bundler expo \
+            --private-key-path "$CM_BUILD_DIR/patch-private-key.pem" $MANDATORY \
+            --release-notes "$(git log -1 --format=%s)" --no-duplicate-release-error --non-interactive --yes
+      - name: Release Android
+        script: |
+          VERSION=$(npx expo config --type public --json | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version')
+          MANDATORY=$([ "$PATCH_MANDATORY" = "true" ] && echo --mandatory)
+          cmpatch release-react --server-url "$CODEMAGIC_PATCH_SERVER_URL" --token "$CODEMAGIC_PATCH_TOKEN" \
+            --app mahaam-android --platform android --deployment "$PATCH_DEPLOYMENT" \
+            --target-binary-version "$VERSION" --bundler expo \
+            --private-key-path "$CM_BUILD_DIR/patch-private-key.pem" $MANDATORY \
+            --release-notes "$(git log -1 --format=%s)" --no-duplicate-release-error --non-interactive --yes
+      - name: Remove the signing key
+        script: rm -f "$CM_BUILD_DIR/patch-private-key.pem"
+    publishing:
+      <<: *email

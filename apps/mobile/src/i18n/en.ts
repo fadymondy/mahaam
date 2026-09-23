@@ -295,6 +295,7 @@ const en = {
     downloading: "Downloading update…",
     ready: "Update ready",
     readyBody: "Restart now to use it. If you choose Later, it installs itself the next time you open Mahaam.",
+    mandatoryBody: "This update is required. Mahaam restarts into it in {s} seconds.",
     restart: "Restart now",
     later: "Later",
   },
