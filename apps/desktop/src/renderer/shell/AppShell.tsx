@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/lib/app";
 import { desktop, on } from "@/lib/bridge";
 import { useHotkey } from "@/lib/hotkeys";
+import { useI18n } from "@/lib/i18n";
 import { useRouter } from "@/lib/router";
 import { ShellContext, type Shell } from "@/lib/shell";
 import { View } from "@/routes";
@@ -16,7 +17,8 @@ import { Sidebar } from "./Sidebar";
 import { TimerPalette } from "./Timer";
 
 export function AppShell() {
-  const { prefs, setPrefs } = useApp();
+  const { prefs, setPrefs, live } = useApp();
+  const { t } = useI18n();
   const { route, navigate } = useRouter();
   const [palette, setPalette] = useState(false);
   const [create, setCreate] = useState<{ open: boolean; project?: string | null }>({ open: false });
@@ -73,8 +75,14 @@ export function AppShell() {
     <ShellContext.Provider value={shell}>
       <div className="flex h-full">
         {sidebarOpen ? <Sidebar onSearch={() => setPalette(true)} onCreate={() => openCreate()} onCollapse={toggleSidebar} /> : null}
-        <main className="flex min-w-0 flex-1 flex-col bg-background" data-route={route.name}>
+        <main className="relative flex min-w-0 flex-1 flex-col bg-background" data-route={route.name}>
           <View route={route} />
+          {live === "reconnecting" ? (
+            // The live stream dropped (network, sleep): say so quietly; it reconnects by itself.
+            <div role="status" className="pointer-events-none absolute bottom-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full border border-line bg-grid-card px-3 py-1 text-[11.5px] text-grid-muted shadow-sm" data-live-status>
+              {t("common.reconnecting")}
+            </div>
+          ) : null}
         </main>
       </div>
       <CommandPalette open={palette} onOpenChange={setPalette} onCreate={() => openCreate()} onTimer={() => setTimer(true)} />
