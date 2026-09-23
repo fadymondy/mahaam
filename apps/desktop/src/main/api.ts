@@ -24,6 +24,10 @@ import type {
   TimeSettings,
 } from "../shared/types";
 
+import { accountApi } from "./api-account";
+import { issuesApi } from "./api-issues";
+import { timeApi } from "./api-time";
+
 const e = encodeURIComponent;
 
 export function makeApi(c: MahaamClient, hooks: { timerChanged: (running: TimeEntry | null) => void }) {
@@ -86,6 +90,11 @@ export function makeApi(c: MahaamClient, hooks: { timerChanged: (running: TimeEn
     notifications: (limit = 50) => get<Inbox>("/api/w/notifications", { limit }),
     readNotification: (id: string) => send<unknown>("POST", `/api/w/notifications/${e(id)}/read`),
     readAllNotifications: () => send<{ read: number }>("POST", "/api/w/notifications/read-all"),
+
+    // Per-feature additions, one file each so features never edit the same lines.
+    ...issuesApi(c),
+    ...timeApi(c),
+    ...accountApi(c),
   };
 }
 
