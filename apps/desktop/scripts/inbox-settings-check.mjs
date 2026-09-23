@@ -21,8 +21,11 @@ const app = await electron.launch({
   args: ["."],
   env: { ...env, MAHAAM_E2E: "1", MAHAAM_API_URL: API, MAHAAM_USER_DATA: mkdtempSync(join(tmpdir(), "mahaam-desktop-")) },
 });
-const shot = async (name) => {
-  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).getMediaSourceId().split(":")[1]);
+const shot = async (name, surface = "main") => {
+  const id = await app.evaluate(
+    ({ BrowserWindow }, s) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes(`surface=${s}`)).getMediaSourceId().split(":")[1],
+    surface,
+  );
   await new Promise((r) => setTimeout(r, 450));
   execFileSync("screencapture", ["-x", "-o", "-l", id, `e2e-shots/${name}.png`]);
   console.log("shot", name);
@@ -139,39 +142,46 @@ await shot("inbox-5-en-light-all-read");
 // ── Settings ──────────────────────────────────────────────────────────────────
 console.log("settings");
 await cmd({ type: "settings" });
-await page.locator("[data-settings=general]").waitFor();
+// Settings is its own window (⌘,): find it, and screenshot it rather than the main window.
+let sw;
+for (let i = 0; i < 40 && !sw; i++) {
+  sw = app.windows().find((w) => w.url().includes("surface=settings"));
+  if (!sw) await new Promise((r) => setTimeout(r, 250));
+}
+sw.on("pageerror", (e) => errors.push(String(e)));
+await sw.locator("[data-settings=general]").waitFor();
 await page.waitForTimeout(400);
-await shot("settings-1-general-en-light");
+await shot("settings-1-general-en-light", "settings");
 
-await page.locator("[data-theme-tile=dark]").click();
+await sw.locator("[data-theme-tile=dark]").click();
 await page.waitForTimeout(500);
 check((await html()).dark, "Dark tile → the app is dark");
 check((await invoke("app:config")).value.prefs.theme === "dark", "theme pref saved in main");
-await shot("settings-2-general-en-dark");
-await page.locator("[data-row=language] [data-value=ar]").click();
+await shot("settings-2-general-en-dark", "settings");
+await sw.locator("[data-row=language] [data-value=ar]").click();
 await page.waitForTimeout(600);
 check((await html()).dir === "rtl", "العربية → the app is RTL");
 check((await page.locator("aside[data-sidebar]").innerText()).includes("الوارد"), "the sidebar follows the language");
-await shot("settings-3-general-ar-dark");
-await page.locator("[data-theme-tile=light]").click();
+await shot("settings-3-general-ar-dark", "settings");
+await sw.locator("[data-theme-tile=light]").click();
 await page.waitForTimeout(500);
-await shot("settings-4-general-ar-light");
-await page.locator("[data-row=language] [data-value=en]").click();
+await shot("settings-4-general-ar-light", "settings");
+await sw.locator("[data-row=language] [data-value=en]").click();
 await page.waitForTimeout(400);
 
 const notifyBefore = (await invoke("app:config")).value.prefs.notify;
-await page.locator("[data-pref=notify]").click();
+await sw.locator("[data-pref=notify]").click();
 await page.waitForTimeout(300);
 check((await invoke("app:config")).value.prefs.notify === !notifyBefore, "notifications switch flips the pref");
-await page.locator("[data-pref=notify]").click();
+await sw.locator("[data-pref=notify]").click();
 await page.waitForTimeout(300);
 check((await invoke("app:config")).value.prefs.notify === notifyBefore, "and back");
 
 // Account: edit the name, see it on the server.
-await page.locator("[data-settings-nav=account]").click();
-const nameInput = page.locator("[data-profile-name]");
+await sw.locator("[data-settings-nav=account]").click();
+const nameInput = sw.locator("[data-profile-name]");
 await nameInput.waitFor({ timeout: 10000 }).catch(async (e) => {
-  await shot("settings-account-FAILED");
+  await shot("settings-account-FAILED", "settings");
   console.log(await page.locator("main").innerText());
   throw e;
 });
@@ -181,13 +191,13 @@ await nameInput.fill(newName);
 await nameInput.press("Enter");
 await page.waitForTimeout(1200);
 check((await call("profile")).name === newName, `profile name saved on the server ("${newName}")`);
-check((await page.locator("[data-profile-display]").innerText()).trim() === newName, "the header shows the new name");
-await page.locator("[data-row=device]").first().waitFor({ timeout: 10000 });
-if (await page.locator("[data-devices-toggle]").count()) await page.locator("[data-devices-toggle]").click();
+check((await sw.locator("[data-profile-display]").innerText()).trim() === newName, "the header shows the new name");
+await sw.locator("[data-row=device]").first().waitFor({ timeout: 10000 });
+if (await sw.locator("[data-devices-toggle]").count()) await sw.locator("[data-devices-toggle]").click();
 const devices = await call("devices");
 check(devices.some((d) => d.current), "this device is in the list and marked");
-check((await page.locator("[data-row=device]").count()) === devices.length, `devices listed (${devices.length})`);
-await shot("settings-5-account-en-light");
+check((await sw.locator("[data-row=device]").count()) === devices.length, `devices listed (${devices.length})`);
+await shot("settings-5-account-en-light", "settings");
 
 // Revoke: a throwaway token made for this check, never someone's real device.
 const login = await fetch(`${API}/api/auth/login`, {
@@ -203,52 +213,51 @@ const made = await fetch(`${API}/api/auth/tokens`, {
 const throwaway = (await call("devices")).find((d) => d.name === "Check device (throwaway)");
 check(!!throwaway && !!made.token, "throwaway device minted");
 if (throwaway) {
-  await page.locator("[data-settings-nav=general]").click();
-  await page.locator("[data-settings-nav=account]").click();
-  if (await page.locator("[data-devices-toggle]").count()) await page.locator("[data-devices-toggle]").click();
-  await page.locator(`[data-revoke="${throwaway.id}"]`).click();
-  await page.locator("[data-revoke-dialog]").waitFor();
-  await shot("settings-6-revoke-confirm");
-  await page.locator("[data-confirm-revoke]").click();
+  await sw.locator("[data-settings-nav=general]").click();
+  await sw.locator("[data-settings-nav=account]").click();
+  if (await sw.locator("[data-devices-toggle]").count()) await sw.locator("[data-devices-toggle]").click();
+  await sw.locator(`[data-revoke="${throwaway.id}"]`).click();
+  await sw.locator("[data-revoke-dialog]").waitFor();
+  await shot("settings-6-revoke-confirm", "settings");
+  await sw.locator("[data-confirm-revoke]").click();
   await page.waitForTimeout(1000);
   check(!(await call("devices")).some((d) => d.id === throwaway.id), "revoked on the server");
 }
 
 await prefs({ theme: "dark" });
 await page.waitForTimeout(400);
-await shot("settings-7-account-en-dark");
-await page.locator("[data-timezone]").click();
-await page.keyboard.type("Cairo");
+await shot("settings-7-account-en-dark", "settings");
+await sw.locator("[data-timezone]").click();
+await sw.keyboard.type("Cairo");
 await page.waitForTimeout(400);
-await shot("settings-7b-timezone-menu");
-// The picker's filter field keeps Escape to itself (components/pickers.tsx), so close it by
-// clicking outside, as a person would.
-await page.mouse.click(1000, 120);
-await page.locator("[data-base-ui-inert]").waitFor({ state: "detached", timeout: 3000 }).catch(() => null);
+await shot("settings-7b-timezone-menu", "settings");
+// Escape closes the picker from its filter field (components/pickers.tsx lets it through).
+await sw.keyboard.press("Escape");
+await sw.locator("[data-base-ui-inert]").waitFor({ state: "detached", timeout: 3000 }).catch(() => null);
 await prefs({ theme: "light", locale: "ar" });
 await page.waitForTimeout(500);
-await shot("settings-8-account-ar-light");
+await shot("settings-8-account-ar-light", "settings");
 await prefs({ locale: "en" });
 
 for (const s of ["workspaces", "shortcuts", "about"]) {
-  await page.locator(`[data-settings-nav=${s}]`).click();
-  await page.locator(`[data-settings-section=${s}]`).waitFor();
+  await sw.locator(`[data-settings-nav=${s}]`).click();
+  await sw.locator(`[data-settings-section=${s}]`).waitFor();
   await page.waitForTimeout(300);
-  await shot(`settings-9-${s}-en-light`);
+  await shot(`settings-9-${s}-en-light`, "settings");
 }
 await prefs({ theme: "dark", locale: "ar" });
 await page.waitForTimeout(500);
-await shot("settings-10-about-ar-dark");
-await page.locator("[data-settings-nav=shortcuts]").click();
+await shot("settings-10-about-ar-dark", "settings");
+await sw.locator("[data-settings-nav=shortcuts]").click();
 await page.waitForTimeout(300);
-await shot("settings-11-shortcuts-ar-dark");
+await shot("settings-11-shortcuts-ar-dark", "settings");
 await prefs({ theme: "light", locale: "en" });
 
 await call("updateProfile", { name: originalName }); // leave the shared account as it was
 // Sign out: the device's token is revoked on the server, not left behind by every run.
-await page.locator("[data-settings-nav=account]").click();
+await sw.locator("[data-settings-nav=account]").click();
 const mine = (await call("devices")).find((d) => d.current);
-await page.locator("[data-sign-out]").click();
+await sw.locator("[data-sign-out]").click();
 await page.locator("#email").waitFor({ timeout: 10000 });
 const left = await fetch(`${API}/api/auth/tokens`, { headers: { Authorization: `Bearer ${login.token}` } }).then((r) => r.json());
 check(!left.some((t) => t.id === mine?.id), "sign out revokes this device's token");
@@ -261,8 +270,8 @@ if (process.env.E2E_EMAIL2) {
   await page.locator("[data-signin-form] button[type=submit]").click();
   await page.locator("aside[data-sidebar]").waitFor({ timeout: 20000 });
   await cmd({ type: "settings", section: "workspaces" });
-  await page.locator("[data-settings-section=workspaces]").waitFor();
-  const switchers = page.locator("[data-switch]");
+  await sw.locator("[data-settings-section=workspaces]").waitFor();
+  const switchers = sw.locator("[data-switch]");
   check((await switchers.count()) >= 1, "another workspace to switch to");
   const from = (await invoke("session:get")).value.workspace.slug;
   const target = await switchers.first().getAttribute("data-switch");
@@ -270,7 +279,7 @@ if (process.env.E2E_EMAIL2) {
   await page.waitForTimeout(1200);
   const to = (await invoke("session:get")).value.workspace.slug;
   check(to === target && to !== from, `switched ${from} → ${to}`);
-  await shot("settings-12-workspaces-switched");
+  await shot("settings-12-workspaces-switched", "settings");
   // A fresh workspace has an empty inbox: inbox zero.
   await cmd({ type: "navigate", to: { name: "inbox" } });
   await page.locator("[data-inbox=zero]").waitFor({ timeout: 10000 }).then(
@@ -283,11 +292,11 @@ if (process.env.E2E_EMAIL2) {
   await shot("inbox-7-zero-ar-dark");
   await prefs({ theme: "light", locale: "en" });
   await cmd({ type: "settings", section: "workspaces" });
-  await page.locator(`[data-switch="${from}"]`).click();
+  await sw.locator(`[data-switch="${from}"]`).click();
   await page.waitForTimeout(1000);
   check((await invoke("session:get")).value.workspace.slug === from, "and back");
-  await page.locator("[data-settings-nav=account]").click();
-  await page.locator("[data-sign-out]").click();
+  await sw.locator("[data-settings-nav=account]").click();
+  await sw.locator("[data-sign-out]").click();
   await page.locator("#email").waitFor({ timeout: 10000 });
 }
 

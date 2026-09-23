@@ -97,16 +97,22 @@ const app = await electron.launch({
 const errors = [];
 const shots = [];
 const shot = async (name) => {
-  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getMediaSourceId().split(":")[1]);
+  const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).getMediaSourceId().split(":")[1]);
   await sleep(450);
   const path = `e2e-shots/issues-${name}.png`;
   execFileSync("screencapture", ["-x", "-o", "-l", id, path]);
   shots.push(path);
 };
-const send = (c) => app.evaluate(({ BrowserWindow }, cmd) => BrowserWindow.getAllWindows()[0].webContents.send("command", cmd), c);
+const send = (c) => app.evaluate(({ BrowserWindow }, cmd) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).webContents.send("command", cmd), c);
 
 try {
-  const page = await app.firstWindow();
+  await app.firstWindow();
+  // The main window (the popover and other surfaces are windows too).
+  let page;
+  for (let i = 0; i < 40 && !page; i++) {
+    page = app.windows().find((w) => w.url().includes("surface=main"));
+    if (!page) await new Promise((r) => setTimeout(r, 250));
+  }
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.waitForLoadState("load");

@@ -26,14 +26,18 @@ function initial(): Route {
   return { name: "my-issues" };
 }
 
-export function RouterProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<{ stack: Route[]; index: number }>(() => ({ stack: [initial()], index: 0 }));
+/**
+ * `start` and `persist={false}` are for a window with its own small history (the settings window):
+ * it must not overwrite where the main window reopens.
+ */
+export function RouterProvider({ children, start, persist = true }: { children: ReactNode; start?: Route; persist?: boolean }) {
+  const [state, setState] = useState<{ stack: Route[]; index: number }>(() => ({ stack: [start ?? initial()], index: 0 }));
   const route = state.stack[state.index]!;
 
   useEffect(() => {
     // Where the person was is where the app reopens (not an issue that may have gone).
-    if (route.name !== "issue") localStorage.setItem(KEY, JSON.stringify(route));
-  }, [route]);
+    if (persist && route.name !== "issue") localStorage.setItem(KEY, JSON.stringify(route));
+  }, [route, persist]);
 
   const navigate = useCallback((to: Route, opts?: { replace?: boolean }) => {
     setState((s) => {

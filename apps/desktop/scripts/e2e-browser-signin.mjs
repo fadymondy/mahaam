@@ -42,8 +42,9 @@ try {
   log("opened in the system browser:", u.pathname, "redirect_uri =", u.searchParams.get("redirect_uri"));
   if (!/^http:\/\/127\.0\.0\.1:\d+\/callback$/.test(u.searchParams.get("redirect_uri") ?? "")) fail("not a loopback redirect");
   if (u.searchParams.get("code_challenge_method") !== "S256") fail("no PKCE");
-  const windows = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
-  if (windows !== 1) fail(`an embedded sign-in window was opened (${windows} windows)`);
+  // Our own windows load our files (?surface=…); a window on a web page would be an embedded sign-in.
+  const web = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().map((w) => w.webContents.getURL()).filter((u) => /^https?:/.test(u) && !u.includes("surface=")));
+  if (web.length) fail(`an embedded sign-in window was opened: ${web.join(", ")}`);
 
   // In the browser: not signed in → the web's sign-in → back to app-signin → confirm.
   const tab = await (await browser.newContext()).newPage();
