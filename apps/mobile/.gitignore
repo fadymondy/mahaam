@@ -29,6 +29,8 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
+# The Patch release-signing PUBLIC key is compiled into the app and must be committed (never its private half).
+!patch-public-key.pem
 
 # local env files
 .env*.local
