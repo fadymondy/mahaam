@@ -44,7 +44,7 @@ function Tile({ label, value, hint }: { label: string; value: ReactNode; hint?: 
     <div className="bg-grid-bg px-5 py-4">
       <div className="grid-micro mb-1">{label}</div>
       <div className="text-xl font-medium tabular-nums text-grid-fg">{value}</div>
-      {hint ? <div className="mt-0.5 text-xs text-grid-muted">{hint}</div> : null}
+      {hint ? <div className="mt-0.5 text-meta text-grid-muted">{hint}</div> : null}
     </div>
   )
 }
@@ -62,7 +62,7 @@ function Bars({ items, value, label, render }: { items: KPIKeyed[]; value: (k: K
           <span className="h-2.5 rounded-sm bg-grid-soft">
             <span className="block h-full rounded-sm bg-grid-action/80" style={{ width: `${Math.max(2, (value(k) / max) * 100)}%` }} />
           </span>
-          <span className="text-end text-xs tabular-nums text-grid-muted">{render(k)}</span>
+          <span className="text-end text-meta tabular-nums text-grid-muted">{render(k)}</span>
         </li>
       ))}
     </ul>
@@ -170,7 +170,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
             <Section
               title={t("kpi.github")}
               action={
-                <span className="flex items-center gap-2 text-xs text-grid-muted">
+                <span className="flex items-center gap-2 text-meta text-grid-muted">
                   <GitBranchIcon className="size-3.5" aria-hidden />
                   {k.github_account ? (
                     <>
@@ -200,7 +200,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                     label={(r) => r.name}
                     render={(r) => t("kpi.commitsPrs", { c: r.commits ?? 0, p: r.pull_requests ?? 0 })}
                   />
-                  <p className="text-xs text-grid-muted">
+                  <p className="text-meta text-grid-muted">
                     {t("kpi.deploys", { n: k.github.deployments, ok: k.github.deployments_succeeded })}
                   </p>
                 </>
@@ -223,7 +223,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                   )}
                 />
               )}
-              <p className="text-xs text-grid-muted">
+              <p className="text-meta text-grid-muted">
                 {t("kpi.agentLine", {
                   started: k.issues.started,
                   reviewed: k.issues.reviewed,
@@ -256,7 +256,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                 <ul className="divide-y divide-line border-y border-line">
                   {(k.reviews.items ?? []).map((r) => (
                     <li key={r.id} className="space-y-1 py-3">
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-grid-muted">
+                      <div className="flex flex-wrap items-center gap-2 text-meta text-grid-muted">
                         <Ltr>
                           {r.period_start} → {r.period_end}
                         </Ltr>

@@ -95,7 +95,7 @@ export default function InvoiceDetailPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+        <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("invoiceDetail.back")}
         </Link>
@@ -205,7 +205,7 @@ export default function InvoiceDetailPage() {
         {/* payments + info */}
         <aside className="min-w-0 bg-grid-bg">
           {lockedEntries > 0 ? (
-            <p className="border-b border-line px-6 py-4 text-xs text-grid-muted">{t("invoiceDetail.entriesLocked", { count: lockedEntries })}</p>
+            <p className="border-b border-line px-6 py-4 text-meta text-grid-muted">{t("invoiceDetail.entriesLocked", { count: lockedEntries })}</p>
           ) : null}
           <h2 className="px-6 pt-5 pb-3 text-base font-medium">{t("invoiceDetail.payments")}</h2>
           {iv.payments.length === 0 ? (

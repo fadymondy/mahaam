@@ -26,7 +26,7 @@ function Row({ label, hint, htmlFor, children }: { label: string; hint?: ReactNo
         <label htmlFor={htmlFor} className="text-sm font-medium text-grid-fg">
           {label}
         </label>
-        {hint ? <p className="mt-1 text-xs text-grid-muted">{hint}</p> : null}
+        {hint ? <p className="mt-1 text-meta text-grid-muted">{hint}</p> : null}
       </div>
       <div className="min-w-0 max-w-xl">{children}</div>
     </div>
@@ -150,7 +150,7 @@ function Form({ data, onSaved }: { data: NotificationSettings; onSaved: (d: Noti
                 <label htmlFor={id} className="min-w-0 flex-1 text-sm text-grid-body">
                   {t(`nset.kind.${k}`) === `nset.kind.${k}` ? <Ltr>{k}</Ltr> : t(`nset.kind.${k}`)}
                 </label>
-                <span className="text-xs text-grid-muted">{on ? t("nset.muted") : ""}</span>
+                <span className="text-meta text-grid-muted">{on ? t("nset.muted") : ""}</span>
               </li>
             )
           })}

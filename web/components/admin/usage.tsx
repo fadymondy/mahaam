@@ -33,7 +33,7 @@ export function UsageBar({ item, compact = false }: { item: UsageItem; compact?:
   }`
   return (
     <div className={cn("min-w-0", compact ? "space-y-0.5" : "space-y-1")} data-usage={item.key} data-level={level}>
-      <div className="flex items-baseline justify-between gap-2 text-xs">
+      <div className="flex items-baseline justify-between gap-2 text-meta">
         {compact ? <span className="truncate text-grid-muted">{t(`plan.limit.${item.key}`)}</span> : null}
         <Ltr className={cn("tabular-nums", level === "over" ? "text-grid-danger-text" : "text-grid-body")}>
           {usageAmount(item.kind, item.usage, locale)}
@@ -74,7 +74,7 @@ export function UsageTable({ report }: { report: UsageReport }) {
             <TableRow key={item.key}>
               <TableCell className="ps-6">
                 <span className="text-sm font-medium text-grid-fg">{t(`plan.limit.${item.key}`)}</span>
-                <span className="block text-xs text-grid-muted">{t(`plan.kind.${item.kind}`)}</span>
+                <span className="block text-meta text-grid-muted">{t(`plan.kind.${item.kind}`)}</span>
                 {item.overridden ? (
                   <Badge variant="outline" className="mt-1">
                     {t("plan.overridden")}
@@ -91,7 +91,7 @@ export function UsageTable({ report }: { report: UsageReport }) {
                   <span className="text-sm">
                     {t(`plan.policy.${item.policy}`)}
                     {item.policy === "overage" && item.unit_price_minor > 0 ? (
-                      <Ltr className="block text-xs text-grid-muted">
+                      <Ltr className="block text-meta text-grid-muted">
                         {t("plan.unitPrice", {
                           price: money(item.unit_price_minor, report.currency, locale),
                           size: usageAmount(item.kind, item.unit_size || 1, locale),
@@ -143,7 +143,7 @@ export function FeatureList({ features, overridden = [] }: { features: Features;
     <li key={key} className="flex items-center gap-2.5 px-6 py-2.5 text-sm">
       {on ? <CheckIcon className="size-4 shrink-0 text-(--grid-ok-text)" /> : <MinusIcon className="size-4 shrink-0 text-grid-muted" />}
       <span className={on ? "text-grid-fg" : "text-grid-muted"}>{t(`plan.feature.${key}`)}</span>
-      {extra ? <span className="text-xs text-grid-muted">{extra}</span> : null}
+      {extra ? <span className="text-meta text-grid-muted">{extra}</span> : null}
       {overridden.includes(key) ? (
         <Badge variant="outline" className="ms-auto">
           {t("plan.overridden")}

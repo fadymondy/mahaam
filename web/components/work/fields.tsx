@@ -217,7 +217,7 @@ export function MemberPicker({
         {selected.length ? (
           <>
             <AvatarStack ids={selected} dir={dir} />
-            <span className="truncate text-xs" dir="ltr">
+            <span className="truncate text-meta" dir="ltr">
               {selected.length === 1 ? dir.name(selected[0]) : ""}
             </span>
           </>
@@ -242,7 +242,7 @@ export function MemberPicker({
                   <span className="truncate" dir="ltr">
                     {dir.name(id)}
                   </span>
-                  {id === dir.me ? <span className="ms-auto text-xs text-grid-muted">{t("people.you")}</span> : null}
+                  {id === dir.me ? <span className="ms-auto text-meta text-grid-muted">{t("people.you")}</span> : null}
                 </CommandItem>
               ))}
             </CommandGroup>

@@ -81,7 +81,7 @@ function Header({ name, desc, it, canManage, projectId, onChanged }: { name: str
           <h3 className="font-medium">{name}</h3>
           {it ? <Badge variant={statusVariant(it.status)}>{t(`int.status.${it.status}`)}</Badge> : <Badge variant="outline">{t("int.notConnected")}</Badge>}
           {it ? (
-            <span className="text-xs text-grid-muted">{it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")}</span>
+            <span className="text-meta text-grid-muted">{it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")}</span>
           ) : null}
         </div>
         <p className="mt-1 text-sm text-grid-muted">{desc}</p>

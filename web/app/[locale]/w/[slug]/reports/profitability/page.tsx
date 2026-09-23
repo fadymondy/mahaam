@@ -60,7 +60,7 @@ function ProfitabilityView() {
         <div data-profit-body className={cn(res.isValidating && "opacity-70 transition-opacity")}>
           <p className="border-b border-line px-6 py-3 text-sm text-grid-body">{t("profit.hint")}</p>
           {p.other_currency_entries ? (
-            <p className="border-b border-line bg-grid-soft px-6 py-2.5 text-xs text-grid-body">{t("reports.otherCurrency", { n: p.other_currency_entries })}</p>
+            <p className="border-b border-line bg-grid-soft px-6 py-2.5 text-meta text-grid-body">{t("reports.otherCurrency", { n: p.other_currency_entries })}</p>
           ) : null}
           <ProfitTable p={p} by="project" rows={p.projects} query={query} />
           <ProfitTable p={p} by="client" rows={p.clients} query={query} />

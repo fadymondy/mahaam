@@ -173,7 +173,7 @@ export function IssueSheet({
                 <div className="flex flex-col gap-4 overflow-y-auto border-line p-4 max-sm:border-b sm:border-e rtl:sm:order-2 rtl:sm:border-e-0 rtl:sm:border-s">
                   {fields.map((field) => (
                     <div key={field.key} className="flex flex-col gap-1.5">
-                      <span className="font-mono text-[11px] tracking-wider text-grid-muted uppercase">{field.label}</span>
+                      <span className="font-mono text-xs tracking-wider text-grid-muted uppercase">{field.label}</span>
                       <Select
                         value={field.value}
                         disabled={!canWrite}
@@ -200,7 +200,7 @@ export function IssueSheet({
                         <UserRoundIcon className="size-3.5" />
                         {t("issues.humanOnly")}
                       </span>
-                      <span className="text-xs text-grid-muted">{t("issues.humanOnlyHint")}</span>
+                      <span className="text-meta text-grid-muted">{t("issues.humanOnlyHint")}</span>
                     </span>
                   </label>
 
@@ -230,7 +230,7 @@ export function IssueSheet({
                   <CardExtras taskKey={draft.key} />
 
                   <section className="mt-8 border-t border-line pt-4">
-                    <h3 className="flex items-baseline justify-between gap-3 font-mono text-[11px] tracking-wider text-grid-muted uppercase">
+                    <h3 className="flex items-baseline justify-between gap-3 font-mono text-xs tracking-wider text-grid-muted uppercase">
                       {t("issues.comments")}
                       <span dir="ltr" className="tabular-nums">
                         {comments.length}
@@ -241,7 +241,7 @@ export function IssueSheet({
                       <ul className="mt-3 flex flex-col divide-y divide-line">
                         {comments.map((comment) => (
                           <li key={comment.id} className="py-3">
-                            <p className="font-mono text-[11px] text-grid-muted">
+                            <p className="font-mono text-xs text-grid-muted">
                               <span dir="ltr">{author(comment)}</span> · {new Date(comment.created_at).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}
                             </p>
                             <Markdown className="mt-1.5">{comment.body}</Markdown>
@@ -262,7 +262,7 @@ export function IssueSheet({
                           disabled={form.posting}
                           placeholder={t("issues.commentPlaceholder")}
                         />
-                        <p className="text-xs text-grid-muted">{t("issues.mentionHint")}</p>
+                        <p className="text-meta text-grid-muted">{t("issues.mentionHint")}</p>
 
                         {form.error ? (
                           <p role="alert" className="text-sm text-destructive">

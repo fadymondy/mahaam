@@ -31,7 +31,7 @@ export default function TeamKpiPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={base} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+        <Link href={base} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.members")}
         </Link>
@@ -77,7 +77,7 @@ export default function TeamKpiPage() {
                     <Link href={`${base}/${r.member.user_id}`} className="font-medium text-grid-fg hover:underline">
                       <Ltr>{r.member.email}</Ltr>
                     </Link>
-                    <span className="ms-2 text-xs text-grid-muted">{t(`role.${r.member.role}`)}</span>
+                    <span className="ms-2 text-meta text-grid-muted">{t(`role.${r.member.role}`)}</span>
                   </TableCell>
                   <TableCell className={num}>
                     <Ltr mono>{hm(r.tracked_s, "0:00")}</Ltr>

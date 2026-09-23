@@ -87,7 +87,7 @@ export default function PortalPage() {
                   <span className="font-medium" dir="ltr">
                     {iv.number}
                   </span>
-                  <span className="text-xs text-grid-muted">{formatDay(iv.issue_date, locale)}</span>
+                  <span className="text-meta text-grid-muted">{formatDay(iv.issue_date, locale)}</span>
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="text-sm tabular-nums" dir="ltr">
@@ -145,14 +145,14 @@ function ProjectCard({ p, href }: { p: PortalProject; href: string }) {
               <ColorDot color={p.color} />
               <span className="truncate font-medium group-hover:text-grid-action">{p.name}</span>
             </p>
-            {p.client_name ? <p className="truncate text-xs text-grid-muted">{p.client_name}</p> : null}
+            {p.client_name ? <p className="truncate text-meta text-grid-muted">{p.client_name}</p> : null}
             <Badge variant="secondary" className="mt-1.5">
               {p.archived ? t("portal.archived") : t(`projectStatus.${p.status}`)}
             </Badge>
           </div>
         </div>
         <div className="space-y-1.5">
-          <div className="flex justify-between text-xs text-grid-muted">
+          <div className="flex justify-between text-meta text-grid-muted">
             <span>{t("portal.budget")}</span>
             <span className="tabular-nums" dir="ltr">
               {budget > 0 ? t("portal.hoursOfBudget", { used, budget: hours(budget) }) : t("portal.hoursTracked", { used })}
@@ -163,15 +163,15 @@ function ProjectCard({ p, href }: { p: PortalProject; href: string }) {
         <div className="mt-auto grid grid-cols-3 gap-2 border-t border-line pt-3 text-center">
           <span>
             <span className="block text-base font-semibold tabular-nums">{p.tasks.done}/{p.tasks.todo + p.tasks.doing + p.tasks.done}</span>
-            <span className="block text-[11px] text-grid-muted">{t("portal.card.tasks")}</span>
+            <span className="block text-xs text-grid-muted">{t("portal.card.tasks")}</span>
           </span>
           <span>
             <span className="block text-base font-semibold tabular-nums">{p.open_issues}</span>
-            <span className="block text-[11px] text-grid-muted">{t("portal.card.issues")}</span>
+            <span className="block text-xs text-grid-muted">{t("portal.card.issues")}</span>
           </span>
           <span>
             <span className={`block text-base font-semibold tabular-nums ${p.pending_requests > 0 ? "text-grid-action" : ""}`}>{p.pending_requests}</span>
-            <span className="block text-[11px] text-grid-muted">{t("portal.card.requests")}</span>
+            <span className="block text-xs text-grid-muted">{t("portal.card.requests")}</span>
           </span>
         </div>
       </Link>

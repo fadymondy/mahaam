@@ -148,7 +148,7 @@ export default function VaultPage() {
                     {tag}
                   </Badge>
                 ))}
-                <span className="ms-auto text-xs text-grid-muted">{t("vault.updated", { when: timeAgo(v.updated_at, locale) })}</span>
+                <span className="ms-auto text-meta text-grid-muted">{t("vault.updated", { when: timeAgo(v.updated_at, locale) })}</span>
               </div>
               {v.body ? (
                 <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">
@@ -171,7 +171,7 @@ export default function VaultPage() {
                     </Button>
                   ) : null}
                   {v.last_revealed_at ? (
-                    <span className="text-xs text-grid-muted">{t("vault.lastRevealed", { when: timeAgo(v.last_revealed_at, locale) })}</span>
+                    <span className="text-meta text-grid-muted">{t("vault.lastRevealed", { when: timeAgo(v.last_revealed_at, locale) })}</span>
                   ) : null}
                 </div>
               ) : null}

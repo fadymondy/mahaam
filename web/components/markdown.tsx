@@ -34,7 +34,7 @@ const components: Components = {
   code: ({ className, children, ...props }) => {
     const inline = !className
     return inline ? (
-      <code {...props} dir="ltr" className="ltr-isolate rounded-sm bg-grid-soft px-1 py-0.5 font-mono text-[0.85em] text-grid-fg">
+      <code {...props} dir="ltr" className="ltr-isolate rounded-sm bg-grid-soft px-1 py-0.5 font-mono text-[0.9em] text-grid-fg">
         {children}
       </code>
     ) : (

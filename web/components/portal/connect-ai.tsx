@@ -79,7 +79,7 @@ export function ConnectAiCard() {
           <div className="space-y-1.5">
             <p className="grid-micro">{t("connectAi.token")}</p>
             <CopyField value={token} />
-            <p className="text-xs text-grid-warn-text">{t("mcp.shownOnce")}</p>
+            <p className="text-meta text-grid-warn-text">{t("mcp.shownOnce")}</p>
           </div>
         ) : null}
         <div className="space-y-1.5">
@@ -104,7 +104,7 @@ export function ConnectAiCard() {
             {t("connectAi.copyConfig")}
           </Button>
         </div>
-        <p className="text-xs text-grid-muted">
+        <p className="text-meta text-grid-muted">
           {t("connectAi.tools")}{" "}
           <Link href={`/${locale}/w/${ws.slug}/settings/mcp`} className="text-grid-action hover:underline">
             {t("connectAi.manage")}

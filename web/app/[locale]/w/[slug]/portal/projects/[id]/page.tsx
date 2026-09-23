@@ -136,7 +136,7 @@ export default function PortalProjectPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6" data-portal-project-page={p.id}>
-      <Link href={back} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+      <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
         <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
         {t("portal.back")}
       </Link>
@@ -229,7 +229,7 @@ function Overview({ p, onTab }: { p: PortalProjectPage; onTab: (t: string) => vo
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label={t("portal.progress")} icon={<CheckCircle2Icon className="size-3.5" />} value={t("portal.done", { percent: p.percent_done })}>
           <Meter value={p.percent_done} label={t("portal.progress")} />
-          <p className="text-xs text-grid-muted">{t("portal.tasksDone", { done: p.tasks.done, total: totalTasks })}</p>
+          <p className="text-meta text-grid-muted">{t("portal.tasksDone", { done: p.tasks.done, total: totalTasks })}</p>
         </StatTile>
         <StatTile
           label={t("portal.budget")}
@@ -237,16 +237,16 @@ function Overview({ p, onTab }: { p: PortalProjectPage; onTab: (t: string) => vo
           value={<Ltr>{budget > 0 ? t("portal.hoursOfBudget", { used, budget: hours(budget) }) : t("portal.hoursTracked", { used })}</Ltr>}
         >
           {budget > 0 ? <Meter value={(p.used_minutes / budget) * 100} warn={p.used_minutes > budget} label={t("portal.budget")} /> : null}
-          {budget > 0 && p.used_minutes > budget ? <p className="text-xs text-destructive">{t("portal.overBudget")}</p> : null}
+          {budget > 0 && p.used_minutes > budget ? <p className="text-meta text-destructive">{t("portal.overBudget")}</p> : null}
         </StatTile>
         <button type="button" onClick={() => onTab("issues")} className="h-full rounded-xl text-start outline-none focus-visible:ring-2 focus-visible:ring-grid-action">
           <StatTile label={t("portal.tab.issues")} icon={<CircleDotIcon className="size-3.5" />} value={p.open_issues}>
-            <p className="text-xs text-grid-muted">{t("portal.openIssues", { count: p.open_issues })}</p>
+            <p className="text-meta text-grid-muted">{t("portal.openIssues", { count: p.open_issues })}</p>
           </StatTile>
         </button>
         <button type="button" onClick={() => onTab("requests")} className="h-full rounded-xl text-start outline-none focus-visible:ring-2 focus-visible:ring-grid-action">
           <StatTile label={t("portal.tab.requests")} icon={<InboxIcon className="size-3.5" />} value={p.pending_requests}>
-            <p className="text-xs text-grid-muted">{t("portal.pendingRequests", { count: p.pending_requests })}</p>
+            <p className="text-meta text-grid-muted">{t("portal.pendingRequests", { count: p.pending_requests })}</p>
           </StatTile>
         </button>
       </div>
@@ -288,7 +288,7 @@ function Overview({ p, onTab }: { p: PortalProjectPage; onTab: (t: string) => vo
                     <div className="flex items-center gap-2 text-sm">
                       <ColorDot color={c.color} />
                       <span className="flex-1">{c.name}</span>
-                      <span className="text-xs text-grid-muted tabular-nums">{c.task_count}</span>
+                      <span className="text-meta text-grid-muted tabular-nums">{c.task_count}</span>
                     </div>
                     <Meter value={totalTasks ? (c.task_count / totalTasks) * 100 : 0} label={c.name} />
                   </li>
@@ -298,7 +298,7 @@ function Overview({ p, onTab }: { p: PortalProjectPage; onTab: (t: string) => vo
           ) : null}
 
           <Section title={t("portal.hoursByWeek")} icon={<ClockIcon />}>
-            <p className="mb-3 text-xs text-grid-muted">{t("portal.hoursByWeekHint")}</p>
+            <p className="mb-3 text-meta text-grid-muted">{t("portal.hoursByWeekHint")}</p>
             <WeeksChart weeks={p.weeks} />
           </Section>
         </div>
@@ -350,7 +350,7 @@ function Board({ projectId, onOpen }: { projectId: string; onOpen: (key: string)
   if (tasks.length === 0) return <PortalEmpty icon={<KanbanSquareIcon />} title={t("portal.board.empty")} body={t("portal.board.emptyBody")} />
   return (
     <div className="space-y-2">
-      <p className="text-xs text-grid-muted">{t("portal.board.readOnly")}</p>
+      <p className="text-meta text-grid-muted">{t("portal.board.readOnly")}</p>
       <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0" data-portal-board={tasks.length}>
         {columns.map((c) => {
           const col = tasks.filter((x) => x.status_id === c.id)
@@ -359,7 +359,7 @@ function Board({ projectId, onOpen }: { projectId: string; onOpen: (key: string)
               <header className="flex items-center gap-2 border-b border-line px-3 py-2">
                 <ColorDot color={c.color} />
                 <h3 className="min-w-0 flex-1 truncate text-sm font-medium">{c.name}</h3>
-                <span className="text-xs text-grid-muted">
+                <span className="text-meta text-grid-muted">
                   <Ltr>{col.length}</Ltr>
                 </span>
               </header>
@@ -367,7 +367,7 @@ function Board({ projectId, onOpen }: { projectId: string; onOpen: (key: string)
                 {col.map((task) => (
                   <TaskCard key={task.key} task={task} onOpen={() => onOpen(task.key)} />
                 ))}
-                {col.length === 0 ? <p className="px-1 py-4 text-center text-xs text-grid-muted">{t("board.emptyColumn")}</p> : null}
+                {col.length === 0 ? <p className="px-1 py-4 text-center text-meta text-grid-muted">{t("board.emptyColumn")}</p> : null}
               </div>
             </section>
           )
@@ -388,7 +388,7 @@ function TaskCard({ task, onOpen }: { task: PortalTask; onOpen: () => void }) {
       data-task-key={task.key}
       className="w-full border border-line bg-grid-card p-3 text-start transition-colors outline-none hover:border-grid-muted focus-visible:ring-2 focus-visible:ring-grid-action"
     >
-      <span className="flex items-center gap-2 text-xs text-grid-muted">
+      <span className="flex items-center gap-2 text-meta text-grid-muted">
         <Ltr mono>{task.key}</Ltr>
         {task.priority !== "none" ? <PriorityIcon priority={task.priority as Priority} /> : null}
       </span>
@@ -402,7 +402,7 @@ function TaskCard({ task, onOpen }: { task: PortalTask; onOpen: () => void }) {
           ))}
         </span>
       ) : null}
-      <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-grid-muted">
+      <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-grid-muted">
         {task.due_at ? (
           <span className={cn("flex items-center gap-1", overdue && "text-grid-danger-text")}>
             <CalendarIcon className="size-3" />
@@ -450,7 +450,7 @@ function TaskSheet({ projectId, taskKey, onClose }: { projectId: string; taskKey
         ) : (
           <div className="space-y-5 p-5">
             <div className="space-y-2 pe-8">
-              <span className="flex items-center gap-2 text-xs text-grid-muted">
+              <span className="flex items-center gap-2 text-meta text-grid-muted">
                 <Ltr mono>{d.key}</Ltr>
                 <Badge variant="outline">{t("portal.task.readOnly")}</Badge>
               </span>
@@ -524,7 +524,7 @@ function TaskSheet({ projectId, taskKey, onClose }: { projectId: string; taskKey
                 </ul>
               </section>
             ) : null}
-            <p className="text-xs text-grid-muted">{t("portal.task.updated", { ago: timeAgo(d.updated_at, locale) })}</p>
+            <p className="text-meta text-grid-muted">{t("portal.task.updated", { ago: timeAgo(d.updated_at, locale) })}</p>
           </div>
         )}
       </SheetContent>
@@ -573,7 +573,7 @@ function IssueRow({ i, onOpen }: { i: PortalIssue; onOpen: () => void }) {
             <span className="truncate font-medium">{i.title}</span>
             {i.mine ? <Badge variant="outline">{t("portal.mine")}</Badge> : null}
           </span>
-          <span className="flex items-center gap-3 text-xs text-grid-muted">
+          <span className="flex items-center gap-3 text-meta text-grid-muted">
             {timeAgo(i.updated_at, locale)}
             {i.comment_count ? (
               <span className="flex items-center gap-1">
@@ -639,7 +639,7 @@ function RequestCard({ r, onOpenIssue, onOpenTask }: { r: CustomerRequest; onOpe
             </code>
             <span className="font-medium">{r.title}</span>
           </p>
-          <p className="text-xs text-grid-muted">
+          <p className="text-meta text-grid-muted">
             {t(`portal.request.kind.${r.kind}`)} · {formatDay(r.created_at, locale)}
             {r.desired_on ? ` · ${t("portal.request.wantedBy", { date: formatDay(r.desired_on, locale) })}` : ""}
           </p>
@@ -656,7 +656,7 @@ function RequestCard({ r, onOpenIssue, onOpenTask }: { r: CustomerRequest; onOpe
       ) : null}
       {r.reply ? (
         <div className="mt-3 rounded-md border border-line bg-muted/40 px-3 py-2 text-sm">
-          <p className="text-xs font-medium text-grid-muted">{r.state === "declined" ? t("portal.request.reason") : t("portal.request.reply")}</p>
+          <p className="text-meta font-medium text-grid-muted">{r.state === "declined" ? t("portal.request.reason") : t("portal.request.reply")}</p>
           <p className="whitespace-pre-wrap" dir="auto">
             {r.reply}
           </p>
@@ -722,7 +722,7 @@ function Time({ projectId, board, onOpen }: { projectId: string; board: boolean;
                     ) : (
                       <span className="flex-1 text-grid-muted">{t("portal.time.noTask")}</span>
                     )}
-                    <span className="text-xs tabular-nums" dir="ltr">
+                    <span className="text-meta tabular-nums" dir="ltr">
                       {t("portal.hoursShort", { h: hours(x.minutes) })}
                     </span>
                   </div>
@@ -750,7 +750,7 @@ function Invoices({ p }: { p: PortalProjectPage }) {
             <span className="font-medium" dir="ltr">
               {iv.number}
             </span>
-            <span className="text-xs text-grid-muted">{formatDay(iv.issue_date, locale)}</span>
+            <span className="text-meta text-grid-muted">{formatDay(iv.issue_date, locale)}</span>
           </span>
           <span className="flex items-center gap-3">
             <span className="text-sm tabular-nums" dir="ltr">
@@ -798,7 +798,7 @@ function Activity({ projectId, onOpenIssue, onOpenTask }: { projectId: string; o
                 </span>
               )}
             </p>
-            <p className="text-xs text-grid-muted">
+            <p className="text-meta text-grid-muted">
               {formatDay(it.at, locale)} · {timeAgo(it.at, locale)}
             </p>
           </li>
@@ -853,7 +853,7 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
         ) : (
           <div className="space-y-5 p-5">
             <div className="pe-8">
-              <span className="flex items-center gap-2 text-xs text-grid-muted">
+              <span className="flex items-center gap-2 text-meta text-grid-muted">
                 <IssueTypeIcon type={i.issue_type} />
                 <code dir="ltr">{i.key}</code>
               </span>
@@ -861,8 +861,8 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
               <SheetDescription className="sr-only">{t(`issues.type.${i.issue_type}`)}</SheetDescription>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">{t(`issues.status.${i.status}`)}</Badge>
-                <span className="text-xs text-grid-muted">{t(`issues.type.${i.issue_type}`)}</span>
-                <span className="text-xs text-grid-muted">· {timeAgo(i.created_at, locale)}</span>
+                <span className="text-meta text-grid-muted">{t(`issues.type.${i.issue_type}`)}</span>
+                <span className="text-meta text-grid-muted">· {timeAgo(i.created_at, locale)}</span>
               </div>
             </div>
             {i.body ? (
@@ -883,7 +883,7 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
                   <RotateCcwIcon /> {t("portal.reopen")}
                 </Button>
               ) : null}
-              <span className="ms-auto flex items-center gap-2 text-xs text-grid-muted">
+              <span className="ms-auto flex items-center gap-2 text-meta text-grid-muted">
                 {t("portal.priority")}
                 <Select value={i.priority} onValueChange={(v) => v && v !== i.priority && change({ priority: v })}>
                   <SelectTrigger size="sm" className="w-32">
@@ -908,7 +908,7 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
               <ul className="space-y-3">
                 {i.comments.map((c) => (
                   <li key={c.id} className={cn("rounded-lg border border-line px-3 py-2", c.mine && "border-grid-action/40 bg-grid-action/5")}>
-                    <p className="text-xs text-grid-muted">
+                    <p className="text-meta text-grid-muted">
                       {c.mine ? t("portal.you") : c.author_kind === "agent" ? t("portal.agent") : t("portal.team")} · {timeAgo(c.created_at, locale)}
                     </p>
                     <p className="text-sm whitespace-pre-wrap" dir="auto">

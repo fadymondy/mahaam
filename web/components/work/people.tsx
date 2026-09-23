@@ -44,7 +44,7 @@ export function PersonAvatar({ id, dir, size = "sm", className }: { id: string; 
     <Tooltip>
       <TooltipTrigger render={<span className={cn("inline-flex", className)} />}>
         <Avatar size={size} aria-label={dir.name(id)}>
-          <AvatarFallback className="text-[10px] font-medium" dir="ltr">
+          <AvatarFallback className="text-xs font-medium" dir="ltr">
             {dir.initials(id)}
           </AvatarFallback>
         </Avatar>
@@ -64,7 +64,7 @@ export function AvatarStack({ ids, dir, max = 3 }: { ids: string[]; dir: Directo
       {shown.map((id) => (
         <PersonAvatar key={id} id={id} dir={dir} />
       ))}
-      {ids.length > max ? <AvatarGroupCount className="text-[10px]">+{ids.length - max}</AvatarGroupCount> : null}
+      {ids.length > max ? <AvatarGroupCount className="text-xs">+{ids.length - max}</AvatarGroupCount> : null}
     </AvatarGroup>
   )
 }

@@ -72,7 +72,7 @@ export default function AdminWorkspacePage() {
           <span className="flex flex-wrap items-center gap-3">
             <Ltr className="text-grid-muted">{ws.slug}</Ltr>
             <StatusBadge status={ws.status} />
-            <span className="text-xs text-grid-muted">
+            <span className="text-meta text-grid-muted">
               {t("admin.col.owner")}: <Ltr>{ws.owner_email ?? "—"}</Ltr> · {t("admin.col.created")}: {formatDay(ws.created_at, locale)}
             </span>
           </span>
@@ -298,7 +298,7 @@ function OverridesEditor({ detail, onSaved }: { detail: WorkspaceDetail; onSaved
       </div>
       <div className="divide-y divide-line border-y border-line">
         <div className="hidden gap-3 px-6 py-2 md:grid md:grid-cols-[12rem_8rem_1fr]">
-          <span className="text-xs text-grid-muted">{t("plan.col.limit")}</span>
+          <span className="text-meta text-grid-muted">{t("plan.col.limit")}</span>
           <span />
           <RuleHeader currency={currency} />
         </div>
@@ -320,7 +320,7 @@ function OverridesEditor({ detail, onSaved }: { detail: WorkspaceDetail; onSaved
             {modes[k] === "custom" ? (
               <RuleFields id={k} draft={drafts[k]} currency={currency} onChange={(dr) => setDrafts({ ...drafts, [k]: dr })} />
             ) : (
-              <span className="text-xs text-grid-muted">{t("admin.overrides.fromPlan")}</span>
+              <span className="text-meta text-grid-muted">{t("admin.overrides.fromPlan")}</span>
             )}
           </div>
         ))}

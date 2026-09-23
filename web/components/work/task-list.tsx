@@ -69,7 +69,7 @@ export function TaskList({ board, labels, dir, onOpen }: { board: Board; labels:
               <h2 className="flex items-center gap-2 border-b border-line bg-grid-soft px-6 py-2 text-sm font-medium">
                 <ColorDot color={s.color} />
                 {s.name}
-                <span className="text-xs font-normal text-grid-muted">
+                <span className="text-meta font-normal text-grid-muted">
                   <Ltr>{rows.length}</Ltr>
                 </span>
               </h2>
@@ -96,7 +96,7 @@ export function TaskList({ board, labels, dir, onOpen }: { board: Board; labels:
                         if (e.key === "Enter") onOpen(task.key)
                       }}
                     >
-                      <TableCell className="w-24 ps-6 text-xs text-grid-muted">
+                      <TableCell className="w-24 ps-6 text-meta text-grid-muted">
                         <Ltr mono>{task.key}</Ltr>
                       </TableCell>
                       <TableCell className={cn("max-w-md truncate font-medium", task.completed_at && "text-grid-muted line-through")}>{task.title}</TableCell>
@@ -106,7 +106,7 @@ export function TaskList({ board, labels, dir, onOpen }: { board: Board; labels:
                       <TableCell className="w-10">
                         <PriorityIcon priority={task.priority} />
                       </TableCell>
-                      <TableCell className={cn("w-28 text-xs", isOverdue(task.due_at, task.completed_at) ? "text-grid-danger-text" : "text-grid-muted")}>
+                      <TableCell className={cn("w-28 text-meta", isOverdue(task.due_at, task.completed_at) ? "text-grid-danger-text" : "text-grid-muted")}>
                         {task.due_at ? <Ltr>{formatDay(task.due_at, locale, "short")}</Ltr> : null}
                       </TableCell>
                       <TableCell className="w-28 pe-6">

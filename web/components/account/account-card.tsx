@@ -17,6 +17,7 @@ import { Ltr } from "@/components/copy-field"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
+import { LOCALES, LOCALE_NAMES } from "@/lib/i18n-locale"
 import { errorText } from "@/lib/work"
 import { TwoFactor, useTwoFactor } from "@/components/account/two-factor"
 
@@ -87,11 +88,7 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
   }, [])
   const deviceZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
-  const languages = [
-    { value: "", label: t("account.languageDevice") },
-    { value: "en", label: "English" },
-    { value: "ar", label: "العربية" },
-  ]
+  const languages = [{ value: "", label: t("account.languageDevice") }, ...LOCALES.map((l) => ({ value: l, label: LOCALE_NAMES[l] }))]
 
   async function save(e: FormEvent) {
     e.preventDefault()

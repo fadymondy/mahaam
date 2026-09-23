@@ -88,7 +88,7 @@ export function ActivityFeed({
               <p className="mt-1 line-clamp-2 border-s-2 border-line ps-2 text-grid-muted">{a.changes.excerpt}</p>
             ) : null}
           </div>
-          <time className="shrink-0 text-xs text-grid-muted" dateTime={a.created_at} title={new Date(a.created_at).toLocaleString()}>
+          <time className="shrink-0 text-meta text-grid-muted" dateTime={a.created_at} title={new Date(a.created_at).toLocaleString()}>
             <Ltr>{timeAgo(a.created_at, locale)}</Ltr>
           </time>
         </li>

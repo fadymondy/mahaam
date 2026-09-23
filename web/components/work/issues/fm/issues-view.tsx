@@ -235,7 +235,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                   setDropIndex(null)
                 }}
               >
-                <h2 className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5 font-mono text-[11px] tracking-wider text-grid-muted uppercase">
+                <h2 className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5 font-mono text-xs tracking-wider text-grid-muted uppercase">
                   <span className="flex min-w-0 items-center gap-1.5">
                     <ColorDot color={column.color} className="size-2" />
                     <span className="truncate" dir="auto">{column.name}</span>
@@ -376,7 +376,7 @@ function IssueCard({
           {issue.title}
         </button>
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-grid-muted">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-grid-muted">
           <span dir="ltr">{issue.key}</span>
 
           <span className="flex items-center gap-1.5">
@@ -406,7 +406,7 @@ function IssueCard({
         </div>
 
         {issue.route || issue.page_url ? (
-          <p dir="ltr" className="truncate font-mono text-[10px] text-grid-muted/70">
+          <p dir="ltr" className="truncate font-mono text-xs text-grid-muted/70">
             {issue.route ?? issue.page_url}
           </p>
         ) : null}

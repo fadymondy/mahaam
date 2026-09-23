@@ -53,7 +53,7 @@ export default function MemberDetailPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+        <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.members")}
         </Link>
@@ -95,7 +95,7 @@ export default function MemberDetailPage() {
                   <Link href={`/${locale}/w/${ws.slug}/teams/${tm.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-grid-soft">
                     <ColorDot color={tm.color} className="size-3" />
                     <span className="min-w-0 flex-1 truncate font-medium text-grid-fg">{tm.name}</span>
-                    <span className="text-xs text-grid-muted">{t("teams.memberCount", { n: tm.member_ids.length })}</span>
+                    <span className="text-meta text-grid-muted">{t("teams.memberCount", { n: tm.member_ids.length })}</span>
                   </Link>
                 </li>
               ))}

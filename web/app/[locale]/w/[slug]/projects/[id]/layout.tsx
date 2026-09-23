@@ -77,7 +77,7 @@ function ProjectShell({ children }: { children: ReactNode }) {
   return (
     <ProjectContext.Provider value={{ project: p, reload, openTask: (k) => setTask(k), base }}>
       <div className="px-6 pt-5">
-        <Link href={`/${locale}/w/${ws.slug}/projects`} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+        <Link href={`/${locale}/w/${ws.slug}/projects`} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.projects")}
         </Link>

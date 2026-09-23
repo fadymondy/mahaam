@@ -100,7 +100,7 @@ function PlanBody({ r, workspaceId }: { r: UsageReport; workspaceId: string }) {
       <section className="space-y-3">
         <h2 className="px-6 text-sm font-medium text-grid-fg">{t("plan.thisMonth")}</h2>
         <EstimateStrip report={r} />
-        <p className="px-6 text-xs text-grid-muted">{t("plan.estimateHint")}</p>
+        <p className="px-6 text-meta text-grid-muted">{t("plan.estimateHint")}</p>
       </section>
 
       <section className="space-y-3">
@@ -173,9 +173,9 @@ function BillingSection({
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-grid-fg">
                     {planName(p, locale)}
-                    {isCurrent ? <span className="ms-2 text-xs font-normal text-grid-muted">{t("billing.currentPlan")}</span> : null}
+                    {isCurrent ? <span className="ms-2 text-meta font-normal text-grid-muted">{t("billing.currentPlan")}</span> : null}
                   </p>
-                  <p className="text-xs text-grid-muted">
+                  <p className="text-meta text-grid-muted">
                     {(locale === "ar" ? p.price_label_ar : p.price_label_en) || <Ltr>{money(p.base_fee_minor, p.currency, locale)}</Ltr>}
                   </p>
                 </div>

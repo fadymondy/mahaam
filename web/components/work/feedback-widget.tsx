@@ -197,7 +197,7 @@ function ProductHeader({
         <h3 className="text-sm font-medium">{title}</h3>
         <Badge variant={tone === "monitor" ? "outline" : "secondary"}>{badge}</Badge>
       </div>
-      <p className="mt-1 text-xs text-grid-muted">{desc}</p>
+      <p className="mt-1 text-meta text-grid-muted">{desc}</p>
     </div>
   )
 }
@@ -391,7 +391,7 @@ function KeyRow({
           />
         ) : null}
       </div>
-      <p className="text-xs text-grid-muted">{t("sdk.feedback.publicSafe")}</p>
+      <p className="text-meta text-grid-muted">{t("sdk.feedback.publicSafe")}</p>
 
       <Field>
         <FieldLabel>{t("sdk.feedback.originsLabel")}</FieldLabel>
@@ -579,7 +579,7 @@ function MonitorKeyRow({
           </Button>
         </div>
       </Field>
-      <p className="text-xs text-grid-danger-text">{t("sdk.monitor.secret")}</p>
+      <p className="text-meta text-grid-danger-text">{t("sdk.monitor.secret")}</p>
 
       {live ? (
         <InstallGuides
@@ -792,7 +792,7 @@ function InstallGuides({
         ))}
       </Tabs>
       {mcpHint ? (
-        <p className="text-xs text-grid-muted">
+        <p className="text-meta text-grid-muted">
           {t("sdk.install.mcpHint")} <code dir="ltr">{mcpHint}</code>
         </p>
       ) : null}

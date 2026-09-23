@@ -131,7 +131,7 @@ export default function AppSigninPage() {
                   {t("appSignin.switch")}
                 </Button>
               </div>
-              <p className="text-xs text-grid-muted">{t("appSignin.notYou")}</p>
+              <p className="text-meta text-grid-muted">{t("appSignin.notYou")}</p>
             </>
           )}
         </div>

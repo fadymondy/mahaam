@@ -73,7 +73,7 @@ function TeamView() {
                 <TableHead className="ps-6">{t("team.member")}</TableHead>
                 {days.map((d) => (
                   <TableHead key={d} className={cn("hidden w-[7%] text-end md:table-cell", d === today && "text-grid-fg")}>
-                    <span className="block text-[11px] font-normal text-grid-muted">{weekdayShort(d, locale)}</span>
+                    <span className="block text-xs font-normal text-grid-muted">{weekdayShort(d, locale)}</span>
                     <Ltr>{Number(d.slice(8))}</Ltr>
                   </TableHead>
                 ))}
@@ -92,7 +92,7 @@ function TeamView() {
                       <PersonAvatar id={m.user_id} dir={dir} />
                       <span className="min-w-0">
                         <Ltr className="block truncate text-sm">{dir.name(m.user_id)}</Ltr>
-                        <span className="flex items-center gap-2 text-xs text-grid-muted">
+                        <span className="flex items-center gap-2 text-meta text-grid-muted">
                           {t(`role.${m.role}`)}
                           {m.running ? (
                             <Badge variant="outline" className="gap-1.5" data-team-running>

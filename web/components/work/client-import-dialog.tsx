@@ -265,7 +265,7 @@ export function ClientImportDialog({
         {preview && preview.headers.length > 0 ? (
           <section className="space-y-2" aria-label={t("clientImport.mapping")}>
             <h3 className="text-sm font-medium">{t("clientImport.mapping")}</h3>
-            <p className="text-xs text-grid-muted">{preview.header_row > 0 ? t("clientImport.headerRow", { n: preview.header_row }) : t("clientImport.noHeader")}</p>
+            <p className="text-meta text-grid-muted">{preview.header_row > 0 ? t("clientImport.headerRow", { n: preview.header_row }) : t("clientImport.noHeader")}</p>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {preview.headers.map((h) => (
                 <label key={h} className="flex items-center gap-2 text-sm">
@@ -321,7 +321,7 @@ export function ClientImportDialog({
                       <TableCell className="max-w-48 truncate">{r.name || "—"}</TableCell>
                       <TableCell className="hidden text-grid-muted md:table-cell">{r.email ? <Ltr>{r.email}</Ltr> : "—"}</TableCell>
                       <TableCell className="hidden text-grid-muted md:table-cell">{r.phone ? <Ltr>{r.phone}</Ltr> : "—"}</TableCell>
-                      <TableCell className="text-xs text-grid-muted">
+                      <TableCell className="text-meta text-grid-muted">
                         {r.errors?.length
                           ? r.errors.map((e, i) => (
                               <span key={i} className="block text-destructive">
@@ -341,7 +341,7 @@ export function ClientImportDialog({
                 </TableBody>
               </Table>
             </div>
-            {preview.rows.length > SHOWN ? <p className="text-xs text-grid-muted">{t("clientImport.more", { n: preview.rows.length - SHOWN })}</p> : null}
+            {preview.rows.length > SHOWN ? <p className="text-meta text-grid-muted">{t("clientImport.more", { n: preview.rows.length - SHOWN })}</p> : null}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={reset}>
                 {t("clientImport.back")}
@@ -365,7 +365,7 @@ function FilePick({ accept, label, name, onFile }: { accept: string; label: stri
       <FileUpIcon className="size-5 text-grid-muted" />
       <span className="flex-1">
         <span className="block font-medium">{label}</span>
-        <span className="block text-xs text-grid-muted">{name || t("clientImport.choose")}</span>
+        <span className="block text-meta text-grid-muted">{name || t("clientImport.choose")}</span>
       </span>
       <input
         type="file"

@@ -212,7 +212,7 @@ function TimeView() {
                     <TableHead className="ps-6">{t("time.project")}</TableHead>
                     {days.map((d) => (
                       <TableHead key={d} className={cn("w-[8%] text-end", d === today && "text-grid-fg")}>
-                        <span className="block text-[11px] font-normal text-grid-muted">{weekdayShort(d, locale)}</span>
+                        <span className="block text-xs font-normal text-grid-muted">{weekdayShort(d, locale)}</span>
                         <Ltr>{Number(d.slice(8))}</Ltr>
                       </TableHead>
                     ))}
@@ -227,7 +227,7 @@ function TimeView() {
                           <ColorDot color={r.project_color} />
                           <span className="min-w-0">
                             {label(r)}
-                            {r.task_key && r.project_name ? <span className="block truncate text-xs text-grid-muted">{r.project_name}</span> : null}
+                            {r.task_key && r.project_name ? <span className="block truncate text-meta text-grid-muted">{r.project_name}</span> : null}
                           </span>
                         </span>
                       </TableCell>
@@ -275,9 +275,9 @@ function TimeView() {
                   d === selected ? "bg-grid-soft shadow-[inset_0_-2px_0_var(--grid-action)]" : "",
                 )}
               >
-                <span className={cn("text-[11px]", d === today ? "font-medium text-grid-action" : "text-grid-muted")}>{weekdayShort(d, locale)}</span>
+                <span className={cn("text-xs", d === today ? "font-medium text-grid-action" : "text-grid-muted")}>{weekdayShort(d, locale)}</span>
                 <Ltr className="text-sm font-medium">{Number(d.slice(8))}</Ltr>
-                <Ltr mono className="text-[11px] text-grid-muted">
+                <Ltr mono className="text-xs text-grid-muted">
                   {hm(dayTotal(i), "–")}
                 </Ltr>
               </button>
@@ -313,7 +313,7 @@ function TimeView() {
                       </Ltr>
                       <div className="order-last w-full min-w-0 md:order-none md:w-auto md:flex-1">
                         <p className={cn("truncate text-sm", !e.description && "text-grid-muted")}>{e.description || t("time.descriptionPlaceholder")}</p>
-                        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-grid-muted">
+                        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-meta text-grid-muted">
                           <ColorDot color={e.project_color} />
                           {label(e)}
                           {e.task_key && e.project_name ? <span className="truncate">· {e.project_name}</span> : null}
@@ -322,7 +322,7 @@ function TimeView() {
                           {e.billable ? <Badge variant="secondary">{t("time.billable")}</Badge> : null}
                         </div>
                       </div>
-                      <span className="hidden w-24 shrink-0 text-xs text-grid-muted md:block">
+                      <span className="hidden w-24 shrink-0 text-meta text-grid-muted md:block">
                         {e.source === "mcp" ? (
                           <span className="inline-flex items-center gap-1">
                             <BotIcon className="size-3.5" />

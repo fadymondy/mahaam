@@ -65,7 +65,7 @@ export default function TeamsPage() {
                 <Link href={`/${locale}/w/${ws.slug}/teams/${team.id}`} className="block truncate font-medium text-grid-fg hover:underline">
                   {team.name}
                 </Link>
-                <p className="truncate text-xs text-grid-muted">
+                <p className="truncate text-meta text-grid-muted">
                   {team.description ? `${team.description} · ` : ""}
                   {t("teams.memberCount", { n: team.member_ids.length })} · {t("teams.projectCount", { n: team.project_count })}
                 </p>

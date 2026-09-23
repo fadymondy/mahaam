@@ -15,6 +15,8 @@
 @import "./styles/mahaam-palette.css";
 /* Repo-owned: Inter for the English UI (Arabic stays Lusail). */
 @import "./styles/mahaam-inter.css";
+/* Repo-owned: the type floor (text-meta, larger small sizes for Arabic, grid micro/meta/chip). */
+@import "./styles/mahaam-type.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

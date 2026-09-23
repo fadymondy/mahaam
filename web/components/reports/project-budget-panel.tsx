@@ -34,7 +34,7 @@ export function ProjectBudgetPanel({ projectId, canManage, settingsHref }: { pro
         <div className="flex flex-wrap items-center justify-between gap-3" data-budget-none>
           <div className="space-y-0.5">
             <p className="text-sm text-grid-body">{t("budget.none")}</p>
-            {canManage ? <p className="text-xs text-grid-muted">{t("budget.noneManager")}</p> : null}
+            {canManage ? <p className="text-meta text-grid-muted">{t("budget.noneManager")}</p> : null}
           </div>
           {canManage ? (
             <Button variant="outline" size="sm" nativeButton={false} render={<Link href={settingsHref} />} data-budget-settings>

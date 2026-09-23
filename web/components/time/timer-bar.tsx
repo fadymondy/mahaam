@@ -97,7 +97,7 @@ export function TimerBar() {
           <span className="hidden max-w-[16rem] min-w-0 truncate text-sm md:inline" title={where ? `${what} — ${where}` : what} data-timer-what>
             {what}
           </span>
-          {where ? <span className="hidden max-w-[12rem] truncate text-xs text-grid-muted xl:inline">{where}</span> : null}
+          {where ? <span className="hidden max-w-[12rem] truncate text-meta text-grid-muted xl:inline">{where}</span> : null}
           <Ltr mono className="text-sm tabular-nums" data-timer-elapsed>
             {clock(entrySeconds(timer, now))}
           </Ltr>
@@ -110,7 +110,7 @@ export function TimerBar() {
           <PopoverTrigger render={<Button variant="outline" size="sm" aria-label={t("timer.start")} title={t("timer.shortcut")} data-timer-start />}>
             <PlayIcon />
             <span className="hidden sm:inline">{t("timer.start")}</span>
-            <kbd className="hidden font-mono text-[10px] text-grid-muted lg:inline" dir="ltr">
+            <kbd className="hidden font-mono text-xs text-grid-muted lg:inline" dir="ltr">
               ⌘K
             </kbd>
           </PopoverTrigger>
@@ -192,7 +192,7 @@ function StartPalette({ open, onOpenChange, onStart }: { open: boolean; onOpenCh
                       {task.key}
                     </Ltr>
                     <span className="truncate">{task.title}</span>
-                    <span className="ms-auto truncate text-xs text-grid-muted">{byProject.get(task.project_id)?.name}</span>
+                    <span className="ms-auto truncate text-meta text-grid-muted">{byProject.get(task.project_id)?.name}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>

@@ -93,7 +93,7 @@ export default function AdminWorkspacesPage() {
                         {w.name}
                       </Link>
                       <span className="flex items-center gap-2">
-                        <Ltr className="text-xs text-grid-muted">{w.slug}</Ltr>
+                        <Ltr className="text-meta text-grid-muted">{w.slug}</Ltr>
                         <StatusBadge status={w.status} />
                       </span>
                     </TableCell>
@@ -103,7 +103,7 @@ export default function AdminWorkspacesPage() {
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <Ltr className="tabular-nums">{w.members}</Ltr>
-                      <span className="block text-xs text-grid-muted">{t("admin.workspaces.projectsN", { n: w.projects })}</span>
+                      <span className="block text-meta text-grid-muted">{t("admin.workspaces.projectsN", { n: w.projects })}</span>
                     </TableCell>
                     <TableCell className="hidden pe-6 lg:table-cell">
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">

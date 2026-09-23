@@ -41,7 +41,7 @@ export default function TeamDetailPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-xs text-grid-muted hover:text-grid-fg">
+        <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.teams")}
         </Link>
@@ -62,7 +62,7 @@ export default function TeamDetailPage() {
         <div className="min-w-0 bg-grid-bg">
           <h2 className="flex items-baseline justify-between px-6 pt-5 pb-3">
             <span className="text-base font-medium">{t("teams.members")}</span>
-            <span className="text-xs text-grid-muted">{t("teams.memberCount", { n: team.member_ids.length })}</span>
+            <span className="text-meta text-grid-muted">{t("teams.memberCount", { n: team.member_ids.length })}</span>
           </h2>
           {team.member_ids.length === 0 ? (
             <EmptyState title={t("teamDetail.noMembers")} />
@@ -84,7 +84,7 @@ export default function TeamDetailPage() {
         <div className="min-w-0 bg-grid-bg">
           <h2 className="flex items-baseline justify-between px-6 pt-5 pb-3">
             <span className="text-base font-medium">{t("teamDetail.projects")}</span>
-            <span className="text-xs text-grid-muted">{t("teams.projectCount", { n: team.project_count })}</span>
+            <span className="text-meta text-grid-muted">{t("teams.projectCount", { n: team.project_count })}</span>
           </h2>
           {projects.error ? (
             <ErrorState error={projects.error} />
