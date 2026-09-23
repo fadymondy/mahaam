@@ -1,0 +1,19 @@
+Mahaam keeps a team's projects, issues and time in one place — on the phone, the web, the desktop and in the browser — and gives your customers a portal of their own.
+
+FOR YOUR TEAM
+• Projects and issues: a board and a list, statuses, priorities, labels, checklists, comments and attachments.
+• My work: everything assigned to you, grouped the way you work.
+• Time tracking: start a timer on an issue in one tap, log time by hand, and see your week in a timesheet. The running timer follows you across your phone, computer and browser.
+• Inbox: assignments, mentions and updates as they happen.
+• Search across issues and projects.
+
+FOR YOUR CUSTOMERS
+• A portal to file requests, follow progress and read updates.
+• Invoices from tracked time, ready to view on the phone.
+
+BUILT FOR REAL WORK
+• English and Arabic, with a full right-to-left layout, in light and dark.
+• Two-step verification, Face ID / fingerprint unlock, and sign-in with Apple, Google or GitHub.
+• Your data stays yours: delete your account from the app at any time.
+
+Mahaam is for teams using a Mahaam workspace. Join yours with the invitation your admin sends, or create a workspace in the app.
