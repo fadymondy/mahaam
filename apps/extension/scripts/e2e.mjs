@@ -32,13 +32,32 @@ const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), "m
   args: [`--disable-extensions-except=${dist}`, `--load-extension=${dist}`, "--disable-features=DisableLoadExtensionCommandLineSwitch"],
   viewport: { width: 380, height: 640 },
 });
+// What the extension says about itself while it runs. An uncaught error or a CSP violation is a
+// failure — both have shipped silently before (a blocked inline <style>, a data: fetch). HTTP
+// errors are only logged: some are the expected answer (a 409 for an overlapping entry).
+const noise = [];
+const watch = (p, tag) => {
+  p.on("console", (m) => {
+    if (m.type() !== "error" && m.type() !== "warning") return;
+    const text = m.text();
+    noise.push(`${tag} ${m.type()}: ${text.slice(0, 200)}`);
+    if (/Content Security Policy/i.test(text)) fail(`${tag}: CSP violation — ${text.slice(0, 160)}`);
+  });
+  p.on("pageerror", (e) => fail(`${tag}: uncaught ${String(e).slice(0, 200)}`));
+  p.on("requestfailed", (r) => noise.push(`${tag} request failed: ${r.method()} ${r.url()} ${r.failure()?.errorText ?? ""}`));
+};
+
 try {
   let [sw] = ctx.serviceWorkers();
   sw ??= await ctx.waitForEvent("serviceworker", { timeout: 15000 });
   const id = new URL(sw.url()).host;
   log("service worker up:", sw.url());
+  sw.on("console", (m) => {
+    if (m.type() === "error") fail(`service worker: ${m.text().slice(0, 200)}`);
+  });
 
   const page = await ctx.newPage();
+  watch(page, "popup");
   await page.goto(`chrome-extension://${id}/popup.html`);
   await page.getByLabel("Email", { exact: true }).fill(EMAIL);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
@@ -73,7 +92,18 @@ try {
   await page.waitForTimeout(1000);
   const badge = await sw.evaluate(() => chrome.action.getBadgeText({}));
   log("timer running; badge =", JSON.stringify(badge));
+  if (!badge) fail("no badge while a timer runs");
   await page.screenshot({ path: "e2e-shots/ext-running.png" });
+
+  // The worker must notice the token going (a sign-out, a revoked PAT) on its own. It lives in
+  // storage.session; the worker used to watch storage.local for it and kept counting.
+  const token = (await sw.evaluate(() => chrome.storage.session.get("token"))).token;
+  await sw.evaluate(() => chrome.storage.session.remove("token"));
+  await page.waitForTimeout(1500);
+  const afterSignOut = await sw.evaluate(() => chrome.action.getBadgeText({}));
+  if (afterSignOut) fail(`the badge still reads ${JSON.stringify(afterSignOut)} after the token was removed`);
+  await sw.evaluate((t) => chrome.storage.session.set({ token: t }), token);
+  log("badge follows the session token:", JSON.stringify(afterSignOut), "after removal");
   await stopBtn.click();
   await page.locator(".mgy-timer-idle").waitFor({ timeout: 10000 });
   await page.waitForTimeout(500);
@@ -138,6 +168,52 @@ try {
   await page.locator(".mgy-page").getByRole("button", { name: "File an issue" }).last().click();
   await page.getByText(/Issue filed: [A-Z]+-\d+/).waitFor({ timeout: 15000 });
   log("filed after removing the screenshot:", (await page.locator(".mgy-ok").innerText()).match(/[A-Z]+-\d+/)?.[0]);
+
+  // "Log time on this page": the task picker. Opening it used to trip the CSP (Base UI's inline
+  // <style>), and a chosen task showed as its internal value ("taskMH-1") instead of its name.
+  await sw.evaluate(() => chrome.storage.session.set({ pending: { url: "https://example.com/log", title: "Log page", mode: "log" } }));
+  await page.reload();
+  await page.getByText("This page").waitFor({ timeout: 10000 });
+  const picker = page.locator(".mgy-page .mgy-task-select");
+  await picker.click();
+  const option = page.getByRole("option").nth(1);
+  const optionText = (await option.innerText()).trim();
+  await option.click();
+  const shown = (await picker.innerText()).trim();
+  log("task picker shows:", JSON.stringify(shown));
+  if (shown !== optionText) fail(`the task picker shows ${JSON.stringify(shown)} for the option ${JSON.stringify(optionText)}`);
+
+  // Sign-in without a password, from the Mahaam session this browser already has — the only way
+  // in for a Google or GitHub account (they have no password to type).
+  await sw.evaluate(() => Promise.all([chrome.storage.session.clear(), chrome.storage.local.remove(["workspace", "email"])]));
+  await ctx.clearCookies();
+  await page.reload();
+  const useSession = page.getByRole("button", { name: "Continue with Mahaam in this browser" });
+  const opened = ctx.waitForEvent("page", { timeout: 10000 }).catch(() => null);
+  await useSession.click();
+  await page.getByText("You're not signed in to Mahaam in this browser").waitFor({ timeout: 10000 });
+  const signInTab = await opened;
+  log("no browser session → sign-in page opened:", signInTab?.url() ?? "(none)");
+  if (!signInTab?.url().startsWith(API)) fail("with no browser session, the Mahaam sign-in page did not open");
+  // Sign in the way the web app does: same origin, CSRF double-submit, session cookie.
+  const web = signInTab ?? (await ctx.newPage());
+  await web.goto(`${API}/api/auth/csrf`);
+  const webLogin = await web.evaluate(async ({ email, password }) => {
+    const { csrf_token } = await (await fetch("/api/auth/csrf")).json();
+    const r = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf_token }, body: JSON.stringify({ email, password }) });
+    return r.status;
+  }, { email: EMAIL, password: PASSWORD });
+  if (webLogin !== 200) fail(`signing in on the web returned ${webLogin}`);
+  await web.close();
+  await page.bringToFront();
+  await useSession.click();
+  await Promise.race([page.getByText("Next up").waitFor({ timeout: 15000 }), page.getByRole("button", { name: new RegExp(WS) }).first().click({ timeout: 15000 })]).catch(() => null);
+  await page.getByText("Next up").waitFor({ timeout: 15000 });
+  const viaBrowser = await sw.evaluate(() => chrome.storage.session.get("token"));
+  if (!String(viaBrowser.token).startsWith("togo_pat_")) fail("signing in with the browser session did not store a PAT");
+  log("signed in with the browser session; PAT stored in session only");
+
+  if (noise.length) log(`console/network noise (${noise.length}):\n  ` + noise.join("\n  "));
   if (failures.length) {
     console.error(`[ext-e2e] FAIL — ${failures.length} check(s):\n  ` + failures.join("\n  "));
     process.exitCode = 1;
