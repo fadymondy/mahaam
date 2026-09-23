@@ -67,7 +67,7 @@ export default function Requests() {
                 key={r.key}
                 last={i === list.length - 1}
                 alignTop
-                onPress={r.project_id ? () => router.push({ pathname: "/project/[id]", params: { id: r.project_id! } }) : undefined}
+                onPress={r.project_id ? () => router.push({ pathname: "/portal-project/[id]", params: { id: r.project_id! } }) : undefined}
                 trailing={<Chip label={t(`portal.requestState.${r.state}` as "portal.requestState.pending")} tone={r.state === "declined" ? "danger" : r.state === "pending" ? "gold" : "ok"} />}>
                 <AppText variant="rowTitle" numberOfLines={2}>
                   {r.title}

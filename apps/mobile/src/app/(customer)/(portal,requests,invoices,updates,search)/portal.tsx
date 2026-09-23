@@ -31,7 +31,7 @@ export default function Projects() {
                   padV={16}
                   leading={<View style={{ width: 3, alignSelf: "stretch", borderRadius: 1.5, backgroundColor: projectColor(p.color) }} />}
                   trailing={<ForwardChevron />}
-                  onPress={() => router.push({ pathname: "/project/[id]", params: { id: p.id } })}>
+                  onPress={() => router.push({ pathname: "/portal-project/[id]", params: { id: p.id } })}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                     <AppText variant="rowTitle" numberOfLines={1} style={{ flex: 1 }}>
                       {p.name}

@@ -77,6 +77,7 @@ export function api(c: MahaamClient) {
 
     tasks: {
       mine: (userId: string) => c.get<{ tasks: Task[] | null }>(`/api/w/tasks${q({ assignee: userId, limit: 200 })}`),
+      search: (text: string) => c.get<{ tasks: Task[] | null }>(`/api/w/tasks${q({ q: text, limit: 30 })}`),
       get: (key: string) => c.get<TaskDetail>(`/api/w/tasks/${e(key)}`),
       comments: (key: string) => c.get<{ comments: Comment[] | null }>(`/api/w/tasks/${e(key)}/comments`),
       comment: (key: string, body: string) => c.post<Comment>(`/api/w/tasks/${e(key)}/comments`, { body }),

@@ -50,7 +50,7 @@ export default function Work() {
 
   return (
     <Screen
-      header={<TabHeader title="tabs.work" count={tasks.data?.length} inbox="/notifications" />}
+      header={<TabHeader title="tabs.work" count={tasks.data?.length} inbox="/inbox" />}
       refreshing={tasks.isRefetching || issues.isRefetching}
       onRefresh={() => {
         void tasks.refetch();
@@ -126,7 +126,7 @@ export default function Work() {
             <ListItem
               key={i.key}
               last={n === openIssues.length - 1}
-              onPress={() => router.push({ pathname: "/team-issue/[key]", params: { key: i.key } })}
+              onPress={() => router.push({ pathname: "/issue/[key]", params: { key: i.key } })}
               trailing={
                 <StartTimer
                   running={runningTask === i.key}

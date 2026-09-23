@@ -324,7 +324,7 @@ export default function PortalProjectScreen() {
                 <Section title={t("portal.issues")} count={issues.length}>
                   {issues.length === 0 ? <Empty text={t("portal.noIssues")} /> : null}
                   {issues.map((i, n) => (
-                    <ListItem key={i.key} last={n === issues.length - 1} onPress={rich ? () => router.push({ pathname: "/issue/[key]", params: { key: i.key } }) : undefined}>
+                    <ListItem key={i.key} last={n === issues.length - 1} onPress={rich ? () => router.push({ pathname: "/portal-issue/[key]", params: { key: i.key } }) : undefined}>
                       <AppText variant="rowTitle" numberOfLines={2}>
                         {i.title}
                       </AppText>

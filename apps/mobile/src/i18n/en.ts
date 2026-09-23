@@ -220,6 +220,7 @@ const en = {
     workspace: "Workspace",
     version: "Version {v}",
   },
+  search: { placeholder: "Projects, issues, tasks…", recent: "Recent", noResults: "Nothing matches." },
   projects: {
     active: "Active",
     archived: "Archived",

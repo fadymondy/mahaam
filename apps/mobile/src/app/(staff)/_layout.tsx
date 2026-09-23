@@ -1,23 +1,24 @@
 import { Redirect } from "expo-router";
-import { Tabs } from "expo-router/js-tabs";
-import { Bell, FolderKanban, ListChecks, Timer } from "lucide-react-native";
+import { Bell, FolderKanban, ListChecks, Search, Timer } from "lucide-react-native";
 import { useEffect } from "react";
 
 import { useRunning, useTimeSettings } from "@/features/team";
-import { GridTabBar, type GridTab } from "@/grid";
+import { ShellTabs, type ShellTab } from "@/components/shell-tabs";
 import { useT } from "@/i18n";
 import { LiveProvider, usePolling } from "@/lib/live";
 import { syncTimerReminder } from "@/lib/reminders";
 import { isCustomer, useSession } from "@/lib/session";
 
-// Labels are string keys: the grid's tab bar translates them.
-// Projects first (the owner's flow): a project opens its board, overview and reports.
-const TABS: GridTab[] = [
-  { name: "projects", label: "tabs.projects", Icon: FolderKanban },
-  { name: "work", label: "tabs.work", Icon: ListChecks },
-  { name: "time", label: "tabs.time", Icon: Timer },
-  { name: "notifications", label: "tabs.inbox", Icon: Bell },
+// Projects first (the owner's flow); Search is the system search tab on iOS 26+.
+const TABS: ShellTab[] = [
+  { name: "(projects)", label: "tabs.projects", Icon: FolderKanban, sf: { default: "folder", selected: "folder.fill" } },
+  { name: "(work)", label: "tabs.work", Icon: ListChecks, sf: { default: "checklist", selected: "checklist" } },
+  { name: "(time)", label: "tabs.time", Icon: Timer, sf: { default: "timer", selected: "timer" } },
+  { name: "(inbox)", label: "tabs.inbox", Icon: Bell, sf: { default: "bell", selected: "bell.fill" } },
+  { name: "(search)", label: "common.search", Icon: Search, sf: { default: "magnifyingglass", selected: "magnifyingglass" }, search: true },
 ];
+
+export const unstable_settings = { initialRouteName: "(projects)" };
 
 function ReminderSync() {
   const t = useT();
@@ -43,11 +44,7 @@ export default function StaffLayout() {
   return (
     <LiveProvider>
       <ReminderSync />
-      <Tabs screenOptions={{ headerShown: false }} tabBar={(p) => <GridTabBar {...p} tabs={TABS} />}>
-        {TABS.map((tab) => (
-          <Tabs.Screen key={tab.name} name={tab.name} />
-        ))}
-      </Tabs>
+      <ShellTabs tabs={TABS} />
     </LiveProvider>
   );
 }

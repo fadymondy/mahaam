@@ -1,18 +1,19 @@
 import { Redirect } from "expo-router";
-import { Tabs } from "expo-router/js-tabs";
-import { Bell, FolderOpen, MessageSquarePlus, ReceiptText } from "lucide-react-native";
+import { Bell, FolderOpen, MessageSquarePlus, ReceiptText, Search } from "lucide-react-native";
 
-import { GridTabBar, type GridTab } from "@/grid";
+import { ShellTabs, type ShellTab } from "@/components/shell-tabs";
 import { LiveProvider } from "@/lib/live";
 import { isCustomer, useSession } from "@/lib/session";
 
-// Labels are string keys: the grid's tab bar translates them.
-const TABS: GridTab[] = [
-  { name: "portal", label: "tabs.projects", Icon: FolderOpen },
-  { name: "requests", label: "tabs.requests", Icon: MessageSquarePlus },
-  { name: "invoices", label: "tabs.invoices", Icon: ReceiptText },
-  { name: "updates", label: "tabs.inbox", Icon: Bell },
+const TABS: ShellTab[] = [
+  { name: "(portal)", label: "tabs.projects", Icon: FolderOpen, sf: { default: "folder", selected: "folder.fill" } },
+  { name: "(requests)", label: "tabs.requests", Icon: MessageSquarePlus, sf: { default: "text.bubble", selected: "text.bubble.fill" } },
+  { name: "(invoices)", label: "tabs.invoices", Icon: ReceiptText, sf: { default: "doc.text", selected: "doc.text.fill" } },
+  { name: "(updates)", label: "tabs.inbox", Icon: Bell, sf: { default: "bell", selected: "bell.fill" } },
+  { name: "(search)", label: "common.search", Icon: Search, sf: { default: "magnifyingglass", selected: "magnifyingglass" }, search: true },
 ];
+
+export const unstable_settings = { initialRouteName: "(portal)" };
 
 /** A customer of the selected workspace: the portal. */
 export default function CustomerLayout() {
@@ -20,11 +21,7 @@ export default function CustomerLayout() {
   if (status !== "signedIn" || !workspace || !isCustomer(workspace)) return <Redirect href="/" />;
   return (
     <LiveProvider>
-      <Tabs screenOptions={{ headerShown: false }} tabBar={(p) => <GridTabBar {...p} tabs={TABS} />}>
-        {TABS.map((tab) => (
-          <Tabs.Screen key={tab.name} name={tab.name} />
-        ))}
-      </Tabs>
+      <ShellTabs tabs={TABS} />
     </LiveProvider>
   );
 }

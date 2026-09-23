@@ -11,6 +11,7 @@ import { IssueBoard } from "@/components/issue-board";
 import { IssueTrack } from "@/components/issue-track";
 import { Actions, Chip, Grow, Micro, Progress, projectColor, StatCells, useErrorText } from "@/components/kit";
 import { LineTabs } from "@/components/line-tabs";
+import { ProjectAvatar } from "@/components/project-avatar";
 import { SearchField, useDebounced } from "@/components/search";
 import { useMembers, useMoveToColumn, useProject, useProjectIssues, useProjectList, useProjectReport } from "@/features/projects";
 import { percentDone } from "@/features/client";
@@ -97,7 +98,8 @@ function Overview({ id }: { id: string }) {
   return (
     <>
       <Row style={{ borderStartWidth: 2, borderStartColor: projectColor(p.color) }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <ProjectAvatar project={p} size={48} />
           <AppText variant="title" style={{ flex: 1 }}>
             {p.name}
           </AppText>
@@ -341,7 +343,7 @@ function Reports({ id }: { id: string }) {
       {r.issues_visible && r.open_issues?.length ? (
         <Band title={t("report.openIssues")} count={r.open_issue_count}>
           {r.open_issues.slice(0, 20).map((i, n, all) => (
-            <ListItem key={i.key} last={n === all.length - 1} padV={10} onPress={() => router.push({ pathname: "/team-issue/[key]", params: { key: i.key } })}>
+            <ListItem key={i.key} last={n === all.length - 1} padV={10} onPress={() => router.push({ pathname: "/issue/[key]", params: { key: i.key } })}>
               <AppText variant="rowTitle" numberOfLines={2}>
                 {i.title}
               </AppText>

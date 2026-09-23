@@ -9,6 +9,7 @@ import type { Project } from "@/api/types";
 import { IssueTrack } from "@/components/issue-track";
 import { Chip, Micro, Progress, projectColor, TabHeader, useErrorText } from "@/components/kit";
 import { LineTabs } from "@/components/line-tabs";
+import { ProjectAvatar } from "@/components/project-avatar";
 import { SearchField } from "@/components/search";
 import { useProjectList } from "@/features/projects";
 import { percentDone } from "@/features/client";
@@ -54,9 +55,9 @@ function ProjectRow({ p, last }: { p: Project; last: boolean }) {
       last={last}
       padV={16}
       alignTop
-      leading={<View style={{ width: 3, alignSelf: "stretch", borderRadius: 1.5, backgroundColor: projectColor(p.color) }} />}
+      leading={<ProjectAvatar project={p} />}
       trailing={<ForwardChevron />}
-      onPress={() => router.push({ pathname: "/team-project/[id]", params: { id: p.id } })}>
+      onPress={() => router.push({ pathname: "/project/[id]", params: { id: p.id } })}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <AppText variant="rowTitle" numberOfLines={1} style={{ flex: 1 }}>
           {p.name}
@@ -120,7 +121,7 @@ export default function Projects() {
 
   return (
     <Screen
-      header={<TabHeader title="tabs.projects" count={q.data ? shown.length : undefined} inbox="/notifications" />}
+      header={<TabHeader title="tabs.projects" count={q.data ? shown.length : undefined} inbox="/inbox" />}
       refreshing={q.isRefetching}
       onRefresh={() => void q.refetch()}>
       <Rows inset>

@@ -218,6 +218,7 @@ const ar: Shape<Dict> = {
     workspace: "مساحة العمل",
     version: "الإصدار {v}",
   },
+  search: { placeholder: "المشاريع والمشكلات والمهام…", recent: "عمليات البحث الأخيرة", noResults: "لا توجد نتائج مطابقة." },
   projects: {
     active: "النشطة",
     archived: "المؤرشفة",

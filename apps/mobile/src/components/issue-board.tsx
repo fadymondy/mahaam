@@ -32,7 +32,7 @@ export const TYPE_TONE: Record<string, string> = {
 export function IssueCard({ issue, onMove, dense }: { issue: IssueRow; onMove?: () => void; dense?: boolean }) {
   const t = useT();
   const c = useColors();
-  const open = () => router.push({ pathname: "/team-issue/[key]", params: { key: issue.key } });
+  const open = () => router.push({ pathname: "/issue/[key]", params: { key: issue.key } });
   return (
     <Pressable
       onPress={open}

@@ -27,7 +27,7 @@ export default function Time() {
 
   return (
     <Screen
-      header={<TabHeader title="tabs.time" inbox="/notifications" />}
+      header={<TabHeader title="tabs.time" inbox="/inbox" />}
       refreshing={running.isRefetching || entries.isRefetching}
       onRefresh={() => {
         void running.refetch();

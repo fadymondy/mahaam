@@ -419,6 +419,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/2fa/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish signing in with a two-factor code
+         * @description The second step after POST /api/auth/login answered 401 {code: mfa_required, challenge}. Send the challenge with a code from the authenticator, or a recovery code. Returns the session token (use it as a Bearer token), and for a browser that sent the CSRF header, also sets the session cookie.
+         */
+        post: operations["auth-2fa-challenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email a password-reset code
+         * @description Always answers 202, whether or not the address has an account, and in the same time either way. A code is valid for 10 minutes and 5 attempts; asking again replaces it.
+         */
+        post: operations["password-forgot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a new password with an emailed code
+         * @description Signs the account out everywhere: every session and personal access token it held stops working. Sign in again with the new password.
+         */
+        post: operations["password-reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients": {
         parameters: {
             query?: never;
@@ -601,6 +661,233 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/2fa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your two-factor sign-in */
+        get: operations["me-2fa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn two-factor sign-in on with the first code */
+        post: operations["me-2fa-confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn two-factor sign-in off
+         * @description Needs your password and a current code (or a recovery code).
+         */
+        post: operations["me-2fa-disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start setting up two-factor sign-in
+         * @description Needs your password. Returns the secret and an otpauth:// link (show it as a QR code, or open it on the same phone). Nothing is enforced until /api/me/2fa/confirm.
+         */
+        post: operations["me-2fa-enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/2fa/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace your recovery codes */
+        post: operations["me-2fa-recovery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload your picture (multipart field "file": JPEG, PNG or GIF, up to 10 MB)
+         * @description Cropped to a centred square, scaled to 256px and re-encoded as JPEG. Nothing else from the file is kept, EXIF location included.
+         */
+        post: operations["me-avatar-upload"];
+        /** Remove your picture */
+        delete: operations["me-avatar-delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete your account
+         * @description Needs your password. Refused (409, code sole_owner, with the list) while you are the only owner of a workspace. Otherwise every session and token ends now, and the account is anonymised after the grace period (purge_after). Signing in again before then cancels the deletion.
+         */
+        post: operations["me-delete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register this phone for push notifications
+         * @description Call on every app start and whenever FCM hands the app a new token (pass the old one as previous_token). Registering a token another account had moves it to you. Works whether or not the server has FCM configured; native_enabled says whether anything will actually be sent.
+         */
+        post: operations["me-device-register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/devices/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop push notifications on this phone */
+        delete: operations["me-device-remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/devices/{token}/live-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a Live Activity token for this phone
+         * @description activity_token: the token of the activity the app is showing now (send it whenever iOS hands out a new one). push_to_start_token: the app's push-to-start token (iOS 17.2+), so a timer started elsewhere can start the activity. Either or both.
+         */
+        post: operations["me-device-live-activity"];
+        /** The activity ended on the phone: forget its token */
+        delete: operations["me-device-live-activity-end"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move your account to a new email address
+         * @description Needs your password. A six-digit code goes to the NEW address; confirm it with /api/me/email/confirm. Nothing changes until then.
+         */
+        post: operations["me-email-change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/email/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a new email address with the code sent to it */
+        post: operations["me-email-confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/platform": {
         parameters: {
             query?: never;
@@ -618,6 +905,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your profile */
+        get: operations["me-profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change your name, language or timezone */
+        patch: operations["me-profile-update"];
+        trace?: never;
+    };
     "/api/me/push": {
         parameters: {
             query?: never;
@@ -632,6 +937,61 @@ export interface paths {
         post: operations["me-push-subscribe"];
         /** Stop push notifications on this device */
         delete: operations["me-push-unsubscribe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke the personal access token this request is signed with
+         * @description For signing out of an app: the app holds the token but not its id, so it can't use DELETE /api/auth/tokens/{id}. With a cookie session instead, this does nothing; use POST /api/auth/logout.
+         */
+        delete: operations["me-token-revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether your email address is confirmed */
+        get: operations["me-verify-email-state"];
+        put?: never;
+        /** Confirm your email address with the code sent to it */
+        post: operations["me-verify-email"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/verify-email/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a new confirmation code */
+        post: operations["me-verify-email-resend"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3903,6 +4263,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/w/widgets/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project progress and the running timer, for home-screen widgets */
+        get: operations["w-widgets-projects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/workspace": {
         parameters: {
             query?: never;
@@ -4294,6 +4671,17 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        "Auth-2fa-challengeRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Auth-2fa-challengeRequest.json
+             */
+            readonly $schema?: string;
+            challenge: string;
+            code?: string;
+            recovery_code?: string;
+        };
         Billing: {
             cancel_at_period_end: boolean;
             /** Format: date-time */
@@ -4407,6 +4795,16 @@ export interface components {
             name: string;
             /** @enum {string} */
             source: "ui" | "mcp" | "sync";
+        };
+        ChallengeOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ChallengeOutBody.json
+             */
+            readonly $schema?: string;
+            token: string;
+            user: components["schemas"]["Identity"];
         };
         ChecklistItem: {
             /**
@@ -4663,6 +5061,25 @@ export interface components {
             readonly $schema?: string;
             request: components["schemas"]["Request"];
             task_key: string;
+        };
+        Cookie: {
+            Domain: string;
+            /** Format: date-time */
+            Expires: string;
+            HttpOnly: boolean;
+            /** Format: int64 */
+            MaxAge: number;
+            Name: string;
+            Partitioned: boolean;
+            Path: string;
+            Quoted: boolean;
+            Raw: string;
+            RawExpires: string;
+            /** Format: int64 */
+            SameSite: number;
+            Secure: boolean;
+            Unparsed: string[] | null;
+            Value: string;
         };
         "Create-activity-logRequest": {
             /**
@@ -5205,6 +5622,19 @@ export interface components {
             key: string;
             kind: string;
         };
+        DeleteOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteOutBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description When the account is anonymised, unless you sign in before then
+             */
+            purge_after: string;
+        };
         DeployInput: {
             /**
              * Format: uri
@@ -5241,6 +5671,37 @@ export interface components {
              */
             readonly $schema?: string;
             deployments: components["schemas"]["Deployment"][] | null;
+        };
+        Device: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Device.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            app: "team" | "client";
+            app_version?: string;
+            /**
+             * @description Language of the notification titles. Default en.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            /** @enum {string} */
+            platform: "ios" | "android";
+            previous_token?: string;
+            /** @description The FCM registration token */
+            push_token: string;
+        };
+        DeviceOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeviceOutBody.json
+             */
+            readonly $schema?: string;
+            /** @description FCM is configured on this server */
+            native_enabled: boolean;
         };
         DraftInput: {
             /**
@@ -5367,6 +5828,21 @@ export interface components {
             readonly $schema?: string;
             keys: components["schemas"]["FeedbackKey"][] | null;
         };
+        ForgotInBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ForgotInBody.json
+             */
+            readonly $schema?: string;
+            /** Format: email */
+            email: string;
+            /**
+             * @description Language of the email. Default en.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+        };
         GitHubAccount: {
             /** Format: date-time */
             connected_at: string;
@@ -5463,6 +5939,13 @@ export interface components {
              */
             readonly $schema?: string;
             grants: components["schemas"]["Grant"][] | null;
+        };
+        Identity: {
+            email: string;
+            guard: string;
+            id: string;
+            permissions: string[] | null;
+            roles: string[] | null;
         };
         ImportCounts: {
             /** Format: int64 */
@@ -6252,6 +6735,106 @@ export interface components {
             user_id: string;
             workspace_id: string;
         };
+        "Me-2fa-confirmRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-confirmRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+        };
+        "Me-2fa-disableRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-disableRequest.json
+             */
+            readonly $schema?: string;
+            code?: string;
+            password: string;
+            recovery_code?: string;
+        };
+        "Me-2fa-enrollRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-enrollRequest.json
+             */
+            readonly $schema?: string;
+            password: string;
+        };
+        "Me-2fa-enrollResponse": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-enrollResponse.json
+             */
+            readonly $schema?: string;
+            otpauth_url: string;
+            /** @description Base32, for typing into an authenticator by hand */
+            secret: string;
+        };
+        "Me-2fa-recoveryRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-2fa-recoveryRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+            password: string;
+        };
+        "Me-deleteRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-deleteRequest.json
+             */
+            readonly $schema?: string;
+            /** @description Required when two-factor sign-in is on */
+            code?: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+            password: string;
+            recovery_code?: string;
+        };
+        "Me-device-live-activityRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-device-live-activityRequest.json
+             */
+            readonly $schema?: string;
+            activity_token?: string;
+            /** @enum {string} */
+            kind: "timer";
+            push_to_start_token?: string;
+        };
+        "Me-email-changeRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-email-changeRequest.json
+             */
+            readonly $schema?: string;
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+            password: string;
+        };
+        "Me-email-confirmRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-email-confirmRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+        };
         "Me-push-subscribeRequest": {
             /**
              * Format: uri
@@ -6271,6 +6854,25 @@ export interface components {
              */
             readonly $schema?: string;
             endpoint: string;
+        };
+        "Me-verify-email-resendRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-verify-email-resendRequest.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            locale?: "en" | "ar" | "";
+        };
+        "Me-verify-emailRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-verify-emailRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
         };
         Member: {
             email: string;
@@ -6987,6 +7589,42 @@ export interface components {
             role: string;
             workspace_name: string;
         };
+        Profile: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Profile.json
+             */
+            readonly $schema?: string;
+            /** @description A data: URL (256px JPEG), or null for initials */
+            avatar: string | null;
+            created_at: string;
+            email: string;
+            email_verified: boolean;
+            id: string;
+            /** @description en or ar; null: follow the device */
+            locale: string | null;
+            /** @description Empty until set; show the email instead */
+            name: string;
+            /** @description IANA name; null: follow the device */
+            timezone: string | null;
+        };
+        ProfilePatch: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProfilePatch.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description "" clears it
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            name?: string;
+            /** @description IANA name, e.g. Africa/Cairo; "" clears it */
+            timezone?: string;
+        };
         ProfitRow: {
             /** Format: int64 */
             billable_minor: number;
@@ -7362,6 +8000,16 @@ export interface components {
             readonly $schema?: string;
             reason?: string;
         };
+        RecoveryOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RecoveryOutBody.json
+             */
+            readonly $schema?: string;
+            /** @description Shown once. Each works once, in place of a code. */
+            recovery_codes: string[] | null;
+        };
         Repo: {
             default_branch: string;
             full_name: string;
@@ -7686,6 +8334,23 @@ export interface components {
             /** @description Per-state counts (the staff inbox only) */
             counts?: components["schemas"]["RequestCounts"];
             requests: components["schemas"]["Request"][] | null;
+        };
+        ResetInBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ResetInBody.json
+             */
+            readonly $schema?: string;
+            code: string;
+            /** Format: email */
+            email: string;
+            /**
+             * @description Language of the "your password was changed" email. Default en.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            new_password: string;
         };
         "RespStruct { IsAdmin bool \"json:\\\"is_admin\\\"\" }Body": {
             /**
@@ -8876,6 +9541,19 @@ export interface components {
             entity: string;
             id: string;
         };
+        TwoFAState: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TwoFAState.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** @description Setup started (QR shown) but no code confirmed yet */
+            pending: boolean;
+            /** Format: int64 */
+            recovery_codes_left: number;
+        };
         Unbilled: {
             /**
              * Format: uri
@@ -9480,6 +10158,17 @@ export interface components {
             readonly $schema?: string;
             items: components["schemas"]["VaultItem"][] | null;
         };
+        VerifyStateBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/VerifyStateBody.json
+             */
+            readonly $schema?: string;
+            /** @description Unverified accounts can't create a workspace on this server */
+            email_verification_required: boolean;
+            email_verified: boolean;
+        };
         "W-add-catalogue-itemRequest": {
             /**
              * Format: uri
@@ -9886,6 +10575,33 @@ export interface components {
              * @enum {string}
              */
             theme?: "auto" | "light" | "dark" | "";
+        };
+        WidgetProject: {
+            color: string;
+            id: string;
+            name: string;
+            /** Format: int64 */
+            tasks_done: number;
+            /** Format: int64 */
+            tasks_total: number;
+        };
+        WidgetTimer: {
+            key: string;
+            label: string;
+            project: string;
+            /** Format: date-time */
+            started_at: string;
+        };
+        Widgets: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Widgets.json
+             */
+            readonly $schema?: string;
+            projects: components["schemas"]["WidgetProject"][] | null;
+            /** @description null when no timer runs */
+            timer: components["schemas"]["WidgetTimer"];
         };
         Workflow: {
             /** Format: int64 */
@@ -11061,6 +11777,106 @@ export interface operations {
             };
         };
     };
+    "auth-2fa-challenge": {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string;
+            };
+            path?: never;
+            cookie?: {
+                togo_csrf?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Auth-2fa-challengeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Set-Cookie"?: components["schemas"]["Cookie"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "password-forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotInBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetInBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "list-clients": {
         parameters: {
             query?: {
@@ -11765,6 +12581,478 @@ export interface operations {
             };
         };
     };
+    "me-2fa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoFAState"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-confirmRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-disableRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-enrollRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me-2fa-enrollResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-2fa-recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-2fa-recoveryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-avatar-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-avatar-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-deleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteOutBody"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Device"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-live-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-device-live-activityRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-device-live-activity-end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-email-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-email-changeRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-email-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-email-confirmRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "me-platform": {
         parameters: {
             query?: never;
@@ -11781,6 +13069,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RespStruct { IsAdmin bool \"json:\\\"is_admin\\\"\" }Body"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-profile-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfilePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
                 };
             };
             /** @description Error */
@@ -11871,6 +13221,128 @@ export interface operations {
         responses: {
             /** @description No Content */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-token-revoke": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-verify-email-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyStateBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-verify-emailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyStateBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-verify-email-resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Me-verify-email-resendRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21964,6 +23436,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultItem"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-widgets-projects": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Widgets"];
                 };
             };
             /** @description Error */

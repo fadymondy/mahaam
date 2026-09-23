@@ -36,7 +36,7 @@ export default function NewIssue() {
     onSuccess: (issue) => {
       void qc.invalidateQueries({ queryKey: ["issues", ws] });
       void qc.invalidateQueries({ queryKey: ["projects", ws] });
-      router.replace({ pathname: "/team-issue/[key]", params: { key: issue.key } });
+      router.replace({ pathname: "/issue/[key]", params: { key: issue.key } });
     },
   });
 
