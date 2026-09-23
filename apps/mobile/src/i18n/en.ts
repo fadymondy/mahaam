@@ -291,6 +291,13 @@ const en = {
   legal: { terms: "Terms of Service", privacy: "Privacy Policy" },
   // A language's name in the UI language; its own name is in src/i18n/locales.ts.
   languages: { en: "English", ar: "Arabic" },
+  updates: {
+    downloading: "Downloading update…",
+    ready: "Update ready",
+    readyBody: "Restart now to use it. If you choose Later, it installs itself the next time you open Mahaam.",
+    restart: "Restart now",
+    later: "Later",
+  },
   monitor: { reported: "It has been reported to the team. Try again, or go back." },
   search: { placeholder: "Projects, issues, tasks…", recent: "Recent", noResults: "Nothing matches." },
   projects: {

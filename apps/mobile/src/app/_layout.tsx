@@ -20,6 +20,7 @@ import { persister, queryClient } from "@/lib/query";
 import { BiometricGate } from "@/lib/biometric";
 import { MonitorBoundary, useMonitor } from "@/lib/monitor";
 import { SessionProvider, useSession } from "@/lib/session";
+import { UpdateLoader } from "@/lib/updates";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -81,6 +82,7 @@ function Navigator() {
           <Stack.Screen name="(customer)" />
           <Stack.Screen name="file" options={{ presentation: "modal" }} />
         </Stack>
+        <UpdateLoader />
       </View>
     </ThemeProvider>
   );
