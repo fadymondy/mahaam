@@ -254,6 +254,54 @@ export class MahaamClient {
     return token;
   }
 
+  /**
+   * Mints this device's personal access token from the browser's own Mahaam session — the
+   * HttpOnly session cookie the web app set — instead of from a password.
+   *
+   * This is the only way in for anyone who signs in with Google or GitHub: the auth plugin gives
+   * such an account the password hash "!sso", so POST /api/auth/login can never succeed for it.
+   * It needs `csrf: "browser"` and a caller whose fetches carry that cookie cross-origin: an
+   * extension page with host permission for the API does, an ordinary web page does not.
+   *
+   * Cookie-authenticated POSTs are CSRF-checked, so this echoes a fresh togo_csrf. Throws an
+   * ApiError that isBrowserSessionMissing recognises when the browser is not signed in.
+   */
+  async tokenFromBrowserSession(name: string): Promise<{ token: string; email: string }> {
+    if (this.csrf !== "browser") throw new ApiError(0, "a browser session needs csrf: \"browser\"");
+    const withCookie = async (method: string, path: string, headers: Record<string, string> = {}, body?: unknown) => {
+      const res = await this.f(this.baseUrl + path, {
+        method,
+        credentials: "include",
+        headers: { Accept: "application/json", ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...headers },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (res.status === 401) throw new ApiError(401, "not signed in to Mahaam in this browser", { code: "browser_session_missing" });
+      if (!res.ok) throw new ApiError(res.status, typeof data.error === "string" ? data.error : `HTTP ${res.status}`, data);
+      return data;
+    };
+    const me = (await withCookie("GET", "/api/auth/me")) as { email?: string };
+    let stale: string[] = [];
+    try {
+      const list = (await withCookie("GET", "/api/auth/tokens")) as unknown as AccessToken[] | null;
+      stale = (list ?? []).filter((t) => t.name === name).map((t) => t.id);
+    } catch {
+      // Same as replaceAccessToken: a stale row is untidy, never a reason to fail the sign-in.
+    }
+    const csrf = await this.csrfHeaders();
+    const out = (await withCookie("POST", "/api/auth/tokens", csrf.headers, { name })) as { token?: string };
+    if (!out.token) throw new ApiError(500, "the server did not return a token");
+    this.setToken(out.token);
+    for (const id of stale) {
+      try {
+        await this.revokeAccessToken(id);
+      } catch {
+        /* see above */
+      }
+    }
+    return { token: out.token, email: me.email ?? "" };
+  }
+
   /** One shared re-login at a time, from the stored credentials. */
   private tryRelogin(): Promise<boolean> {
     if (!this.opts.credentials) return Promise.resolve(false);
@@ -665,4 +713,10 @@ export function dataUrlToBlob(dataUrl: string): Blob {
 export function isMfaRequired(err: unknown): boolean {
   const b = err instanceof ApiError ? (err.body as { code?: unknown } | undefined) : undefined;
   return err instanceof ApiError && err.status === 401 && b?.code === "mfa_required";
+}
+
+/** tokenFromBrowserSession found no Mahaam session in this browser: sign in on the web first. */
+export function isBrowserSessionMissing(err: unknown): boolean {
+  const b = err instanceof ApiError ? (err.body as { code?: unknown } | undefined) : undefined;
+  return err instanceof ApiError && err.status === 401 && b?.code === "browser_session_missing";
 }

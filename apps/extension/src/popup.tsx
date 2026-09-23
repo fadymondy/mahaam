@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { liveStream, normalizeApiUrl, type MahaamClient, type TimeEntry, type Workspace } from "@mahaam/client";
+import { isBrowserSessionMissing, liveStream, normalizeApiUrl, type MahaamClient, type TimeEntry, type Workspace } from "@mahaam/client";
 import { Panel, type PanelApi, type PanelHost, type Session } from "@mahaam/client/ui";
 import "@mahaam/client/grid.css";
 import "@mahaam/client/tokens.css";
@@ -24,17 +24,39 @@ async function boot() {
   const session = (): Session | null =>
     state.token && state.email ? { apiUrl: state.apiUrl, email: state.email, workspace: state.workspace } : null;
 
+  /** Ask for the host permission first, while still inside the click's user gesture. */
+  const permit = async (apiUrl: string): Promise<string> => {
+    const url = normalizeApiUrl(apiUrl || defaultApiUrl());
+    if (!import.meta.env.DEV && !(await requestOrigin(url))) throw new Error(`Mahaam needs permission to reach ${new URL(url).host}.`);
+    return url;
+  };
+
+  /** A client for `url` that is about to be signed in; keeps the chosen workspace only for the same account. */
+  const candidate = (url: string, email: string | null) => {
+    const next = { ...state, apiUrl: url, email, token: null as string | null, workspace: state.email === email && state.apiUrl === url ? state.workspace : null };
+    return { next, c: makeClient(next, () => void saveState({ token: null })) };
+  };
+
+  /** Adopt a signed-in client: drop a workspace the account has left, persist, tell the worker. */
+  const commit = async (next: typeof state, c: MahaamClient): Promise<Session> => {
+    next.token = c.token;
+    if (next.workspace && !(await c.workspaces()).some((w) => w.id === next.workspace!.id)) next.workspace = null;
+    c.setWorkspace(next.workspace?.id ?? null);
+    state = next;
+    client = c;
+    await saveState(state);
+    notify({ type: "refresh" });
+    return session()!;
+  };
+
   const host: PanelHost = {
     platform: "extension",
     defaultApiUrl: state.apiUrl || defaultApiUrl(),
     canRemember: false, // token only; no password is kept by the extension
     session: async () => session(),
     async signIn(apiUrl, email, password, _remember, code) {
-      const url = normalizeApiUrl(apiUrl || defaultApiUrl());
-      // Ask for the host permission first, while still inside the click's user gesture.
-      if (!import.meta.env.DEV && !(await requestOrigin(url))) throw new Error(`Mahaam needs permission to reach ${new URL(url).host}.`);
-      const next = { ...state, apiUrl: url, email, token: null as string | null, workspace: state.email === email && state.apiUrl === url ? state.workspace : null };
-      const c = makeClient(next, () => void saveState({ token: null }));
+      const url = await permit(apiUrl);
+      const { next, c } = candidate(url, email);
       // With two-factor sign-in the first call throws isMfaRequired and the panel asks for the
       // code; the second call brings it (MH-341).
       await c.login(email, password, code ? { code } : undefined);
@@ -48,14 +70,26 @@ async function boot() {
       } catch {
         /* keep the JWT */
       }
-      next.token = c.token;
-      if (next.workspace && !(await c.workspaces()).some((w) => w.id === next.workspace!.id)) next.workspace = null;
-      c.setWorkspace(next.workspace?.id ?? null);
-      state = next;
-      client = c;
-      await saveState(state);
-      notify({ type: "refresh" });
-      return session()!;
+      return commit(next, c);
+    },
+    // Google and GitHub accounts have no password (the auth plugin stores "!sso"), so the form
+    // above can never sign them in. The browser they use Mahaam in already holds their session;
+    // with host permission the popup's requests carry that cookie, and the server mints this
+    // browser's PAT from it. The cookie itself is never read or stored here.
+    async signInWithBrowser(apiUrl) {
+      const url = await permit(apiUrl);
+      const { next, c } = candidate(url, null);
+      try {
+        next.email = (await c.tokenFromBrowserSession(deviceName())).email || null;
+      } catch (err) {
+        if (isBrowserSessionMissing(err)) void chrome.tabs.create({ url: `${url}/` });
+        throw err;
+      }
+      // Keep the workspace only when it is the same account signing in again.
+      next.workspace = next.email && next.email === state.email && url === state.apiUrl ? state.workspace : null;
+      // An older server's /api/auth/me may carry no email; the panel only shows it.
+      next.email ??= new URL(url).host;
+      return commit(next, c);
     },
     async signOut() {
       // Revoke it rather than just forget it. A token this browser drops but the server still

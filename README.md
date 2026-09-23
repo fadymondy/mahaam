@@ -774,8 +774,13 @@ JWT lasts 24h.
 - **Tray:** "Keep me signed in" stores the password in the OS keychain (Electron `safeStorage`).
   The client then logs in again silently when the token is about to expire or gets a 401. On Linux
   with no keyring nothing secret is stored.
-- **Extension:** only the token is stored, in `chrome.storage.local`. A 401 sends you back to
-  sign-in.
+- **Extension:** sign-in mints a personal access token named for the browser and keeps only that,
+  in `chrome.storage.session` (memory, gone when the browser closes). A 401 sends you back to
+  sign-in. Google/GitHub accounts have no password (the auth plugin stores `!sso`), so the popup
+  also offers "Continue with Mahaam in this browser": with host permission its requests carry the
+  web app's session cookie, and `tokenFromBrowserSession` mints the PAT from it
+  (`GET /api/auth/me`, then CSRF-checked `POST /api/auth/tokens`). No session → it opens the
+  sign-in page.
 
 **Realtime.** Realtime uses `/api/w/events` read through fetch streaming, because EventSource
 can't send the Bearer header.

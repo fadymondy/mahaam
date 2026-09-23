@@ -23,6 +23,12 @@ to one server — your own Mahaam — and only about things you explicitly do.
 a revocable access token scoped to this browser, and the password is discarded. You can revoke
 that token from your Mahaam account at any time, which is the point of doing it this way.
 
+If you choose **Continue with Mahaam in this browser** instead (the way in for Google or GitHub
+accounts, which have no password), the extension asks your Mahaam server for the same kind of
+token, and the server recognises you from the sign-in you already have on that site in this
+browser. The extension never reads, copies or stores that site's cookies; it cannot, because it
+does not have the `cookies` permission.
+
 ## What is sent, and when
 
 Only to the Mahaam server you signed in to. Nothing is sent anywhere else, and there are no

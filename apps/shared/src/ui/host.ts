@@ -46,6 +46,12 @@ export interface PanelHost {
   session(): Promise<Session | null>;
   /** `code` is the two-factor code, on the second attempt after isMfaRequired (MH-341). */
   signIn(apiUrl: string, email: string, password: string, remember: boolean, code?: string): Promise<Session>;
+  /**
+   * Extension only: sign in with the Mahaam session this browser already has, no password. The
+   * only way in for a Google/GitHub account, which has no password to type. Rejects with an error
+   * isBrowserSessionMissing recognises (after opening the sign-in page) when there is none.
+   */
+  signInWithBrowser?(apiUrl: string): Promise<Session>;
   signOut(): Promise<void>;
   selectWorkspace(ws: Workspace): Promise<void>;
   api: PanelApi;

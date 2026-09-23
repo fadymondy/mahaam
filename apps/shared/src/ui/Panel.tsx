@@ -11,7 +11,7 @@ import { Textarea } from "./components/textarea"
 import { clock, duration, elapsedSeconds, entryLabel } from "../format";
 import type { Inbox, NextItem, TimeEntry, Workspace, Issue } from "../types";
 import type { LiveStatus, PanelHost, Session } from "./host";
-import { ApiError, isMfaRequired } from "../client";
+import { ApiError, isBrowserSessionMissing, isMfaRequired } from "../client";
 import { STRINGS, type Locale, type Strings } from "./i18n";
 import { Mark } from "./Mark";
 
@@ -198,6 +198,19 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
     }
   };
 
+  const viaBrowser = async () => {
+    if (!host.signInWithBrowser) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onSignedIn(await host.signInWithBrowser(apiUrl));
+    } catch (err) {
+      setError(isBrowserSessionMissing(err) ? t.browserSessionMissing : errText(err, t));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <form className="mgy-signin" onSubmit={submit}>
       <div className="mgy-signin-head">
@@ -249,6 +262,15 @@ function SignIn({ host, t, notice, onSignedIn }: { host: PanelHost; t: Strings; 
       <Button type="submit" className="w-full" disabled={busy}>
         {busy ? t.signingIn : t.signIn}
       </Button>
+      {host.signInWithBrowser && !needCode && (
+        <>
+          <p className="mgy-muted mgy-small mgy-center-text">{t.or}</p>
+          <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={viaBrowser}>
+            {t.useBrowserSession}
+          </Button>
+          <p className="mgy-muted mgy-small">{t.browserSessionHint}</p>
+        </>
+      )}
     </form>
   );
 }

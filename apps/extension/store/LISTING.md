@@ -102,8 +102,13 @@ Three things worth stating plainly in the review notes, because they are unusual
 Sign-in is required to see anything beyond the sign-in form. A test account is available on
 request — please ask and we will send credentials rather than post them here.
 
-The extension talks to one origin: the Mahaam server the user names at sign-in (mahaam.app by
-default). Host permission for that origin is requested at that moment, not at install.
+The extension talks to one origin: the Mahaam server the user names at sign-in. The default,
+console.mahaam.app, is the only host granted at install; any other origin is requested at sign-in.
+
+"Continue with Mahaam in this browser" signs in accounts that use Google or GitHub (they have no
+password): the popup asks the Mahaam server for a revocable token, and the request carries the
+session the user already has on that site. The extension has no cookies permission and never reads
+a cookie itself.
 
 There are no content scripts. "File an issue for this page" uses the contextMenus event, which
 carries the page URL and the user's text selection, plus chrome.tabs.captureVisibleTab under the
