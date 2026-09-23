@@ -78,7 +78,7 @@ export default function Timesheet() {
               {/* A 7-bar week chart; each bar is labelled for screen readers. */}
               {/* Weekday over date: a seventh of a phone is too narrow for both on one line at a
                   readable size. */}
-              <View style={{ flexDirection: "row", alignItems: "flex-end", height: 140, gap: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-end", height: 150, gap: 4 }}>
                 {days.map((day, i) => (
                   <View key={day} style={{ flex: 1, alignItems: "center", gap: 6 }} accessible accessibilityLabel={`${f.day(day)}: ${formatDuration(totals[i] ?? 0)}`}>
                     <View
