@@ -52,9 +52,6 @@ export function GeneralSettings() {
             />
           </Row>
         ) : null}
-        <Row label={t("settings.notify")} hint={t("settings.notifyHint")} htmlFor="pref-notify">
-          <Switch id="pref-notify" data-pref="notify" checked={prefs.notify} onCheckedChange={(notify) => void setPrefs({ notify })} />
-        </Row>
         <Row label={t("settings.idle")} hint={t("settings.idleHint")} htmlFor="pref-idle">
           <Switch id="pref-idle" data-pref="idle" checked={prefs.idle} onCheckedChange={(idle) => void setPrefs({ idle })} />
         </Row>

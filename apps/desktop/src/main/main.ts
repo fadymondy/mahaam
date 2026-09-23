@@ -226,7 +226,7 @@ async function refreshBadge(): Promise<void> {
   if (!api) return;
   try {
     const inbox = await api.notifications(1);
-    app.setBadgeCount(inbox.unread ?? 0);
+    app.setBadgeCount(prefs.badge ? (inbox.unread ?? 0) : 0);
     send("unread", inbox.unread ?? 0);
   } catch {}
 }
@@ -237,7 +237,6 @@ function onLive(e: LiveEvent): void {
   else if (e.type === "timer.stopped") {
     if (getRunning()?.id === e.entry.id) onRunning(null);
     void refreshRecent();
-    nativeLanguageChanged(prefs.locale);
   } else if (e.type === "entry.changed") {
     // A renamed, re-targeted, trimmed or deleted entry. If it is the running one, the menu bar,
     // the sidebar and every view must follow: still running → the new copy; ended or gone → idle.
@@ -262,7 +261,7 @@ function notifyFromLive(data: unknown): void {
   const body = typeof n?.body === "string" ? n.body : "";
   const url = typeof n?.url === "string" ? n.url : "";
   const key = /\b([A-Z][A-Z0-9]{0,9}-\d+)\b/.exec(url)?.[1];
-  const note = new Notification({ title, body });
+  const note = new Notification({ title, body, silent: !prefs.sound });
   note.on("click", () => command({ type: "navigate", to: key ? { name: "issue", key } : { name: "inbox" } }));
   note.show();
 }
@@ -397,9 +396,15 @@ function setPrefs(patch: Partial<Prefs>): Prefs {
     refreshTray();
     buildDockMenu();
     void refreshRecent();
+    // The menus and the traffic lights take a new direction only on a relaunch (app-language.ts).
+    nativeLanguageChanged(prefs.locale);
   }
   if (patch.theme || patch.locale) buildMenu();
   if (patch.idle !== undefined && patch.idle !== before.idle) applySession();
+  if (patch.badge !== undefined && patch.badge !== before.badge) {
+    if (patch.badge) void refreshBadge();
+    else app.setBadgeCount(0);
+  }
   send("prefs", prefs);
   return prefs;
 }
@@ -416,6 +421,9 @@ function applyTheme(): void {
   retintSurfaces();
   for (const w of [win, surfaceWindow("settings")]) if (w) lightEdge(w);
 }
+
+/** The bundle id (package.json build.appId): System Settings opens this app's notification pane by it. */
+const APP_ID = "com.fadymondy.mahaam.desktop";
 
 // ── IPC: a fixed surface, only from our own renderer ─────────────────────────
 
@@ -466,10 +474,25 @@ function registerIpc(): void {
     if (LOCALES.some((l) => l.code === patch?.locale)) clean.locale = patch.locale;
     if (typeof patch?.notify === "boolean") clean.notify = patch.notify;
     if (typeof patch?.idle === "boolean") clean.idle = patch.idle;
+    if (typeof patch?.sound === "boolean") clean.sound = patch.sound;
+    if (typeof patch?.badge === "boolean") clean.badge = patch.badge;
     if (patch?.sidebar === "open" || patch?.sidebar === "collapsed") clean.sidebar = patch.sidebar;
     return setPrefs(clean);
   });
   handle("app:openExternal", (url: string) => openExternal(String(url)));
+  // The system's own notification settings for this app (allowed, banners/alerts, Focus).
+  handle("app:openNotificationSettings", () => {
+    if (IS_MAC) void shell.openExternal(`x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=${APP_ID}`);
+    else if (IS_WIN) void shell.openExternal("ms-settings:notifications");
+  });
+  // "Send a test notification": what one looks and sounds like, and whether the system lets it through.
+  handle("app:testNotification", (title: unknown, body: unknown) => {
+    if (!Notification.isSupported()) return false;
+    const note = new Notification({ title: String(title ?? "").slice(0, 120), body: String(body ?? "").slice(0, 300), silent: !prefs.sound });
+    note.on("click", () => command({ type: "navigate", to: { name: "inbox" } }));
+    note.show();
+    return true;
+  });
   handle("app:openWeb", (path?: string) => openExternal(webUrl(typeof path === "string" ? path : "")));
   handle("app:autoLaunch:get", () => app.getLoginItemSettings().openAtLogin);
   handle("app:autoLaunch:set", (on: boolean) => app.setLoginItemSettings({ openAtLogin: !!on }));

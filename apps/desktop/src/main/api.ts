@@ -12,6 +12,8 @@ import type {
   Label,
   LogInput,
   Member,
+  NotificationSettings,
+  NotificationSettingsInput,
   Project,
   ProjectDetail,
   StartInput,
@@ -90,6 +92,8 @@ export function makeApi(c: MahaamClient, hooks: { timerChanged: (running: TimeEn
     notifications: (limit = 50) => get<Inbox>("/api/w/notifications", { limit }),
     readNotification: (id: string) => send<unknown>("POST", `/api/w/notifications/${e(id)}/read`),
     readAllNotifications: () => send<{ read: number }>("POST", "/api/w/notifications/read-all"),
+    notificationSettings: () => get<NotificationSettings>("/api/w/notification-settings"),
+    updateNotificationSettings: (patch: NotificationSettingsInput) => send<NotificationSettings>("PATCH", "/api/w/notification-settings", patch),
 
     // Per-feature additions, one file each so features never edit the same lines.
     ...issuesApi(c),

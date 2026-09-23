@@ -18,13 +18,17 @@ export interface Prefs {
   locale: "en" | "ar";
   /** OS notifications for inbox events. */
   notify: boolean;
+  /** Notifications play the system sound. */
+  sound: boolean;
+  /** The unread count on the Dock / app icon. */
+  badge: boolean;
   /** Ask to trim time spent away from the computer. */
   idle: boolean;
   /** Sidebar collapsed. */
   sidebar: "open" | "collapsed";
 }
 
-export const DEFAULT_PREFS: Prefs = { theme: "system", locale: "en", notify: true, idle: true, sidebar: "open" };
+export const DEFAULT_PREFS: Prefs = { theme: "system", locale: "en", notify: true, sound: true, badge: true, idle: true, sidebar: "open" };
 
 const file = (name: string) => join(app.getPath("userData"), name);
 

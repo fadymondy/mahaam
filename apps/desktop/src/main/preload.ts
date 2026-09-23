@@ -6,6 +6,8 @@ const INVOKE = new Set([
   "app:config",
   "app:prefs",
   "app:openExternal",
+  "app:openNotificationSettings",
+  "app:testNotification",
   "app:openWeb",
   "app:autoLaunch:get",
   "app:autoLaunch:set",

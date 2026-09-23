@@ -47,7 +47,7 @@ export function Row({
   children?: ReactNode;
   htmlFor?: string;
   className?: string;
-  "data-row"?: string;
+  [data: `data-${string}`]: string | boolean | undefined;
 }) {
   const Label = htmlFor ? "label" : "div";
   return (

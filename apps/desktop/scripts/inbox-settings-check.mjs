@@ -176,13 +176,34 @@ await shot("settings-4-general-ar-light", "settings");
 await pickLanguage("en");
 await page.waitForTimeout(400);
 
-const notifyBefore = (await invoke("app:config")).value.prefs.notify;
-await sw.locator("[data-pref=notify]").click();
-await page.waitForTimeout(300);
-check((await invoke("app:config")).value.prefs.notify === !notifyBefore, "notifications switch flips the pref");
-await sw.locator("[data-pref=notify]").click();
-await page.waitForTimeout(300);
-check((await invoke("app:config")).value.prefs.notify === notifyBefore, "and back");
+// Notifications: this computer (prefs in main), then the server's per-workspace settings.
+await sw.locator("[data-settings-nav=notifications]").click();
+await sw.locator("[data-settings=notifications] [data-pref=notify]").waitFor();
+for (const pref of ["notify", "sound", "badge"]) {
+  const before = (await invoke("app:config")).value.prefs[pref];
+  await sw.locator(`[data-pref=${pref}]`).click();
+  await page.waitForTimeout(300);
+  check((await invoke("app:config")).value.prefs[pref] === !before, `${pref} switch flips the pref`);
+  await sw.locator(`[data-pref=${pref}]`).click();
+  await page.waitForTimeout(300);
+  check((await invoke("app:config")).value.prefs[pref] === before, `${pref}: and back`);
+}
+const ns0 = await call("notificationSettings");
+const kind = (ns0.kinds ?? [])[0];
+check(!!kind && (await sw.locator(`[data-kind="${kind}"]`).count()) === 1, `notification types listed (${(ns0.kinds ?? []).length})`);
+if (kind) {
+  const wasMuted = (ns0.muted_kinds ?? []).includes(kind);
+  await sw.locator(`[data-kind="${kind}"] [role=switch]`).click();
+  await page.waitForTimeout(800);
+  check((await call("notificationSettings")).muted_kinds?.includes(kind) === !wasMuted, `${kind}: ${wasMuted ? "unmuted" : "muted"} on the server`);
+  await sw.locator(`[data-kind="${kind}"] [role=switch]`).click();
+  await page.waitForTimeout(800);
+  check(!!(await call("notificationSettings")).muted_kinds?.includes(kind) === wasMuted, `${kind}: and back`);
+}
+check((await sw.locator("[data-email-enabled], [data-email-not-configured]").count()) > 0, `email group shown (${ns0.email.configured ? "configured" : "not configured: " + ns0.email.driver})`);
+await sw.locator("[data-settings-scroller]").evaluate((el) => el.scrollTo({ top: 0 })).catch(() => {});
+await shot("settings-2b-notifications-en-dark", "settings");
+await sw.locator("[data-settings-nav=general]").click();
 
 // Account: edit the name, see it on the server.
 await sw.locator("[data-settings-nav=account]").click();

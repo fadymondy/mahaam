@@ -47,6 +47,8 @@ export const desktop = {
   setPrefs: (patch: Partial<Prefs>) => call<Prefs>("app:prefs", patch),
   openExternal: (url: string) => call<void>("app:openExternal", url),
   openWeb: (path?: string) => call<void>("app:openWeb", path),
+  openNotificationSettings: () => call<void>("app:openNotificationSettings"),
+  testNotification: (title: string, body: string) => call<boolean>("app:testNotification", title, body),
   autoLaunch: { get: () => call<boolean>("app:autoLaunch:get"), set: (on: boolean) => call<void>("app:autoLaunch:set", on) },
   pendingRoute: () => call<import("../../shared/types").Route | null>("app:pendingRoute"),
   session: () => call<SessionOut | null>("session:get"),

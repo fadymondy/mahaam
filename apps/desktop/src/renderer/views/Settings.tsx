@@ -1,12 +1,13 @@
 // Settings, a native preferences window like Zekra's and Health Debug's (and macOS's own): a title
 // row naming the section, a row of toolbar tabs (icon over label) and the section's grouped rows
 // below. The route's `section` picks it (⌘, and the menus open General); ⌘W or Esc closes it.
-import { InfoIcon, KeyboardIcon, LayersIcon, SlidersHorizontalIcon, UserRoundIcon, type LucideIcon } from "lucide-react";
+import { BellIcon, InfoIcon, KeyboardIcon, LayersIcon, SlidersHorizontalIcon, UserRoundIcon, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { AboutSettings } from "@/components/settings/About";
 import { AccountSettings } from "@/components/settings/Account";
 import { GeneralSettings } from "@/components/settings/General";
+import { NotificationSettingsSection } from "@/components/settings/Notifications";
 import { ShortcutSettings } from "@/components/settings/Shortcuts";
 import { WorkspaceSettings } from "@/components/settings/Workspaces";
 import { desktop } from "@/lib/bridge";
@@ -15,6 +16,7 @@ import { useRouter } from "@/lib/router";
 
 const SECTIONS = [
   { id: "general", icon: SlidersHorizontalIcon },
+  { id: "notifications", icon: BellIcon },
   { id: "account", icon: UserRoundIcon },
   { id: "workspaces", icon: LayersIcon },
   { id: "shortcuts", icon: KeyboardIcon },
@@ -106,11 +108,13 @@ export function SettingsView({ section }: { section?: string }) {
           })}
         </nav>
       </header>
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto bg-background">
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto bg-background" data-settings-scroller>
         {/* Keyed so a section's own state (forms, fetches) starts fresh. */}
         <div key={current} className="mx-auto w-full max-w-[640px] px-7 pt-5 pb-10">
           {current === "general" ? (
             <GeneralSettings />
+          ) : current === "notifications" ? (
+            <NotificationSettingsSection />
           ) : current === "account" ? (
             <AccountSettings />
           ) : current === "workspaces" ? (

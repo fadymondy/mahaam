@@ -25,6 +25,8 @@ export type Label = Clean<S["Label"]>;
 export type Activity = Clean<S["Activity"]>;
 export type Notification = Clean<S["Notification"]>;
 export type Inbox = Clean<S["Inbox"]>;
+export type NotificationSettings = Clean<S["NotificationSettings"]>;
+export type NotificationSettingsInput = Omit<Clean<S["NotificationSettingsInput"]>, "$schema">;
 export type Timesheet = Clean<S["Timesheet"]>;
 export type TimeSettings = Clean<S["TimeSettings"]>;
 
@@ -53,6 +55,10 @@ export interface Prefs {
   theme: "system" | "light" | "dark";
   locale: "en" | "ar";
   notify: boolean;
+  /** Notifications play the system sound. */
+  sound: boolean;
+  /** The unread count on the Dock / app icon. */
+  badge: boolean;
   idle: boolean;
   sidebar: "open" | "collapsed";
 }
