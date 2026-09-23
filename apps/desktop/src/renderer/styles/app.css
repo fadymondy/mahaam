@@ -62,13 +62,8 @@
 html[data-platform="darwin"][dir="ltr"]:not([data-fullscreen]) .sidebar-top {
   padding-left: 80px;
 }
-html[data-platform="darwin"]:not([data-fullscreen]):is([dir="rtl"], [dir="ltr"][data-sidebar="collapsed"]) .view-header {
-  padding-left: 84px;
-}
+/* View headers measure their own corner (ViewHeader in components/kit.tsx). */
 /* Windows/Linux draw the caption buttons at the physical top-right (≈138px). */
-html:is([data-platform="win32"], [data-platform="linux"]):is([dir="ltr"], [data-sidebar="collapsed"]) .view-header {
-  padding-right: 148px;
-}
 html:is([data-platform="win32"], [data-platform="linux"])[dir="rtl"] .sidebar-top {
   padding-right: 148px;
 }

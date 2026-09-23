@@ -1,7 +1,7 @@
 // Desktop building blocks on top of the grid tokens and the shadcn primitives in ./ui: the status
 // and priority glyphs (Linear-style, drawn not imported), avatars, the view header that doubles as
 // the window's title bar, keyboard hints and empty/error states.
-import { useContext, type CSSProperties, type ReactNode } from "react";
+import { useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import type { Priority, Status } from "../../shared/types";
 import { PanelLeftOpenIcon } from "lucide-react";
@@ -156,15 +156,26 @@ export function Kbd({ combo, className }: { combo: string; className?: string })
   );
 }
 
+/** Space for the window's own controls: macOS traffic lights (top-left), Windows/Linux caption buttons (top-right). */
+const MAC_LIGHTS = 84;
+const CAPTION_BUTTONS = 148;
+
 /**
- * A view's top row, 44px, which is also where the window is dragged from. On macOS in LTR with the
- * sidebar collapsed, and in RTL (sidebar on the right), it keeps clear of the traffic lights.
+ * A view's top row, 44px, which is also where the window is dragged from. It measures where it sits
+ * and keeps clear of the window's controls when it shares their corner — whatever the window (main,
+ * settings), the direction or the sidebar state — rather than each layout guessing.
  */
 export function ViewHeader({ title, icon, children, actions, className }: { title?: ReactNode; icon?: ReactNode; children?: ReactNode; actions?: ReactNode; className?: string }) {
   const shell = useContext(ShellContext);
   const { t } = useI18n();
+  const pad = useWindowControlsPadding();
   return (
-    <header data-view-header className={cn("drag flex h-11 shrink-0 items-center gap-2 border-b border-line px-4", "view-header", className)}>
+    <header
+      ref={pad.ref}
+      data-view-header
+      style={{ paddingLeft: pad.left, paddingRight: pad.right }}
+      className={cn("drag flex h-11 shrink-0 items-center gap-2 border-b border-line px-4", className)}
+    >
       {shell && !shell.sidebarOpen ? (
         <button
           type="button"
@@ -182,6 +193,40 @@ export function ViewHeader({ title, icon, children, actions, className }: { titl
       {actions ? <div className="flex items-center gap-1">{actions}</div> : null}
     </header>
   );
+}
+
+/** Measures a title-bar row against the window's corners (re-measured on resize, direction, sidebar, full screen). */
+export function useWindowControlsPadding() {
+  const ref = useRef<HTMLElement>(null);
+  const [pad, setPad] = useState<{ left?: number; right?: number }>({});
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      // Read now, not once: the app sets the platform on <html> after the first layout.
+      const platform = document.documentElement.dataset.platform;
+      if (!platform) return;
+      const r = el.getBoundingClientRect();
+      const full = document.documentElement.hasAttribute("data-fullscreen");
+      const left = platform === "darwin" && !full && r.left < 8 ? MAC_LIGHTS : undefined;
+      const right = platform !== "darwin" && r.right > window.innerWidth - 8 ? CAPTION_BUTTONS : undefined;
+      setPad((p) => (p.left === left && p.right === right ? p : { left, right }));
+    };
+    measure();
+    const frame = requestAnimationFrame(measure);
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    const mo = new MutationObserver(measure);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["dir", "data-sidebar", "data-fullscreen", "data-platform"] });
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+      mo.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+  return { ref, ...pad };
 }
 
 export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; title: string; body?: string; action?: ReactNode }) {
