@@ -103,6 +103,17 @@ const shot = async (name) => {
   execFileSync("screencapture", ["-x", "-o", "-l", id, path]);
   shots.push(path);
 };
+// Native menus and alerts are not HTML: under MAHAAM_E2E the main process records each one and
+// answers it from a queue (see src/main/native.ts).
+const native = {
+  pick: (...ids) => app.evaluate((_e, p) => globalThis.mahaamNative.picks.push(...p), ids),
+  answer: (...a) => app.evaluate((_e, x) => globalThis.mahaamNative.answers.push(...x), a),
+  menuCount: () => app.evaluate(() => globalThis.mahaamNative.menus.length),
+  lastMenu: () => app.evaluate(() => globalThis.mahaamNative.menus.at(-1)),
+  confirmCount: () => app.evaluate(() => globalThis.mahaamNative.confirms.length),
+  lastConfirm: () => app.evaluate(() => globalThis.mahaamNative.confirms.at(-1)),
+};
+const ids = (items) => items.flatMap((x) => [x.id, ...ids(x.submenu ?? [])]).filter(Boolean);
 const send = (c) => app.evaluate(({ BrowserWindow }, cmd) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).webContents.send("command", cmd), c);
 
 try {
@@ -163,29 +174,34 @@ try {
   const targetStatuses = (await server.get(`/api/w/projects/${target.project_id}/board`)).statuses.sort((a, b) => a.position - b.position);
   const to = targetStatuses.find((s) => s.id !== target.status_id && s.category === "doing") ?? targetStatuses.find((s) => s.id !== target.status_id);
   restore.push(() => server.post(`/api/w/tasks/${first}/move`, { status: target.status_id }));
+  let menus = await native.menuCount();
+  await native.pick(to.id);
   await page.keyboard.press("s");
-  await page.locator("[role=menu]").waitFor({ timeout: 5000 });
-  await shot("2-status-menu");
-  await page.keyboard.type(to.name);
-  await page.keyboard.press("Enter");
+  await until("the native status menu", async () => (await native.menuCount()) > menus, 5000);
+  const statusMenu = await native.lastMenu();
+  if (!statusMenu.some((x) => x.type === "radio" && x.checked && x.id === target.status_id)) fail("the status menu does not check the current status");
   await until("the row to show the new status", async () => (await page.locator(`[data-issue-row="${first}"] [data-row-status]`).getAttribute("data-row-status")) === to.name, 3000);
   await until("the server to have the new status", async () => (await server.get(`/api/w/tasks/${first}`)).status_id === to.id);
   log("status via S:", first, target.status.name, "→", to.name, "(server agrees)");
 
-  // Context menu on a row.
+  // Right-click a row: the native context menu, and its Status submenu puts the status back.
+  menus = await native.menuCount();
+  await native.pick(`status:${target.status_id}`);
   await page.locator(`[data-issue-row="${first}"]`).click({ button: "right" });
-  await page.locator(`[data-issue-menu="${first}"]`).waitFor({ timeout: 5000 });
-  await shot("3-context-menu");
-  await page.keyboard.press("Escape");
-  await until("the context menu to close", async () => !(await page.locator("[data-issue-menu]").count()));
+  await until("the native context menu", async () => (await native.menuCount()) > menus, 5000);
+  const ctx = ids(await native.lastMenu());
+  for (const want of ["window", "share", "copy", "delete", `status:${target.status_id}`]) if (!ctx.includes(want)) fail(`the context menu has no "${want}" (has ${ctx.join(", ")})`);
+  await until("the server to have the status back", async () => (await server.get(`/api/w/tasks/${first}`)).status_id === target.status_id);
+  log("context menu:", ctx.length, "items; Status → back to", target.status.name, "(server agrees)");
 
   // Grouping by project (Display menu), then back.
+  await native.pick("project");
   await page.locator("[data-action=display]").click();
-  await page.locator("[data-grouping=project]").click();
   await until("project groups", async () => (await page.locator('[data-group^="p:"]').count()) > 0);
   await shot("4-my-issues-by-project");
+  await native.pick("status");
   await page.locator("[data-action=display]").click();
-  await page.locator("[data-grouping=status]").click();
+  await until("status groups", async () => (await page.locator('[data-group^="s:"]').count()) > 0);
 
   // ── A project: list, then board ──
   await send({ type: "navigate", to: { name: "project", id: project.id, view: "list" } });
@@ -239,14 +255,16 @@ try {
     log("reorder:", last.key, "moved to the top of", backlog.name, "(server agrees)");
   }
 
-  // "+" on a column opens quick create in that status.
+  // "+" on a column opens the create panel (the quick palette) in that project and status.
   const doing = statuses.find((s) => s.category === "doing") ?? todo;
   await page.locator(`[data-column-add="${doing.name}"]`).click();
-  await page.locator("[data-create-issue]").waitFor({ timeout: 5000 });
-  await until("the status preset", async () => (await page.locator("[data-create-issue]").innerText()).includes(doing.name), 5000);
+  let qp;
+  await until("the palette window", async () => (qp = app.windows().find((w) => w.url().includes("surface=palette"))), 5000);
+  await qp.locator("[data-qp-create] [data-qp-title]").waitFor({ timeout: 5000 });
+  await until("the status preset", async () => (await qp.locator("[data-qp-create]").innerText()).includes(doing.name), 5000);
   const tempTitle = `E2E temp ${Date.now() % 100000}`;
-  await page.locator("[data-create-title]").fill(tempTitle);
-  await page.keyboard.press("Meta+Enter");
+  await qp.locator("[data-qp-title]").fill(tempTitle);
+  await qp.keyboard.press("Meta+Enter");
   const temp = await until("the new issue on the server", async () =>
     (await server.get(`/api/w/tasks?project=${project.id}&q=${encodeURIComponent(tempTitle)}`)).tasks?.find((x) => x.title === tempTitle),
   );
@@ -266,10 +284,13 @@ try {
   const tb = await page.locator(`[data-card="${temp.key}"]`).boundingBox();
   await page.mouse.move(tb.x + 20, tb.y + 20);
   await page.mouse.move(tb.x + 30, tb.y + 24);
+  await qp.evaluate(() => window.mahaam.invoke("surface:hide")).catch(() => {});
+  await page.bringToFront();
+  const confirms = await native.confirmCount();
+  await native.answer(true);
   await page.keyboard.press("Meta+Backspace");
-  await page.locator("[data-confirm-delete]").waitFor({ timeout: 5000 });
-  await shot("7c-delete-confirm");
-  await page.locator("[data-confirm]").click();
+  await until("the native delete alert", async () => (await native.confirmCount()) > confirms, 5000);
+  log("delete alert:", JSON.stringify((await native.lastConfirm()).message));
   await until("the server to have deleted it", async () => !(await server.get(`/api/w/tasks?project=${project.id}&q=${encodeURIComponent(tempTitle)}`)).tasks?.length);
   await until("the card gone", async () => (await page.locator(`[data-card="${temp.key}"]`).count()) === 0);
   log("deleted via ⌘⌫:", temp.key);

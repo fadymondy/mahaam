@@ -196,20 +196,22 @@ export function ViewHeader({ title, icon, children, actions, className }: { titl
 }
 
 /** Measures a title-bar row against the window's corners (re-measured on resize, direction, sidebar, full screen). */
-export function useWindowControlsPadding() {
-  const ref = useRef<HTMLElement>(null);
+export function useWindowControlsPadding<T extends HTMLElement = HTMLElement>() {
+  const ref = useRef<T>(null);
   const [pad, setPad] = useState<{ left?: number; right?: number }>({});
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const measure = () => {
       // Read now, not once: the app sets the platform on <html> after the first layout.
-      const platform = document.documentElement.dataset.platform;
-      if (!platform) return;
+      const lights = document.documentElement.dataset.lights;
+      if (!lights) return;
       const r = el.getBoundingClientRect();
       const full = document.documentElement.hasAttribute("data-fullscreen");
-      const left = platform === "darwin" && !full && r.left < 8 ? MAC_LIGHTS : undefined;
-      const right = platform !== "darwin" && r.right > window.innerWidth - 8 ? CAPTION_BUTTONS : undefined;
+      const atLeft = r.left < 8;
+      const atRight = r.right > window.innerWidth - 8;
+      const left = lights === "left" && !full && atLeft ? MAC_LIGHTS : undefined;
+      const right = lights === "right" && !full && atRight ? MAC_LIGHTS : lights === "caption" && atRight ? CAPTION_BUTTONS : undefined;
       setPad((p) => (p.left === left && p.right === right ? p : { left, right }));
     };
     measure();
@@ -217,7 +219,7 @@ export function useWindowControlsPadding() {
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     const mo = new MutationObserver(measure);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["dir", "data-sidebar", "data-fullscreen", "data-platform"] });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["dir", "data-sidebar", "data-fullscreen", "data-platform", "data-lights"] });
     window.addEventListener("resize", measure);
     return () => {
       cancelAnimationFrame(frame);

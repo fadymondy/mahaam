@@ -1,14 +1,14 @@
 // Property pickers, the same everywhere (quick create, the issue view, a row's context menu): a
-// compact trigger showing the current value, a menu with a filter field, keyboard-navigable.
-// ↓ from the filter field moves into the list, ↵ picks the first match.
-import { CheckIcon, TagIcon, UserIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
+// compact trigger showing the current value, and a NATIVE menu — the operating system's own, with
+// its type-to-select, keyboard navigation and checkmarks (main/native.ts). Multi-select pickers
+// (assignees, labels) reopen after each toggle, so several can be picked in a row.
+import { TagIcon, UserIcon } from "lucide-react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import type { Label, Member, Project, Status } from "../../shared/types";
 import { Avatar, ColorDot, PRIORITIES, PriorityIcon, ProjectMark, StatusIcon } from "@/components/kit";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { nativeMenu } from "@/lib/native";
 
 type Option<V> = { value: V; label: string; icon?: ReactNode; hint?: string };
 
@@ -25,7 +25,7 @@ export interface PickerChrome {
 const PILL =
   "inline-flex h-7 max-w-56 items-center gap-1.5 rounded-md border border-line bg-background px-2 text-[13px] text-grid-body hover:bg-grid-soft hover:text-grid-fg [&_svg]:shrink-0";
 
-/** A pill trigger + menu. `multiple` keeps the menu open and toggles. */
+/** A trigger that opens a native menu of `options`. `multiple` keeps it coming back after each pick. */
 export function PropertyMenu<V extends string>({
   options,
   value,
@@ -33,14 +33,11 @@ export function PropertyMenu<V extends string>({
   multiple,
   trigger,
   placeholder,
-  searchable,
   label,
   open,
   onOpenChange,
-  align = "start",
   triggerClassName,
   disabled,
-  footer,
 }: {
   options: Option<V>[];
   value: V | V[] | null;
@@ -48,6 +45,7 @@ export function PropertyMenu<V extends string>({
   multiple?: boolean;
   trigger: ReactNode;
   placeholder?: string;
+  /** Kept for callers; native menus type-select instead of a filter field. */
   searchable?: boolean;
   label: string;
   open?: boolean;
@@ -57,72 +55,59 @@ export function PropertyMenu<V extends string>({
   disabled?: boolean;
   footer?: ReactNode;
 }) {
-  const [q, setQ] = useState("");
-  const selected = (v: V) => (Array.isArray(value) ? value.includes(v) : value === v);
-  const shown = q ? options.filter((o) => o.label.toLowerCase().includes(q.toLowerCase())) : options;
-  return (
-    <DropdownMenu
-      open={open}
-      onOpenChange={(o) => {
-        if (!o) setQ("");
-        onOpenChange?.(o);
-      }}
-    >
-      <DropdownMenuTrigger
-        disabled={disabled}
-        render={
-          <button
-            type="button"
-            aria-label={label}
-            title={label}
-            onClick={(e) => e.stopPropagation()}
-            className={triggerClassName ?? PILL}
-          />
+  const ref = useRef<HTMLButtonElement>(null);
+  const showing = useRef(false);
+  // Always the latest value, so a multi-select reopened after a toggle shows the new checks.
+  const current = useRef(value);
+  current.current = value;
+
+  async function show() {
+    if (showing.current || disabled || !ref.current) return;
+    showing.current = true;
+    onOpenChange?.(true);
+    try {
+      let picked: string | null;
+      do {
+        const sel = current.current;
+        const isOn = (v: V) => (Array.isArray(sel) ? sel.includes(v) : sel === v);
+        const items = options.length
+          ? options.map((o) => ({ id: o.value, label: o.label, sublabel: o.hint, type: (multiple ? "checkbox" : "radio") as "checkbox" | "radio", checked: isOn(o.value) }))
+          : [{ label: placeholder ?? label, enabled: false }];
+        picked = await nativeMenu(items, ref.current);
+        if (picked !== null) {
+          onChange(picked as V);
+          // Let the caller's state settle before the menu reopens with the new checks.
+          if (multiple) await new Promise((r) => setTimeout(r, 30));
         }
-      >
-        {trigger}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className="w-60" onClick={(e) => e.stopPropagation()}>
-        {searchable ? (
-          <div className="p-1 pb-1.5">
-            <input
-              autoFocus
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => {
-                const menu = e.currentTarget.closest("[data-slot=dropdown-menu-content]");
-                const first = menu?.querySelector<HTMLElement>("[role^=menuitem]");
-                if (e.key === "ArrowDown" && first) {
-                  e.preventDefault();
-                  first.focus();
-                  return;
-                }
-                if (e.key === "Enter" && first) {
-                  e.preventDefault();
-                  first.click();
-                  return;
-                }
-                if (e.key !== "Escape") e.stopPropagation();
-              }}
-              placeholder={placeholder}
-              className="h-7 w-full rounded-md border border-line bg-background px-2 text-[13.5px] outline-none placeholder:text-grid-muted"
-            />
-          </div>
-        ) : null}
-        <DropdownMenuGroup>
-          {shown.map((o) => (
-            <DropdownMenuItem key={o.value} closeOnClick={!multiple} onClick={() => onChange(o.value)} className="gap-2 text-[13.5px]" data-option={o.value}>
-              <span className="flex size-4 items-center justify-center">{o.icon}</span>
-              <span className="min-w-0 flex-1 truncate">{o.label}</span>
-              {o.hint ? <span className="text-[12px] text-grid-muted">{o.hint}</span> : null}
-              <CheckIcon className={cn("size-3.5", selected(o.value) ? "opacity-100" : "opacity-0")} />
-            </DropdownMenuItem>
-          ))}
-          {shown.length === 0 ? <p className="px-2 py-1.5 text-[13px] text-grid-muted">{placeholder}</p> : null}
-        </DropdownMenuGroup>
-        {footer}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      } while (multiple && picked !== null);
+    } finally {
+      showing.current = false;
+      onOpenChange?.(false);
+    }
+  }
+
+  // Opened from the keyboard (S / P / A / L on a row).
+  useEffect(() => {
+    if (open) void show();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      aria-haspopup="menu"
+      title={label}
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        void show();
+      }}
+      className={triggerClassName ?? PILL}
+    >
+      {trigger}
+    </button>
   );
 }
 

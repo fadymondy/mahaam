@@ -1,37 +1,16 @@
 // One right-click menu for a whole list or board (not one per row): the row under the pointer is
-// found by its data-task-id. Status, priority, assignees and labels as submenus, the timer, copy,
-// open in the browser, and delete behind a confirmation.
-import { CopyIcon, ExternalLinkIcon, PlayIcon, SquareIcon, Trash2Icon } from "lucide-react";
-import { useState, type ReactNode } from "react";
+// found by its data-task-id. It is the operating system's own menu (main/native.ts): status,
+// priority, assignees and labels as submenus, the timer, open in a new window, share, copy, open in
+// the browser, and delete behind a native confirmation.
+import { useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import type { Label, Member, Status, Task } from "../../../shared/types";
-import { Avatar, ColorDot, Kbd, LtrText, PRIORITIES, PriorityIcon, StatusIcon } from "@/components/kit";
+import { PRIORITIES } from "@/components/kit";
 import { assignable } from "@/components/pickers";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-  ContextMenu,
-  ContextMenuCheckboxItem,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuRadioGroup,
-  ContextMenuRadioItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+import { useApp } from "@/lib/app";
 import { useI18n } from "@/lib/i18n";
+import { nativeConfirm, nativeMenu, nativeShare, openIssueWindow, type NativeMenuItem } from "@/lib/native";
 import { useTimer } from "@/shell/Timer";
 
 import type { IssueActions } from "./data";
@@ -64,8 +43,6 @@ export function useIssueTimer() {
   return { running: timer.running, busy: timer.busy, isRunning, start, stop, toggle };
 }
 
-const ITEM = "text-[13.5px] gap-2";
-
 export function IssueContextArea({
   resolve,
   statusesFor,
@@ -95,192 +72,112 @@ export function IssueContextArea({
   "data-board"?: string;
 }) {
   const { t } = useI18n();
+  const { session } = useApp();
   const timer = useIssueTimer();
-  const [targetId, setTargetId] = useState<string | null>(null);
-  const task = targetId ? resolve(targetId) : undefined;
-  const statuses = task ? statusesFor(task) : [];
   const people = assignable(members);
+
+  async function open(task: Task) {
+    const statuses = statusesFor(task);
+    const items: NativeMenuItem[] = [
+      { label: `${task.key} · ${task.title}`.slice(0, 60), enabled: false },
+      { type: "separator" },
+      {
+        label: t("issue.status"),
+        accelerator: "S",
+        submenu: statuses.map((s) => ({ id: `status:${s.id}`, label: s.name, type: "radio", checked: s.id === task.status_id })),
+      },
+      {
+        label: t("issue.priority"),
+        accelerator: "P",
+        submenu: PRIORITIES.map((p) => ({ id: `priority:${p}`, label: t(`priority.${p}`), type: "radio", checked: task.priority === p })),
+      },
+      {
+        label: t("issue.assignees"),
+        accelerator: "A",
+        submenu: people.length
+          ? people.map((m) => ({ id: `assignee:${m.user_id}`, label: m.email, type: "checkbox", checked: (task.assignee_ids ?? []).includes(m.user_id) }))
+          : [{ label: t("common.none"), enabled: false }],
+      },
+      ...(labels.length
+        ? [
+            {
+              label: t("issue.labels"),
+              accelerator: "L",
+              submenu: labels.map((l) => ({ id: `label:${l.id}`, label: l.name, type: "checkbox" as const, checked: (task.label_ids ?? []).includes(l.id) })),
+            },
+          ]
+        : []),
+      { type: "separator" },
+      timer.isRunning(task) ? { id: "timer:stop", label: t("issue.stopTimer"), accelerator: "T" } : { id: "timer:start", label: t("issue.startTimer"), accelerator: "T" },
+      { type: "separator" },
+      { id: "window", label: t("issue.openInWindow") },
+      { id: "share", label: t("issue.share") },
+      { id: "copy", label: t("issue.copyKey"), accelerator: "CmdOrCtrl+Shift+C" },
+      { id: "browser", label: t("common.openInBrowser") },
+      { type: "separator" },
+      { id: "delete", label: t("issue.delete"), accelerator: "CmdOrCtrl+Backspace" },
+    ];
+    const id = await nativeMenu(items);
+    if (!id) return;
+    const [kind, arg] = [id.slice(0, id.indexOf(":") < 0 ? id.length : id.indexOf(":")), id.slice(id.indexOf(":") + 1)];
+    if (kind === "status") {
+      const s = statuses.find((x) => x.id === arg);
+      if (s) void actions.setStatus(task, s);
+    } else if (kind === "priority") void actions.setPriority(task, arg as Task["priority"]);
+    else if (kind === "assignee") void actions.toggleAssignee(task, arg);
+    else if (kind === "label") void actions.toggleLabel(task, arg);
+    else if (id === "timer:stop") void timer.stop();
+    else if (id === "timer:start") void timer.start(task);
+    else if (id === "window") void openIssueWindow(task.key);
+    else if (id === "share") void nativeShare(`${session?.apiUrl ?? ""}/en/w/${session?.workspace?.slug ?? ""}/issues/${task.key}`, `${task.key} · ${task.title}`);
+    else if (id === "copy") void actions.copyKey(task);
+    else if (id === "browser") actions.openInBrowser(task);
+    else if (id === "delete") onConfirmDelete(task);
+  }
 
   return (
     <>
-      <ContextMenu open={!!task} onOpenChange={(o) => (o ? null : setTargetId(null))}>
-        <ContextMenuTrigger
-          render={
-            <div
-              className={className}
-              {...rest}
-              onContextMenuCapture={(e) => {
-                const id = (e.target as HTMLElement).closest("[data-task-id]")?.getAttribute("data-task-id");
-                const hit = id ? resolve(id) : undefined;
-                if (!hit) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setTargetId(null);
-                  return;
-                }
-                setTargetId(hit.id);
-                onTarget?.(hit);
-              }}
-            />
-          }
-        >
-          {children}
-        </ContextMenuTrigger>
-        {task ? (
-          <ContextMenuContent className="w-56" onClick={(e) => e.stopPropagation()} data-issue-menu={task.key}>
-            <div className="flex items-center gap-2 px-2 pt-1 pb-1.5 text-[12.5px] text-grid-muted">
-              <LtrText className="shrink-0 font-mono whitespace-nowrap">{task.key}</LtrText>
-              <span className="truncate">{task.title}</span>
-            </div>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger className={ITEM}>
-                <StatusIcon status={statuses.find((s) => s.id === task.status_id)} />
-                {t("issue.status")}
-                <Kbd combo="s" className="ms-auto" />
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-52">
-                <ContextMenuRadioGroup
-                  value={task.status_id}
-                  onValueChange={(v) => {
-                    const s = statuses.find((x) => x.id === v);
-                    if (s) void actions.setStatus(task, s);
-                  }}
-                >
-                  {statuses.map((s) => (
-                    <ContextMenuRadioItem key={s.id} value={s.id} closeOnClick className={ITEM} data-option={s.name}>
-                      <StatusIcon status={s} />
-                      {s.name}
-                    </ContextMenuRadioItem>
-                  ))}
-                </ContextMenuRadioGroup>
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger className={ITEM}>
-                <PriorityIcon priority={task.priority} />
-                {t("issue.priority")}
-                <Kbd combo="p" className="ms-auto" />
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-44">
-                <ContextMenuRadioGroup value={task.priority} onValueChange={(v) => void actions.setPriority(task, v as Task["priority"])}>
-                  {PRIORITIES.map((p) => (
-                    <ContextMenuRadioItem key={p} value={p} closeOnClick className={ITEM}>
-                      <PriorityIcon priority={p} />
-                      {t(`priority.${p}`)}
-                    </ContextMenuRadioItem>
-                  ))}
-                </ContextMenuRadioGroup>
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger className={ITEM}>
-                <span className="flex size-4 items-center justify-center text-grid-muted">
-                  <Avatar id={task.assignee_ids?.[0] ?? "-"} email={members.find((m) => m.user_id === task.assignee_ids?.[0])?.email ?? "?"} size={14} />
-                </span>
-                {t("issue.assignees")}
-                <Kbd combo="a" className="ms-auto" />
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-60">
-                {people.map((m) => (
-                  <ContextMenuCheckboxItem
-                    key={m.user_id}
-                    checked={(task.assignee_ids ?? []).includes(m.user_id)}
-                    onCheckedChange={() => void actions.toggleAssignee(task, m.user_id)}
-                    className={ITEM}
-                  >
-                    <Avatar id={m.user_id} email={m.email} size={16} />
-                    <span className="truncate" dir="ltr">
-                      {m.email}
-                    </span>
-                  </ContextMenuCheckboxItem>
-                ))}
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-            {labels.length ? (
-              <ContextMenuSub>
-                <ContextMenuSubTrigger className={ITEM}>
-                  <ColorDot color={labels.find((l) => task.label_ids?.includes(l.id))?.color ?? "slate"} />
-                  {t("issue.labels")}
-                  <Kbd combo="l" className="ms-auto" />
-                </ContextMenuSubTrigger>
-                <ContextMenuSubContent className="w-52">
-                  {labels.map((l) => (
-                    <ContextMenuCheckboxItem
-                      key={l.id}
-                      checked={(task.label_ids ?? []).includes(l.id)}
-                      onCheckedChange={() => void actions.toggleLabel(task, l.id)}
-                      className={ITEM}
-                    >
-                      <ColorDot color={l.color} />
-                      <span className="truncate">{l.name}</span>
-                    </ContextMenuCheckboxItem>
-                  ))}
-                </ContextMenuSubContent>
-              </ContextMenuSub>
-            ) : null}
-            <ContextMenuSeparator />
-            {timer.isRunning(task) ? (
-              <ContextMenuItem className={ITEM} onClick={() => void timer.stop()}>
-                <SquareIcon />
-                {t("issue.stopTimer")}
-                <Kbd combo="t" className="ms-auto" />
-              </ContextMenuItem>
-            ) : (
-              <ContextMenuItem className={ITEM} onClick={() => void timer.start(task)} data-menu-action="timer">
-                <PlayIcon />
-                {t("issue.startTimer")}
-                <Kbd combo="t" className="ms-auto" />
-              </ContextMenuItem>
-            )}
-            <ContextMenuItem className={ITEM} onClick={() => void actions.copyKey(task)}>
-              <CopyIcon />
-              {t("issue.copyKey")}
-              <Kbd combo="mod+shift+c" className="ms-auto" />
-            </ContextMenuItem>
-            <ContextMenuItem className={ITEM} onClick={() => actions.openInBrowser(task)}>
-              <ExternalLinkIcon />
-              {t("common.openInBrowser")}
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem className={ITEM} variant="destructive" onClick={() => onConfirmDelete(task)} data-menu-action="delete">
-              <Trash2Icon />
-              {t("issue.delete")}
-              <Kbd combo="mod+⌫" className="ms-auto" />
-            </ContextMenuItem>
-          </ContextMenuContent>
-        ) : null}
-      </ContextMenu>
+      <div
+        className={className}
+        {...rest}
+        onContextMenu={(e) => {
+          const hit = (e.target as HTMLElement).closest("[data-task-id]")?.getAttribute("data-task-id");
+          const task = hit ? resolve(hit) : undefined;
+          if (!task) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onTarget?.(task);
+          void open(task);
+        }}
+      >
+        {children}
+      </div>
       <DeleteIssueDialog task={confirmDelete} onClose={() => onConfirmDelete(null)} actions={actions} />
     </>
   );
 }
 
+/** Asks with the platform's own alert (a sheet on macOS) when `task` is set; renders nothing. */
 export function DeleteIssueDialog({ task, onClose, actions, onDeleted }: { task: Task | null; onClose: () => void; actions: IssueActions; onDeleted?: () => void }) {
   const { t } = useI18n();
-  return (
-    <AlertDialog open={!!task} onOpenChange={(o) => (o ? null : onClose())}>
-      <AlertDialogContent size="sm" data-confirm-delete>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-[15px]">{task ? t("issue.deleteConfirm", { key: task.key }) : ""}</AlertDialogTitle>
-          <AlertDialogDescription className="text-[13.5px]">{t("issue.deleteBody")}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel size="sm">{t("common.cancel")}</AlertDialogCancel>
-          <Button
-            size="sm"
-            variant="destructive"
-            autoFocus
-            data-confirm
-            onClick={() => {
-              const x = task;
-              onClose();
-              if (x) void actions.remove(x).then((ok) => ok && onDeleted?.());
-            }}
-          >
-            {t("common.delete")}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
+  useEffect(() => {
+    if (!task) return;
+    let live = true;
+    void nativeConfirm({
+      message: t("issue.deleteConfirm", { key: task.key }),
+      detail: t("issue.deleteBody"),
+      confirm: t("common.delete"),
+      cancel: t("common.cancel"),
+      destructive: true,
+    }).then((yes) => {
+      if (!live) return;
+      onClose();
+      if (yes) void actions.remove(task).then((ok) => ok && onDeleted?.());
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task]);
+  return null;
 }

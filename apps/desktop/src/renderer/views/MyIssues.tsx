@@ -10,7 +10,7 @@ import { HEADER_BTN, Segmented } from "@/components/issues/controls";
 import { useStatuses } from "@/components/issues/data";
 import { IssueList, type IssueGroup } from "@/components/issues/IssueList";
 import { byPriorityThenUpdated } from "@/components/issues/util";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { nativeMenu } from "@/lib/native";
 import { useApp } from "@/lib/app";
 import { api } from "@/lib/bridge";
 import { useProjectMap, useUserId } from "@/lib/data";
@@ -170,23 +170,24 @@ export function MyIssuesView() {
 function DisplayMenu({ grouping, onGrouping }: { grouping: Grouping; onGrouping: (g: Grouping) => void }) {
   const { t } = useI18n();
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<button type="button" className={HEADER_BTN} data-action="display" />}>
-        <SlidersHorizontalIcon />
-        {t("issues.display")}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-[12.5px]">{t("issues.groupBy")}</DropdownMenuLabel>
-          {(["status", "project"] as const).map((g) => (
-            <DropdownMenuItem key={g} onClick={() => onGrouping(g)} className="gap-2 text-[13.5px]" data-grouping={g}>
-              <span className="flex-1">{t(`issues.groupBy.${g}`)}</span>
-              {grouping === g ? <CheckIcon className="size-3.5" /> : null}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <button
+      type="button"
+      className={HEADER_BTN}
+      data-action="display"
+      aria-haspopup="menu"
+      onClick={(ev) =>
+        void nativeMenu(
+          [
+            { label: t("issues.groupBy"), enabled: false },
+            ...(["status", "project"] as const).map((g) => ({ id: g, label: t(`issues.groupBy.${g}`), type: "radio" as const, checked: grouping === g })),
+          ],
+          ev.currentTarget,
+        ).then((id) => id && onGrouping(id as Grouping))
+      }
+    >
+      <SlidersHorizontalIcon />
+      {t("issues.display")}
+    </button>
   );
 }
 

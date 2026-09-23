@@ -1,11 +1,14 @@
 // Route → view. Each view owns its own file under views/.
+import { useEffect } from "react";
+
 import type { Route } from "../shared/types";
+import { desktop } from "./lib/bridge";
+import { useRouter } from "./lib/router";
 import { InboxView } from "./views/Inbox";
 import { IssueView } from "./views/Issue";
 import { MyIssuesView } from "./views/MyIssues";
 import { ProjectView } from "./views/Project";
 import { ProjectsView } from "./views/Projects";
-import { SettingsView } from "./views/Settings";
 import { TimeView } from "./views/Time";
 
 export function View({ route }: { route: Route }) {
@@ -23,6 +26,16 @@ export function View({ route }: { route: Route }) {
     case "time":
       return <TimeView />;
     case "settings":
-      return <SettingsView section={route.section} />;
+      // Settings is its own window (⌘,); a link or an old saved route here opens that instead.
+      return <OpenSettingsWindow section={route.section} />;
   }
+}
+
+function OpenSettingsWindow({ section }: { section?: string }) {
+  const { navigate } = useRouter();
+  useEffect(() => {
+    void desktop.openSettings(section);
+    navigate({ name: "inbox" });
+  }, [section, navigate]);
+  return null;
 }

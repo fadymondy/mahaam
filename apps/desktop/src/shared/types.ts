@@ -66,6 +66,8 @@ export interface AppConfig {
   canAutoLaunch: boolean;
   /** This device's token name, to mark it in the list of devices. */
   deviceName: string;
+  /** macOS laid the app out right-to-left at launch: the traffic lights are top-right. */
+  nativeRtl: boolean;
 }
 
 /** Things the main process tells the renderer to do: menu items, the tray, deep links. */

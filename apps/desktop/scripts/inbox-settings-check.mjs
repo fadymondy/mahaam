@@ -158,7 +158,14 @@ await page.waitForTimeout(500);
 check((await html()).dark, "Dark tile → the app is dark");
 check((await invoke("app:config")).value.prefs.theme === "dark", "theme pref saved in main");
 await shot("settings-2-general-en-dark", "settings");
-await sw.locator("[data-row=language] [data-value=ar]").click();
+// The language list is a native menu: under MAHAAM_E2E main answers it from a queue.
+const pickLanguage = async (code) => {
+  await app.evaluate((_e, c) => globalThis.mahaamNative.picks.push(c), code);
+  await sw.locator("[data-language-menu]").click();
+  const offered = await app.evaluate(() => globalThis.mahaamNative.menus.at(-1).map((x) => x.id));
+  check(offered.includes("en") && offered.includes("ar"), `the language list offers ${offered.join(", ")}`);
+};
+await pickLanguage("ar");
 await page.waitForTimeout(600);
 check((await html()).dir === "rtl", "العربية → the app is RTL");
 check((await page.locator("aside[data-sidebar]").innerText()).includes("الوارد"), "the sidebar follows the language");
@@ -166,7 +173,7 @@ await shot("settings-3-general-ar-dark", "settings");
 await sw.locator("[data-theme-tile=light]").click();
 await page.waitForTimeout(500);
 await shot("settings-4-general-ar-light", "settings");
-await sw.locator("[data-row=language] [data-value=en]").click();
+await pickLanguage("en");
 await page.waitForTimeout(400);
 
 const notifyBefore = (await invoke("app:config")).value.prefs.notify;
@@ -216,10 +223,12 @@ if (throwaway) {
   await sw.locator("[data-settings-nav=general]").click();
   await sw.locator("[data-settings-nav=account]").click();
   if (await sw.locator("[data-devices-toggle]").count()) await sw.locator("[data-devices-toggle]").click();
+  // A native alert (a sheet): under MAHAAM_E2E main records it and answers yes.
+  const confirms = await app.evaluate(() => globalThis.mahaamNative.confirms.length);
+  await app.evaluate(() => globalThis.mahaamNative.answers.push(true));
   await sw.locator(`[data-revoke="${throwaway.id}"]`).click();
-  await sw.locator("[data-revoke-dialog]").waitFor();
-  await shot("settings-6-revoke-confirm", "settings");
-  await sw.locator("[data-confirm-revoke]").click();
+  await page.waitForTimeout(300);
+  check((await app.evaluate(() => globalThis.mahaamNative.confirms.length)) > confirms, "revoke asks with a native alert");
   await page.waitForTimeout(1000);
   check(!(await call("devices")).some((d) => d.id === throwaway.id), "revoked on the server");
 }
@@ -227,13 +236,11 @@ if (throwaway) {
 await prefs({ theme: "dark" });
 await page.waitForTimeout(400);
 await shot("settings-7-account-en-dark", "settings");
+const menusBefore = await app.evaluate(() => globalThis.mahaamNative.menus.length);
 await sw.locator("[data-timezone]").click();
-await sw.keyboard.type("Cairo");
-await page.waitForTimeout(400);
-await shot("settings-7b-timezone-menu", "settings");
-// Escape closes the picker from its filter field (components/pickers.tsx lets it through).
-await sw.keyboard.press("Escape");
-await sw.locator("[data-base-ui-inert]").waitFor({ state: "detached", timeout: 3000 }).catch(() => null);
+await page.waitForTimeout(300);
+const tzMenu = await app.evaluate(() => globalThis.mahaamNative.menus.at(-1));
+check((await app.evaluate(() => globalThis.mahaamNative.menus.length)) > menusBefore && JSON.stringify(tzMenu).includes("Africa/Cairo"), "the time zone list is a native menu with Africa/Cairo");
 await prefs({ theme: "light", locale: "ar" });
 await page.waitForTimeout(500);
 await shot("settings-8-account-ar-light", "settings");

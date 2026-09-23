@@ -30,7 +30,9 @@ import * as store from "./store";
 import { idleStrings, menuStrings, trayStrings } from "./strings";
 import { createTray, getRecent, getRunning, refreshTray, setRecent, setRunning, trayProbe } from "./tray";
 import { checkNow, installNow, readyNotification, startUpdates, stopUpdates, updateState } from "./updates";
-import { initSurfaces, load, prewarmPopover, resizeSurface, retintSurfaces, showPalette, showSettings, surfaceWindow, togglePopover, webPreferences } from "./surfaces";
+import { ensureNativeLanguageAtLaunch, nativeLanguageChanged, nativeRtl } from "./app-language";
+import { nativeProbe, registerNative } from "./native";
+import { initSurfaces, load, openIssueWindow, paletteState, prewarmPopover, resizeSurface, retintSurfaces, showPalette, showSettings, surfaceWindow, togglePopover, webPreferences } from "./surfaces";
 
 const DEV_URL = process.env.MAHAAM_DEV_URL; // the Vite dev server (npm run dev)
 const SERVER_ARG = process.argv.find((a) => a.startsWith("--server="))?.slice("--server=".length);
@@ -208,6 +210,7 @@ function applySession(): void {
 function onRunning(r: TimeEntry | null): void {
   const was = getRunning();
   setRunning(r);
+  if (!!was !== !!r) buildDockMenu();
   send("running", r);
   if ((was?.id ?? null) !== (r?.id ?? null)) void refreshRecent();
 }
@@ -234,6 +237,7 @@ function onLive(e: LiveEvent): void {
   else if (e.type === "timer.stopped") {
     if (getRunning()?.id === e.entry.id) onRunning(null);
     void refreshRecent();
+    nativeLanguageChanged(prefs.locale);
   } else if (e.type === "entry.changed") {
     // A renamed, re-targeted, trimmed or deleted entry. If it is the running one, the menu bar,
     // the sidebar and every view must follow: still running → the new copy; ended or gone → idle.
@@ -297,8 +301,8 @@ function buildMenu(): void {
     {
       label: s.file,
       submenu: [
-        { label: s.newIssue, accelerator: "CmdOrCtrl+N", click: () => command({ type: "create" }) },
-        { label: s.startTimer, accelerator: "CmdOrCtrl+Shift+T", click: () => command({ type: "timer-palette" }) },
+        { label: s.newIssue, accelerator: "CmdOrCtrl+N", click: () => showPalette("create") },
+        { label: s.startTimer, accelerator: "CmdOrCtrl+Shift+T", click: () => showPalette("timer") },
         { type: "separator" },
         { label: s.openWeb, click: () => openExternal(webUrl()) },
         { type: "separator" },
@@ -321,7 +325,7 @@ function buildMenu(): void {
     {
       label: s.view,
       submenu: [
-        { label: s.palette, accelerator: "CmdOrCtrl+K", click: () => command({ type: "palette" }) },
+        { label: s.palette, accelerator: "CmdOrCtrl+K", click: () => showPalette("search") },
         { label: s.toggleSidebar, accelerator: "CmdOrCtrl+\\", click: () => command({ type: "toggle-sidebar" }) },
         {
           label: s.appearance,
@@ -369,6 +373,20 @@ function buildMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
+/** The Dock icon's menu (right-click / long-press): the things you do without opening the window. */
+function buildDockMenu(): void {
+  if (!IS_MAC || !app.dock) return;
+  const s = menuStrings(prefs.locale);
+  const t = trayStrings(prefs.locale);
+  app.dock.setMenu(
+    Menu.buildFromTemplate([
+      { label: s.newIssue, click: () => showPalette("create") },
+      { label: s.palette, click: () => showPalette("search") },
+      getRunning() ? { label: t.stop, click: () => void api?.stop() } : { label: t.start, click: () => showPalette("timer") },
+    ]),
+  );
+}
+
 function setPrefs(patch: Partial<Prefs>): Prefs {
   const before = prefs;
   prefs = { ...prefs, ...patch };
@@ -377,6 +395,7 @@ function setPrefs(patch: Partial<Prefs>): Prefs {
   if (patch.locale && patch.locale !== before.locale) {
     buildMenu();
     refreshTray();
+    buildDockMenu();
     void refreshRecent();
   }
   if (patch.theme || patch.locale) buildMenu();
@@ -420,6 +439,7 @@ function handle(channel: string, fn: (...args: any[]) => unknown): void {
 }
 
 function registerIpc(): void {
+  registerNative({ trusted, openIssueWindow });
   ipcMain.handle("surface:resize", (e, height: unknown) => {
     const w = BrowserWindow.fromWebContents(e.sender);
     if (trusted(e) && w && typeof height === "number" && Number.isFinite(height)) resizeSurface(w, height);
@@ -438,6 +458,7 @@ function registerIpc(): void {
     prefs,
     canAutoLaunch: process.platform !== "linux",
     deviceName: session.deviceName(),
+    nativeRtl: nativeRtl(),
   }));
   handle("app:prefs", (patch: Partial<Prefs>) => {
     const clean: Partial<Prefs> = {};
@@ -463,7 +484,8 @@ function registerIpc(): void {
     session.signIn(String(apiUrl), String(email), String(password), second),
   );
   // The system browser, never an embedded one; the browser redirects back to a loopback port.
-  handle("session:signInBrowser", (apiUrl: string) => session.signInWithBrowser(String(apiUrl), prefs.locale, show));
+  handle("session:signInBrowser", (apiUrl: string, provider?: string) => session.signInWithBrowser(String(apiUrl), prefs.locale, show, typeof provider === "string" ? provider : undefined));
+  handle("session:methods", (apiUrl: string) => session.authMethods(String(apiUrl)));
   handle("session:cancelBrowser", () => session.cancelBrowserSignIn());
   handle("session:signOut", () => session.signOut());
   handle("session:selectWorkspace", (id: string) => session.selectWorkspace(String(id)));
@@ -475,7 +497,10 @@ function registerIpc(): void {
 
   // The extra windows (surfaces.ts).
   handle("surface:settings", (section?: string) => showSettings(typeof section === "string" ? section : undefined));
-  handle("surface:palette", (mode?: string) => showPalette(mode === "create" ? "create" : "search"));
+  handle("surface:paletteState", () => paletteState());
+  handle("surface:palette", (mode?: string, preset?: { project?: string | null; status?: string | null }) =>
+    showPalette(mode === "create" || mode === "timer" ? mode : "search", preset ?? {}),
+  );
   handle("surface:main", (to?: Route) => (to && typeof to === "object" && typeof (to as Route).name === "string" ? command({ type: "navigate", to }) : show()));
   handle("surface:command", (c: Command) => {
     if (c && typeof c === "object" && typeof c.type === "string") command(c);
@@ -532,6 +557,8 @@ else app.setAsDefaultProtocolClient(PROTOCOL);
 // ── lifecycle ────────────────────────────────────────────────────────────────
 
 app.whenReady().then(async () => {
+  // The menus and the window buttons take the app's language and direction (app-language.ts).
+  if (ensureNativeLanguageAtLaunch(prefs.locale)) return;
   applyTheme();
   registerIpc();
   buildMenu();
@@ -554,7 +581,7 @@ app.whenReady().then(async () => {
     locale: () => prefs.locale,
     signedIn: () => !!api,
     show,
-    timerPalette: () => command({ type: "timer-palette" }),
+    timerPalette: () => showPalette("timer"),
     stop: async () => (api ? api.stop() : undefined),
     start: async (input) => (api ? api.start(input) : undefined),
   });
@@ -569,13 +596,14 @@ app.whenReady().then(async () => {
     else {
       const last = getRecent()[0]?.input;
       if (last) void api.start(last);
-      else command({ type: "timer-palette" });
+      else showPalette("timer");
     }
   });
-  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe, mahaamPalette: (mode?: "search" | "create") => showPalette(mode), mahaamCheckUpdates: checkNow });
+  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe, mahaamPalette: (mode?: "search" | "create" | "timer") => showPalette(mode), mahaamCheckUpdates: checkNow, mahaamNative: nativeProbe });
 
   win = createWindow();
   prewarmPopover();
+  buildDockMenu();
   startUpdates({
     notify: (version) => {
       const s = menuStrings(prefs.locale);

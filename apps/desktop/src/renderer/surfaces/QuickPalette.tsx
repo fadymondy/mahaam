@@ -85,20 +85,24 @@ const hide = () => void desktop.hideSurface();
 export function QuickPalette() {
   const { t } = useI18n();
   const { session } = useApp();
-  const [mode, setMode] = useState<"search" | "create">("search");
+  const [mode, setMode] = useState<"search" | "create" | "timer">("search");
   const [seed, setSeed] = useState("");
+  const [preset, setPreset] = useState<{ project: string | null; status: string | null }>({ project: null, status: null });
   const [shown, setShown] = useState(0);
   const root = useRef<HTMLDivElement>(null);
 
-  useEffect(
-    () =>
-      on("surface:shown", (p) => {
-        setMode(p?.mode === "create" ? "create" : "search");
-        setSeed("");
-        setShown((n) => n + 1);
-      }),
-    [],
-  );
+  useEffect(() => {
+    const open = (p: { mode?: string; preset?: { project: string | null; status: string | null } } | undefined) => {
+      setMode(p?.mode === "create" || p?.mode === "timer" ? p.mode : "search");
+      setPreset(p?.preset ?? { project: null, status: null });
+      setSeed("");
+      setShown((n) => n + 1);
+    };
+    const off = on("surface:shown", open);
+    // Opened cold, the first "shown" can arrive before this listener: ask what it was opened for.
+    void desktop.paletteState().then((p) => p && open(p));
+    return off;
+  }, []);
 
   // Exactly as tall as what it shows (the window, not just the page).
   useLayoutEffect(() => {
@@ -120,10 +124,11 @@ export function QuickPalette() {
           </button>
         </div>
       ) : mode === "create" ? (
-        <QuickCreate key={`c${shown}`} seed={seed} onBack={() => setMode("search")} />
+        <QuickCreate key={`c${shown}`} seed={seed} preset={preset} onBack={() => setMode("search")} />
       ) : (
         <Search
-          key={`s${shown}`}
+          key={`${mode}${shown}`}
+          timer={mode === "timer"}
           onCreate={(text) => {
             setSeed(text);
             setMode("create");
@@ -134,7 +139,8 @@ export function QuickPalette() {
   );
 }
 
-function Search({ onCreate }: { onCreate: (text: string) => void }) {
+/** `timer`: the "Start a timer on…" flavour (⌘⇧T, the menu-bar timer): every row starts a timer. */
+function Search({ onCreate, timer = false }: { onCreate: (text: string) => void; timer?: boolean }) {
   const { t, dir } = useI18n();
   const { ws } = useApp();
   const byId = useProjectMap();
@@ -160,6 +166,9 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
   }, [query]);
 
   const issues = useQuery({ queryKey: qk.tasks(ws, { q: debounced }), queryFn: () => api.tasks({ q: debounced, limit: 8 }), enabled: debounced.length >= 2, staleTime: 10_000 });
+  const me = useUserId();
+  const recentWork = useQuery({ queryKey: qk.entries(ws, { recent: true, limit: 40 }), queryFn: () => api.entries({ limit: 40 }), enabled: timer && !!ws, staleTime: 10_000 });
+  const mine = useQuery({ queryKey: qk.tasks(ws, { assignee: me, open: true }), queryFn: () => api.tasks({ assignee: me, limit: 200 }), enabled: timer && !!ws && !!me });
   const text = query.trim();
   const key = /^[A-Za-z][A-Za-z0-9]{0,9}-\d+$/.test(text) ? text.toUpperCase() : null;
 
@@ -168,6 +177,40 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
     e.description || e.task_title || e.project_name || t("timer.untitled");
 
   const items = useMemo<Item[]>(() => {
+    if (timer) {
+      const go = (input: Parameters<typeof start>[0], what: string): Item["run"] => async () => {
+        await start(input);
+        return { kind: "ok", message: t("qp.startedOn", { key: what }) };
+      };
+      const out: Item[] = [
+        running
+          ? { id: "stop", section: "actions", title: t("timer.stop"), sub: label(running), icon: <SquareIcon />, run: async () => (await stop(), { kind: "ok", message: t("qp.stopped") }) }
+          : { id: "start", section: "actions", title: text ? t("timer.startFree", { text }) : t("timer.startBlank"), icon: <PlayIcon />, run: go(text ? { description: text } : {}, text || t("timer.untitled")) },
+      ];
+      const seen = new Set<string>();
+      for (const e of recentWork.data ?? []) {
+        if (!e.ended_at) continue;
+        const k = `${e.task_id ?? ""}|${e.project_id ?? ""}|${e.description}`;
+        if (seen.has(k) || seen.size >= 5) continue;
+        seen.add(k);
+        const what = label(e);
+        out.push({
+          id: `resume:${e.id}`,
+          section: "recent",
+          title: what,
+          sub: [e.task_key, e.project_name].filter(Boolean).join(" · ") || undefined,
+          icon: <PlayIcon />,
+          keywords: [e.task_key ?? "", e.project_name ?? ""],
+          run: go({ ...(e.task_id ? { task: e.task_id } : e.project_id ? { project: e.project_id } : {}), ...(e.description ? { description: e.description } : {}), billable: e.billable }, what),
+        });
+      }
+      for (const task of (mine.data ?? []).filter((x) => !x.completed_at).slice(0, 12)) {
+        const p = byId.get(task.project_id);
+        out.push({ id: `mine:${task.key}`, section: "issues", mark: true, title: task.title, sub: [task.key, p?.name].filter(Boolean).join(" · "), icon: <ProjectMark name={p?.name ?? "?"} color={p?.color} size={16} />, keywords: [task.key], run: go({ task: task.id }, task.key) });
+      }
+      for (const p of projects.data ?? []) out.push({ id: `proj:${p.id}`, section: "projects", mark: true, title: p.name, icon: <ProjectMark name={p.name} color={p.color} size={16} />, run: go({ project: p.id }, p.name) });
+      return out;
+    }
     const out: Item[] = [
       { id: "create", section: "actions", title: text ? t("qp.createNamed", { text }) : t("nav.newIssue"), icon: <SquarePenIcon />, keywords: ["new", "issue", "create", "task"], run: () => onCreate(text) },
       running
@@ -226,10 +269,11 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, key, running, projects.data, issues.data, byId, t]);
+  }, [timer, text, key, running, projects.data, issues.data, recentWork.data, mine.data, byId, t]);
 
   // Empty field: recent first, then actions and places. Typing: everything, ranked.
   const rows = useMemo(() => {
+    if (!text && timer) return items;
     if (!text) {
       const recent = recents.map((id) => items.find((i) => i.id === id)).filter((i): i is Item => !!i && i.section !== "issues");
       const rest = items.filter((i) => (i.section === "actions" || i.section === "go") && !recent.includes(i));
@@ -237,11 +281,11 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
     }
     const q = text.toLowerCase();
     return items
-      .map((i) => ({ i, s: i.section === "issues" ? 1000 : Math.max(score(q, i.title), ...(i.keywords ?? []).map((k) => score(q, k) * 0.8), 0) }))
-      .filter((x) => x.s > 0 || x.i.id === "create" || x.i.id === "start")
+      .map((i) => ({ i, s: i.section === "issues" && !timer ? 1000 : Math.max(score(q, i.title), ...(i.keywords ?? []).map((k) => score(q, k) * 0.8), 0) }))
+      .filter((x) => x.s > 0 || x.i.id === "create" || x.i.id === "start" || x.i.id === "stop")
       .sort((a, b) => b.s - a.s)
       .map((x) => x.i);
-  }, [text, items, recents]);
+  }, [text, timer, items, recents]);
 
   useEffect(() => {
     list.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
@@ -304,8 +348,8 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
           dir="auto"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={t("qp.placeholder")}
-          aria-label={t("qp.placeholder")}
+          placeholder={t(timer ? "timer.palette" : "qp.placeholder")}
+          aria-label={t(timer ? "timer.palette" : "qp.placeholder")}
           spellCheck={false}
           className="min-w-0 flex-1 bg-transparent text-[18px] text-grid-fg outline-none placeholder:text-grid-muted"
           data-qp-input
@@ -384,17 +428,17 @@ function Search({ onCreate }: { onCreate: (text: string) => void }) {
 }
 
 /** A new issue from any app: project, title, details, then status / priority / assignees. ⌘↵. */
-function QuickCreate({ seed, onBack }: { seed: string; onBack: () => void }) {
+function QuickCreate({ seed, preset, onBack }: { seed: string; preset?: { project: string | null; status: string | null }; onBack: () => void }) {
   const { t, dir } = useI18n();
   const { ws } = useApp();
   const me = useUserId();
   const qc = useQueryClient();
   const projects = useProjects();
   const members = useMembers();
-  const [project, setProject] = useState<string | null>(null);
+  const [project, setProject] = useState<string | null>(preset?.project ?? null);
   const [title, setTitle] = useState(seed);
   const [body, setBody] = useState("");
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(preset?.status ?? null);
   const [priority, setPriority] = useState("none");
   const [assignees, setAssignees] = useState<string[]>(me ? [me] : []);
   const [done, setDone] = useState<{ key: string } | null>(null);

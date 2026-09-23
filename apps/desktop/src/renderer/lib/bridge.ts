@@ -52,7 +52,8 @@ export const desktop = {
   session: () => call<SessionOut | null>("session:get"),
   signIn: (apiUrl: string, email: string, password: string, second?: { code?: string; recovery_code?: string }) =>
     call<SignInResult>("session:signIn", apiUrl, email, password, second),
-  signInWithBrowser: (apiUrl: string) => call<SignInResult | null>("session:signInBrowser", apiUrl),
+  signInWithBrowser: (apiUrl: string, provider?: string) => call<SignInResult | null>("session:signInBrowser", apiUrl, provider),
+  authMethods: (apiUrl: string) => call<{ name: string; label: string; url: string }[]>("session:methods", apiUrl),
   cancelBrowserSignIn: () => call<void>("session:cancelBrowser"),
   signOut: () => call<void>("session:signOut"),
   selectWorkspace: (id: string) => call<SessionOut>("session:selectWorkspace", id),
@@ -65,9 +66,10 @@ export const desktop = {
   /** Hide the window this renderer is in (the popover, the palette). */
   hideSurface: () => call<null>("surface:hide"),
   openSettings: (section?: string) => call<void>("surface:settings", section),
-  openPalette: (mode?: "search" | "create") => call<void>("surface:palette", mode),
+  openPalette: (mode?: "search" | "create" | "timer") => call<void>("surface:palette", mode),
   /** The palette sizes its window to what it shows. */
   resizeSelf: (height: number) => call<null>("surface:resize", height),
+  paletteState: () => call<{ mode: string; preset: { project: string | null; status: string | null } }>("surface:paletteState").catch(() => null),
   /** Bring the main window forward, optionally at a route. */
   openMain: (to?: import("../../shared/types").Route) => call<void>("surface:main", to),
   /** A command for the main window (e.g. open quick create there). */
@@ -84,7 +86,7 @@ type Events = {
   prefs: [Prefs];
   command: [Command];
   window: [{ fullscreen: boolean }];
-  "surface:shown": [{ mode?: "search" | "create" }];
+  "surface:shown": [{ mode?: "search" | "create" | "timer"; preset?: { project: string | null; status: string | null } }];
   update: [import("../../main/updates").UpdateState];
 };
 

@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { EntryPatch, TimeEntry } from "../../../shared/types";
 import { Kbd, LtrText, ProjectMark } from "@/components/kit";
 import { Button } from "@/components/ui/button";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { nativeMenu } from "@/lib/native";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -76,9 +76,6 @@ function EntryRow({ entry: e, tz, now, focused, onFocus, onEdit, onDelete, onCon
   const startDay = dayIn(e.started_at, tz);
   const crosses = e.ended_at && dayIn(e.ended_at, tz) !== startDay;
   return (
-    <ContextMenu onOpenChange={(o) => o && onFocus(e.id)}>
-      <ContextMenuTrigger
-        render={
           <div
             role="row"
             tabIndex={-1}
@@ -91,14 +88,27 @@ function EntryRow({ entry: e, tz, now, focused, onFocus, onEdit, onDelete, onCon
               onFocus(e.id);
               if (!e.locked) onEdit(e.id);
             }}
+            // Right-click: the platform's own menu (main/native.ts), not an HTML one.
+            onContextMenu={(ev) => {
+              ev.preventDefault();
+              onFocus(e.id);
+              void nativeMenu([
+                { id: "edit", label: t("common.edit"), accelerator: "Enter", enabled: !e.locked },
+                { id: "continue", label: t("time.continue"), accelerator: "S", enabled: !running },
+                { type: "separator" },
+                { id: "delete", label: t("common.delete"), accelerator: "Backspace", enabled: !e.locked },
+              ]).then((id) => {
+                if (id === "edit") onEdit(e.id);
+                else if (id === "continue") onContinue(e);
+                else if (id === "delete") onDelete(e);
+              });
+            }}
             className={cn(
               "group/entry relative flex h-9 items-center gap-2.5 border-b border-line ps-4 pe-3 outline-none",
               focused && "bg-grid-soft/70",
               running && "bg-grid-action/[0.04]",
             )}
-          />
-        }
-      >
+          >
         {focused ? <span className="absolute inset-y-0 start-0 w-0.5 bg-grid-action" aria-hidden /> : null}
         {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} size={14} /> : <span className="size-3.5 shrink-0 rounded-[4px] border border-dashed border-line" />}
         <span className={cn("min-w-0 truncate text-[14px]", title ? "text-grid-fg" : "text-grid-muted")} dir="auto">
@@ -141,24 +151,7 @@ function EntryRow({ entry: e, tz, now, focused, onFocus, onEdit, onDelete, onCon
         >
           <PlayIcon className="size-3.5" />
         </button>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-52">
-        <MenuItem icon={<PencilIcon />} disabled={e.locked} onClick={() => onEdit(e.id)} label={t("common.edit")} combo="enter" />
-        <MenuItem icon={<PlayIcon />} disabled={running} onClick={() => onContinue(e)} label={t("time.continue")} combo="s" />
-        <ContextMenuSeparator />
-        <MenuItem icon={<Trash2Icon />} disabled={e.locked} destructive onClick={() => onDelete(e)} label={t("common.delete")} combo="backspace" />
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-}
-
-function MenuItem({ icon, label, combo, onClick, disabled, destructive }: { icon: ReactNode; label: string; combo: string; onClick: () => void; disabled?: boolean; destructive?: boolean }) {
-  return (
-    <ContextMenuItem onClick={onClick} disabled={disabled} variant={destructive ? "destructive" : "default"} className="text-[13.5px] [&_svg]:size-3.5">
-      {icon}
-      <span className="flex-1">{label}</span>
-      <Kbd combo={combo === "backspace" ? "⌫" : combo} className="border-transparent bg-transparent" />
-    </ContextMenuItem>
+          </div>
   );
 }
 

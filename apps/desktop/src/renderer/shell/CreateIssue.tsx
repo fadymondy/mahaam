@@ -14,6 +14,7 @@ import { useApp } from "@/lib/app";
 import { api } from "@/lib/bridge";
 import { useBoard, useMembers, useProjects, useUserId } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
+import { openPalette } from "@/lib/native";
 import { useRouter } from "@/lib/router";
 
 const LAST_PROJECT = "mahaam.lastProject";
@@ -21,10 +22,9 @@ const LAST_PROJECT = "mahaam.lastProject";
 // The shell's openCreate(project) has no status; a column's "+" leaves one here first.
 let presetStatus: string | null = null;
 
-/** Quick create in a project and a status (a list group's or a board column's "+"). */
-export function openCreateIn(openCreate: (projectId?: string | null) => void, projectId: string, statusId?: string | null): void {
-  presetStatus = statusId ?? null;
-  openCreate(projectId);
+/** Quick create in a project and a status (a list group's or a board column's "+"): the Spotlight panel. */
+export function openCreateIn(_openCreate: (projectId?: string | null) => void, projectId: string, statusId?: string | null): void {
+  void openPalette("create", { project: projectId, status: statusId ?? null });
 }
 
 export function CreateIssue({ open, onOpenChange, projectId }: { open: boolean; onOpenChange: (o: boolean) => void; projectId?: string | null }) {

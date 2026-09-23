@@ -25,7 +25,7 @@ const en = {
   pasteMatch: "Paste and Match Style",
   selectAll: "Select All",
   view: "View",
-  palette: "Command Menu…",
+  palette: "Quick Palette…",
   startTimer: "Start Timer…",
   toggleSidebar: "Toggle Sidebar",
   appearance: "Appearance",

@@ -21,7 +21,9 @@ export const en = {
   "common.empty": "Nothing here yet",
 
   "auth.title": "Sign in to Mahaam",
-  "auth.subtitle": "Projects, issues and time — on your desktop.",
+  "auth.subtitle": "Your projects, issues and time — one keystroke away.",
+  "auth.continueWith": "Continue with {provider}",
+  "auth.noAccountCreate": "No account? Create one on {host}",
   "auth.email": "Email",
   "auth.password": "Password",
   "auth.signIn": "Sign in",
@@ -127,7 +129,9 @@ export const ar: Record<keyof typeof en, string> = {
   "common.empty": "لا شيء هنا بعد",
 
   "auth.title": "سجّل الدخول إلى مهام",
-  "auth.subtitle": "المشاريع والمهام والوقت — على سطح المكتب.",
+  "auth.subtitle": "مشاريعك ومهامك ووقتك — على بُعد ضغطة زر.",
+  "auth.continueWith": "المتابعة عبر {provider}",
+  "auth.noAccountCreate": "ليس لديك حساب؟ أنشئ حسابًا على {host}",
   "auth.email": "البريد الإلكتروني",
   "auth.password": "كلمة المرور",
   "auth.signIn": "تسجيل الدخول",

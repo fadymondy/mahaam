@@ -182,7 +182,25 @@ export function cancelBrowserSignIn(): void {
   pendingBrowser?.cancel();
 }
 
-export function signInWithBrowser(apiUrlIn: string, locale: string, onReturn: () => void): Promise<SignInResult | null> {
+/** The sign-in providers the server has on (GET /api/auth/methods), for the sign-in screen's buttons. */
+export async function authMethods(apiUrlIn: string): Promise<{ name: string; label: string; url: string }[]> {
+  try {
+    const r = await fetch(`${normalizeApiUrl(apiUrlIn)}/api/auth/methods`, { headers: { Accept: "application/json" } });
+    const d = (await r.json()) as { methods?: { name?: string; label?: string; url?: string; type?: string }[] | null };
+    return (d.methods ?? [])
+      .filter((m) => m?.type === "oauth" && typeof m.name === "string" && typeof m.url === "string" && m.url.startsWith("/api/"))
+      .map((m) => ({ name: m.name!, label: m.label ?? m.name!, url: m.url! }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * `provider`: a method url from authMethods (e.g. /api/auth/oauth/google) — the browser goes
+ * straight to that provider and comes back to the app-signin page; without one it opens the web's
+ * own sign-in page first.
+ */
+export function signInWithBrowser(apiUrlIn: string, locale: string, onReturn: () => void, provider?: string): Promise<SignInResult | null> {
   pendingBrowser?.cancel();
   const url = normalizeApiUrl(apiUrlIn);
   const verifier = randomBytes(32).toString("base64url");
@@ -244,7 +262,9 @@ export function signInWithBrowser(apiUrlIn: string, locale: string, onReturn: ()
         state,
         device: deviceName(),
       });
-      void shell.openExternal(`${url}/${locale === "ar" ? "ar" : "en"}/app-signin?${q}`);
+      const handoff = `/${locale === "ar" ? "ar" : "en"}/app-signin?${q}`;
+      const direct = typeof provider === "string" && /^\/api\/auth\/oauth\/[a-z0-9_-]+$/.test(provider);
+      void shell.openExternal(direct ? `${url}${provider}?next=${encodeURIComponent(handoff)}` : `${url}${handoff}`);
     });
     server.on("error", (e) => finish(null, e));
   });

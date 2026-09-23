@@ -250,10 +250,11 @@ log("keyboard ok; continued as", cont.id);
 // ── 4. delete from the keyboard (focus → ⌫ → confirm) ──
 await page.locator(`[data-entry="${mine.id}"]`).hover();
 await until("row focused", async () => (await page.locator(`[data-entry="${mine.id}"]`).getAttribute("data-focused")) !== null);
+// The confirm is a native alert: under MAHAAM_E2E main records it and answers from a queue.
+const confirms = await app.evaluate(() => globalThis.mahaamNative.confirms.length);
+await app.evaluate(() => globalThis.mahaamNative.answers.push(true));
 await page.keyboard.press("Backspace");
-await page.locator("[data-time-confirm]").waitFor({ timeout: 5000 });
-await shot("11-delete-confirm");
-await page.locator("[data-time-confirm-ok]").click();
+await until("the native delete alert", async () => (await app.evaluate(() => globalThis.mahaamNative.confirms.length)) > confirms);
 await until("deleted on server", async () => !(await api("entries", { from: day, to: day })).some((x) => x.id === mine.id));
 await until("row gone", async () => (await page.locator(`[data-entry="${mine.id}"]`).count()) === 0);
 log("deleted", mine.id);
@@ -279,13 +280,14 @@ const pre = await page.locator("[data-log-date]").inputValue();
 if (pre !== (sheet.days[0] > today ? today : sheet.days[0])) fail(`cell preset date ${pre}`);
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
+// Start timer (⌘⇧T) opens the palette panel in timer mode: recent work to resume first.
 await send({ type: "timer-palette" });
-await page.locator("[data-timer-palette]").waitFor();
-await page.waitForTimeout(600);
-const recentCount = await page.locator("[data-timer-recent] [cmdk-item]").count();
-log("palette recent items:", recentCount);
-await shot("13-palette");
-await page.keyboard.press("Escape");
+let qp;
+await until("the palette window", async () => (qp = app.windows().find((w) => w.url().includes("surface=palette"))));
+await qp.locator("[data-qp-input]").waitFor();
+const recentCount = await until("recent work to resume", async () => (await qp.locator("[role=option][data-value^='resume:']").count()) || null, 8000).catch(() => 0);
+log("palette recent items:", recentCount, "| options:", (await qp.locator("[role=option]").evaluateAll((els) => els.map((e) => e.getAttribute("data-value")))).slice(0, 8).join(" "));
+await qp.evaluate(() => window.mahaam.invoke("surface:hide"));
 
 // ── dark + empty-ish views for a last look ──
 await prefs({ theme: "dark" });

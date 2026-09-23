@@ -8,15 +8,7 @@ import { toast } from "sonner";
 import type { Device, Profile } from "../../../main/api-account";
 import { Avatar, LtrText, Spinner } from "@/components/kit";
 import { PropertyMenu } from "@/components/pickers";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { nativeConfirm } from "@/lib/native";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app";
 import { api, desktop } from "@/lib/bridge";
@@ -199,7 +191,19 @@ function Devices() {
               }
             >
               {d.current ? null : (
-                <SmallButton tone="danger" onClick={() => setConfirm(d)} data-revoke={d.id}>
+                <SmallButton
+                  tone="danger"
+                  onClick={() =>
+                    void nativeConfirm({
+                      message: t("settings.revokeTitle"),
+                      detail: t("settings.revokeBody", { name: d.name }),
+                      confirm: t("settings.revoke"),
+                      cancel: t("common.cancel"),
+                      destructive: true,
+                    }).then((yes) => yes && revoke.mutate(d.id))
+                  }
+                  data-revoke={d.id}
+                >
                   {t("settings.revoke")}
                 </SmallButton>
               )}
@@ -218,21 +222,7 @@ function Devices() {
           <ChevronDownIcon className={cn("size-3.5 transition-transform", all && "rotate-180")} />
         </button>
       ) : null}
-      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && !revoke.isPending && setConfirm(null)}>
-        <AlertDialogContent size="sm" data-revoke-dialog>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[15px]">{t("settings.revokeTitle")}</AlertDialogTitle>
-            <AlertDialogDescription className="text-[13.5px]">{t("settings.revokeBody", { name: confirm?.name ?? "" })}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="sm">{t("common.cancel")}</AlertDialogCancel>
-            <Button size="sm" variant="destructive" disabled={revoke.isPending} onClick={() => confirm && revoke.mutate(confirm.id)} data-confirm-revoke>
-              {revoke.isPending ? <Spinner /> : null}
-              {t("settings.revoke")}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </Group>
   );
 }

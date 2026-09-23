@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 
 export function Section({ title, description, children, id }: { title: string; description?: string; children: ReactNode; id: string }) {
   return (
-    <div className="flex flex-col gap-7" data-settings-section={id}>
+    <div className="flex flex-col gap-6" data-settings-section={id}>
+      {/* The window names the section in its title row and tabs: the heading is for assistive tech. */}
       <header>
-        <h2 className="text-[20px] leading-tight font-semibold text-grid-fg">{title}</h2>
-        {description ? <p className="mt-1 text-[14px] text-grid-muted">{description}</p> : null}
+        <h2 className="sr-only">{title}</h2>
+        {description ? <p className="px-1 text-[13.5px] leading-snug text-grid-muted">{description}</p> : null}
       </header>
       {children}
     </div>
@@ -21,11 +22,11 @@ export function Group({ title, footer, action, children, className }: { title?: 
     <section className="flex flex-col gap-2">
       {title || action ? (
         <div className="flex min-h-5 items-end justify-between gap-3 px-1">
-          {title ? <h3 className="text-[13px] font-medium text-grid-muted">{title}</h3> : <span />}
+          {title ? <h3 className="text-[13px] font-semibold text-grid-muted">{title}</h3> : <span />}
           {action}
         </div>
       ) : null}
-      <div className={cn("divide-y divide-line overflow-hidden rounded-lg border border-line bg-grid-card", className)}>{children}</div>
+      <div className={cn("divide-y divide-line/70 overflow-hidden rounded-xl border border-line/80 bg-grid-card", className)}>{children}</div>
       {footer ? <div className="px-1 text-[13px] leading-snug text-grid-muted">{footer}</div> : null}
     </section>
   );
@@ -88,11 +89,14 @@ export function Segmented<V extends string>({
   options,
   onChange,
   label,
+  attr,
 }: {
   value: V;
   options: { value: V; label: ReactNode; dir?: "ltr" | "rtl"; lang?: string }[];
   onChange: (v: V) => void;
   label: string;
+  /** An extra data attribute carrying each option's value (for tests and styles). */
+  attr?: `data-${string}`;
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex h-7 items-center rounded-md border border-line bg-grid-soft/60 p-0.5">
@@ -103,6 +107,7 @@ export function Segmented<V extends string>({
           role="radio"
           aria-checked={value === o.value}
           data-value={o.value}
+          {...(attr ? { [attr]: o.value } : {})}
           dir={o.dir}
           lang={o.lang}
           onClick={() => onChange(o.value)}

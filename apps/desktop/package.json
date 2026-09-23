@@ -1,6 +1,6 @@
 {
   "name": "@mahaam/desktop",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Mahaam for macOS, Windows and Linux \u2014 a native desktop client with a menu-bar timer.",
   "author": "Fady Mondy <info@3x1.io>",

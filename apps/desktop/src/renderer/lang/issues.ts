@@ -8,6 +8,8 @@ export const en = {
   "create.submit": "Create issue",
   "create.more": "Create more",
   "create.another": "Create another",
+  "issue.openInWindow": "Open in New Window",
+  "issue.share": "Share…",
   "create.created": "Created {key}",
   "create.noProject": "Create a project first (on the web) to add issues.",
 
@@ -173,6 +175,8 @@ export const ar: Record<keyof typeof en, string> = {
   "create.submit": "إنشاء المهمة",
   "create.more": "إنشاء المزيد",
   "create.another": "إنشاء أخرى",
+  "issue.openInWindow": "فتح في نافذة جديدة",
+  "issue.share": "مشاركة…",
   "create.created": "تم إنشاء {key}",
   "create.noProject": "أنشئ مشروعًا أولًا (على الويب) لإضافة المهام.",
 

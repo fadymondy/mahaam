@@ -57,15 +57,11 @@
   -webkit-app-region: no-drag;
 }
 
-/* macOS draws the traffic lights at the physical top-left (x 16–68px): in LTR they sit in the
-   sidebar's top row; with the sidebar hidden, or in RTL (sidebar on the right), in the view header. */
-html[data-platform="darwin"][dir="ltr"]:not([data-fullscreen]) .sidebar-top {
-  padding-left: 80px;
-}
-/* View headers measure their own corner (ViewHeader in components/kit.tsx). */
-/* Windows/Linux draw the caption buttons at the physical top-right (≈138px). */
-html:is([data-platform="win32"], [data-platform="linux"])[dir="rtl"] .sidebar-top {
-  padding-right: 148px;
+/* The title-bar rows pad for the window's own buttons wherever they are — the macOS traffic lights
+   follow the app's native direction, Windows/Linux caption buttons sit top-right — by measuring
+   their corner (useWindowControlsPadding in components/kit.tsx, html[data-lights]). */
+.app-chrome {
+  user-select: none;
 }
 
 /* Thin, quiet scrollbars like a native list. */
@@ -87,7 +83,7 @@ html:is([data-platform="win32"], [data-platform="linux"])[dir="rtl"] .sidebar-to
    macOS vibrancy and Windows 11 Mica are the windows' own material; the renderer lets it show where
    a native app would (the sidebar, the popover, the quick palette) and paints solid ground where
    content is read (the view). */
-html[data-platform="darwin"]:is([data-surface="main"], [data-surface="popover"], [data-surface="palette"]) body,
+html[data-platform="darwin"]:is([data-surface="main"], [data-surface="popover"], [data-surface="palette"], [data-surface="settings"]) body,
 html[data-platform="win32"][data-surface="main"] body {
   background: transparent;
 }
@@ -123,11 +119,35 @@ html:not([data-platform="darwin"]) :is(.pop, .qp) {
 .nav-item[aria-current="page"] .nav-icon {
   color: var(--grid-action);
 }
+.nav-item svg {
+  stroke-width: 1.75;
+}
+/* Section titles in the sidebar (the workspace, Projects), native source-list style. */
+.nav-section-header {
+  display: flex;
+  height: 28px;
+  width: 100%;
+  align-items: center;
+  gap: 4px;
+  padding-inline: 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--grid-muted);
+  text-align: start;
+}
+.nav-section-header:hover {
+  color: var(--grid-fg);
+}
+.nav-section-link[aria-current="page"] {
+  color: var(--grid-fg);
+  background: color-mix(in oklab, var(--grid-action) 18%, transparent);
+}
 
 /* Light mode on macOS: the solid windows (main, settings) go without the system shadow, whose outline
    is a dark line around a light window, and draw their own hairline along the rounded corner
    (main.ts lightEdge). The radius is the window's own (measured: 26px on macOS 26+). */
-html[data-platform="darwin"]:not(.dark):not([data-fullscreen]):is([data-surface="main"], [data-surface="settings"]) #root::after {
+html[data-platform="darwin"]:not(.dark):not([data-fullscreen]):is([data-surface="main"], [data-surface="settings"], [data-surface="issue"]) #root::after {
   content: "";
   position: fixed;
   inset: 0;
@@ -135,4 +155,142 @@ html[data-platform="darwin"]:not(.dark):not([data-fullscreen]):is([data-surface=
   border-radius: 26px;
   pointer-events: none;
   z-index: 2147483647;
+}
+
+/* ── Settings window (views/Settings.tsx): a macOS preferences toolbar — the section's name in the
+   title row, then tabs with the icon over the label. The toolbar tints the window's material; the
+   section below is solid. */
+.settings-toolbar {
+  background: var(--grid-card);
+  border-bottom: 1px solid color-mix(in oklab, var(--grid-line) 70%, transparent);
+}
+html[data-platform="darwin"] .settings-toolbar {
+  background: color-mix(in oklab, var(--grid-bg) 70%, transparent);
+}
+.settings-title {
+  display: flex;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 90px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--grid-fg);
+}
+html:is([data-platform="win32"], [data-platform="linux"]) .settings-title {
+  justify-content: flex-start;
+  padding-inline: 16px 150px;
+  font-weight: 500;
+}
+.settings-toolbar[data-blurred] :is(.settings-title, .settings-tab) {
+  opacity: 0.6;
+}
+.settings-tab {
+  display: flex;
+  min-width: 76px;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 8px 5px;
+  border-radius: 8px;
+  color: color-mix(in oklab, var(--grid-fg) 72%, transparent);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  outline: none;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+:lang(ar) .settings-tab {
+  font-size: 12.5px;
+}
+.settings-tab > svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.6;
+}
+.settings-tab:hover {
+  color: var(--grid-fg);
+  background: color-mix(in oklab, var(--grid-fg) 7%, transparent);
+}
+.settings-tab[data-active] {
+  color: var(--grid-fg);
+  background: color-mix(in oklab, var(--grid-fg) 10%, transparent);
+}
+.settings-tab[data-active] > svg {
+  color: var(--grid-action);
+}
+.settings-tab:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--grid-action) 60%, transparent);
+}
+
+/* ── Sign-in (views/SignIn.tsx), after Health Debug's: the window is the screen ── */
+.signin {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 30%, color-mix(in oklab, var(--grid-action) 10%, transparent), transparent 70%),
+    var(--grid-bg);
+}
+.signin-input {
+  height: 40px;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--grid-line);
+  background: color-mix(in oklab, var(--grid-card) 70%, var(--grid-bg));
+  padding-inline: 12px;
+  font-size: 14.5px;
+  color: var(--grid-fg);
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.signin-input:focus {
+  border-color: var(--grid-action);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--grid-action) 22%, transparent);
+}
+.signin-primary {
+  display: inline-flex;
+  height: 40px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: var(--grid-action);
+  color: var(--grid-on-action);
+  font-size: 14.5px;
+  font-weight: 500;
+  box-shadow: 0 6px 22px -8px color-mix(in oklab, var(--grid-action) 70%, transparent);
+  transition: filter 0.12s ease, opacity 0.12s ease;
+}
+.signin-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.signin-primary:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+.signin-provider {
+  display: inline-flex;
+  height: 40px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 8px;
+  border: 1px solid var(--grid-line);
+  background: color-mix(in oklab, var(--grid-card) 85%, var(--grid-bg));
+  font-size: 14.5px;
+  color: var(--grid-fg);
+  transition: background 0.12s ease;
+}
+.signin-provider:hover {
+  background: var(--grid-soft);
+}
+.signin-link {
+  font-size: 13.5px;
+  color: var(--grid-body);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--grid-muted) 55%, transparent);
+  text-underline-offset: 3px;
+}
+.signin-link:hover {
+  color: var(--grid-fg);
 }

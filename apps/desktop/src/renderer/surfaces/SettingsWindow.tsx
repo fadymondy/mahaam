@@ -25,7 +25,7 @@ function Sections() {
   useEffect(() => on("command", (c) => c.type === "settings" && navigate({ name: "settings", section: c.section })), [navigate]);
   const section = route.name === "settings" ? route.section : undefined;
   return (
-    <div className="flex h-full flex-col bg-background" data-settings-window>
+    <div className="flex h-full flex-col" data-settings-window>
       <SettingsView section={section} />
     </div>
   );

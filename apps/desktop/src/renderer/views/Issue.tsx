@@ -16,7 +16,7 @@ import { Thread } from "@/components/issues/detail/Thread";
 import { DeleteIssueDialog, useIssueTimer } from "@/components/issues/IssueContext";
 import type { RowMenu } from "@/components/issues/IssueList";
 import { sortStatuses, useKeys } from "@/components/issues/util";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { nativeMenu, nativeShare, openIssueWindow } from "@/lib/native";
 import { useApp } from "@/lib/app";
 import { ApiError, api } from "@/lib/bridge";
 import { useBoard, useLabels, useMembers } from "@/lib/data";
@@ -26,7 +26,7 @@ import { useRouter } from "@/lib/router";
 
 export function IssueView({ issueKey }: { issueKey: string }) {
   const { t } = useI18n();
-  const { ws } = useApp();
+  const { ws, session } = useApp();
   const { navigate, back, canBack } = useRouter();
   const q = useQuery({ queryKey: qk.task(ws, issueKey), queryFn: () => api.task(issueKey), enabled: !!ws });
   const task = q.data;
@@ -102,34 +102,34 @@ export function IssueView({ issueKey }: { issueKey: string }) {
             <>
               <HeaderButton icon={<CopyIcon />} label={t("issue.copyKey")} showLabel={false} onClick={() => void actions.copyKey(task)} data-action="copy-key" />
               <HeaderButton icon={<ExternalLinkIcon />} label={t("common.openInBrowser")} showLabel={false} onClick={() => actions.openInBrowser(task)} data-action="open-web" />
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<button type="button" aria-label={t("issue.more")} title={t("issue.more")} className="flex size-7 items-center justify-center rounded-md text-grid-body hover:bg-grid-soft hover:text-grid-fg aria-expanded:bg-grid-soft" />}
-                >
-                  <MoreHorizontalIcon className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem className="gap-2 text-[13.5px]" onClick={() => void actions.copyKey(task)}>
-                    <CopyIcon />
-                    {t("issue.copyKey")}
-                    <Kbd combo="mod+shift+c" className="ms-auto" />
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2 text-[13.5px]" onClick={() => actions.openInBrowser(task)}>
-                    <ExternalLinkIcon />
-                    {t("common.openInBrowser")}
-                  </DropdownMenuItem>
-                  {task.can_delete ? (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" className="gap-2 text-[13.5px]" onClick={() => setConfirmDelete(true)}>
-                        <Trash2Icon />
-                        {t("issue.delete")}
-                        <Kbd combo="mod+⌫" className="ms-auto" />
-                      </DropdownMenuItem>
-                    </>
-                  ) : null}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <button
+                type="button"
+                aria-label={t("issue.more")}
+                title={t("issue.more")}
+                aria-haspopup="menu"
+                className="flex size-7 items-center justify-center rounded-md text-grid-body hover:bg-grid-soft hover:text-grid-fg"
+                onClick={(ev) => {
+                  const el = ev.currentTarget;
+                  void nativeMenu(
+                    [
+                      { id: "window", label: t("issue.openInWindow") },
+                      { id: "share", label: t("issue.share") },
+                      { id: "copy", label: t("issue.copyKey"), accelerator: "CmdOrCtrl+Shift+C" },
+                      { id: "browser", label: t("common.openInBrowser") },
+                      ...(task.can_delete ? [{ type: "separator" as const }, { id: "delete", label: t("issue.delete"), accelerator: "CmdOrCtrl+Backspace" }] : []),
+                    ],
+                    el,
+                  ).then((id) => {
+                    if (id === "window") void openIssueWindow(task.key);
+                    else if (id === "share") void nativeShare(`${session?.apiUrl ?? ""}/en/w/${session?.workspace?.slug ?? ""}/issues/${task.key}`, `${task.key} · ${task.title}`);
+                    else if (id === "copy") void actions.copyKey(task);
+                    else if (id === "browser") actions.openInBrowser(task);
+                    else if (id === "delete") setConfirmDelete(true);
+                  });
+                }}
+              >
+                <MoreHorizontalIcon className="size-4" />
+              </button>
             </>
           ) : null
         }
