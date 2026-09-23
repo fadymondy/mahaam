@@ -34,6 +34,33 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSCameraUsageDescription: "Take a photo to attach to an issue or request you file.",
       ITSAppUsesNonExemptEncryption: false,
     },
+    usesAppleSignIn: true,
+    // What the app collects and why (App Store privacy manifest). Everything is linked to the
+    // account, used to run the app, and never used for tracking. Keep in step with
+    // store/privacy.md and the privacy policy.
+    privacyManifests: {
+      NSPrivacyTracking: false,
+      NSPrivacyTrackingDomains: [],
+      NSPrivacyAccessedAPITypes: [
+        { NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryFileTimestamp", NSPrivacyAccessedAPITypeReasons: ["C617.1"] },
+        { NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryUserDefaults", NSPrivacyAccessedAPITypeReasons: ["CA92.1"] },
+        { NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategorySystemBootTime", NSPrivacyAccessedAPITypeReasons: ["35F9.1"] },
+      ],
+      NSPrivacyCollectedDataTypes: [
+        ["NSPrivacyCollectedDataTypeName", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+        ["NSPrivacyCollectedDataTypeEmailAddress", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+        ["NSPrivacyCollectedDataTypeUserID", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+        ["NSPrivacyCollectedDataTypePhotosorVideos", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+        ["NSPrivacyCollectedDataTypeOtherUserContent", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+        ["NSPrivacyCollectedDataTypeCrashData", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+        ["NSPrivacyCollectedDataTypePerformanceData", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+      ].map(([type, purposes]) => ({
+        NSPrivacyCollectedDataType: type as string,
+        NSPrivacyCollectedDataTypeLinked: true,
+        NSPrivacyCollectedDataTypeTracking: false,
+        NSPrivacyCollectedDataTypePurposes: purposes as string[],
+      })),
+    },
   },
   android: {
     package: ID,
@@ -45,6 +72,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     predictiveBackGestureEnabled: false,
     permissions: ["POST_NOTIFICATIONS"],
+    // Pulled in by dependencies but never used: audio (image picker), drawing over other apps (dev
+    // tooling) and the fingerprint API that USE_BIOMETRIC replaced. Play flags unused permissions.
+    blockedPermissions: ["android.permission.RECORD_AUDIO", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.USE_FINGERPRINT"],
   },
   web: { output: "single", favicon: asset("favicon") },
   plugins: [
@@ -58,7 +88,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ["expo-local-authentication", { faceIDPermission: "Unlock Mahaam with Face ID. Your face data never leaves this device." }],
     "expo-localization",
     ["expo-notifications", { color: "#8C3FB5" }],
-    ["expo-image-picker", { photosPermission: "Attach a photo to an issue or request you file." }],
+    // The camera and photos attach images; the app never records audio, so no microphone prompt
+    // (a generic, unused permission string is an App Review flag).
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Attach a photo to an issue or request you file.",
+        cameraPermission: "Take a photo to attach to an issue or request you file.",
+        microphonePermission: false,
+      },
+    ],
+    // Sign in with Apple (App Store 4.8: required once Google/GitHub sign-in are offered).
+    "expo-apple-authentication",
     [
       "expo-splash-screen",
       {

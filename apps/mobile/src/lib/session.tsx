@@ -47,6 +47,11 @@ interface SessionCtx {
   signIn(email: string, password: string): Promise<{ mfa?: string }>;
   completeMfa(challenge: string, answer: { code: string } | { recovery_code: string }): Promise<void>;
   register(name: string, email: string, password: string): Promise<void>;
+  /**
+   * A passwordless sign-in (lib/social.ts: Apple, or a provider in the browser). Resolves "mfa"
+   * with the challenge when the account has two-factor on, and {} when the person cancelled.
+   */
+  signInSocial(run: () => Promise<User | null>): Promise<{ mfa?: string; canceled?: boolean }>;
   signOut(): Promise<void>;
   chooseWorkspace(ws: Workspace | null): Promise<void>;
 }
@@ -99,6 +104,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       async signIn(email, password) {
         try {
           const u = await client.login(email.trim(), password);
+          setNotice(null);
+          setUser(u);
+          setStatus("signedIn");
+          return {};
+        } catch (e) {
+          if (e instanceof MfaRequired) return { mfa: e.challenge };
+          throw e;
+        }
+      },
+      async signInSocial(run) {
+        try {
+          const u = await run();
+          if (!u) return { canceled: true };
           setNotice(null);
           setUser(u);
           setStatus("signedIn");

@@ -45,6 +45,9 @@ const q = (params: Record<string, string | number | undefined | null>) => {
 };
 const e = encodeURIComponent;
 
+/** Who is asking: the password, or — for an account without one — the emailed re-auth code. */
+export type Reauth = { password: string } | { email_code: string };
+
 /** GET /api/auth/tokens: one per signed-in device or app. */
 export interface AccessToken {
   id: string;
@@ -88,21 +91,23 @@ export function api(c: MahaamClient) {
         return c.request<Profile>("/api/me/avatar", { method: "POST", form, workspace: false });
       },
       removeAvatar: () => c.del<Profile>("/api/me/avatar"),
-      changeEmail: (email: string, password: string, locale: string) => c.post<unknown>("/api/me/email", { email, password, locale }, { workspace: false }),
+      changeEmail: (email: string, reauth: Reauth, locale: string) => c.post<unknown>("/api/me/email", { email, ...reauth, locale }, { workspace: false }),
+      /** Passwordless accounts (Apple/Google/GitHub): a 6-digit code by email stands in for the password. */
+      reauthCode: (locale: string) => c.post<{ email: string; expires_in: number }>("/api/me/reauth/code", { locale }, { workspace: false }),
       confirmEmail: (code: string, locale: string) => c.post<Profile>("/api/me/email/confirm", { code, locale }, { workspace: false }),
       verifyState: () => c.get<VerifyState>("/api/me/verify-email", { workspace: false }),
       verifyEmail: (code: string) => c.post<VerifyState>("/api/me/verify-email", { code }, { workspace: false }),
       resendVerify: (locale: string) => c.post<unknown>("/api/me/verify-email/resend", { locale }, { workspace: false }),
       twoFA: () => c.get<TwoFAState>("/api/me/2fa", { workspace: false }),
-      twoFAEnroll: (password: string) => c.post<{ secret: string; otpauth_url: string }>("/api/me/2fa/enroll", { password }, { workspace: false }),
+      twoFAEnroll: (reauth: Reauth) => c.post<{ secret: string; otpauth_url: string }>("/api/me/2fa/enroll", reauth, { workspace: false }),
       twoFAConfirm: (code: string) => c.post<{ recovery_codes: string[] | null }>("/api/me/2fa/confirm", { code }, { workspace: false }),
-      twoFADisable: (input: { password: string; code?: string; recovery_code?: string }) => c.post<unknown>("/api/me/2fa/disable", input, { workspace: false }),
-      twoFARecovery: (password: string, code: string) =>
-        c.post<{ recovery_codes: string[] | null }>("/api/me/2fa/recovery-codes", { password, code }, { workspace: false }),
+      twoFADisable: (input: Reauth & { code?: string; recovery_code?: string }) => c.post<unknown>("/api/me/2fa/disable", input, { workspace: false }),
+      twoFARecovery: (reauth: Reauth, code: string) =>
+        c.post<{ recovery_codes: string[] | null }>("/api/me/2fa/recovery-codes", { ...reauth, code }, { workspace: false }),
       /** The account's signed-in devices: its personal access tokens (phones, desktops, the extension). */
       devices: async () => ((await c.get<AccessToken[] | null>("/api/auth/tokens", { workspace: false })) ?? []),
       revokeDevice: (id: string) => c.del<unknown>(`/api/auth/tokens/${encodeURIComponent(id)}`),
-      deleteAccount: (input: { password: string; code?: string; recovery_code?: string; locale: string }) =>
+      deleteAccount: (input: Reauth & { code?: string; recovery_code?: string; locale: string }) =>
         c.post<{ purge_after: string }>("/api/me/delete", input, { workspace: false }),
     },
 

@@ -183,10 +183,60 @@ export class MahaamClient {
   /** The second step of a 2FA sign-in: the authenticator code or a one-time recovery code. */
   async completeMfa(challenge: string, answer: { code: string } | { recovery_code: string }): Promise<User> {
     const out = await this.authPost("/api/auth/2fa/challenge", { challenge, ...answer });
-    await this.saveSession(out, this.pendingMfa ?? { email: "", password: "" });
+    // pendingMfa is null after a passwordless first step (Apple): nothing to keep for re-login.
+    await this.saveSession(out, this.pendingMfa);
     this.pendingMfa = null;
     await this.upgradeToAccessToken(this.o.deviceName ?? "Mahaam mobile");
     return this.user!;
+  }
+
+  /**
+   * Sign in with Apple (iOS): the identity token Apple gave the app and the RAW nonce whose SHA-256
+   * the app passed to Apple (the server checks token.nonce == sha256hex(raw)). Apple sends the name
+   * only the first time. A new Apple ID becomes a passwordless account; one with two-factor on
+   * answers mfa_required like a password sign-in.
+   */
+  async appleSignIn(input: { identity_token: string; nonce: string; name?: { given?: string; family?: string }; locale?: string }): Promise<User> {
+    let out: { token: string; user?: User; access_token?: string };
+    try {
+      out = (await this.authPost("/api/auth/apple", { ...input, device_name: this.o.deviceName ?? "Mahaam mobile" })) as typeof out;
+    } catch (e) {
+      const d = e instanceof ApiError ? (e.body as { code?: string; challenge?: string } | undefined) : undefined;
+      if (e instanceof ApiError && e.status === 401 && d?.code === "mfa_required" && d.challenge) {
+        this.pendingMfa = null;
+        throw new MfaRequired(d.challenge);
+      }
+      throw e;
+    }
+    await this.saveSession(out, null);
+    if (out.access_token) await this.adoptToken(out.access_token);
+    else await this.upgradeToAccessToken(this.o.deviceName ?? "Mahaam mobile");
+    return this.user!;
+  }
+
+  /**
+   * The end of a sign-in done in the system browser (Google, GitHub…): the one-time code the web's
+   * app-signin page sent back to mahaam://auth/callback, exchanged with the PKCE verifier for this
+   * device's access token (POST /api/auth/app/token), then who it belongs to (GET /api/auth/me).
+   */
+  async exchangeAppCode(code: string, verifier: string, redirectUri: string): Promise<User> {
+    const out = await this.request<{ token: string; email?: string }>("/api/auth/app/token", {
+      method: "POST",
+      body: { code, code_verifier: verifier, redirect_uri: redirectUri },
+      workspace: false,
+    });
+    await this.adoptToken(out.token);
+    const me = await this.request<{ id?: string; ID?: string; email?: string; Email?: string; user?: User }>("/api/auth/me", { workspace: false });
+    const id = me.user?.id ?? me.id ?? me.ID ?? "";
+    const email = me.user?.email ?? me.email ?? me.Email ?? out.email ?? "";
+    this.user = { id, email };
+    await this.o.store.set(K.user, JSON.stringify(this.user));
+    return this.user;
+  }
+
+  private async adoptToken(token: string) {
+    this.token = token;
+    await Promise.all([this.o.store.set(K.token, token), this.o.store.del(K.creds)]);
   }
 
   /** An unauthenticated POST that needs the CSRF double-submit (forgot / reset password). */
@@ -240,7 +290,8 @@ export class MahaamClient {
     await Promise.all([this.o.store.del(K.token), this.o.store.del(K.creds), this.o.store.del(K.user), this.o.store.del(K.ws)]);
   }
 
-  private async saveSession(out: { token: string; user?: { id: string; email: string } }, creds: { email: string; password: string }) {
+  /** `creds` null: a passwordless sign-in (Apple, a browser handoff) — nothing to re-login with. */
+  private async saveSession(out: { token: string; user?: { id: string; email: string } }, creds: { email: string; password: string } | null) {
     this.token = out.token;
     this.user = out.user ? { id: out.user.id, email: out.user.email } : this.user;
     const canKeepSecrets = this.o.store.secure !== false;
@@ -248,7 +299,7 @@ export class MahaamClient {
       this.o.store.set(K.token, out.token),
       // Only where the OS can protect it. Without this the plaintext password lands in
       // localStorage on the web build. reauthenticate() simply returns false instead.
-      canKeepSecrets ? this.o.store.set(K.creds, JSON.stringify(creds)) : this.o.store.del(K.creds),
+      canKeepSecrets && creds ? this.o.store.set(K.creds, JSON.stringify(creds)) : this.o.store.del(K.creds),
       this.user ? this.o.store.set(K.user, JSON.stringify(this.user)) : Promise.resolve(),
     ]);
   }

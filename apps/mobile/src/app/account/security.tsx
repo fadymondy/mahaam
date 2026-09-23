@@ -7,7 +7,8 @@ import { KeyboardAvoidingView, Linking, Platform, Share, Switch, View } from "re
 
 import { ApiError } from "@/api/client";
 import { Chip, Micro, useErrorText } from "@/components/kit";
-import { useTwoFA } from "@/features/account";
+import { EMPTY_REAUTH, ReauthField, reauthBody, reauthReady, type ReauthValue } from "@/components/reauth";
+import { useProfile, useTwoFA } from "@/features/account";
 import { secondFactor, SecondFactorField, secondFactorReady, type SecondFactor } from "@/components/second-factor";
 import { AppText, ErrorLine, fonts, OtpField, PasswordField, PrimaryButton, Row, Rows, Screen, SecondaryButton, SkeletonRow, StackHeader, useColors } from "@/grid";
 import { useT } from "@/i18n";
@@ -46,7 +47,10 @@ export default function Security() {
   const state = useTwoFA();
   const bio = useBiometric();
   const [flow, setFlow] = useState<Flow>(null);
-  const [password, setPassword] = useState("");
+  const profile = useProfile();
+  // Apple/Google/GitHub accounts have no password: they confirm with an emailed code.
+  const hasPassword = profile.data?.has_password !== false;
+  const [reauth, setReauth] = useState<ReauthValue>(EMPTY_REAUTH);
   const [code, setCode] = useState("");
   const [factor, setFactor] = useState<SecondFactor>({ value: "", recovery: false });
   const [secret, setSecret] = useState<{ secret: string; otpauth_url: string } | null>(null);
@@ -57,7 +61,7 @@ export default function Security() {
   const refresh = () => void qc.invalidateQueries({ queryKey: ["me", user?.id ?? ""] });
   const start = (f: Flow) => {
     setFlow(f);
-    setPassword("");
+    setReauth(EMPTY_REAUTH);
     setCode("");
     setFactor({ value: "", recovery: false });
     setError(null);
@@ -101,7 +105,7 @@ export default function Security() {
             ) : null}
 
             {flow === "enroll" || flow === "disable" || flow === "regenerate" ? (
-              <PasswordField label={t("auth.password")} value={password} onChangeText={setPassword} />
+              <ReauthField hasPassword={hasPassword} value={reauth} onChange={setReauth} />
             ) : null}
             {flow === "regenerate" ? <OtpField label={t("auth.mfa.code")} value={code} onChange={setCode} /> : null}
             {/* Turning it off also takes a recovery code: the way out for a lost phone. */}
@@ -110,9 +114,9 @@ export default function Security() {
             {flow === "enroll" ? (
               <PrimaryButton
                 label={t("account.twofa.continue")}
-                disabled={busy || !password}
+                disabled={busy || !reauthReady(reauth, hasPassword)}
                 onPress={() => void run(async () => {
-                  setSecret(await mahaam.me.twoFAEnroll(password));
+                  setSecret(await mahaam.me.twoFAEnroll(reauthBody(reauth, hasPassword)));
                   setFlow("confirm");
                   setCode("");
                 })}
@@ -144,9 +148,9 @@ export default function Security() {
             {flow === "regenerate" ? (
               <PrimaryButton
                 label={t("account.twofa.regenerate")}
-                disabled={busy || !password || code.length < 6}
+                disabled={busy || !reauthReady(reauth, hasPassword) || code.length < 6}
                 onPress={() => void run(async () => {
-                  const r = await mahaam.me.twoFARecovery(password, code);
+                  const r = await mahaam.me.twoFARecovery(reauthBody(reauth, hasPassword), code);
                   setCodes(r.recovery_codes ?? []);
                   setFlow("codes");
                   refresh();
@@ -157,9 +161,9 @@ export default function Security() {
             {flow === "disable" ? (
               <PrimaryButton
                 label={t("account.twofa.turnOff")}
-                disabled={busy || !password || !secondFactorReady(factor)}
+                disabled={busy || !reauthReady(reauth, hasPassword) || !secondFactorReady(factor)}
                 onPress={() => void run(async () => {
-                  await mahaam.me.twoFADisable({ password, ...secondFactor(factor) });
+                  await mahaam.me.twoFADisable({ ...reauthBody(reauth, hasPassword), ...secondFactor(factor) });
                   setFlow(null);
                   refresh();
                 })}

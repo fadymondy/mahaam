@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform } from "react-native";
 
 import { ApiError } from "@/api/client";
 import { useErrorText } from "@/components/kit";
+import { useProfile } from "@/features/account";
 import { AppText, ErrorLine, fonts, PasswordField, passwordScore, PrimaryButton, Row, Rows, Screen, StackHeader, StrengthMeter, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { mahaam } from "@/lib/session";
@@ -18,12 +19,25 @@ export default function ChangePassword() {
   const errText = useErrorText();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
+  const profile = useProfile();
   const change = useMutation({ mutationFn: () => mahaam.auth.changePassword(current, next) });
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Screen header={<StackHeader title={t("account.password.title")} />}>
         <Rows>
+          {/* An Apple/Google/GitHub account has no current password to type: it sets one through
+              the emailed-code reset (the forgot-password flow), which then signs it in again. */}
+          {profile.data?.has_password === false ? (
+            <Row>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.body, color: c.body }}>{t("account.reauth.noPassword")}</AppText>
+              <PrimaryButton
+                label={t("account.reauth.setPassword")}
+                icon={<KeyRound size={17} color={c.onAction} strokeWidth={1.6} />}
+                onPress={() => router.push({ pathname: "/forgot", params: { email: profile.data?.email ?? "" } })}
+              />
+            </Row>
+          ) : (
           <Row>
             <PasswordField label={t("account.password.current")} value={current} onChangeText={setCurrent} />
             <PasswordField label={t("auth.reset.newPassword")} value={next} onChangeText={setNext} autoComplete="new-password" />
@@ -37,6 +51,7 @@ export default function ChangePassword() {
               onPress={() => change.mutate(undefined, { onSuccess: () => setTimeout(() => router.back(), 900) })}
             />
           </Row>
+          )}
         </Rows>
       </Screen>
     </KeyboardAvoidingView>

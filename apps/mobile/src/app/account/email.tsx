@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform } from "react-native";
 
 import { ApiError } from "@/api/client";
 import { useErrorText } from "@/components/kit";
+import { EMPTY_REAUTH, ReauthField, reauthBody, reauthReady, type ReauthValue } from "@/components/reauth";
 import { useProfile } from "@/features/account";
 import { AppText, ErrorLine, Field, fonts, OtpField, PasswordField, PrimaryButton, Row, Rows, Screen, StackHeader, useColors } from "@/grid";
 import { useI18n } from "@/i18n";
@@ -22,7 +23,8 @@ export default function ChangeEmail() {
   const profile = useProfile();
   const [step, setStep] = useState<"form" | "code">("form");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const hasPassword = profile.data?.has_password !== false;
+  const [reauth, setReauth] = useState<ReauthValue>(EMPTY_REAUTH);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,13 +53,13 @@ export default function ChangeEmail() {
           {step === "form" ? (
             <Row>
               <Field label={t("account.email.new")} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" ltr icon={<Mail size={17} color={c.muted} strokeWidth={1.6} />} />
-              <PasswordField label={t("auth.password")} value={password} onChangeText={setPassword} />
+              <ReauthField hasPassword={hasPassword} value={reauth} onChange={setReauth} />
               {error ? <ErrorLine text={error} /> : null}
               <PrimaryButton
                 label={t("auth.reset.send")}
-                disabled={busy || !email.includes("@") || !password}
+                disabled={busy || !email.includes("@") || !reauthReady(reauth, hasPassword)}
                 onPress={() => void run(async () => {
-                  await mahaam.me.changeEmail(email.trim(), password, locale);
+                  await mahaam.me.changeEmail(email.trim(), reauthBody(reauth, hasPassword), locale);
                   setStep("code");
                 })}
               />

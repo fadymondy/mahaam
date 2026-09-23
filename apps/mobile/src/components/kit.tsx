@@ -44,6 +44,8 @@ export function useErrorText() {
       if (e.status === 429) return t("common.rateLimited");
       const code = (e.body as { code?: string } | undefined)?.code;
       if (code === "account_suspended") return t("common.suspended");
+      if (code === "invalid_code") return t("common.codeInvalid");
+      if (code === "reauth_required") return t("account.reauth.required");
       if (hints.login && (e.status === 401 || e.status === 422)) return t("auth.invalid");
       if (hints.password && (e.status === 401 || e.status === 403)) return t("common.passwordWrong");
       if (hints.newPassword && e.status === 422) return t("common.passwordShort");
