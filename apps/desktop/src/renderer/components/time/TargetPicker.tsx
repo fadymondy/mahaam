@@ -97,7 +97,7 @@ export function TargetPicker({
           />
         }
       >
-        {cur ? <ProjectMark name={cur.name} color={cur.color} size={14} /> : <FolderIcon className="size-3.5 text-grid-muted" />}
+        {cur ? <ProjectMark name={cur.name} color={cur.color} id={cur.id} size={14} /> : <FolderIcon className="size-3.5 text-grid-muted" />}
         {value.task ? (
           <>
             <LtrText className="font-mono text-[12px] text-grid-muted">{value.task.key}</LtrText>
@@ -132,7 +132,7 @@ export function TargetPicker({
                       onSelect={() => pick({ project: task.project_id, task: { id: task.id, key: task.key, title: task.title } })}
                       className="text-[13.5px] data-[selected=false]:bg-transparent!"
                     >
-                      <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
+                      <ProjectMark name={p?.name ?? "?"} color={p?.color} id={p?.id} size={14} />
                       <LtrText className="font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
                       <span className="truncate">{task.title}</span>
                     </CommandItem>
@@ -150,7 +150,7 @@ export function TargetPicker({
                     onSelect={() => pick({ project: p.id, task: null })}
                     className="text-[13.5px] data-[selected=false]:bg-transparent!"
                   >
-                    <ProjectMark name={p.name} color={p.color} size={14} />
+                    <ProjectMark name={p.name} color={p.color} id={p.id} size={14} />
                     <span className="truncate">{p.name}</span>
                   </CommandItem>
                 ))}

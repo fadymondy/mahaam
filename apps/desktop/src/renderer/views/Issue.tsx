@@ -142,7 +142,7 @@ export function IssueView({ issueKey }: { issueKey: string }) {
               className="flex min-w-0 items-center gap-2 rounded-md px-1 py-0.5 text-grid-body hover:bg-grid-soft hover:text-grid-fg"
               data-breadcrumb-project
             >
-              <ProjectMark name={task.project.name} color={task.project.color} size={16} />
+              <ProjectMark name={task.project.name} color={task.project.color} id={task.project.id} size={16} />
               <span className="truncate">{task.project.name}</span>
             </button>
             <ChevronRightIcon className="size-3.5 shrink-0 text-grid-muted rtl:-scale-x-100" />

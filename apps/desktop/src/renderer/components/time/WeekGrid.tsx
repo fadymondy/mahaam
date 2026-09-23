@@ -68,7 +68,7 @@ export function WeekGrid({
           return (
             <div key={k} className="group/row grid h-9 items-stretch border-b border-line hover:bg-grid-soft/30" style={{ gridTemplateColumns: COLS }} role="row" data-grid-row={k}>
               <div className="flex min-w-0 items-center gap-2 ps-4 pe-2" role="rowheader" title={[r.project_name, r.task_key, r.task_title].filter(Boolean).join(" · ")}>
-                {r.project_id ? <ProjectMark name={r.project_name ?? "?"} color={r.project_color} size={14} /> : <span className="size-3.5 shrink-0 rounded-[4px] border border-dashed border-line" />}
+                {r.project_id ? <ProjectMark name={r.project_name ?? "?"} color={r.project_color} id={r.project_id} size={14} /> : <span className="size-3.5 shrink-0 rounded-[4px] border border-dashed border-line" />}
                 {r.task_key ? <LtrText className="shrink-0 font-mono text-[12px] text-grid-muted">{r.task_key}</LtrText> : null}
                 <span className={cn("truncate text-[13.5px]", r.project_id || r.task_id ? "text-grid-fg" : "text-grid-muted")}>{label}</span>
                 {r.task_id && r.project_name ? <span className="hidden shrink truncate text-[12.5px] text-grid-muted xl:inline">{r.project_name}</span> : null}

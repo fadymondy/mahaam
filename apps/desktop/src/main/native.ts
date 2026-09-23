@@ -9,7 +9,7 @@
 //   window:issue    an issue in its own document window (listed in the Window menu).
 //   text menus      right-clicking text anywhere gets the native Cut/Copy/Paste menu with spelling
 //                   suggestions, "Look Up" and "Search with Google".
-import { BrowserWindow, dialog, ipcMain, Menu, ShareMenu, shell, type IpcMainInvokeEvent, type MenuItemConstructorOptions, type WebContents } from "electron";
+import { BrowserWindow, dialog, ipcMain, Menu, nativeImage, ShareMenu, shell, type IpcMainInvokeEvent, type MenuItemConstructorOptions, type WebContents } from "electron";
 
 export interface NativeMenuItem {
   id?: string;
@@ -19,6 +19,8 @@ export interface NativeMenuItem {
   type?: "normal" | "separator" | "checkbox" | "radio" | "submenu" | "header";
   checked?: boolean;
   enabled?: boolean;
+  /** A 16pt image beside the label: a data:image/png URL drawn at 2× (a project's avatar). */
+  image?: string;
   /** Display-only shortcut hint, e.g. "CmdOrCtrl+Backspace". */
   accelerator?: string;
   submenu?: NativeMenuItem[];
@@ -67,6 +69,14 @@ function probePick(items: NativeMenuItem[]): string | null {
   return hit?.id ?? null;
 }
 
+/** A menu image from the renderer: PNG/JPEG/WebP data URLs only, drawn at 2× → 16pt. */
+function menuImage(v: unknown): Electron.NativeImage | undefined {
+  if (typeof v !== "string" || v.length > 200_000 || !/^data:image\/(png|jpeg|webp);base64,/.test(v)) return undefined;
+  const img = nativeImage.createFromDataURL(v);
+  if (img.isEmpty()) return undefined;
+  return nativeImage.createFromBuffer(img.resize({ width: 32, height: 32, quality: "best" }).toPNG(), { scaleFactor: 2 });
+}
+
 const str = (v: unknown, max = 300) => (typeof v === "string" ? v.slice(0, max) : undefined);
 
 function toTemplate(items: NativeMenuItem[], pick: (id: string) => void, depth = 0): MenuItemConstructorOptions[] {
@@ -79,6 +89,7 @@ function toTemplate(items: NativeMenuItem[], pick: (id: string) => void, depth =
       sublabel: str(it?.sublabel),
       enabled: it?.enabled !== false,
       accelerator: str(it?.accelerator, 40),
+      icon: menuImage(it?.image),
       registerAccelerator: false, // a hint only: the app menu and the views own the shortcuts
     };
     if (it?.type === "submenu" || it?.submenu?.length) return { ...base, submenu: toTemplate(it.submenu ?? [], pick, depth + 1) };

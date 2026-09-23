@@ -6,11 +6,18 @@ import { TagIcon, UserIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
 import type { Label, Member, Project, Status } from "../../shared/types";
-import { Avatar, ColorDot, PRIORITIES, PriorityIcon, ProjectMark, StatusIcon } from "@/components/kit";
+import { Avatar, ColorDot, PRIORITIES, PriorityIcon, ProjectMark, soft, solid, StatusIcon } from "@/components/kit";
 import { useI18n } from "@/lib/i18n";
-import { nativeMenu } from "@/lib/native";
+import { nativeMenu, projectMenuImage } from "@/lib/native";
 
-type Option<V> = { value: V; label: string; icon?: ReactNode; hint?: string };
+type Option<V> = {
+  value: V;
+  label: string;
+  icon?: ReactNode;
+  hint?: string;
+  /** The row's image in the native menu (a data URL), e.g. a project's avatar. */
+  menuImage?: () => Promise<string | undefined>;
+};
 
 /** What every picker accepts on top of its value: controlled opening (S/P/A/L), a trigger style. */
 export interface PickerChrome {
@@ -70,8 +77,9 @@ export function PropertyMenu<V extends string>({
       do {
         const sel = current.current;
         const isOn = (v: V) => (Array.isArray(sel) ? sel.includes(v) : sel === v);
+        const images = await Promise.all(options.map((o) => o.menuImage?.()));
         const items = options.length
-          ? options.map((o) => ({ id: o.value, label: o.label, sublabel: o.hint, type: (multiple ? "checkbox" : "radio") as "checkbox" | "radio", checked: isOn(o.value) }))
+          ? options.map((o, i) => ({ id: o.value, label: o.label, sublabel: o.hint, image: images[i], type: (multiple ? "checkbox" : "radio") as "checkbox" | "radio", checked: isOn(o.value) }))
           : [{ label: placeholder ?? label, enabled: false }];
         picked = await nativeMenu(items, ref.current);
         if (picked !== null) {
@@ -247,13 +255,18 @@ export function ProjectPicker({ projects, value, onChange, ...chrome }: { projec
       label={t("create.project")}
       searchable
       placeholder={t("create.project")}
-      options={projects.map((p) => ({ value: p.id, label: p.name, icon: <ProjectMark name={p.name} color={p.color} size={14} /> }))}
+      options={projects.map((p) => ({
+        value: p.id,
+        label: p.name,
+        icon: <ProjectMark name={p.name} color={p.color} id={p.id} size={14} />,
+        menuImage: () => projectMenuImage(p, { soft: soft(p.color), solid: solid(p.color) }),
+      }))}
       value={value}
       onChange={onChange}
       {...chrome}
       trigger={
         <>
-          {cur ? <ProjectMark name={cur.name} color={cur.color} size={14} /> : null}
+          {cur ? <ProjectMark name={cur.name} color={cur.color} id={cur.id} size={14} /> : null}
           <span className="truncate">{cur?.name ?? t("create.project")}</span>
         </>
       }

@@ -198,7 +198,7 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
                       })
                     }
                   >
-                    {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} size={14} /> : <HistoryIcon className="text-grid-muted" />}
+                    {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} id={e.project_id} size={14} /> : <HistoryIcon className="text-grid-muted" />}
                     <span className="min-w-0 truncate">{e.description || e.task_title || e.project_name || t("timer.untitled")}</span>
                     {e.task_key ? <LtrText className="shrink-0 font-mono text-[12px] text-grid-muted">{e.task_key}</LtrText> : null}
                     {e.project_name && (e.description || e.task_title) ? <span className="min-w-0 shrink truncate text-[12.5px] text-grid-muted">{e.project_name}</span> : null}
@@ -212,7 +212,7 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
                   const p = byId.get(task.project_id);
                   return (
                     <CommandItem className={ITEM} key={task.id} value={`t:${task.id}`} onSelect={() => void go({ task: task.id, ...(text ? { description: text } : {}) })}>
-                      <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
+                      <ProjectMark name={p?.name ?? "?"} color={p?.color} id={p?.id} size={14} />
                       <LtrText className="font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
                       <span className="truncate">{task.title}</span>
                     </CommandItem>
@@ -224,7 +224,7 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
               <CommandGroup heading={t("nav.projects")}>
                 {projs.map((p) => (
                   <CommandItem className={ITEM} key={p.id} value={`p:${p.id}`} onSelect={() => void go({ project: p.id, ...(text ? { description: text } : {}) })}>
-                    <ProjectMark name={p.name} color={p.color} size={14} />
+                    <ProjectMark name={p.name} color={p.color} id={p.id} size={14} />
                     <span className={cn("truncate")}>{p.name}</span>
                   </CommandItem>
                 ))}

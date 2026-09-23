@@ -27,6 +27,57 @@ export function nativeMenu(items: NativeMenuItem[], at?: Element | { x: number; 
   return call<string | null>("native:menu", { items, ...(point ?? {}) });
 }
 
+const icons = new Map<string, Promise<string | undefined>>();
+
+/** A CSS colour (a palette variable, color-mix…) as the canvas can take it. */
+function cssColor(value: string): string {
+  const el = document.createElement("span");
+  el.style.color = value;
+  document.body.appendChild(el);
+  const out = getComputedStyle(el).color;
+  el.remove();
+  return out;
+}
+
+/**
+ * A project's image for a native menu row (32px for 16pt at 2×): its avatar, or the coloured tile
+ * with its initial that the app draws (ProjectMark). Cached per project and look.
+ */
+export function projectMenuImage(p: { id: string; name: string; color?: string | null; avatar?: string | null }, colors: { soft: string; solid: string }): Promise<string | undefined> {
+  const key = `${p.id}|${p.name}|${p.color}|${p.avatar?.length ?? 0}|${document.documentElement.classList.contains("dark")}`;
+  let hit = icons.get(key);
+  if (!hit) {
+    hit = (async () => {
+      const size = 32;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = size;
+      const g = canvas.getContext("2d");
+      if (!g) return undefined;
+      g.beginPath();
+      g.roundRect(0, 0, size, size, 8);
+      g.clip();
+      if (p.avatar) {
+        const img = new Image();
+        img.src = p.avatar;
+        await img.decode();
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        g.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+      } else {
+        g.fillStyle = cssColor(colors.soft);
+        g.fillRect(0, 0, size, size);
+        g.fillStyle = cssColor(colors.solid);
+        g.font = `600 18px Inter, -apple-system, sans-serif`;
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText(p.name.slice(0, 1).toUpperCase(), size / 2, size / 2 + 1);
+      }
+      return canvas.toDataURL("image/png");
+    })().catch(() => undefined);
+    icons.set(key, hit);
+  }
+  return hit;
+}
+
 /** A native alert (a sheet on macOS). Resolves true when confirmed. */
 export function nativeConfirm(o: { message: string; detail?: string; confirm: string; cancel: string; destructive?: boolean }): Promise<boolean> {
   return call<boolean>("native:confirm", o).catch(() => false);

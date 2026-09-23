@@ -138,7 +138,7 @@ function ProjectRow({ project: p, focused, onOpen, onHover }: { project: Project
       )}
     >
       <span className="flex min-w-0 items-center gap-2.5" role="gridcell">
-        <ProjectMark name={p.name} color={p.color} size={18} />
+        <ProjectMark name={p.name} color={p.color} id={p.id} size={18} />
         <span className={cn("truncate font-medium", p.archived_at ? "text-grid-muted" : "text-grid-fg")}>{p.name}</span>
         {p.archived_at ? <ArchiveIcon className="size-3 shrink-0 text-grid-muted" aria-label={t("issues.projects.archivedOne")} /> : null}
       </span>

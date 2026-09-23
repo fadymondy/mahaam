@@ -129,7 +129,7 @@ export function CommandPalette({
                   const p = byId.get(task.project_id);
                   return (
                     <CommandItem key={task.id} value={`issue:${task.key}`} onSelect={() => go({ name: "issue", key: task.key })}>
-                      <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
+                      <ProjectMark name={p?.name ?? "?"} color={p?.color} id={p?.id} size={14} />
                       <LtrText className="w-16 shrink-0 font-mono text-[12px] text-grid-muted">{task.key}</LtrText>
                       <span className="truncate">{task.title}</span>
                     </CommandItem>
@@ -170,7 +170,7 @@ export function CommandPalette({
                   .slice(0, 8)
                   .map((p) => (
                     <CommandItem key={p.id} value={`project:${p.id}`} onSelect={() => go({ name: "project", id: p.id })}>
-                      <ProjectMark name={p.name} color={p.color} size={14} />
+                      <ProjectMark name={p.name} color={p.color} id={p.id} size={14} />
                       <span className="truncate">{p.name}</span>
                     </CommandItem>
                   ))}

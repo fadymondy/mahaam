@@ -94,7 +94,7 @@ function IssuePreview({ note, issueKey, onOpen }: { note: Note; issueKey: string
         <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px] text-grid-muted">
           {task ? (
             <>
-              <ProjectMark name={task.project.name} color={task.project.color} />
+              <ProjectMark name={task.project.name} color={task.project.color} id={task.project.id} />
               <span className="truncate">{task.project.name}</span>
               <ChevronRightIcon className="size-3.5 shrink-0 opacity-60 rtl:-scale-x-100" />
             </>

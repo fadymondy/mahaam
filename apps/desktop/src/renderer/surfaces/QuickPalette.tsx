@@ -206,9 +206,9 @@ function Search({ onCreate, timer = false }: { onCreate: (text: string) => void;
       }
       for (const task of (mine.data ?? []).filter((x) => !x.completed_at).slice(0, 12)) {
         const p = byId.get(task.project_id);
-        out.push({ id: `mine:${task.key}`, section: "issues", mark: true, title: task.title, sub: [task.key, p?.name].filter(Boolean).join(" · "), icon: <ProjectMark name={p?.name ?? "?"} color={p?.color} size={16} />, keywords: [task.key], run: go({ task: task.id }, task.key) });
+        out.push({ id: `mine:${task.key}`, section: "issues", mark: true, title: task.title, sub: [task.key, p?.name].filter(Boolean).join(" · "), icon: <ProjectMark name={p?.name ?? "?"} color={p?.color} id={p?.id} size={16} />, keywords: [task.key], run: go({ task: task.id }, task.key) });
       }
-      for (const p of projects.data ?? []) out.push({ id: `proj:${p.id}`, section: "projects", mark: true, title: p.name, icon: <ProjectMark name={p.name} color={p.color} size={16} />, run: go({ project: p.id }, p.name) });
+      for (const p of projects.data ?? []) out.push({ id: `proj:${p.id}`, section: "projects", mark: true, title: p.name, icon: <ProjectMark name={p.name} color={p.color} id={p.id} size={16} />, run: go({ project: p.id }, p.name) });
       return out;
     }
     const out: Item[] = [
@@ -245,7 +245,7 @@ function Search({ onCreate, timer = false }: { onCreate: (text: string) => void;
       { id: "go:app", section: "go", title: t("pop.openApp"), icon: <ArrowUpRightIcon />, run: () => open({ name: "my-issues" }) },
     ];
     for (const p of projects.data ?? [])
-      out.push({ id: `project:${p.id}`, section: "projects", title: p.name, sub: p.client_name ?? undefined, mark: true, icon: <ProjectMark name={p.name} color={p.color} size={16} />, run: () => open({ name: "project", id: p.id }) });
+      out.push({ id: `project:${p.id}`, section: "projects", title: p.name, sub: p.client_name ?? undefined, mark: true, icon: <ProjectMark name={p.name} color={p.color} id={p.id} size={16} />, run: () => open({ name: "project", id: p.id }) });
     const issueItem = (k: string, title: string, sub: string | undefined, icon: ReactNode, taskId?: string): Item => ({
       id: `issue:${k}`,
       section: "issues",
@@ -265,7 +265,7 @@ function Search({ onCreate, timer = false }: { onCreate: (text: string) => void;
     for (const task of issues.data ?? []) {
       const p = byId.get(task.project_id);
       if (task.key === key) continue;
-      out.push(issueItem(task.key, task.title, p?.name, <ProjectMark name={p?.name ?? "?"} color={p?.color} size={16} />, task.id));
+      out.push(issueItem(task.key, task.title, p?.name, <ProjectMark name={p?.name ?? "?"} color={p?.color} id={p?.id} size={16} />, task.id));
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -82,7 +82,7 @@ export function Sidebar({ onSearch, onCreate, onCollapse }: { onSearch: () => vo
               key={p.id}
               to={{ name: "project", id: p.id }}
               active={route.name === "project" && route.id === p.id}
-              icon={<ProjectMark name={p.name} color={p.color} />}
+              icon={<ProjectMark name={p.name} color={p.color} id={p.id} />}
               label={p.name}
               data-project={p.id}
             />

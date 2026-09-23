@@ -112,7 +112,7 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
   return (
     <>
       <ViewHeader
-        icon={name ? <ProjectMark name={name} color={color} size={18} /> : null}
+        icon={name ? <ProjectMark name={name} color={color} size={18} id={id} /> : null}
         title={name}
         actions={
           <>

@@ -53,7 +53,7 @@ export function ProjectAbout({ project, memberMap }: { project: ProjectDetail | 
     <aside className="flex w-[288px] shrink-0 flex-col overflow-y-auto border-s border-line bg-grid-card" data-about aria-label={t("issues.project.about")}>
       <div className="flex flex-col gap-3 border-b border-line p-4">
         <div className="flex items-center gap-2.5">
-          <ProjectMark name={project.name} color={project.color} size={28} />
+          <ProjectMark name={project.name} color={project.color} id={project.id} size={28} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-semibold text-grid-fg">{project.name}</p>
             {project.client_name ? <p className="truncate text-[13px] text-grid-muted">{project.client_name}</p> : null}

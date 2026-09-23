@@ -149,7 +149,7 @@ export function Properties({
       <div className="flex flex-col gap-0.5 border-b border-line px-3 py-2.5">
         <Row label={t("issue.project")}>
           <button type="button" className={TRIGGER} onClick={() => navigate({ name: "project", id: task.project.id })} data-issue-project>
-            <ProjectMark name={task.project.name} color={task.project.color} size={16} />
+            <ProjectMark name={task.project.name} color={task.project.color} id={task.project.id} size={16} />
             <span className="truncate">{task.project.name}</span>
           </button>
         </Row>

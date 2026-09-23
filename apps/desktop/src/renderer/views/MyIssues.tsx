@@ -89,7 +89,7 @@ export function MyIssuesView() {
           return {
             id: `p:${pid}`,
             title: p?.name ?? "…",
-            icon: <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />,
+            icon: <ProjectMark name={p?.name ?? "?"} color={p?.color} id={p?.id} size={14} />,
             tasks: items.sort((a, b) => pos(a) - pos(b) || byPriorityThenUpdated(a, b)),
             add: { projectId: pid },
           };

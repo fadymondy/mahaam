@@ -288,7 +288,7 @@ const IssueRow = memo(function IssueRow({ task, status, statuses, project, proje
       )}
       {projectStyle === "mark" && project ? (
         <span title={project.name} className="flex shrink-0">
-          <ProjectMark name={project.name} color={project.color} size={14} />
+          <ProjectMark name={project.name} color={project.color} id={project.id} size={14} />
         </span>
       ) : null}
       <LtrText className="w-[52px] shrink-0 truncate font-mono text-[12.5px] text-grid-muted">{task.key}</LtrText>
@@ -337,7 +337,7 @@ const IssueRow = memo(function IssueRow({ task, status, statuses, project, proje
       )}
       {projectStyle === "chip" && project ? (
         <span className="hidden h-5 max-w-36 shrink-0 items-center gap-1.5 rounded-full border border-line ps-1 pe-2 text-[12px] text-grid-body @2xl:inline-flex" title={project.name}>
-          <ProjectMark name={project.name} color={project.color} size={12} />
+          <ProjectMark name={project.name} color={project.color} id={project.id} size={12} />
           <span className="truncate">{project.name}</span>
         </span>
       ) : null}

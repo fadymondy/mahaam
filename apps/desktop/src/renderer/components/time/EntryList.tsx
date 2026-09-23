@@ -110,7 +110,7 @@ function EntryRow({ entry: e, tz, now, focused, onFocus, onEdit, onDelete, onCon
             )}
           >
         {focused ? <span className="absolute inset-y-0 start-0 w-0.5 bg-grid-action" aria-hidden /> : null}
-        {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} size={14} /> : <span className="size-3.5 shrink-0 rounded-[4px] border border-dashed border-line" />}
+        {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} id={e.project_id} size={14} /> : <span className="size-3.5 shrink-0 rounded-[4px] border border-dashed border-line" />}
         <span className={cn("min-w-0 truncate text-[14px]", title ? "text-grid-fg" : "text-grid-muted")} dir="auto">
           {title || t("time.noDescription")}
         </span>

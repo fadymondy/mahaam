@@ -6,6 +6,7 @@ import { useContext, useLayoutEffect, useRef, useState, type CSSProperties, type
 import type { Priority, Status } from "../../shared/types";
 import { PanelLeftOpenIcon } from "lucide-react";
 
+import { useProjectMap } from "@/lib/data";
 import { kbd } from "@/lib/hotkeys";
 import { ShellContext } from "@/lib/shell";
 import { useI18n } from "@/lib/i18n";
@@ -35,7 +36,17 @@ export function ColorChip({ color, children, className }: { color?: string | nul
 }
 
 /** A project's mark: its colour as a small square with the initial. */
-export function ProjectMark({ name, color, size = 16 }: { name: string; color?: string | null; size?: number }) {
+/**
+ * A project's avatar: its uploaded image, else a tile in the project colour with its initial. Pass
+ * `id` and the image is found in the workspace's project list (time entries and the like carry only
+ * the name and colour); `avatar` overrides it.
+ */
+export function ProjectMark({ name, color, size = 16, id, avatar }: { name: string; color?: string | null; size?: number; id?: string | null; avatar?: string | null }) {
+  const projects = useProjectMap();
+  const src = avatar ?? (id ? projects.get(id)?.avatar : null);
+  if (src) {
+    return <img src={src} alt="" aria-hidden draggable={false} className="shrink-0 rounded-[4px] object-cover" style={{ width: size, height: size, boxShadow: "inset 0 0 0 1px var(--grid-line)" }} />;
+  }
   return (
     <span
       aria-hidden
