@@ -1,16 +1,20 @@
 {
   "name": "mahaam-apps",
   "private": true,
-  "description": "Mahaam employee clients: the tray app and the Chrome extension, plus the shared API client.",
+  "description": "Mahaam employee clients: the desktop app, the tray app and the Chrome extension, plus the shared API client.",
   "workspaces": [
     "shared",
     "tray",
-    "extension"
+    "extension",
+    "desktop"
   ],
   "scripts": {
     "dev:tray": "npm run dev -w @mahaam/tray",
     "build:tray": "npm run build -w @mahaam/tray",
     "package:tray": "npm run package -w @mahaam/tray",
+    "dev:desktop": "npm run dev -w @mahaam/desktop",
+    "build:desktop": "npm run build -w @mahaam/desktop",
+    "package:desktop": "npm run package -w @mahaam/desktop",
     "dev:extension": "npm run dev -w @mahaam/extension",
     "build:extension": "npm run build -w @mahaam/extension",
     "gen:types": "npm run gen:types -w @mahaam/client",
