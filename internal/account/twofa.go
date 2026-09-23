@@ -429,6 +429,18 @@ func (s *Service) LoginChallenge(ctx context.Context, email, password string) (s
 	return sealed, true
 }
 
+// SignInChallenge is LoginChallenge for a sign-in whose first factor was proved some other way
+// (Sign in with Apple, Google/GitHub): the same sealed challenge, finished at
+// POST /api/auth/2fa/challenge. The caller has already established that 2FA is on.
+func (s *Service) SignInChallenge(ctx context.Context, userID string) (string, error) {
+	var hash string
+	if err := s.DB.QueryRowContext(ctx, `SELECT password_hash FROM users WHERE id = $1`, userID).Scan(&hash); err != nil {
+		return "", err
+	}
+	b, _ := json.Marshal(challenge{User: userID, Exp: time.Now().Add(challengeTTL).Unix(), PW: pwFingerprint(hash)})
+	return secretbox.Seal(b)
+}
+
 // OpenChallenge returns the user a challenge was issued for, if it is genuine, unexpired, and the
 // password has not changed since.
 func (s *Service) OpenChallenge(ctx context.Context, sealed string) (string, error) {

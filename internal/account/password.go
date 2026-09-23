@@ -53,6 +53,9 @@ type Service struct {
 	Limit *ratelimit.Service // nil: not rate limited (development without the plugin)
 	// Auth issues the session token after a second factor (twofa_routes.go).
 	Auth *auth.Service
+	// Apple verifies Sign in with Apple identity tokens (apple.go); RegisterApple sets it from the
+	// environment when nil.
+	Apple *AppleVerifier
 }
 
 var (

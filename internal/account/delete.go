@@ -246,6 +246,8 @@ func (s *Service) purge(ctx context.Context, userID string) error {
 		`DELETE FROM notifications WHERE user_id = $1`,
 		`DELETE FROM notification_prefs WHERE user_id = $1`,
 		`DELETE FROM user_github_accounts WHERE user_id = $1`,
+		// Sign in with Apple links: an anonymised row must not be reachable by its old Apple ID.
+		`DELETE FROM user_identities WHERE user_id = $1`,
 		`DELETE FROM account_codes WHERE user_id = $1`,
 		// Minted during the grace period and never used to sign in are not possible (that would
 		// cancel), but a purge is the last word, so it clears them regardless.
