@@ -86,7 +86,6 @@ export function CommandPalette({
     { label: t("nav.myIssues"), icon: <CircleDotIcon />, to: { name: "my-issues" }, combo: "g m" },
     { label: t("nav.allProjects"), icon: <LayersIcon />, to: { name: "projects" }, combo: "g p" },
     { label: t("nav.time"), icon: <ClockIcon />, to: { name: "time" }, combo: "g t" },
-    { label: t("nav.settings"), icon: <SettingsIcon />, to: { name: "settings" }, combo: "mod+," },
   ];
   const actions: { label: string; icon: ReactNode; do: () => void; combo?: string }[] = [
     { label: t("nav.newIssue"), icon: <SquarePenIcon />, do: onCreate, combo: "c" },
@@ -95,6 +94,7 @@ export function CommandPalette({
       : { label: t("timer.start"), icon: <PlayIcon />, do: onTimer, combo: "mod+shift+t" },
     { label: t("palette.theme"), icon: dark ? <SunIcon /> : <MoonIcon />, do: () => void setPrefs({ theme: dark ? "light" : "dark" }) },
     { label: t("palette.language"), icon: <LanguagesIcon />, do: () => void setPrefs({ locale: locale === "ar" ? "en" : "ar" }) },
+    { label: t("nav.settings"), icon: <SettingsIcon />, do: () => void desktop.openSettings(), combo: "mod+," },
     { label: t("common.openInBrowser"), icon: <ExternalLinkIcon />, do: () => void desktop.openWeb() },
     { label: t("nav.signOut"), icon: <LogOutIcon />, do: () => void signOut() },
   ];

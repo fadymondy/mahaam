@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useApp } from "@/lib/app";
+import { desktop } from "@/lib/bridge";
 import { useInbox, useIsStaff, useProjects } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 import { useRouter } from "@/lib/router";
@@ -134,12 +135,12 @@ function Item({
       onClick={() => navigate(to)}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex h-7 w-full items-center gap-2 rounded-md px-2 text-start text-[13px] [&_svg]:size-3.5 [&_svg]:shrink-0",
-        active ? "bg-grid-soft font-medium text-grid-fg" : "text-grid-body hover:bg-grid-soft/70 hover:text-grid-fg",
+        "nav-item group flex h-[30px] w-full items-center gap-2.5 rounded-[7px] px-2 text-start text-[13px] [&_svg]:size-4 [&_svg]:shrink-0",
+        active ? "font-medium text-grid-fg" : "text-grid-body hover:text-grid-fg",
       )}
       {...rest}
     >
-      <span className={cn("flex size-4 items-center justify-center", active ? "text-grid-fg" : "text-grid-muted group-hover:text-grid-fg")}>{icon}</span>
+      <span className={cn("nav-icon flex size-4 items-center justify-center", active ? "" : "text-grid-muted group-hover:text-grid-fg")}>{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {badge ? (
         <span className="rounded-full bg-grid-action px-1.5 text-[10.5px] leading-4 font-medium text-grid-on-action" data-unread={badge}>
@@ -153,7 +154,6 @@ function Item({
 function WorkspaceSwitcher() {
   const { t } = useI18n();
   const { session, workspace, selectWorkspace, signOut } = useApp();
-  const { navigate } = useRouter();
   if (!workspace) return null;
   return (
     <DropdownMenu>
@@ -190,7 +190,7 @@ function WorkspaceSwitcher() {
           ))}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate({ name: "settings" })}>
+        <DropdownMenuItem onClick={() => void desktop.openSettings()}>
           <SettingsIcon />
           {t("nav.settings")}
           <span className="ms-auto">

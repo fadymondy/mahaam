@@ -10,6 +10,8 @@ import type { StartInput, TimeEntry } from "../shared/types";
 import { trayStrings, type Locale } from "./strings";
 
 export interface TrayDeps {
+  /** Left click: the popover (macOS, Windows). Right click, and Linux, get the menu. */
+  onClick: (bounds: Electron.Rectangle) => void;
   locale: () => Locale;
   signedIn: () => boolean;
   show: () => void;
@@ -91,6 +93,10 @@ export function createTray(d: TrayDeps): void {
   deps = d;
   tray = new Tray(icon(false));
   nativeTheme.on("updated", () => tray?.setImage(icon(!!running)));
+  if (process.platform !== "linux") {
+    tray.on("click", (_e, bounds) => d.onClick(bounds));
+    tray.on("right-click", () => menu && tray?.popUpContextMenu(menu));
+  }
   build();
   tick();
 }
@@ -146,4 +152,6 @@ export const trayProbe = {
   title: () => tray?.getTitle() ?? "",
   items: () => (menu?.items ?? []).map((i) => i.label).filter(Boolean),
   click: (label: string) => menu?.items.find((i) => i.label === label)?.click(),
+  /** A left click on the menu-bar icon (opens the popover on macOS and Windows). */
+  open: () => tray?.emit("click", {}, tray.getBounds()),
 };

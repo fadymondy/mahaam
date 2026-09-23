@@ -57,6 +57,14 @@ export const desktop = {
   signOut: () => call<void>("session:signOut"),
   selectWorkspace: (id: string) => call<SessionOut>("session:selectWorkspace", id),
   running: () => call<TimeEntry | null>("timer:running"),
+  /** Hide the window this renderer is in (the popover, the palette). */
+  hideSurface: () => call<null>("surface:hide"),
+  openSettings: (section?: string) => call<void>("surface:settings", section),
+  openPalette: () => call<void>("surface:palette"),
+  /** Bring the main window forward, optionally at a route. */
+  openMain: (to?: import("../../shared/types").Route) => call<void>("surface:main", to),
+  /** A command for the main window (e.g. open quick create there). */
+  mainCommand: (c: import("../../shared/types").Command) => call<void>("surface:command", c),
   liveStatus: () => call<"open" | "reconnecting" | "closed">("live:status"),
 };
 
@@ -69,6 +77,7 @@ type Events = {
   prefs: [Prefs];
   command: [Command];
   window: [{ fullscreen: boolean }];
+  "surface:shown": [];
 };
 
 export function on<K extends keyof Events>(event: K, cb: (...args: Events[K]) => void): () => void {

@@ -29,12 +29,15 @@ import * as store from "./store";
 import { idleStrings, menuStrings, trayStrings } from "./strings";
 import { createTray, getRecent, getRunning, refreshTray, setRecent, setRunning, trayProbe } from "./tray";
 import { startUpdates, stopUpdates } from "./updates";
+import { initSurfaces, load, prewarmPopover, retintSurfaces, showPalette, showSettings, surfaceWindow, togglePopover, webPreferences } from "./surfaces";
 
 const DEV_URL = process.env.MAHAAM_DEV_URL; // the Vite dev server (npm run dev)
 const SERVER_ARG = process.argv.find((a) => a.startsWith("--server="))?.slice("--server=".length);
 const PROTOCOL = "mahaam";
 const IS_MAC = process.platform === "darwin";
 const TIMER_SHORTCUT = "CommandOrControl+Alt+Shift+M";
+const PALETTE_SHORTCUT = "CommandOrControl+Shift+Space";
+const IS_WIN = process.platform === "win32";
 
 // Its own directory: the tray app (apps/tray, productName "Mahaam" too) lives in the default one,
 // and Electron's single-instance lock is keyed by it.
@@ -70,6 +73,7 @@ function saveBounds(w: BrowserWindow): void {
 }
 
 const background = () => (nativeTheme.shouldUseDarkColors ? "#0b1429" : "#f0ebe1");
+const symbol = () => (nativeTheme.shouldUseDarkColors ? "#e8e4da" : "#1a1a1a");
 
 function createWindow(): BrowserWindow {
   const b = readBounds();
@@ -81,18 +85,15 @@ function createWindow(): BrowserWindow {
     minHeight: 560,
     show: false,
     title: "Mahaam",
-    backgroundColor: background(),
     titleBarStyle: IS_MAC ? "hiddenInset" : "hidden",
+    // The sidebar is the window's own material (macOS vibrancy, Windows 11 Mica) and the view
+    // paints its solid ground over it — a native window, not a page.
     ...(IS_MAC
-      ? { trafficLightPosition: { x: 16, y: 16 } }
-      : { titleBarOverlay: { color: background(), symbolColor: nativeTheme.shouldUseDarkColors ? "#e8e4da" : "#1a1a1a", height: 44 } }),
-    webPreferences: {
-      preload: join(__dirname, "preload.cjs"),
-      contextIsolation: true,
-      sandbox: true,
-      nodeIntegration: false,
-      spellcheck: true,
-    },
+      ? { trafficLightPosition: { x: 16, y: 16 }, vibrancy: "sidebar" as const, visualEffectState: "followWindow" as const, backgroundColor: "#00000000" }
+      : IS_WIN
+        ? { titleBarOverlay: { color: "#00000000", symbolColor: symbol(), height: 44 }, backgroundMaterial: "mica" as const, backgroundColor: "#00000000" }
+        : { titleBarOverlay: { color: background(), symbolColor: symbol(), height: 44 }, backgroundColor: background() }),
+    webPreferences: webPreferences(),
   });
   if (b.maximized) w.maximize();
   w.once("ready-to-show", () => {
@@ -115,19 +116,7 @@ function createWindow(): BrowserWindow {
   w.on("enter-full-screen", () => send("window", { fullscreen: true }));
   w.on("leave-full-screen", () => send("window", { fullscreen: false }));
 
-  // The renderer is our own files. Anything it tries to open elsewhere goes to the browser.
-  w.webContents.setWindowOpenHandler(({ url }) => {
-    openExternal(url);
-    return { action: "deny" };
-  });
-  w.webContents.on("will-navigate", (e, url) => {
-    if (DEV_URL ? url.startsWith(DEV_URL) : url.startsWith("file://")) return;
-    e.preventDefault();
-    openExternal(url);
-  });
-
-  if (DEV_URL) void w.loadURL(DEV_URL);
-  else void w.loadFile(join(__dirname, "renderer", "index.html"));
+  load(w, "main");
   return w;
 }
 
@@ -138,13 +127,15 @@ function show(): void {
   win.focus();
 }
 
+/** State changes go to every window (main, popover, palette, settings): each shows the same truth. */
 function send(channel: string, ...args: unknown[]): void {
-  if (win && !win.isDestroyed()) win.webContents.send(channel, ...args);
+  for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, ...args);
 }
 
+/** Commands (menu items, notifications, links) are for the main window. */
 function command(c: Command): void {
   show();
-  send("command", c);
+  win?.webContents.send("command", c);
 }
 
 function openExternal(url: string): void {
@@ -275,7 +266,7 @@ function buildMenu(): void {
             submenu: [
               { role: "about" as const, label: s.about },
               { type: "separator" as const },
-              { label: s.settings, accelerator: "Cmd+,", click: () => command({ type: "settings" }) },
+              { label: s.settings, accelerator: "Cmd+,", click: () => showSettings() },
               { type: "separator" as const },
               { role: "services" as const, label: s.services },
               { type: "separator" as const },
@@ -383,10 +374,14 @@ function setPrefs(patch: Partial<Prefs>): Prefs {
 
 function applyTheme(): void {
   nativeTheme.themeSource = prefs.theme;
-  if (win && !win.isDestroyed()) {
-    win.setBackgroundColor(background());
-    if (!IS_MAC) win.setTitleBarOverlay({ color: background(), symbolColor: nativeTheme.shouldUseDarkColors ? "#e8e4da" : "#1a1a1a" });
+  if (win && !win.isDestroyed() && !IS_MAC) {
+    if (IS_WIN) win.setTitleBarOverlay({ color: "#00000000", symbolColor: symbol() });
+    else {
+      win.setBackgroundColor(background());
+      win.setTitleBarOverlay({ color: background(), symbolColor: symbol() });
+    }
   }
+  retintSurfaces();
 }
 
 // ── IPC: a fixed surface, only from our own renderer ─────────────────────────
@@ -411,6 +406,11 @@ function handle(channel: string, fn: (...args: any[]) => unknown): void {
 }
 
 function registerIpc(): void {
+  ipcMain.handle("surface:hide", (e) => {
+    if (!trusted(e)) return { ok: false, status: 0, message: "untrusted sender" };
+    BrowserWindow.fromWebContents(e.sender)?.hide();
+    return { ok: true, value: null };
+  });
   handle("app:config", (): AppConfig => ({
     platform: process.platform,
     version: app.getVersion(),
@@ -450,6 +450,14 @@ function registerIpc(): void {
   handle("session:selectWorkspace", (id: string) => session.selectWorkspace(String(id)));
 
   handle("timer:running", () => getRunning());
+
+  // The extra windows (surfaces.ts).
+  handle("surface:settings", (section?: string) => showSettings(typeof section === "string" ? section : undefined));
+  handle("surface:palette", () => showPalette());
+  handle("surface:main", (to?: Route) => (to && typeof to === "object" && typeof (to as Route).name === "string" ? command({ type: "navigate", to }) : show()));
+  handle("surface:command", (c: Command) => {
+    if (c && typeof c === "object" && typeof c.type === "string") command(c);
+  });
   handle("live:status", () => liveStatus);
 
   handle("api", (method: string, args: unknown[]) => {
@@ -515,7 +523,9 @@ app.whenReady().then(async () => {
   });
   applySession();
 
+  initSurfaces({ devUrl: DEV_URL, openExternal, ground: background });
   createTray({
+    onClick: (bounds) => togglePopover(bounds),
     locale: () => prefs.locale,
     signedIn: () => !!api,
     show,
@@ -524,6 +534,8 @@ app.whenReady().then(async () => {
     start: async (input) => (api ? api.start(input) : undefined),
   });
   // Stop the running timer, or resume the last thing worked on — from anywhere.
+  // The quick palette from any app, like Spotlight.
+  globalShortcut.register(PALETTE_SHORTCUT, () => showPalette());
   globalShortcut.register(TIMER_SHORTCUT, () => {
     if (!api) return show();
     if (getRunning()) void api.stop();
@@ -533,9 +545,10 @@ app.whenReady().then(async () => {
       else command({ type: "timer-palette" });
     }
   });
-  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe });
+  if (process.env.MAHAAM_E2E === "1") Object.assign(globalThis, { mahaamTray: trayProbe, mahaamPalette: showPalette });
 
   win = createWindow();
+  prewarmPopover();
   startUpdates(() => win);
 });
 

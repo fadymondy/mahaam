@@ -87,3 +87,40 @@ html:is([data-platform="win32"], [data-platform="linux"])[dir="rtl"] .sidebar-to
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ── Window materials (surfaces.ts / main.ts) ──
+   macOS vibrancy and Windows 11 Mica are the windows' own material; the renderer lets it show where
+   a native app would (the sidebar, the popover, the quick palette) and paints solid ground where
+   content is read (the view). */
+html[data-platform="darwin"]:is([data-surface="main"], [data-surface="popover"], [data-surface="palette"]) body,
+html[data-platform="win32"][data-surface="main"] body {
+  background: transparent;
+}
+html:is([data-platform="darwin"], [data-platform="win32"])[data-surface="main"] aside[data-sidebar] {
+  background: color-mix(in oklab, var(--grid-bg) 55%, transparent);
+}
+.pop,
+.qp {
+  background: var(--grid-bg);
+}
+html[data-platform="darwin"] :is(.pop, .qp) {
+  background: color-mix(in oklab, var(--grid-bg) 78%, transparent);
+  border-color: color-mix(in oklab, var(--grid-line) 70%, transparent);
+}
+/* The running clock glows, in dark only (light never glows). */
+.dark .pop-clock {
+  text-shadow: 0 0 14px color-mix(in oklab, var(--grid-action) 55%, transparent);
+}
+
+/* Sidebar rows, native-list style: a soft hover, the active row tinted with the brand and its icon
+   in the brand colour. */
+.nav-item:hover {
+  background: color-mix(in oklab, var(--grid-fg) 7%, transparent);
+}
+.nav-item[aria-current="page"] {
+  background: color-mix(in oklab, var(--grid-action) 18%, transparent);
+  color: var(--grid-fg);
+}
+.nav-item[aria-current="page"] .nav-icon {
+  color: var(--grid-action);
+}

@@ -9,7 +9,13 @@ import { I18nProvider } from "@/lib/i18n";
 import { queryClient } from "@/lib/query";
 import { RouterProvider } from "@/lib/router";
 import { AppShell } from "@/shell/AppShell";
+import { Popover } from "@/surfaces/Popover";
+import { QuickPalette } from "@/surfaces/QuickPalette";
+import { SettingsWindow } from "@/surfaces/SettingsWindow";
 import { SignIn } from "@/views/SignIn";
+
+/** Which window this renderer is (main.ts / surfaces.ts load the same bundle with ?surface=). */
+export const SURFACE = (new URLSearchParams(location.search).get("surface") ?? "main") as "main" | "popover" | "palette" | "settings";
 
 function useDark(theme: "system" | "light" | "dark"): boolean {
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -32,6 +38,7 @@ function Root() {
     html.lang = locale;
     html.dir = locale === "ar" ? "rtl" : "ltr";
     html.dataset.platform = config.platform;
+    html.dataset.surface = SURFACE;
     html.dataset.brand = "mahaam";
     html.classList.add("grid-surface");
     html.classList.toggle("dark", dark);
@@ -41,7 +48,13 @@ function Root() {
   return (
     <I18nProvider locale={locale}>
       <TooltipProvider delay={400}>
-        {session?.workspace ? (
+        {SURFACE === "popover" ? (
+          <Popover />
+        ) : SURFACE === "palette" ? (
+          <QuickPalette />
+        ) : SURFACE === "settings" ? (
+          <SettingsWindow />
+        ) : session?.workspace ? (
           <RouterProvider>
             <AppShell />
           </RouterProvider>

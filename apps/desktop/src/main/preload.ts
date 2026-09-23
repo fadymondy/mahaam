@@ -17,10 +17,15 @@ const INVOKE = new Set([
   "session:signOut",
   "session:selectWorkspace",
   "timer:running",
+  "surface:hide",
+  "surface:settings",
+  "surface:palette",
+  "surface:main",
+  "surface:command",
   "live:status",
   "api",
 ]);
-const EVENTS = new Set(["session", "live", "live:status", "running", "unread", "prefs", "command", "window"]);
+const EVENTS = new Set(["session", "live", "live:status", "running", "unread", "prefs", "command", "window", "surface:shown"]);
 
 contextBridge.exposeInMainWorld("mahaam", {
   platform: process.platform,

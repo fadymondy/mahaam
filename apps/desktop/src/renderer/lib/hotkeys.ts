@@ -75,7 +75,7 @@ export function kbd(combo: string): string {
     .map((step) =>
       step
         .split("+")
-        .map((p) => (p === "mod" ? (mac ? "⌘" : "Ctrl") : p === "shift" ? (mac ? "⇧" : "Shift") : p === "alt" ? (mac ? "⌥" : "Alt") : p === "enter" ? "↵" : p.length === 1 ? p.toUpperCase() : p))
+        .map((p) => (p === "mod" ? (mac ? "⌘" : "Ctrl") : p === "shift" ? (mac ? "⇧" : "Shift") : p === "alt" ? (mac ? "⌥" : "Alt") : p === "enter" ? "↵" : p === "esc" ? "Esc" : p === "space" ? "Space" : p.length === 1 ? p.toUpperCase() : p))
         .join(mac ? "" : "+"),
     )
     .join(" ");

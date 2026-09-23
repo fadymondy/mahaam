@@ -77,6 +77,19 @@ export const en = {
   "role.client": "Client",
 
   "stub.soon": "This view is being built.",
+
+  "pop.openApp": "Open Mahaam",
+  "pop.signedOut": "Sign in to track time and see your issues.",
+  "pop.tracking": "Tracking",
+  "pop.whatNow": "What are you working on?",
+  "pop.resume": "Resume",
+  "pop.today": "Today",
+  "pop.quick": "Quick palette",
+
+  "qp.placeholder": "Search issues, or type to create or track…",
+  "qp.createNamed": "New issue “{text}”",
+  "qp.open": "Open",
+  "qp.startTimer": "Start timer",
 };
 
 export const ar: Record<keyof typeof en, string> = {
@@ -156,4 +169,17 @@ export const ar: Record<keyof typeof en, string> = {
   "role.client": "عميل",
 
   "stub.soon": "يجري بناء هذه الشاشة.",
+
+  "pop.openApp": "افتح مهام",
+  "pop.signedOut": "سجّل الدخول لتتبّع الوقت ورؤية مهامك.",
+  "pop.tracking": "قيد التتبّع",
+  "pop.whatNow": "على ماذا تعمل؟",
+  "pop.resume": "استئناف",
+  "pop.today": "اليوم",
+  "pop.quick": "اللوحة السريعة",
+
+  "qp.placeholder": "ابحث في المهام، أو اكتب لإنشاء مهمة أو تتبّع الوقت…",
+  "qp.createNamed": "مهمة جديدة «{text}»",
+  "qp.open": "فتح",
+  "qp.startTimer": "ابدأ المؤقّت",
 };

@@ -59,7 +59,12 @@ async function launch() {
     args: ["."],
     env: { ...cleanEnv, MAHAAM_E2E: "1", MAHAAM_API_URL: API, MAHAAM_USER_DATA: profile },
   });
-  const page = await app.firstWindow();
+  await app.firstWindow();
+  let page;
+  for (let i = 0; i < 40 && !page; i++) {
+    page = app.windows().find((w) => w.url().includes("surface=main"));
+    if (!page) await new Promise((r) => setTimeout(r, 250));
+  }
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
@@ -68,10 +73,14 @@ async function launch() {
     title: () => app.evaluate(() => globalThis.mahaamTray.title()),
     items: () => app.evaluate(() => globalThis.mahaamTray.items()),
     click: (label) => app.evaluate((_e, l) => globalThis.mahaamTray.click(l), label),
+    open: () => app.evaluate(() => globalThis.mahaamTray.open()),
   };
-  const shot = async (path) => {
+  const shot = async (path, surface = "main") => {
     if (process.platform !== "darwin") return;
-    const id = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getMediaSourceId().split(":")[1]);
+    const id = await app.evaluate(
+      ({ BrowserWindow }, s) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes(`surface=${s}`))?.getMediaSourceId().split(":")[1],
+      surface,
+    );
     await new Promise((r) => setTimeout(r, 500));
     try {
       execFileSync("screencapture", ["-x", "-o", "-l", id, path]);
@@ -79,15 +88,25 @@ async function launch() {
       log("window screenshot skipped:", String(e.message).split("\n")[0]);
     }
   };
-  const command = (c) => app.evaluate(({ BrowserWindow }, cmd) => BrowserWindow.getAllWindows()[0].webContents.send("command", cmd), c);
-  return { app, page, errors, tray, shot, command };
+  const command = (c) =>
+    app.evaluate(({ BrowserWindow }, cmd) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).webContents.send("command", cmd), c);
+  /** The Playwright page for a surface window. */
+  const surface = async (name) => {
+    for (let i = 0; i < 40; i++) {
+      const p = app.windows().find((w) => w.url().includes(`surface=${name}`));
+      if (p) return p;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    fail(`no ${name} window`);
+  };
+  return { app, page, errors, tray, shot, command, surface };
 }
 
 const mine = (list) => (Array.isArray(list) ? list : []).filter((t) => String(t.name).startsWith("Mahaam for "));
 
 let run = await launch();
 try {
-  let { app, page, tray, shot, command } = run;
+  let { app, page, tray, shot, command, surface } = run;
 
   // ── the sandbox ──
   const env = await page.evaluate(async () => {
@@ -104,7 +123,6 @@ try {
   if (!env.blocked) fail("an unlisted IPC channel went through");
 
   // ── sign in ──
-  const before = mine(await other.tokens()).length;
   await page.locator("#email").waitFor({ timeout: 15000 });
   await page.locator("#email").fill(EMAIL);
   await page.locator("#password").fill(PASSWORD);
@@ -121,7 +139,7 @@ try {
   if (!probe.unknownMethod) fail("the API bridge ran a method that is not in the allowlist");
   if (probe.leaksToken) fail("the session handed to the renderer contains the token");
   const devices = mine(await other.tokens());
-  log("device tokens on the server:", devices.map((t) => t.name).join(" | ") || "(none)");
+  log(`device tokens on the server: ${devices.length} (one per profile)`);
   if (!devices.length) fail("no device token was minted for this computer");
   await shot("e2e-shots/e2e-1-shell.png");
 
@@ -146,9 +164,11 @@ try {
   log("stopped from the menu bar; server, menu bar and Resume agree");
 
   // ── closing hides; the services keep running ──
-  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).close());
   await page.waitForTimeout(400);
-  const vis = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().map((w) => w.isVisible()));
+  const vis = await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows().filter((w) => w.webContents.getURL().includes("surface=main")).map((w) => w.isVisible()),
+  );
   if (vis.length !== 1 || vis[0]) fail(`close should hide the window: ${JSON.stringify(vis)}`);
   await other.start("Started while the window is hidden");
   await until("the menu bar to update with no window", async () => (await tray.title()).trim() !== "", 8000);
@@ -159,8 +179,39 @@ try {
   // ── a mahaam:// link opens the issue (and shows the window) ──
   await app.evaluate(({ app: a }) => a.emit("open-url", { preventDefault() {} }, "mahaam://issue/MH-1"));
   await until("the issue route", () => page.evaluate(() => document.querySelector("main")?.getAttribute("data-route") === "issue"));
-  if (!(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()))) fail("the deep link did not bring the window back");
+  if (!(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("surface=main")).isVisible())))
+    fail("the deep link did not bring the window back");
   log("mahaam://issue/MH-1 → the issue view, window shown");
+
+  // ── the menu-bar popover: the timer companion, live ──
+  await tray.open();
+  const pop = await surface("popover");
+  await pop.locator("[data-pop-input]").waitFor({ timeout: 10000 });
+  await other.start("Started for the popover (desktop e2e)");
+  await pop.locator("[data-pop-clock]").waitFor({ timeout: 8000 });
+  log("popover: the phone's timer arrived live:", await pop.locator("[data-pop-clock]").innerText());
+  await shot("e2e-shots/e2e-5-popover.png", "popover");
+  await pop.locator("[data-pop-stop]").click();
+  await until("the popover's Stop to stop it on the server", async () => !(await other.running()));
+  await pop.locator("[data-pop-input]").waitFor({ timeout: 8000 });
+  await pop.locator("[data-pop-input]").fill("Popover quick start (desktop e2e)");
+  await pop.locator("[data-pop-input]").press("Enter");
+  await until("the popover's quick start", async () => (await other.running())?.description === "Popover quick start (desktop e2e)");
+  await other.stop();
+  log("popover: Stop and quick start both reach the server");
+  await pop.evaluate(() => window.mahaam.invoke("surface:hide"));
+
+  // ── the quick palette (⌘⇧Space from any app) ──
+  await app.evaluate(() => globalThis.mahaamPalette());
+  const qp = await surface("palette");
+  await qp.locator("[data-qp-input]").waitFor({ timeout: 10000 });
+  await qp.locator("[data-qp-input]").fill("MH");
+  await qp.locator("[cmdk-item][data-value^='issue:']").first().waitFor({ timeout: 8000 });
+  await shot("e2e-shots/e2e-6-palette.png", "palette");
+  const firstKey = (await qp.locator("[cmdk-item][data-value^='issue:']").first().getAttribute("data-value")).split(":")[1];
+  await qp.keyboard.press("Enter");
+  await until("the palette to open the issue in the main window", () => page.evaluate(() => document.querySelector("main")?.getAttribute("data-route") === "issue"));
+  log("palette: Enter on", firstKey, "opened it in the main window");
 
   // ── Arabic, dark ──
   await command({ type: "navigate", to: { name: "my-issues" } });
@@ -187,9 +238,10 @@ try {
   // ── sign out revokes this device's token ──
   await page.evaluate(() => window.mahaam.invoke("session:signOut"));
   await page.locator("#email").waitFor({ timeout: 10000 });
-  const after = mine(await other.tokens()).length;
-  log(`signed out; device tokens before sign-in ${before}, after sign-out ${after}`);
-  if (after > before) fail("sign-out did not revoke this device's token");
+  // This profile's own token, by name (other runs on this machine hold their own).
+  const ours = mine(await other.tokens()).filter((t) => t.name.endsWith(`(${profile.split("/").pop()})`));
+  log(`signed out; this profile's device token left on the server: ${ours.length}`);
+  if (ours.length) fail("sign-out did not revoke this device's token");
   if (run.errors.length) fail(`page errors:\n${run.errors.join("\n")}`);
   log("PASS");
 } finally {

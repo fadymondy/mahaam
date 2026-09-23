@@ -51,7 +51,7 @@ export function AppShell() {
         else if (c.type === "create") openCreate();
         else if (c.type === "toggle-sidebar") toggleSidebar();
         else if (c.type === "timer-palette") setTimer(true);
-        else if (c.type === "settings") navigate({ name: "settings", section: c.section });
+        else if (c.type === "settings") void desktop.openSettings(c.section);
       }),
     [navigate, openCreate, toggleSidebar],
   );
