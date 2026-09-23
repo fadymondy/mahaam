@@ -7,6 +7,7 @@
 // minted from that page's session cookie.
 import { BrowserWindow, session as electronSession } from "electron";
 import { hostname } from "node:os";
+import { basename } from "node:path";
 import {
   ApiError,
   isMfaRequired,
@@ -39,8 +40,12 @@ const listeners = new Set<Listener>();
 
 export const defaultApiUrl = (override?: string) => normalizeApiUrl(override || process.env.MAHAAM_API_URL || "");
 
+// One token per device, by name: signing in replaces this name's earlier token, signing out
+// revokes it. A separate profile (MAHAAM_USER_DATA: the e2e, or a second account on one machine)
+// is a separate device, or signing in one would sign the other out.
 const deviceName = () =>
-  `Mahaam for ${process.platform === "darwin" ? "Mac" : process.platform === "win32" ? "Windows" : "Linux"} — ${hostname()}`;
+  `Mahaam for ${process.platform === "darwin" ? "Mac" : process.platform === "win32" ? "Windows" : "Linux"} — ${hostname()}` +
+  (process.env.MAHAAM_USER_DATA ? ` (${basename(process.env.MAHAAM_USER_DATA)})` : "");
 
 export function onSession(fn: Listener): () => void {
   listeners.add(fn);
