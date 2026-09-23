@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { CSPProvider } from "@base-ui/react/csp-provider";
 import { DEFAULT_POMODORO, pomodoroState } from "../pomodoro";
 import { Button } from "./components/button"
 import { Input } from "./components/input"
@@ -55,6 +56,14 @@ function errText(e: unknown, t: Strings): string {
     return (e as Error).message.replace(/^Error invoking remote method '[^']+': (\w*Error: )?/, "") || t.error;
   }
   return t.error;
+}
+
+/**
+ * The task pickers' labels. Without `items` Base UI's Select.Value prints the raw value, so the
+ * trigger read "taskMH-1" once something was chosen and stayed blank for "No task".
+ */
+function taskItems(next: NextItem[] | null, noTask: string): { value: string; label: string }[] {
+  return [{ value: "", label: noTask }, ...(next ?? []).map((n) => ({ value: n.kind + n.key, label: `${n.key} ${n.title}` }))];
 }
 
 function useTick(active: boolean): number {
@@ -149,11 +158,15 @@ export function Panel({ host, footer }: { host: PanelHost; footer?: ReactNode })
       />
     );
 
+  // No inline <style> from Base UI: the extension's CSP (style-src 'self') refuses them and logs a
+  // violation each time a Select opens. The one rule they carry is in panel.css.
   return (
-    <div className="mgy-panel" data-platform={host.platform}>
-      {body}
-      {footer}
-    </div>
+    <CSPProvider disableStyleElements>
+      <div className="mgy-panel" data-platform={host.platform}>
+        {body}
+        {footer}
+      </div>
+    </CSPProvider>
   );
 }
 
@@ -682,7 +695,7 @@ function QuickLog({ t, next, onLog }: { t: Strings; next: NextItem[] | null; onL
       {open && (
         <form className="mgy-log" onSubmit={submit}>
           <Input className="mgy-mono mgy-minutes" type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
-          <Select value={target} onValueChange={(v) => setTarget(String(v ?? ""))}>
+          <Select items={taskItems(next, t.noTask)} value={target} onValueChange={(v) => setTarget(String(v ?? ""))}>
             <SelectTrigger className="mgy-task-select" aria-label={t.onTask}>
               <SelectValue />
             </SelectTrigger>
@@ -826,7 +839,7 @@ function PageCard({ t, host, page, next, onDone, onError }: { t: Strings; host: 
         ) : (
           <div className="mgy-log">
             <Input className="mgy-mono mgy-minutes" type="number" min={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} aria-label={t.minutes} />
-            <Select value={target} onValueChange={(v) => setTarget(String(v ?? ""))}>
+            <Select items={taskItems(next, t.noTask)} value={target} onValueChange={(v) => setTarget(String(v ?? ""))}>
               <SelectTrigger className="mgy-task-select" aria-label={t.onTask}>
                 <SelectValue />
               </SelectTrigger>

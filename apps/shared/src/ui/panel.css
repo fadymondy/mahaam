@@ -84,6 +84,15 @@ textarea {
 .mgy-home::-webkit-scrollbar-thumb {
   background: var(--grid-line);
 }
+/* Base UI injects this rule as an inline <style> (Select's popup). The extension's CSP is
+   style-src 'self', which refuses inline styles, so Panel turns those elements off (CSPProvider)
+   and the rule lives here instead. */
+.base-ui-disable-scrollbar {
+  scrollbar-width: none;
+}
+.base-ui-disable-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 
 /* ── bars ── */
 .mgy-bar {
