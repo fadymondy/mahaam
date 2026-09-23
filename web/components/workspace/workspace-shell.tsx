@@ -73,7 +73,6 @@ import { NotificationBell } from "@/components/time/notification-bell";
 import { TimerBar } from "@/components/time/timer-bar";
 import { useLiveStream } from "@/lib/time";
 import { brandName } from "@/lib/brand-name";
-import { DESKTOP_EVENT, DesktopWorkspaceSync, inDesktop } from "@/components/desktop/desktop-bridge";
 
 function Brand() {
   const { locale } = useTranslations();
@@ -208,20 +207,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       }
     };
     window.addEventListener("keydown", onKey);
-    // The desktop app's View → Toggle Sidebar menu item.
-    window.addEventListener(DESKTOP_EVENT.toggleNav, toggleNav);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener(DESKTOP_EVENT.toggleNav, toggleNav);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [toggleNav]);
-  const [desktop, setDesktop] = useState(false);
-  useEffect(() => {
-    setDesktop(inDesktop());
-    const report = () => setReporting(true);
-    window.addEventListener(DESKTOP_EVENT.report, report);
-    return () => window.removeEventListener(DESKTOP_EVENT.report, report);
-  }, []);
   const [appOpen, setAppOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const openApp = useCallback(() => setAppOpen(true), []);
@@ -279,7 +266,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   return (
     <div className="grid-shell" data-nav={collapsed ? "collapsed" : "open"}>
       <aside className="grid-shell-nav sticky top-0 hidden h-dvh flex-col overflow-x-hidden overflow-y-auto md:flex">
-        <div className="flex h-14 items-center border-b border-line px-4" data-desktop-drag data-desktop-brand>
+        <div className="flex h-14 items-center border-b border-line px-4">
           <Brand />
         </div>
         {summary ? <ShellNav base={base} can={current.data?.can ?? []} isOwner={summary.role === "owner"} /> : null}
@@ -289,7 +276,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <header
           className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-line bg-background px-3 sm:px-4"
           data-live={live}
-          data-desktop-drag
         >
           <div className="flex min-w-0 items-center gap-1">
             <Button
@@ -333,8 +319,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 className="hidden sm:inline-flex"
                 onClick={() => setReporting(true)}
                 aria-label={t("feedback.report")}
-                title={t("feedback.report")}
-                data-desktop-icon
               >
                 <MessageSquarePlusIcon />
                 <span className="hidden sm:inline">{t("feedback.report")}</span>
@@ -347,15 +331,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 className="hidden sm:inline-flex"
                 onClick={() => setConnectOpen(true)}
                 aria-label={t("mcp.connectTitle")}
-                title={t("mcp.connectTitle")}
-                data-desktop-icon
               >
                 <PlugZapIcon />
                 <span className="hidden sm:inline">{t("mcp.connectAgent")}</span>
               </Button>
             ) : null}
             {me.data ? (
-              <Button variant="ghost" size="icon-sm" onClick={openApp} aria-label={t("pwa.title")} title={t("pwa.title")} data-desktop-hide>
+              <Button variant="ghost" size="icon-sm" onClick={openApp} aria-label={t("pwa.title")} title={t("pwa.title")}>
                 <DownloadIcon />
               </Button>
             ) : null}
@@ -364,11 +346,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 <NotificationBell />
               </WorkspaceContext.Provider>
             ) : null}
-            {/* The desktop app has these in its View menu. */}
-            <span className="contents" data-desktop-hide>
-              <LanguageSwitcher />
-              <ThemeToggle />
-            </span>
+            <LanguageSwitcher />
+            <ThemeToggle />
             {me.data ? (
               <UserMenu
                 email={me.data.email}
@@ -397,11 +376,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </Sheet>
 
       <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
-      {ctx && desktop ? (
-        <WorkspaceContext.Provider value={ctx}>
-          <DesktopWorkspaceSync />
-        </WorkspaceContext.Provider>
-      ) : null}
       {ctx ? (
         <WorkspaceContext.Provider value={ctx}>
           <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} />

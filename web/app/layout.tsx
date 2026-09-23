@@ -33,19 +33,14 @@ export const viewport: Viewport = {
 // The locale lives in the URL (/en/..., /ar/...). A root layout cannot read route params, so
 // proxy.ts resolves it and forwards it on x-locale.
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const h = await headers()
-  const raw = h.get("x-locale")
+  const raw = (await headers()).get("x-locale")
   const locale: Locale = isLocale(raw) ? raw : "en"
-  // The desktop app (apps/desktop) says so in its user agent, so its window chrome (room for the
-  // traffic lights, drag regions) is right on the first paint rather than after hydration.
-  const desktop = /MahaamDesktop\/\S+ \((darwin|win32|linux)\)/.exec(h.get("user-agent") ?? "")?.[1]
 
   return (
     <html
       lang={locale}
       dir={dirForLocale(locale)}
       data-brand="mahaam"
-      data-desktop={desktop}
       className="grid-surface"
       suppressHydrationWarning
     >

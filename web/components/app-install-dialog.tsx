@@ -233,7 +233,7 @@ export function AppInstallDialog({ open, onOpenChange }: { open: boolean; onOpen
 /** Open the dialog by itself once, a few seconds after sign-in, unless dismissed before. */
 export function useAutoOpenAppPrompt(enabled: boolean, open: () => void) {
   useEffect(() => {
-    if (!enabled || process.env.NODE_ENV !== "production" || window.mahaamDesktop) return
+    if (!enabled || process.env.NODE_ENV !== "production") return
     if (localStorage.getItem(DISMISS_KEY) || standalone()) return
     const id = window.setTimeout(open, 4000)
     return () => window.clearTimeout(id)

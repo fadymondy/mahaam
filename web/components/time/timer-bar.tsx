@@ -16,7 +16,6 @@ import { Ltr } from "@/components/copy-field"
 import { TargetPicker, projectTarget, targetBody, taskTarget, useTargets, type Target } from "@/components/time/targets"
 import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
-import { DESKTOP_EVENT } from "@/components/desktop/desktop-bridge"
 import { useTranslations } from "@/lib/i18n"
 import { clock, entrySeconds, timeApi, useNow, useRefreshTime, useRunning, type StartBody } from "@/lib/time"
 import { errorText } from "@/lib/work"
@@ -78,14 +77,8 @@ export function TimerBar() {
         setPalette((p) => !p)
       }
     }
-    // The desktop app's menu bar and menu-bar timer open the same palette.
-    const openPalette = () => setPalette(true)
     window.addEventListener("keydown", onKey)
-    window.addEventListener(DESKTOP_EVENT.timerPalette, openPalette)
-    return () => {
-      window.removeEventListener("keydown", onKey)
-      window.removeEventListener(DESKTOP_EVENT.timerPalette, openPalette)
-    }
+    return () => window.removeEventListener("keydown", onKey)
   }, [canTrack])
 
   if (!canTrack) return null

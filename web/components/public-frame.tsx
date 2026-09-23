@@ -36,7 +36,7 @@ export function PublicFrame({
   const { t, locale } = useTranslations()
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-x-clip">
-      <header className="sticky top-0 z-50 bg-background px-2" data-desktop-drag data-desktop-public>
+      <header className="sticky top-0 z-50 bg-background px-2">
         <div className="grid-screen-line-top grid-screen-line-bottom mx-auto flex h-14 max-w-[860px] items-center gap-2 border-x border-line ps-4 pe-2">
           <Link href={`/${locale}`} className="flex items-center gap-2.5" aria-label={brandName(locale)}>
             <CubeMark mark={MAHAAM_MARK} size={22} />

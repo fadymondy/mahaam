@@ -35,22 +35,19 @@ export function ThemeToggle() {
   )
 }
 
-/** Reloads the current page in another language (also the desktop app's View → Language menu). */
-export function switchLocale(pathname: string, locale: string, next: string) {
-  if (!isLocale(next) || next === locale) return
-  document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
-  const parts = pathname.split("/")
-  if (isLocale(parts[1])) parts[1] = next
-  else parts.splice(1, 0, next)
-  // A full navigation: the root layout sets <html lang dir> on the server.
-  window.location.assign(parts.join("/") + window.location.search)
-}
-
 export function LanguageSwitcher() {
   const { t, locale } = useTranslations()
   const pathname = usePathname()
 
-  const switchTo = (next: string) => switchLocale(pathname, locale, next)
+  function switchTo(next: string) {
+    if (!isLocale(next) || next === locale) return
+    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
+    const parts = pathname.split("/")
+    if (isLocale(parts[1])) parts[1] = next
+    else parts.splice(1, 0, next)
+    // A full navigation: the root layout sets <html lang dir> on the server.
+    window.location.assign(parts.join("/") + window.location.search)
+  }
 
   return (
     <DropdownMenu>
