@@ -1,11 +1,12 @@
 // The running timer at the foot of the sidebar, and the "start a timer on…" palette (⌘⇧T, the
-// menu bar's Start Timer, T on an issue). The main process owns the timer; this shows it and asks
-// for changes. The clock is recomputed from started_at every second — the server owns the time.
+// menu bar's Start Timer, T on an issue): what you did recently, your issues, your projects. The
+// main process owns the timer; this shows it and asks for changes. The clock is recomputed from
+// started_at every second — the server owns the time.
 import { useQuery } from "@tanstack/react-query";
-import { PlayIcon, SquareIcon } from "lucide-react";
+import { HistoryIcon, PlayIcon, SquareIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import type { StartInput } from "../../shared/types";
+import type { StartInput, TimeEntry } from "../../shared/types";
 import { ColorDot, Kbd, LtrText, ProjectMark } from "@/components/kit";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +16,10 @@ import { useProjectMap, useProjects, useUserId } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 import { qk } from "@/lib/query";
 import { cn } from "@/lib/utils";
+
+// cmdk sets data-selected="true" or "false" on every item, and the shared CommandItem styles the
+// attribute's mere presence, so without this every row of the palette looks highlighted.
+const ITEM = "data-[selected=false]:bg-transparent!";
 
 export function clock(sec: number): string {
   const s = Math.max(0, Math.floor(sec));
@@ -125,8 +130,30 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
     queryFn: () => api.tasks({ assignee: me, limit: 200 }),
     enabled: open && !!ws && !!me,
   });
+  // What you worked on lately, newest first, one line per distinct thing — resume it in a keystroke.
+  const latest = useQuery({
+    queryKey: qk.entries(ws, { recent: true, limit: 40 }),
+    queryFn: () => api.entries({ limit: 40 }),
+    enabled: open && !!ws,
+    staleTime: 10_000,
+  });
   const text = query.trim();
   const q = text.toLowerCase();
+  const recent = useMemo(() => {
+    const seen = new Set<string>();
+    const out: TimeEntry[] = [];
+    for (const e of latest.data ?? []) {
+      if (!e.ended_at) continue;
+      const k = `${e.project_id ?? ""}|${e.task_id ?? ""}|${e.description.trim().toLowerCase()}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const hay = [e.description, e.task_key, e.task_title, e.project_name].filter(Boolean).join(" ").toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      out.push(e);
+      if (out.length >= 5) break;
+    }
+    return out;
+  }, [latest.data, q]);
   const tasks = useMemo(
     () =>
       (mine.data ?? [])
@@ -152,17 +179,39 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
           <CommandList className="max-h-96">
             <CommandEmpty>{t("palette.noResults")}</CommandEmpty>
             <CommandGroup>
-              <CommandItem value="__free" onSelect={() => void go(text ? { description: text } : {})}>
+              <CommandItem className={ITEM} value="__free" onSelect={() => void go(text ? { description: text } : {})}>
                 <PlayIcon />
                 <span className="truncate">{text ? t("timer.startFree", { text }) : t("timer.startBlank")}</span>
               </CommandItem>
             </CommandGroup>
+            {recent.length ? (
+              <CommandGroup heading={t("timer.recent")} data-timer-recent>
+                {recent.map((e) => (
+                  <CommandItem className={ITEM}
+                    key={e.id}
+                    value={`r:${e.id}`}
+                    onSelect={() =>
+                      void go({
+                        ...(e.task_id ? { task: e.task_id } : e.project_id ? { project: e.project_id } : {}),
+                        ...(e.description ? { description: e.description } : {}),
+                        billable: e.billable,
+                      })
+                    }
+                  >
+                    {e.project_id ? <ProjectMark name={e.project_name ?? "?"} color={e.project_color} size={14} /> : <HistoryIcon className="text-grid-muted" />}
+                    <span className="min-w-0 truncate">{e.description || e.task_title || e.project_name || t("timer.untitled")}</span>
+                    {e.task_key ? <LtrText className="shrink-0 font-mono text-[11px] text-grid-muted">{e.task_key}</LtrText> : null}
+                    {e.project_name && (e.description || e.task_title) ? <span className="min-w-0 shrink truncate text-[11.5px] text-grid-muted">{e.project_name}</span> : null}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ) : null}
             {tasks.length ? (
               <CommandGroup heading={t("nav.myIssues")}>
                 {tasks.map((task) => {
                   const p = byId.get(task.project_id);
                   return (
-                    <CommandItem key={task.id} value={`t:${task.id}`} onSelect={() => void go({ task: task.id, ...(text ? { description: text } : {}) })}>
+                    <CommandItem className={ITEM} key={task.id} value={`t:${task.id}`} onSelect={() => void go({ task: task.id, ...(text ? { description: text } : {}) })}>
                       <ProjectMark name={p?.name ?? "?"} color={p?.color} size={14} />
                       <LtrText className="font-mono text-[11px] text-grid-muted">{task.key}</LtrText>
                       <span className="truncate">{task.title}</span>
@@ -174,7 +223,7 @@ export function TimerPalette({ open, onOpenChange }: { open: boolean; onOpenChan
             {projs.length ? (
               <CommandGroup heading={t("nav.projects")}>
                 {projs.map((p) => (
-                  <CommandItem key={p.id} value={`p:${p.id}`} onSelect={() => void go({ project: p.id, ...(text ? { description: text } : {}) })}>
+                  <CommandItem className={ITEM} key={p.id} value={`p:${p.id}`} onSelect={() => void go({ project: p.id, ...(text ? { description: text } : {}) })}>
                     <ProjectMark name={p.name} color={p.color} size={14} />
                     <span className={cn("truncate")}>{p.name}</span>
                   </CommandItem>
