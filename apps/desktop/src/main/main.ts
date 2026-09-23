@@ -229,7 +229,14 @@ function onLive(e: LiveEvent): void {
   else if (e.type === "timer.stopped") {
     if (getRunning()?.id === e.entry.id) onRunning(null);
     void refreshRecent();
-  } else if (e.type === "entry.changed") void refreshRecent();
+  } else if (e.type === "entry.changed") {
+    // A renamed, re-targeted, trimmed or deleted entry. If it is the running one, the menu bar,
+    // the sidebar and every view must follow: still running → the new copy; ended or gone → idle.
+    const d = e.data as (Partial<TimeEntry> & { deleted?: boolean }) | null;
+    const cur = getRunning();
+    if (cur && d?.id === cur.id) onRunning(d.deleted || d.ended_at ? null : ({ ...cur, ...d } as TimeEntry));
+    void refreshRecent();
+  }
   else if (e.type === "notification") {
     void refreshBadge();
     if (e.name === "notification.created") notifyFromLive(e.data);
