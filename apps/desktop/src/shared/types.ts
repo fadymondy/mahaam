@@ -64,6 +64,8 @@ export interface AppConfig {
   lastEmail: string;
   prefs: Prefs;
   canAutoLaunch: boolean;
+  /** This device's token name, to mark it in the list of devices. */
+  deviceName: string;
 }
 
 /** Things the main process tells the renderer to do: menu items, the tray, deep links. */

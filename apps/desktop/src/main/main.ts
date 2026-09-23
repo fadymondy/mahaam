@@ -411,6 +411,7 @@ function registerIpc(): void {
     lastEmail: session.lastEmail(),
     prefs,
     canAutoLaunch: process.platform !== "linux",
+    deviceName: session.deviceName(),
   }));
   handle("app:prefs", (patch: Partial<Prefs>) => {
     const clean: Partial<Prefs> = {};
