@@ -1,5 +1,9 @@
 {
   "extends": "../tsconfig.base.json",
-  "compilerOptions": { "types": ["node"] },
-  "include": ["src"]
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/renderer/*"] }
+  },
+  "include": ["src", "vite.config.mts"]
 }

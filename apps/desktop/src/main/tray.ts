@@ -1,0 +1,149 @@
+// The menu-bar timer. Driven by the main process's own services: the running entry comes from the
+// live stream (timer.state / started / stopped), so a timer started on the phone, the web or the
+// extension shows here within a second, with or without a window open. The clock ticks here from
+// started_at — the server owns the time, every client recomputes.
+import { Menu, nativeImage, nativeTheme, Tray, type MenuItemConstructorOptions } from "electron";
+import { rasterMark } from "@mahaam/client/brand";
+import { encodePng } from "@mahaam/client/brand/png";
+
+import type { StartInput, TimeEntry } from "../shared/types";
+import { trayStrings, type Locale } from "./strings";
+
+export interface TrayDeps {
+  locale: () => Locale;
+  signedIn: () => boolean;
+  show: () => void;
+  timerPalette: () => void;
+  stop: () => Promise<unknown>;
+  start: (input: StartInput) => Promise<unknown>;
+}
+
+export interface Recent {
+  label: string;
+  sub: string;
+  input: StartInput;
+}
+
+let tray: Tray | null = null;
+let deps: TrayDeps;
+let running: TimeEntry | null = null;
+let recent: Recent[] = [];
+let ticker: ReturnType<typeof setInterval> | null = null;
+let menu: Menu | null = null;
+
+export function clock(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${h}:${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+export const entryLabel = (e: Pick<TimeEntry, "description" | "task_title" | "project_name">) =>
+  e.description || e.task_title || e.project_name || "";
+
+const elapsed = (e: TimeEntry) => (Date.now() - Date.parse(e.started_at)) / 1000;
+
+function icon(on: boolean): Electron.NativeImage {
+  const mac = process.platform === "darwin";
+  const dark = mac ? nativeTheme.shouldUseDarkColors : nativeTheme.shouldUseDarkColorsForSystemIntegratedUI;
+  const img = nativeImage.createEmpty();
+  for (const scale of [1, 2]) {
+    const size = (mac ? 18 : 16) * scale;
+    img.addRepresentation({ scaleFactor: scale, width: size, height: size, buffer: encodePng(rasterMark(size, { dark, dot: on ? "#4E9A3E" : null }), size, size) });
+  }
+  return img;
+}
+
+function tick(): void {
+  if (!tray) return;
+  const s = trayStrings(deps.locale());
+  const secs = running ? elapsed(running) : 0;
+  if (process.platform === "darwin") tray.setTitle(running ? ` ${clock(secs)}` : "", { fontType: "monospacedDigit" });
+  tray.setToolTip((running ? `Mahaam — ${clock(secs)} · ${entryLabel(running) || s.untitled}` : `Mahaam — ${s.idle}`).slice(0, 127));
+}
+
+function build(): void {
+  if (!tray) return;
+  const s = trayStrings(deps.locale());
+  const items: MenuItemConstructorOptions[] = [];
+  if (!deps.signedIn()) {
+    items.push({ label: s.signedOut, enabled: false });
+  } else if (running) {
+    const where = [running.task_key, running.project_name].filter(Boolean).join(" · ");
+    items.push(
+      { label: entryLabel(running) || s.untitled, enabled: false },
+      ...(where ? [{ label: where, enabled: false }] : []),
+      { label: s.stop, accelerator: "CmdOrCtrl+Alt+Shift+M", click: () => void deps.stop() },
+    );
+  } else {
+    items.push({ label: s.idle, enabled: false }, { label: s.start, click: deps.timerPalette });
+  }
+  if (deps.signedIn() && recent.length) {
+    items.push({ type: "separator" }, { label: s.resume, enabled: false });
+    for (const r of recent) items.push({ label: r.sub ? `${r.label} — ${r.sub}` : r.label, click: () => void deps.start(r.input) });
+  }
+  items.push({ type: "separator" }, { label: s.open, click: deps.show }, { label: s.quit, role: "quit" });
+  menu = Menu.buildFromTemplate(items);
+  tray.setContextMenu(menu);
+}
+
+export function createTray(d: TrayDeps): void {
+  deps = d;
+  tray = new Tray(icon(false));
+  nativeTheme.on("updated", () => tray?.setImage(icon(!!running)));
+  build();
+  tick();
+}
+
+export function setRunning(next: TimeEntry | null): void {
+  const changed = (next?.id ?? null) !== (running?.id ?? null) || entryLabel(next ?? ({} as TimeEntry)) !== entryLabel(running ?? ({} as TimeEntry));
+  const was = !!running;
+  running = next;
+  if (was !== !!next) tray?.setImage(icon(!!next));
+  if (changed) build();
+  if (next && !ticker) ticker = setInterval(tick, 1000);
+  if (!next && ticker) {
+    clearInterval(ticker);
+    ticker = null;
+  }
+  tick();
+}
+
+export const getRunning = () => running;
+
+/** Recent finished work, newest first, one row per task/project/description. */
+export function setRecent(entries: TimeEntry[], untitled: string): void {
+  const seen = new Set<string>();
+  recent = [];
+  for (const e of entries) {
+    if (!e.ended_at) continue;
+    const key = `${e.task_id ?? ""}|${e.project_id ?? ""}|${e.description}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recent.push({
+      label: entryLabel(e) || untitled,
+      sub: [e.task_key, e.project_name].filter(Boolean).join(" · "),
+      input: {
+        ...(e.task_id ? { task: e.task_id } : e.project_id ? { project: e.project_id } : {}),
+        ...(e.description ? { description: e.description } : {}),
+        billable: e.billable,
+      },
+    });
+    if (recent.length === 5) break;
+  }
+  build();
+}
+
+export const getRecent = () => recent;
+
+export function refreshTray(): void {
+  build();
+  tick();
+}
+
+/** For the e2e (MAHAAM_E2E=1): what the menu bar shows, and a click on a menu item by label. */
+export const trayProbe = {
+  title: () => tray?.getTitle() ?? "",
+  items: () => (menu?.items ?? []).map((i) => i.label).filter(Boolean),
+  click: (label: string) => menu?.items.find((i) => i.label === label)?.click(),
+};

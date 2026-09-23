@@ -3,7 +3,7 @@ import { build, context } from "esbuild";
 
 const watch = process.argv.includes("--watch");
 const opts = {
-  entryPoints: { main: "src/main.ts", preload: "src/preload.ts" },
+  entryPoints: { main: "src/main/main.ts", preload: "src/main/preload.ts" },
   outdir: "dist",
   outExtension: { ".js": ".cjs" },
   bundle: true,

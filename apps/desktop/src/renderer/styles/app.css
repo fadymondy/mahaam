@@ -1,0 +1,89 @@
+/* The desktop renderer's styles: the shared grid system (tokens, fonts, the shadcn bridge — the
+   same as the web app), Mahaam's brand and palette, and the desktop's own density. */
+@import "@mahaam/client/grid.css";
+@import "./mahaam-brand.css";
+@import "./mahaam-palette.css";
+
+@source "../";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* A desktop app, not a document: no rubber-band, no text selection on chrome by default. */
+    overscroll-behavior: none;
+    overflow: hidden;
+    font-size: 13px;
+    cursor: default;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Content people read or copy stays selectable. */
+  input,
+  textarea,
+  [contenteditable],
+  .selectable,
+  .selectable * {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  button,
+  [role="button"],
+  [role="menuitem"],
+  [role="option"],
+  a {
+    cursor: default;
+  }
+}
+
+/* Codes, emails, numbers and dates stay LTR inside RTL text. */
+.ltr-isolate {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Window chrome. The title-bar rows move the window; their controls do not. */
+.drag {
+  -webkit-app-region: drag;
+}
+.drag :is(button, a, input, select, textarea, [role="button"], [role="combobox"], [role="menuitem"], [data-no-drag]) {
+  -webkit-app-region: no-drag;
+}
+
+/* macOS draws the traffic lights at the physical top-left (x 16–68px): in LTR they sit in the
+   sidebar's top row; with the sidebar hidden, or in RTL (sidebar on the right), in the view header. */
+html[data-platform="darwin"][dir="ltr"]:not([data-fullscreen]) .sidebar-top {
+  padding-left: 80px;
+}
+html[data-platform="darwin"]:not([data-fullscreen]):is([dir="rtl"], [dir="ltr"][data-sidebar="collapsed"]) .view-header {
+  padding-left: 84px;
+}
+/* Windows/Linux draw the caption buttons at the physical top-right (≈138px). */
+html:is([data-platform="win32"], [data-platform="linux"]):is([dir="ltr"], [data-sidebar="collapsed"]) .view-header {
+  padding-right: 148px;
+}
+html:is([data-platform="win32"], [data-platform="linux"])[dir="rtl"] .sidebar-top {
+  padding-right: 148px;
+}
+
+/* Thin, quiet scrollbars like a native list. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--grid-muted) 35%, transparent);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

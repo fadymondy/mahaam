@@ -11,7 +11,7 @@ const en = {
   quit: "Quit Mahaam",
   file: "File",
   newWindow: "New Window",
-  reportProblem: "Report a Problem…",
+  newIssue: "New Issue…",
   closeWindow: "Close Window",
   edit: "Edit",
   undo: "Undo",
@@ -21,9 +21,9 @@ const en = {
   paste: "Paste",
   pasteMatch: "Paste and Match Style",
   selectAll: "Select All",
-  copyLink: "Copy Link to This Page",
   view: "View",
-  palette: "Start Timer…",
+  palette: "Command Menu…",
+  startTimer: "Start Timer…",
   toggleSidebar: "Toggle Sidebar",
   appearance: "Appearance",
   system: "System",
@@ -38,12 +38,11 @@ const en = {
   go: "Go",
   back: "Back",
   forward: "Forward",
-  overview: "Overview",
+  inbox: "Inbox",
+  myIssues: "My Issues",
   projects: "Projects",
   time: "Time",
-  reports: "Reports",
-  members: "Members",
-  workspaces: "All Workspaces",
+  openWeb: "Open in Browser",
   window: "Window",
   help: "Help",
   website: "mahaam.app",
@@ -61,7 +60,7 @@ const ar: typeof en = {
   quit: "إنهاء مهام",
   file: "ملف",
   newWindow: "نافذة جديدة",
-  reportProblem: "الإبلاغ عن مشكلة…",
+  newIssue: "مهمة جديدة…",
   closeWindow: "إغلاق النافذة",
   edit: "تحرير",
   undo: "تراجع",
@@ -71,9 +70,9 @@ const ar: typeof en = {
   paste: "لصق",
   pasteMatch: "لصق ومطابقة النمط",
   selectAll: "تحديد الكل",
-  copyLink: "نسخ رابط هذه الصفحة",
   view: "عرض",
-  palette: "ابدأ مؤقّتًا…",
+  palette: "قائمة الأوامر…",
+  startTimer: "ابدأ مؤقّتًا…",
   toggleSidebar: "إظهار/إخفاء الشريط الجانبي",
   appearance: "المظهر",
   system: "النظام",
@@ -88,12 +87,11 @@ const ar: typeof en = {
   go: "انتقال",
   back: "رجوع",
   forward: "تقدّم",
-  overview: "نظرة عامة",
+  inbox: "الوارد",
+  myIssues: "مهامي",
   projects: "المشاريع",
   time: "الوقت",
-  reports: "التقارير",
-  members: "الأعضاء",
-  workspaces: "كل مساحات العمل",
+  openWeb: "فتح في المتصفح",
   window: "نافذة",
   help: "مساعدة",
   website: "mahaam.app",
@@ -103,6 +101,7 @@ const ar: typeof en = {
 
 const trayEn = {
   idle: "No timer running",
+  untitled: "Untitled",
   signedOut: "Sign in to track time",
   start: "Start Timer…",
   stop: "Stop Timer",
@@ -113,6 +112,7 @@ const trayEn = {
 
 const trayAr: typeof trayEn = {
   idle: "لا يوجد مؤقّت يعمل",
+  untitled: "بلا عنوان",
   signedOut: "سجّل الدخول لتتبّع الوقت",
   start: "ابدأ مؤقّتًا…",
   stop: "أوقف المؤقّت",
@@ -120,6 +120,20 @@ const trayAr: typeof trayEn = {
   open: "افتح مهام",
   quit: "إنهاء مهام",
 };
+
+const idleEn = {
+  title: "You were away",
+  body: (m: number) => `The timer kept running while you were away for about ${m} minutes. Keep that time?`,
+  keep: "Keep it",
+  discard: "Discard the away time",
+};
+const idleAr: typeof idleEn = {
+  title: "كنت بعيدًا",
+  body: (m: number) => `يبدو أنك كنت بعيدًا لمدة ${m} دقيقة والمؤقّت يعمل. هل نحتسب هذا الوقت؟`,
+  keep: "احتساب الوقت",
+  discard: "خصم وقت الغياب",
+};
+export const idleStrings = (locale: Locale) => (locale === "ar" ? idleAr : idleEn);
 
 export const trayStrings = (locale: Locale) => (locale === "ar" ? trayAr : trayEn);
 
