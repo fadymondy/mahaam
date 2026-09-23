@@ -8,6 +8,7 @@ import { KeyboardAvoidingView, Linking, Platform, Share, Switch, View } from "re
 import { ApiError } from "@/api/client";
 import { Chip, Micro, useErrorText } from "@/components/kit";
 import { useTwoFA } from "@/features/account";
+import { secondFactor, SecondFactorField, secondFactorReady, type SecondFactor } from "@/components/second-factor";
 import { AppText, ErrorLine, fonts, OtpField, PasswordField, PrimaryButton, Row, Rows, Screen, SecondaryButton, SkeletonRow, StackHeader, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { useBiometric } from "@/lib/biometric";
@@ -47,6 +48,7 @@ export default function Security() {
   const [flow, setFlow] = useState<Flow>(null);
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [factor, setFactor] = useState<SecondFactor>({ value: "", recovery: false });
   const [secret, setSecret] = useState<{ secret: string; otpauth_url: string } | null>(null);
   const [codes, setCodes] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -57,6 +59,7 @@ export default function Security() {
     setFlow(f);
     setPassword("");
     setCode("");
+    setFactor({ value: "", recovery: false });
     setError(null);
   };
   const run = async (fn: () => Promise<void>) => {
@@ -65,7 +68,7 @@ export default function Security() {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof ApiError && (e.status === 401 || e.status === 403 || e.status === 422) ? t("account.twofa.wrong") : errText(e));
+      setError(errText(e, { password: true, code: true }));
     } finally {
       setBusy(false);
     }
@@ -100,9 +103,9 @@ export default function Security() {
             {flow === "enroll" || flow === "disable" || flow === "regenerate" ? (
               <PasswordField label={t("auth.password")} value={password} onChangeText={setPassword} />
             ) : null}
-            {flow === "disable" || flow === "regenerate" ? (
-              <OtpField label={t("auth.mfa.code")} value={code} onChange={setCode} />
-            ) : null}
+            {flow === "regenerate" ? <OtpField label={t("auth.mfa.code")} value={code} onChange={setCode} /> : null}
+            {/* Turning it off also takes a recovery code: the way out for a lost phone. */}
+            {flow === "disable" ? <SecondFactorField value={factor} onChange={setFactor} /> : null}
 
             {flow === "enroll" ? (
               <PrimaryButton
@@ -154,9 +157,9 @@ export default function Security() {
             {flow === "disable" ? (
               <PrimaryButton
                 label={t("account.twofa.turnOff")}
-                disabled={busy || !password || code.length < 6}
+                disabled={busy || !password || !secondFactorReady(factor)}
                 onPress={() => void run(async () => {
-                  await mahaam.me.twoFADisable({ password, code });
+                  await mahaam.me.twoFADisable({ password, ...secondFactor(factor) });
                   setFlow(null);
                   refresh();
                 })}

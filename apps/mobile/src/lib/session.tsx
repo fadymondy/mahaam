@@ -2,6 +2,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import * as Device from "expo-device";
 import { Platform } from "react-native";
 
 import { MahaamClient, MfaRequired } from "@/api/client";
@@ -12,8 +13,15 @@ import { apiUrl } from "@/config";
 
 let lost: (() => void) | null = null;
 
+/**
+ * This phone's token name, as the devices list shows it ("Mahaam for iOS — iPhone 17 Pro"): every
+ * phone used to be "Mahaam mobile", so a list could not tell them apart or mark this one.
+ */
+export const DEVICE_NAME = `Mahaam for ${Platform.OS === "ios" ? "iOS" : Platform.OS === "android" ? "Android" : "web"} — ${Device.modelName ?? Device.deviceName ?? "phone"}`;
+
 export const client = new MahaamClient({
   baseUrl: apiUrl,
+  deviceName: DEVICE_NAME,
   store: secureStore,
   setCsrfCookie:
     Platform.OS === "web"
@@ -108,6 +116,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       },
       async register(name, email, password) {
         const u = await client.register(name.trim(), email.trim(), password);
+        // The server's sign-up takes only email and password: the name (and the phone's time zone)
+        // go on the profile straight after. A failure here must not undo the new account.
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        await mahaam.me.update({ name: name.trim(), ...(timezone ? { timezone } : {}) }).catch(() => undefined);
         setNotice(null);
         setUser(u);
         setStatus("signedIn");

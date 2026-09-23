@@ -38,7 +38,7 @@ export default function VerifyEmail() {
       void qc.invalidateQueries({ queryKey: ["me", user?.id ?? ""] });
       leave();
     } catch (e) {
-      setError(e instanceof ApiError && e.status === 422 ? t("auth.reset.invalid") : errText(e));
+      setError(errText(e, { code: true }));
     } finally {
       setBusy(false);
     }

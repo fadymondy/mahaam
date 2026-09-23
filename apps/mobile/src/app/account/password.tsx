@@ -19,7 +19,6 @@ export default function ChangePassword() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const change = useMutation({ mutationFn: () => mahaam.auth.changePassword(current, next) });
-  const wrong = change.error instanceof ApiError && (change.error.status === 401 || change.error.status === 422 || change.error.status === 400);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -29,7 +28,7 @@ export default function ChangePassword() {
             <PasswordField label={t("account.password.current")} value={current} onChangeText={setCurrent} />
             <PasswordField label={t("auth.reset.newPassword")} value={next} onChangeText={setNext} autoComplete="new-password" />
             <StrengthMeter score={passwordScore(next)} caption={t("auth.strengthHint")} />
-            {change.error ? <ErrorLine text={wrong ? t("account.password.wrong") : errText(change.error)} /> : null}
+            {change.error ? <ErrorLine text={change.error instanceof ApiError && change.error.status === 403 ? t("account.password.wrong") : errText(change.error, { newPassword: true })} /> : null}
             {change.isSuccess ? <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.okText }}>{t("account.password.changed")}</AppText> : null}
             <PrimaryButton
               label={t("account.password.submit")}

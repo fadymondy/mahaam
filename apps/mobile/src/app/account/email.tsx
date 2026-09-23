@@ -33,7 +33,7 @@ export default function ChangeEmail() {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof ApiError && e.status === 422 && step === "code" ? t("auth.reset.invalid") : errText(e));
+      setError(errText(e, step === "code" ? { code: true } : { password: true, email: true }));
     } finally {
       setBusy(false);
     }

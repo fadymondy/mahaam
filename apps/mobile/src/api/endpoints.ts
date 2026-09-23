@@ -45,6 +45,16 @@ const q = (params: Record<string, string | number | undefined | null>) => {
 };
 const e = encodeURIComponent;
 
+/** GET /api/auth/tokens: one per signed-in device or app. */
+export interface AccessToken {
+  id: string;
+  name: string;
+  abilities: string[] | null;
+  created_at: string;
+  /** "" when it never expires. */
+  expires_at: string;
+}
+
 export interface Attachment {
   uri: string;
   name: string;
@@ -56,6 +66,8 @@ export interface Attachment {
 export function api(c: MahaamClient) {
   return {
     workspaces: () => c.get<{ workspaces: Workspace[] | null }>("/api/me/workspaces", { workspace: false }),
+    /** A new workspace with the caller as its owner (needs a verified email: 403 otherwise). */
+    createWorkspace: (name: string, locale: string) => c.post<{ workspace: Workspace }>("/api/me/workspaces", { name, locale }, { workspace: false }),
 
     /** Signed-out account routes (CSRF double-submit, like sign-in). */
     auth: {
@@ -87,6 +99,9 @@ export function api(c: MahaamClient) {
       twoFADisable: (input: { password: string; code?: string; recovery_code?: string }) => c.post<unknown>("/api/me/2fa/disable", input, { workspace: false }),
       twoFARecovery: (password: string, code: string) =>
         c.post<{ recovery_codes: string[] | null }>("/api/me/2fa/recovery-codes", { password, code }, { workspace: false }),
+      /** The account's signed-in devices: its personal access tokens (phones, desktops, the extension). */
+      devices: async () => ((await c.get<AccessToken[] | null>("/api/auth/tokens", { workspace: false })) ?? []),
+      revokeDevice: (id: string) => c.del<unknown>(`/api/auth/tokens/${encodeURIComponent(id)}`),
       deleteAccount: (input: { password: string; code?: string; recovery_code?: string; locale: string }) =>
         c.post<{ purge_after: string }>("/api/me/delete", input, { workspace: false }),
     },
