@@ -503,6 +503,12 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   and sets the session cookie only when the CSRF header matches (no login CSRF); `SESSION_DRIVER=cookie` only.
   Delete account asks for the code too. The shared client (`login(email, pw, {code})`, `isMfaRequired`) and panel
   handle it for the extension.
+- **Self-monitoring** (MH-129, `internal/monitor`): the API uses the Go SDK customers use
+  (`github.com/fadymondy/mahaam-go`, public). `MAHAAM_DSN` set → an outermost recover reports a panicking request
+  and answers 500. The kernel has no recovery, so a panic used to drop the connection. A slog bridge (`a.Log`,
+  `k.Log`) files every Error record: the log message plus the error as the title, attributes as extra, throttled
+  to one report per message per 5 min per process, so the API reporting to its own intake can't loop. The server
+  dedups repeats into one card. Unset = inert.
 - **Board realtime** (MH-351, `internal/work/broadcast.go`): `task.created|updated|moved|deleted|commented`,
   `issue.created|updated|moved|commented` and `project.updated` (with `tasks_total`/`tasks_done`) on `/api/w/events`.
   Task, comment and project events come from `record()`, queued in the transaction and sent after commit. Issue

@@ -35,6 +35,8 @@ require (
 	github.com/xuri/excelize/v2 v2.8.1
 )
 
+require github.com/fadymondy/mahaam-go v0.0.0-20260921100450-e74d34b7714e
+
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0 // indirect
 	github.com/agnivade/levenshtein v1.2.0 // indirect

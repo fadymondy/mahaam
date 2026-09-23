@@ -6,6 +6,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"runtime/debug"
@@ -30,6 +31,7 @@ import (
 	"github.com/fadymondy/mahaam/internal/mailer"
 	"github.com/fadymondy/mahaam/internal/live"
 	"github.com/fadymondy/mahaam/internal/mcp"
+	"github.com/fadymondy/mahaam/internal/monitor"
 	_ "github.com/fadymondy/mahaam/internal/plugins" // blank-imports installed plugins (togo install)
 	"github.com/fadymondy/mahaam/internal/push"
 	"github.com/fadymondy/mahaam/internal/reports"
@@ -65,6 +67,14 @@ func Boot() *app.App {
 
 	// Plans and quotas (internal/limits): the owner pool, plus the minute flusher of the API meter.
 	limits.Init(ctx, a.SysDB, a.Log)
+
+	// MH-129: Mahaam reports its own errors to Mahaam through the Go SDK customers use. Every
+	// Error-level log becomes an issue (throttled per message), and a panicking request is reported
+	// and answered 500 instead of dropping the connection. Inert without MAHAAM_DSN.
+	mon := monitor.New()
+	a.Log = slog.New(monitor.Bridge(a.Log.Handler(), mon))
+	k.Log = a.Log
+	k.UseMiddleware(monitor.Recover(mon, a.Log))
 
 	installErrors()
 	installGuard(k, a)
