@@ -55,6 +55,17 @@ func record(ctx context.Context, q querier, s *tenant.Scope, e entry) error {
 	if err := fanout(ctx, q, s, e); err != nil {
 		return fmt.Errorf("notifications: %w", err)
 	}
+	// MH-351: the board-level realtime event, sent once the transaction commits (broadcast.go).
+	if ev := eventFor(e.Action); ev != "" {
+		data := map[string]any{"action": e.Action, "actor_id": s.UserID}
+		if e.TaskID != "" {
+			data["task_id"] = e.TaskID
+		}
+		if k, ok := e.Changes["key"].(string); ok && k != "" {
+			data["key"] = k
+		}
+		queueEvent(q, liveEvent{workspace: s.WorkspaceID, project: e.ProjectID, event: ev, data: data})
+	}
 	return nil
 }
 

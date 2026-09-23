@@ -81,6 +81,15 @@ func Boot() *app.App {
 	// caller's own events (internal/live). The scaffold's global /events stays unmounted.
 	k.Router.Get("/api/w/events", work.New(a).Events())
 	installLiveBus(ctx, a)
+	// MH-351: issue changes (internal/reports) reach boards over the same stream as tasks. Off the
+	// request: computing who may see the project is a query, and realtime is only a hint.
+	reports.OnChange = func(_ context.Context, ws string, project *string, event string, data map[string]any) {
+		p := ""
+		if project != nil {
+			p = *project
+		}
+		go work.New(a).Broadcast(context.Background(), ws, p, event, data)
+	}
 	installReminders(k, a)
 	installBilling(k, a)      // Polar: PUBLIC webhook + the 15-minute usage push
 	installIntegrations(k, a) // GitHub webhook + install callback (PUBLIC), Jira/Linear re-sync, GitHub mirror

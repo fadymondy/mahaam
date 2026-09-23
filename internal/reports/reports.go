@@ -313,6 +313,9 @@ func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*
 		if errors.As(err, &pg) && pg.Code == "23505" {
 			continue // someone took this number between MAX and INSERT; recount
 		}
+		if err == nil {
+			changed(ctx, r, "issue.created", nil)
+		}
 		return r, err
 	}
 	return nil, errors.New("could not allocate an issue number")
@@ -341,6 +344,16 @@ func Update(ctx context.Context, db *sql.DB, r *Report, fields map[string]any) e
 	}
 	_, err := db.ExecContext(ctx,
 		`UPDATE reports SET `+strings.Join(set, ", ")+`, updated_at = now() WHERE workspace_id = $1 AND id = $2`, args...)
+	if err == nil {
+		// A column change is "moved" when it changes where the issue sits on a board.
+		event, extra := "issue.updated", map[string]any{}
+		if st, ok := fields["status"].(string); ok {
+			event, extra["status"] = "issue.moved", st
+		} else if _, ok := fields["sort_order"]; ok {
+			event = "issue.moved"
+		}
+		changed(ctx, r, event, extra)
+	}
 	return err
 }
 
@@ -392,7 +405,29 @@ func AddCommentReturning(ctx context.Context, db *sql.DB, r *Report, authorID, k
 		return nil, fmt.Errorf("could not comment: %w", err)
 	}
 	_, _ = db.ExecContext(ctx, `UPDATE reports SET updated_at = now() WHERE workspace_id = $1 AND id = $2`, r.WorkspaceID, r.ID)
+	changed(ctx, r, "issue.commented", nil)
 	return c, nil
+}
+
+// OnChange hears about every issue that was created, changed or commented on, after the write has
+// happened. server.Boot points it at the realtime broadcaster (work.Service.Broadcast, MH-351).
+// nil means off, as in the OpenAPI export and tests that boot nothing.
+var OnChange func(ctx context.Context, workspaceID string, projectID *string, event string, data map[string]any)
+
+// changed reports one change to OnChange: the key and who did it, never the content (see
+// internal/work/broadcast.go for why events carry ids only).
+func changed(ctx context.Context, r *Report, event string, extra map[string]any) {
+	if OnChange == nil || r == nil {
+		return
+	}
+	data := map[string]any{"key": r.Key}
+	for k, v := range extra {
+		data[k] = v
+	}
+	if s, ok := tenant.From(ctx); ok && s.UserID != "" {
+		data["actor_id"] = s.UserID
+	}
+	OnChange(ctx, r.WorkspaceID, r.ProjectID, event, data)
 }
 
 // FormatList renders reports compactly for a model.

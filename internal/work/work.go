@@ -152,6 +152,7 @@ func (sv *Service) tx(ctx context.Context, fn func(tx *sql.Tx) error) error {
 	}
 	defer tx.Rollback() //nolint:errcheck
 	defer pendingNotes.Delete(tx)
+	defer pendingEvents.Delete(tx)
 	if err := fn(tx); err != nil {
 		return err
 	}
@@ -161,6 +162,7 @@ func (sv *Service) tx(ctx context.Context, fn func(tx *sql.Tx) error) error {
 	// Notifications written inside the transaction go out on the realtime channel only now that
 	// they exist for the reader (notify.go).
 	sv.flushNotes(tx)
+	sv.flushEvents(tx)
 	return nil
 }
 

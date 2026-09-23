@@ -503,6 +503,13 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   and sets the session cookie only when the CSRF header matches (no login CSRF); `SESSION_DRIVER=cookie` only.
   Delete account asks for the code too. The shared client (`login(email, pw, {code})`, `isMfaRequired`) and panel
   handle it for the extension.
+- **Board realtime** (MH-351, `internal/work/broadcast.go`): `task.created|updated|moved|deleted|commented`,
+  `issue.created|updated|moved|commented` and `project.updated` (with `tasks_total`/`tasks_done`) on `/api/w/events`.
+  Task, comment and project events come from `record()`, queued in the transaction and sent after commit. Issue
+  events come from `reports.OnChange` after each write. Payloads are ids only (`project_id`, `task_id`/`key`, `action`,
+  `actor_id`), so an event is a cue to refetch through the reads that apply access. Recipients are managers+ and
+  members with full access to the project (`fullAccessSQL`, one query per event); task-grant-only members and clients
+  get none. At most once, no replay: clients refetch on reconnect (the web does, in `useLiveStream`).
 - **Native push** (MH-352, `internal/push/native.go`): `devices` (owner pool; one row per install, UNIQUE push token,
   so a phone that changes hands moves rather than receiving both people's notifications). `POST /api/me/devices`
   (with `previous_token` for FCM's token rotation) and `DELETE /api/me/devices/{token}`. Every inbox notification that

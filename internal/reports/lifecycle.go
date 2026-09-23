@@ -159,7 +159,11 @@ func Reorder(ctx context.Context, db *sql.DB, r, anchor *Report, after bool) err
 			return err
 		}
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	changed(ctx, r, "issue.moved", nil)
+	return nil
 }
 
 // Mention is a human comment addressed to the agent that no agent comment on the

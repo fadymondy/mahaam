@@ -201,7 +201,8 @@ export type LiveState = "connecting" | "open" | "closed"
   the workspace shell. fetch rather than EventSource, because the stream needs X-Workspace-ID and
   EventSource cannot send headers. The first event is timer.state (the truth), so a reconnect after
   missed events is correct immediately; after that timer.started / timer.stopped / entry.changed /
-  notification.* update the cache of this tab.
+  notification.* update the cache of this tab, and task.* / issue.* / project.updated refetch the
+  boards and lists they touch.
 */
 export function useLiveStream(ws: string | null | undefined): LiveState {
   const { mutate } = useSWRConfig()
@@ -237,6 +238,14 @@ export function useLiveStream(ws: string | null | undefined): LiveState {
         void mutate((key) => isKey(key, ws, "/api/w/tasks/") && Array.isArray(key) && String(key[0]).endsWith("/activity"))
       }
       if (name.startsWith("notification.")) void refresh("/api/w/notifications")
+      // Boards (MH-351): the events carry ids only, so each one is a cue to refetch what's on
+      // screen; the reads apply the access rules. SWR folds a burst into one request per key.
+      if (name.startsWith("task.")) {
+        void refresh("/api/w/tasks")
+        void refresh("/api/w/projects")
+      }
+      if (name.startsWith("issue.")) void refresh("/api/w/issues")
+      if (name === "project.updated") void refresh("/api/w/projects")
     }
 
     const run = async () => {
@@ -285,6 +294,10 @@ export function useLiveStream(ws: string | null | undefined): LiveState {
         delay = Math.min(delay * 2, 15000)
         void refresh("/api/w/time/")
         void refresh("/api/w/notifications")
+        // No replay: whatever changed while the stream was down is only seen by refetching.
+        void refresh("/api/w/tasks")
+        void refresh("/api/w/issues")
+        void refresh("/api/w/projects")
       }
     }
     void run()
