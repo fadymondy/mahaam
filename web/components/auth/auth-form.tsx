@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 
@@ -56,6 +56,22 @@ function oauthProviders(data: unknown): OAuthProvider[] {
   return out
 }
 
+/*
+  Google/GitHub sign-ins that can't finish come back here (internal/server/oauth_return.go):
+    /login?error=account_suspended
+    /login?error=oauth_failed
+    /login?error=mfa_required&next=<path>#mfa_challenge=<challenge>
+  The provider was only the first factor; the challenge in the fragment is the same one a right
+  password gets, so the form goes straight to its two-factor step. The fragment never reaches a
+  server, and it's stripped from the address bar once read.
+*/
+function oauthErrorKey(code: string | null): string | null {
+  if (code === "account_suspended") return "auth.accountSuspended"
+  if (code === "oauth_failed") return "auth.oauthFailed"
+  if (code === "mfa_required") return "auth.oauthMfaExpired"
+  return null
+}
+
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const { t, locale, formatDate } = useTranslations()
   const router = useRouter()
@@ -67,13 +83,39 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(() => {
+    const key = mode === "login" ? oauthErrorKey(params.get("error")) : null
+    // mfa_required is only an error when no challenge came with it (read below, after mount).
+    return key && key !== "auth.oauthMfaExpired" ? t(key) : null
+  })
   const [busy, setBusy] = useState(false)
   // Two-factor sign-in (MH-341): the password was right and the account has a second factor, so
   // the API answered with a challenge instead of a session.
   const [challenge, setChallenge] = useState<string | null>(null)
   const [code, setCode] = useState("")
   const [useRecovery, setUseRecovery] = useState(false)
+  // Where the challenge came from decides what "start over" means: a password, or the provider.
+  const [challengeFrom, setChallengeFrom] = useState<"password" | "oauth">("password")
+
+  useEffect(() => {
+    if (mode !== "login" || params.get("error") !== "mfa_required") return
+    const hash = new URLSearchParams(window.location.hash.slice(1))
+    const fromOAuth = hash.get("mfa_challenge")
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search)
+    }
+    // setState in an effect on purpose: the fragment exists only in the browser.
+    if (fromOAuth) {
+      setChallenge(fromOAuth)
+      setChallengeFrom("oauth")
+      setCode("")
+      setError(null)
+    } else {
+      setError(t("auth.oauthMfaExpired"))
+    }
+    // Once, on arrival; params and t are stable for this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const methods = useSWR("/api/auth/methods", (p: string) => api<unknown>(p), {
     revalidateOnFocus: false,
@@ -101,6 +143,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         const mfa = (err.data as { challenge?: string } | undefined)?.challenge
         if (mode === "login" && err.code === "mfa_required" && mfa) {
           setChallenge(mfa)
+          setChallengeFrom("password")
           setCode("")
         } else if (mode === "login" && err.status === 401) setError(t("auth.invalidCredentials"))
         else if (mode === "register" && /registration failed/i.test(err.message)) setError(t("auth.registrationFailed"))
@@ -129,7 +172,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       if (err instanceof ApiError && err.status === 401) {
         // The challenge expired (five minutes) or the password changed: start over.
         setChallenge(null)
-        setError(t("auth.mfaExpired"))
+        setError(t(challengeFrom === "oauth" ? "auth.oauthMfaExpired" : "auth.mfaExpired"))
       } else if (err instanceof ApiError && err.status === 429) setError(t("auth.mfaLocked"))
       else if (err instanceof ApiError && err.status === 400) setError(t("auth.mfaWrong"))
       else setError(err instanceof ApiError ? err.message : t("common.networkError"))
@@ -152,6 +195,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         {challenge ? (
           <form onSubmit={onSecondFactor} noValidate data-mfa-form>
             <FieldGroup>
+              {challengeFrom === "oauth" ? (
+                <p className="text-sm text-grid-body" data-oauth-mfa>
+                  {t("auth.oauthMfaHint")}
+                </p>
+              ) : null}
               <p className="text-sm text-grid-muted" role="status">
                 {useRecovery ? t("auth.mfaRecoveryHint") : t("auth.mfaHint")}
               </p>
@@ -232,6 +280,15 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               ) : null}
             </Field>
             {error ? <FieldError>{error}</FieldError> : null}
+            {error && error === t("auth.accountSuspended") ? (
+              <Link
+                href={`/${locale}/support`}
+                className="self-start text-sm text-grid-fg underline underline-offset-4"
+                data-suspended-support
+              >
+                {t("footer.support")}
+              </Link>
+            ) : null}
             <Button type="submit" size="lg" disabled={busy || !email || !password}>
               {busy ? t("common.working") : mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
             </Button>
