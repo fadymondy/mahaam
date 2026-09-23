@@ -70,6 +70,9 @@ function useTick(active: boolean): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!active) return;
+    // `now` stood still while nothing ran; without this the first second of a new timer is
+    // measured against whenever the panel last ticked.
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [active]);

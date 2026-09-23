@@ -33,6 +33,17 @@ export function badge(seconds: number): string {
   return `${Math.min(h, 999)}h`;
 }
 
+/**
+ * When a running entry's next whole minute starts (epoch ms), which is when badge() next changes.
+ * Counted from started_at, so a repaint scheduled for it lands on the minute the entry itself turns
+ * over, not on some unrelated cadence.
+ */
+export function nextMinuteAt(e: Pick<TimeEntry, "started_at">, now = Date.now()): number {
+  const start = Date.parse(e.started_at);
+  const done = Math.max(0, Math.floor((now - start) / 60_000));
+  return start + (done + 1) * 60_000;
+}
+
 /** What a running entry is about, for titles and tooltips. */
 export function entryLabel(e: Pick<TimeEntry, "task_key" | "task_title" | "project_name" | "description">): string {
   if (e.task_key) return `${e.task_key} ${e.task_title ?? ""}`.trim();

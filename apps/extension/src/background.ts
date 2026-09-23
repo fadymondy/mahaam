@@ -2,14 +2,25 @@
 // A worker cannot hold the SSE stream (Chrome suspends it after ~30s idle), so it polls
 // GET /api/w/time/running once a minute with chrome.alarms; the popup, while open, keeps the
 // live stream and pushes changes here immediately.
-import { badge, elapsedSeconds, type TimeEntry } from "@mahaam/client";
+//
+// The badge counts whole minutes, so it has to be repainted when the running entry's minute turns
+// over. The once-a-minute poll alone cannot do that: its phase is set at install, unrelated to when
+// the timer started, so the badge sat on "0m" for up to two minutes after a start and then ran up
+// to a minute behind. paint() therefore schedules its own next repaint for the entry's next minute.
+import { badge, elapsedSeconds, nextMinuteAt, type TimeEntry } from "@mahaam/client";
 import { BRAND } from "@mahaam/client/brand";
 import { loadState, makeClient, saveState, type ExtMessage, type PendingPage } from "./ext";
 
 const ALARM = "mahaam-tick";
+/** One-shot: the running entry's next whole minute. */
+const MINUTE = "mahaam-minute";
+/** Chrome delays an alarm due sooner than this; a live worker keeps a plain timeout that long. */
+const ALARM_FLOOR_MS = 30_000;
 let running: TimeEntry | null = null;
+let turnover: ReturnType<typeof setTimeout> | null = null;
 
 function paint(): void {
+  schedule();
   if (!running) {
     void chrome.action.setBadgeText({ text: "" });
     void chrome.action.setTitle({ title: "Mahaam" });
@@ -21,6 +32,29 @@ function paint(): void {
   void chrome.action.setBadgeText({ text: badge(secs) });
   const what = running.task_key ? `${running.task_key} ${running.task_title ?? ""}` : running.description || running.project_name || "";
   void chrome.action.setTitle({ title: `Mahaam — ${Math.floor(secs / 60)} min · ${what}`.trim() });
+}
+
+/**
+ * Repaint when the running entry reaches its next minute. The alarm survives the worker being
+ * suspended (it wakes it, and poll() refetches the entry the suspension forgot); a boundary closer
+ * than Chrome's alarm floor is a timeout instead, since the worker that just painted is still alive.
+ */
+function schedule(): void {
+  if (turnover) clearTimeout(turnover);
+  turnover = null;
+  if (!running) {
+    void chrome.alarms.clear(MINUTE);
+    return;
+  }
+  const at = nextMinuteAt(running) + 50; // just past the boundary, so the minute has turned
+  const wait = at - Date.now();
+  void chrome.alarms.create(MINUTE, { when: Math.max(at, Date.now()) });
+  if (wait < ALARM_FLOOR_MS) {
+    turnover = setTimeout(() => {
+      turnover = null;
+      paint();
+    }, Math.max(wait, 0));
+  }
 }
 
 async function poll(): Promise<void> {
@@ -57,6 +91,11 @@ chrome.runtime.onStartup.addListener(setup);
 
 chrome.alarms.onAlarm.addListener((a) => {
   if (a.name === ALARM) void poll();
+  // A worker woken from suspension has forgotten the entry; fetch it rather than paint nothing.
+  else if (a.name === MINUTE) {
+    if (running) paint();
+    else void poll();
+  }
 });
 
 chrome.runtime.onMessage.addListener((msg: ExtMessage, sender) => {

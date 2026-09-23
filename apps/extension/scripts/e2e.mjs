@@ -89,11 +89,55 @@ try {
   await page.locator(".mgy-timer-idle input").fill("Extension e2e");
   await page.locator(".mgy-timer-idle").getByRole("button", { name: /Start/ }).click();
   await page.locator(".mgy-timer-running").waitFor({ timeout: 10000 });
-  await page.waitForTimeout(1000);
+  // The clock is recomputed from started_at every second; it must count up on its own, without
+  // the popup being reopened. It once sat at 0:00 for as long as the popup stayed open.
+  const clockSecs = async () => {
+    const text = (await page.locator(".mgy-timer-running .mgy-clock").innerText()).trim();
+    return { text, secs: text.split(":").reduce((s, p) => s * 60 + Number(p), 0) };
+  };
+  await page.waitForTimeout(1500);
+  const c1 = await clockSecs();
+  await page.waitForTimeout(3000);
+  const c2 = await clockSecs();
+  log("timer clock:", JSON.stringify(c1.text), "then", JSON.stringify(c2.text), "3s later");
+  if (!(c2.secs > 0)) fail(`the running timer's clock reads ${JSON.stringify(c2.text)} 4.5s after starting`);
+  if (!(c2.secs >= c1.secs + 2)) fail(`the running timer's clock did not tick: ${JSON.stringify(c1.text)} then ${JSON.stringify(c2.text)} 3s later`);
   const badge = await sw.evaluate(() => chrome.action.getBadgeText({}));
   log("timer running; badge =", JSON.stringify(badge));
   if (!badge) fail("no badge while a timer runs");
   await page.screenshot({ path: "e2e-shots/ext-running.png" });
+
+  // The badge counts whole minutes, so it must turn over when the running entry's minute does —
+  // not whenever a once-a-minute alarm, started at install, next happens to fire. That alarm read
+  // "0m" for up to two minutes after a start. Rather than wait a real minute, move the worker's
+  // clock to just before the entry's first minute and let the worker repaint.
+  const startedAt = await page.evaluate(async (args) => {
+    const r = await fetch(`${args.api}/api/w/time/running`, { headers: { Authorization: `Bearer ${args.token}`, "X-Workspace-ID": args.ws } });
+    return Date.parse((await r.json()).timer.started_at);
+  }, {
+    api: API,
+    token: (await sw.evaluate(() => chrome.storage.session.get("token"))).token,
+    ws: (await sw.evaluate(() => chrome.storage.local.get("workspace"))).workspace.id,
+  });
+  await sw.evaluate((at) => {
+    const real = Date.now.bind(Date);
+    const skew = at + 59_000 - real();
+    globalThis.__e2eRealNow = real;
+    Date.now = () => real() + skew;
+  }, startedAt);
+  await page.evaluate(() => chrome.runtime.sendMessage({ type: "refresh" }));
+  await page.waitForTimeout(400);
+  const at59 = await sw.evaluate(() => chrome.action.getBadgeText({}));
+  await page.waitForTimeout(2600);
+  const at61 = await sw.evaluate(() => chrome.action.getBadgeText({}));
+  await sw.evaluate(() => {
+    Date.now = globalThis.__e2eRealNow;
+  });
+  await page.evaluate(() => chrome.runtime.sendMessage({ type: "refresh" }));
+  await page.waitForTimeout(500);
+  log("badge at 0:59 →", JSON.stringify(at59), "at 1:01 →", JSON.stringify(at61));
+  if (at59 !== "0m") fail(`the badge reads ${JSON.stringify(at59)} 59s into a timer`);
+  if (at61 !== "1m") fail(`the badge did not turn over with the minute: ${JSON.stringify(at61)} 61s into a timer`);
 
   // The worker must notice the token going (a sign-out, a revoked PAT) on its own. It lives in
   // storage.session; the worker used to watch storage.local for it and kept counting.
