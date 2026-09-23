@@ -16,8 +16,17 @@ const SESSION_COOKIE = "togo_session"
 // cookie is caught client-side when /api/auth/me answers 401.
 const PROTECTED_PREFIXES = ["/workspaces", "/w", "/admin", "/oauth", "/app-signin"]
 
+// Pages anyone can open signed out, listed so that a new protected prefix can't swallow them by
+// accident. The store listings and the in-app browser link to them: the App Store and Google
+// Play need the support and account-deletion pages to work without an account.
+const PUBLIC_PAGES = ["/login", "/register", "/forgot-password", "/invite", "/legal", "/support", "/delete-account"]
+
+function under(rest: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((p) => rest === p || rest.startsWith(p + "/"))
+}
+
 function isProtected(rest: string): boolean {
-  return PROTECTED_PREFIXES.some((p) => rest === p || rest.startsWith(p + "/"))
+  return !under(rest, PUBLIC_PAGES) && under(rest, PROTECTED_PREFIXES)
 }
 
 function splitLocale(pathname: string): { locale: Locale | null; rest: string } {
