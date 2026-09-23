@@ -18,6 +18,15 @@ import { useRouter } from "@/lib/router";
 
 const LAST_PROJECT = "mahaam.lastProject";
 
+// The shell's openCreate(project) has no status; a column's "+" leaves one here first.
+let presetStatus: string | null = null;
+
+/** Quick create in a project and a status (a list group's or a board column's "+"). */
+export function openCreateIn(openCreate: (projectId?: string | null) => void, projectId: string, statusId?: string | null): void {
+  presetStatus = statusId ?? null;
+  openCreate(projectId);
+}
+
 export function CreateIssue({ open, onOpenChange, projectId }: { open: boolean; onOpenChange: (o: boolean) => void; projectId?: string | null }) {
   const { t } = useI18n();
   const { ws } = useApp();
@@ -47,13 +56,14 @@ export function CreateIssue({ open, onOpenChange, projectId }: { open: boolean; 
     setDescription("");
     setPriority("none");
     setAssignees(me ? [me] : []);
-    setStatus(null);
+    setStatus(presetStatus);
+    presetStatus = null;
   }, [open, projectId, projects.data, me]);
 
   const statuses = useMemo(() => [...(board.data?.statuses ?? [])].sort((a, b) => a.position - b.position), [board.data]);
   // Default status: the first "todo" that is not the backlog, else the first column.
   useEffect(() => {
-    if (status && statuses.some((s) => s.id === status)) return;
+    if (!statuses.length || (status && statuses.some((s) => s.id === status))) return;
     setStatus((statuses.find((s) => s.category === "todo" && s.stage !== "backlog") ?? statuses[0])?.id ?? null);
   }, [statuses, status]);
 
