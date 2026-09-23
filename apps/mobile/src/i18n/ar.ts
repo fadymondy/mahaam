@@ -287,6 +287,7 @@ const ar: Shape<Dict> = {
     },
   },
   legal: { terms: "شروط الخدمة", privacy: "سياسة الخصوصية" },
+  languages: { en: "الإنجليزية", ar: "العربية" },
   monitor: { reported: "أُبلغ الفريق بالمشكلة. حاول مرة أخرى أو ارجع." },
   search: { placeholder: "المشاريع والمشكلات والمهام…", recent: "عمليات البحث الأخيرة", noResults: "لا توجد نتائج مطابقة." },
   projects: {
