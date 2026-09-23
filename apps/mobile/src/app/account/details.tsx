@@ -11,6 +11,7 @@ import { useProfile } from "@/features/account";
 import { AppText, ErrorLine, Field, fonts, FooterBar, PrimaryButton, Row, Rows, Screen, SecondaryButton, StackHeader, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { mahaam, useSession } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 export default function Details() {
   const t = useT();
@@ -86,7 +87,7 @@ export default function Details() {
             <Field label={t("auth.name")} value={name} onChangeText={(v) => (setName(v), setSaved(false))} autoComplete="name" />
             <Field label={t("account.details.timezone")} value={timezone} onChangeText={(v) => (setTimezone(v), setSaved(false))} autoCapitalize="none" ltr placeholder="Africa/Cairo" />
             {save.error ? <ErrorLine text={errText(save.error)} /> : null}
-            {saved ? <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.okText }}>{t("account.saved")}</AppText> : null}
+            {saved ? <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.okText }}>{t("account.saved")}</AppText> : null}
           </Row>
         </Rows>
       </Screen>

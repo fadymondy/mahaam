@@ -6,6 +6,7 @@ import { AppText, ErrorLine, fonts, PrimaryButton, SecondaryButton, useColors } 
 import { useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { mahaam } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 import { Actions, Grow, useErrorText } from "./kit";
 
 /** Accept (in review → done) / Reopen (→ to do), shown only when the API says it's allowed. */
@@ -47,7 +48,7 @@ export function IssueActions({ issue }: { issue: Pick<PortalIssue, "key" | "can_
         ) : null}
       </Actions>
       {m.isSuccess ? (
-        <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.okText }}>{m.variables === "done" ? t("portal.accepted") : t("portal.reopened")}</AppText>
+        <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.okText }}>{m.variables === "done" ? t("portal.accepted") : t("portal.reopened")}</AppText>
       ) : null}
       {m.error ? <ErrorLine text={errText(m.error)} /> : null}
     </>

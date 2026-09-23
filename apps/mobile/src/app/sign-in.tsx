@@ -32,6 +32,7 @@ import {
 import { useI18n } from "@/i18n";
 import { legalUrl } from "@/lib/links";
 import { useSession } from "@/lib/session";
+import { fs, lh } from "@/lib/type-scale";
 
 type Mode = "in" | "up" | "mfa";
 
@@ -113,7 +114,7 @@ export default function SignIn() {
         }>
         <Rows>
           <Row>
-            <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, lineHeight: 25, color: c.muted }}>{intro}</AppText>
+            <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, lineHeight: lh(fs.body), color: c.muted }}>{intro}</AppText>
           </Row>
 
           {mode === "mfa" ? (
@@ -139,7 +140,7 @@ export default function SignIn() {
                   setRecovery(v);
                   setCode("");
                 }}>
-                <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.body }}>{t("auth.mfa.useRecovery")}</AppText>
+                <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.body }}>{t("auth.mfa.useRecovery")}</AppText>
               </Checkbox>
               {error ? <ErrorLine text={error} /> : null}
               <PrimaryButton
@@ -189,16 +190,16 @@ export default function SignIn() {
               {up ? <StrengthMeter score={score} caption={t("auth.strengthHint")} /> : null}
               {up ? (
                 <Checkbox checked={agree} onChange={setAgree} large>
-                  <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 20, color: c.body }}>
+                  <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, lineHeight: lh(fs.meta), color: c.body }}>
                     {t("auth.agreePrefix")}{" "}
                     <AppText
-                      style={{ fontFamily: fonts.medium, fontSize: 12.5, color: c.goldText }}
+                      style={{ fontFamily: fonts.medium, fontSize: fs.meta, color: c.goldText }}
                       onPress={() => void WebBrowser.openBrowserAsync(legalUrl("terms", locale))}>
                       {t("legal.terms")}
                     </AppText>{" "}
                     {t("auth.agreeAnd")}{" "}
                     <AppText
-                      style={{ fontFamily: fonts.medium, fontSize: 12.5, color: c.goldText }}
+                      style={{ fontFamily: fonts.medium, fontSize: fs.meta, color: c.goldText }}
                       onPress={() => void WebBrowser.openBrowserAsync(legalUrl("privacy", locale))}>
                       {t("legal.privacy")}
                     </AppText>
@@ -225,8 +226,8 @@ export default function SignIn() {
                   setError(null);
                 }}
                 style={{ minHeight: 44, flexDirection: "row", gap: 7, alignItems: "center", justifyContent: "center" }}>
-                <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: c.muted }}>{t(up ? "auth.haveAccountQ" : "auth.noAccountQ")}</AppText>
-                <AppText style={{ fontFamily: fonts.medium, fontSize: 13, color: c.fg }}>{t(up ? "auth.signIn" : "auth.register")}</AppText>
+                <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.muted }}>{t(up ? "auth.haveAccountQ" : "auth.noAccountQ")}</AppText>
+                <AppText style={{ fontFamily: fonts.medium, fontSize: fs.meta, color: c.fg }}>{t(up ? "auth.signIn" : "auth.register")}</AppText>
               </Pressable>
             </Row>
           ) : null}

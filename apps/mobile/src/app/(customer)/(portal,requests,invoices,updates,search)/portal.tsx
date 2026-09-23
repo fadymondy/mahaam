@@ -5,6 +5,7 @@ import { Micro, Progress, projectColor, TabHeader, useErrorText } from "@/compon
 import { usePortalProjects } from "@/features/client";
 import { AppText, fonts, ForwardChevron, ListItem, Meta, Row, Rows, Screen, SkeletonRow, StateRow, useColors } from "@/grid";
 import { useT } from "@/i18n";
+import { fs } from "@/lib/type-scale";
 
 export default function Projects() {
   const t = useT();
@@ -36,7 +37,7 @@ export default function Projects() {
                     <AppText variant="rowTitle" numberOfLines={1} style={{ flex: 1 }}>
                       {p.name}
                     </AppText>
-                    <AppText style={{ fontFamily: fonts.mono, fontSize: 12, color: c.goldText, writingDirection: "ltr" }}>{`${p.percent_done}%`}</AppText>
+                    <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.goldText, writingDirection: "ltr" }}>{`${p.percent_done}%`}</AppText>
                   </View>
                   <Progress value={p.percent_done} label={t("portal.progress", { p: p.percent_done })} />
                   <Meta

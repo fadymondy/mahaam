@@ -11,6 +11,7 @@ import { usePolling } from "@/lib/live";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
 import { addDays, formatDuration, localDay, weekStartOf } from "@/lib/time";
+import { fs } from "@/lib/type-scale";
 
 interface Row7 {
   project_name?: string | null;
@@ -75,7 +76,9 @@ export default function Timesheet() {
                 ]}
               />
               {/* A 7-bar week chart; each bar is labelled for screen readers. */}
-              <View style={{ flexDirection: "row", alignItems: "flex-end", height: 120, gap: 4 }}>
+              {/* Weekday over date: a seventh of a phone is too narrow for both on one line at a
+                  readable size. */}
+              <View style={{ flexDirection: "row", alignItems: "flex-end", height: 140, gap: 4 }}>
                 {days.map((day, i) => (
                   <View key={day} style={{ flex: 1, alignItems: "center", gap: 6 }} accessible accessibilityLabel={`${f.day(day)}: ${formatDuration(totals[i] ?? 0)}`}>
                     <View
@@ -86,9 +89,14 @@ export default function Timesheet() {
                         backgroundColor: day === today ? c.gold : c.brand,
                       }}
                     />
-                    <AppText style={{ fontFamily: fonts.regular, fontSize: 10.5, color: day === today ? c.goldText : c.muted }} numberOfLines={1}>
-                      {f.day(day)}
-                    </AppText>
+                    <View style={{ alignItems: "center" }}>
+                      <AppText style={{ fontFamily: fonts.regular, fontSize: fs.count, color: day === today ? c.goldText : c.muted }} numberOfLines={1}>
+                        {f.weekday(day)}
+                      </AppText>
+                      <AppText style={{ fontFamily: fonts.regular, fontSize: fs.count, color: day === today ? c.goldText : c.muted }} numberOfLines={1}>
+                        {f.dayOfMonth(day)}
+                      </AppText>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -105,7 +113,7 @@ export default function Timesheet() {
                   key={i}
                   last={i === rows.length - 1}
                   leading={<View style={{ width: 3, alignSelf: "stretch", borderRadius: 1.5, backgroundColor: projectColor(r.project_color) }} />}
-                  trailing={<AppText style={{ fontFamily: fonts.mono, fontSize: 13, color: c.fg, writingDirection: "ltr" }}>{formatDuration(r.total_s ?? 0)}</AppText>}>
+                  trailing={<AppText style={{ fontFamily: fonts.mono, fontSize: fs.mono, color: c.fg, writingDirection: "ltr" }}>{formatDuration(r.total_s ?? 0)}</AppText>}>
                   <AppText variant="rowTitle" numberOfLines={2}>
                     {r.task_key ? `${r.task_key} · ${r.task_title ?? ""}` : (r.project_name ?? t("timer.noProject"))}
                   </AppText>

@@ -10,6 +10,7 @@ import { AppState, Platform, View } from "react-native";
 
 import { AppText, CubeMark, fonts, HatchFill, PrimaryButton, useColors, useGridApp } from "@/grid";
 import { useT } from "@/i18n";
+import { fs } from "@/lib/type-scale";
 import { useSession } from "./session";
 
 const KEY = "mahaam.biometricLock";
@@ -107,7 +108,7 @@ function LockScreen({ kind: k, onUnlock }: { kind: BiometricKind; onUnlock: () =
         <CubeMark size={52} />
       </View>
       <AppText variant="latin">{app.name}</AppText>
-      <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, color: c.muted, textAlign: "center" }}>{t("account.biometric.locked")}</AppText>
+      <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, color: c.muted, textAlign: "center" }}>{t("account.biometric.locked")}</AppText>
       <View style={{ alignSelf: "stretch" }}>
         <PrimaryButton label={t(k === "face" ? "account.biometric.unlockFace" : "account.biometric.unlockFinger")} icon={<Icon size={18} color={c.onAction} strokeWidth={1.6} />} onPress={onUnlock} />
       </View>

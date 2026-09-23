@@ -12,6 +12,7 @@ import { AppText, Checkbox, ErrorLine, fonts, OtpField, PasswordField, Row, Rows
 import { useFormat, useI18n } from "@/i18n";
 import { client, mahaam, useSession } from "@/lib/session";
 import { DangerButton } from "@/components/kit";
+import { fs, lh } from "@/lib/type-scale";
 
 export default function DeleteAccount() {
   const { t, locale } = useI18n();
@@ -52,18 +53,18 @@ export default function DeleteAccount() {
       <Screen header={<StackHeader title={t("account.delete.title")} />}>
         <Rows>
           <Row>
-            <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, lineHeight: 25, color: c.body }}>{t("account.delete.body")}</AppText>
+            <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, lineHeight: lh(fs.body), color: c.body }}>{t("account.delete.body")}</AppText>
           </Row>
           {done ? (
             <Row>
-              <AppText style={{ fontFamily: fonts.regular, fontSize: 13.5, color: c.okText }}>{t("account.delete.done", { date: f.date(done) })}</AppText>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.body, color: c.okText }}>{t("account.delete.done", { date: f.date(done) })}</AppText>
             </Row>
           ) : (
             <Row>
               <PasswordField label={t("auth.password")} value={password} onChangeText={setPassword} />
               {needsCode ? <OtpField label={t("auth.mfa.code")} value={code} onChange={setCode} /> : null}
               <Checkbox checked={sure} onChange={setSure} large>
-                <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 20, color: c.body }}>{t("account.delete.confirm")}</AppText>
+                <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, lineHeight: lh(fs.meta), color: c.body }}>{t("account.delete.confirm")}</AppText>
               </Checkbox>
               {error ? <ErrorLine text={error} /> : null}
               <DangerButton label={t("account.delete.submit")} disabled={busy || !sure || !password || (needsCode && code.length < 6)} onPress={() => void submit()} />

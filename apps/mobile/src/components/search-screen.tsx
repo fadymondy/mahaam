@@ -18,6 +18,7 @@ import type { SearchBarCommands } from "react-native-screens";
 import { AppText, fonts, ForwardChevron, HatchFill, Header, ListItem, Meta, metrics, Rails, Row, Rows, Screen, SkeletonRow, StateRow, usePrefs } from "@/grid";
 import { useT } from "@/i18n";
 import { isLiquidGlass } from "@/lib/platform";
+import { fs } from "@/lib/type-scale";
 import { Micro } from "./kit";
 import { SearchField, useDebounced } from "./search";
 
@@ -154,12 +155,12 @@ export function SearchScreen({
               <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingBottom: 4 }}>
                 <Micro style={{ flex: 1 }}>{t("search.recent")}</Micro>
                 <Pressable accessibilityRole="button" hitSlop={10} onPress={clear}>
-                  <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.goldText }}>{t("common.clear")}</AppText>
+                  <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.goldText }}>{t("common.clear")}</AppText>
                 </Pressable>
               </View>
               {recent.map((r, i) => (
                 <ListItem key={r} last={i === recent.length - 1} padV={10} leading={<Clock size={16} color={c.muted} strokeWidth={1.6} />} onPress={() => runRecent(r)}>
-                  <AppText style={{ fontFamily: fonts.regular, fontSize: 14, color: c.fg }}>{r}</AppText>
+                  <AppText style={{ fontFamily: fonts.regular, fontSize: fs.item, color: c.fg }}>{r}</AppText>
                 </ListItem>
               ))}
             </Row>

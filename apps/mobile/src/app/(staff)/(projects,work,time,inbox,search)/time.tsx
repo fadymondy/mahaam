@@ -10,6 +10,7 @@ import { useFormat, useT } from "@/i18n";
 import { useNow } from "@/lib/hooks";
 import { useLiveMode, usePolling } from "@/lib/live";
 import { entrySeconds, formatDuration, todaySummary } from "@/lib/time";
+import { fs } from "@/lib/type-scale";
 
 export default function Time() {
   const t = useT();
@@ -49,7 +50,7 @@ export default function Time() {
         <Row style={{ paddingVertical: 0 }}>
           <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 14, paddingBottom: 6 }}>
             <Micro style={{ flex: 1 }}>{t("timer.todayTotal")}</Micro>
-            <AppText style={{ fontFamily: fonts.mono, fontSize: 13, color: c.fg, writingDirection: "ltr" }}>{formatDuration(total)}</AppText>
+            <AppText style={{ fontFamily: fonts.mono, fontSize: fs.mono, color: c.fg, writingDirection: "ltr" }}>{formatDuration(total)}</AppText>
           </View>
           {entries.isPending ? <SkeletonRow /> : null}
           {entries.isError ? <StateRow state="error" message={errText(entries.error)} onRetry={() => void entries.refetch()} /> : null}
@@ -65,7 +66,7 @@ export default function Time() {
               leading={<View style={{ width: 3, alignSelf: "stretch", borderRadius: 1.5, backgroundColor: projectColor(e.project_color) }} />}
               trailing={
                 <View style={{ alignItems: "flex-end", gap: 4 }}>
-                  <AppText style={{ fontFamily: fonts.mono, fontSize: 13, color: c.fg, writingDirection: "ltr" }}>{formatDuration(entrySeconds(e, now))}</AppText>
+                  <AppText style={{ fontFamily: fonts.mono, fontSize: fs.mono, color: c.fg, writingDirection: "ltr" }}>{formatDuration(entrySeconds(e, now))}</AppText>
                   {!e.ended_at ? <Chip label={t("timer.running")} tone="ok" /> : null}
                 </View>
               }>

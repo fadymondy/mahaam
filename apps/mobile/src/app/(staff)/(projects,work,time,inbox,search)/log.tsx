@@ -11,6 +11,7 @@ import { useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { mahaam } from "@/lib/session";
 import { formatDuration, localDay, parseMinutes } from "@/lib/time";
+import { fs } from "@/lib/type-scale";
 
 export default function LogTime() {
   const t = useT();
@@ -99,11 +100,11 @@ export default function LogTime() {
             <Field label={t("log.duration")} value={duration} onChangeText={setDuration} placeholder="1h30" autoCapitalize="none" ltr testID="log-duration" />
             <Field label={t("log.description")} value={description} onChangeText={setDescription} />
             <Checkbox checked={billable} onChange={setBillable}>
-              <AppText style={{ fontFamily: fonts.regular, fontSize: 13.5, color: c.body }}>{t("log.billable")}</AppText>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.item, color: c.body }}>{t("log.billable")}</AppText>
             </Checkbox>
             {message ? (
               <View accessibilityLiveRegion="polite">
-                {message.ok ? <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.okText }}>{message.text}</AppText> : <ErrorLine text={message.text} />}
+                {message.ok ? <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.okText }}>{message.text}</AppText> : <ErrorLine text={message.text} />}
               </View>
             ) : null}
           </Row>

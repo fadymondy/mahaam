@@ -18,6 +18,7 @@ import { Platform, View } from "react-native";
 
 import { AppText, fonts, PrimaryButton, useColors } from "@/grid";
 import { useT } from "@/i18n";
+import { fs } from "@/lib/type-scale";
 
 export const APP_ID = "com.fadymondy.mahaam";
 export const FEEDBACK_KEY = process.env.EXPO_PUBLIC_MAHAAM_FEEDBACK_KEY ?? "";
@@ -54,7 +55,7 @@ function Fallback({ reset }: { reset: () => void }) {
       <AppText variant="title" style={{ textAlign: "center" }}>
         {t("common.error")}
       </AppText>
-      <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, color: c.muted, textAlign: "center" }}>{t("monitor.reported")}</AppText>
+      <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, color: c.muted, textAlign: "center" }}>{t("monitor.reported")}</AppText>
       <View style={{ alignSelf: "stretch" }}>
         <PrimaryButton label={t("common.retry")} onPress={reset} />
       </View>

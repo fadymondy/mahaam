@@ -12,6 +12,7 @@ import { AppText, ErrorLine, fonts, OtpField, PasswordField, PrimaryButton, Row,
 import { useT } from "@/i18n";
 import { useBiometric } from "@/lib/biometric";
 import { mahaam, useSession } from "@/lib/session";
+import { fs, lh } from "@/lib/type-scale";
 
 type Flow = null | "enroll" | "confirm" | "codes" | "disable" | "regenerate";
 
@@ -20,7 +21,7 @@ function Codes({ codes }: { codes: string[] }) {
   const c = useColors();
   return (
     <View style={{ gap: 10 }}>
-      <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: c.body }}>{t("account.twofa.codesBody")}</AppText>
+      <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.body }}>{t("account.twofa.codesBody")}</AppText>
       <View style={{ flexDirection: "row", flexWrap: "wrap", borderTopWidth: 1, borderStartWidth: 1, borderColor: c.soft }}>
         {codes.map((code) => (
           <View key={code} style={{ width: "50%", paddingVertical: 10, alignItems: "center", borderEndWidth: 1, borderBottomWidth: 1, borderColor: c.soft }}>
@@ -83,7 +84,7 @@ export default function Security() {
               {state.data ? <Chip label={t(on ? "account.on" : "account.off")} tone={on ? "ok" : "neutral"} /> : null}
             </View>
             {state.isPending ? <SkeletonRow /> : null}
-            <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, lineHeight: 24, color: c.body }}>{t(on ? "account.twofa.onBody" : "account.twofa.offBody")}</AppText>
+            <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, lineHeight: lh(fs.body), color: c.body }}>{t(on ? "account.twofa.onBody" : "account.twofa.offBody")}</AppText>
             {on && state.data ? <AppText variant="meta">{t("account.twofa.left", { n: state.data.recovery_codes_left })}</AppText> : null}
 
             {flow === null && !on ? (
@@ -117,7 +118,7 @@ export default function Security() {
 
             {flow === "confirm" && secret ? (
               <View style={{ gap: 10 }}>
-                <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: c.body }}>{t("account.twofa.scanBody")}</AppText>
+                <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.body }}>{t("account.twofa.scanBody")}</AppText>
                 <SecondaryButton label={t("account.twofa.openApp")} icon={<Smartphone size={16} color={c.muted} strokeWidth={1.6} />} onPress={() => void Linking.openURL(secret.otpauth_url).catch(() => undefined)} />
                 <Micro>{t("account.twofa.key")}</Micro>
                 <AppText selectable style={{ fontFamily: fonts.mono, fontSize: 14, color: c.fg, writingDirection: "ltr", letterSpacing: 1 }}>
@@ -176,7 +177,7 @@ export default function Security() {
             <Row>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <BioIcon size={20} color={c.muted} strokeWidth={1.6} />
-                <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: 14.5, color: c.fg }}>
+                <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: fs.row, color: c.fg }}>
                   {t(bio.available === "face" ? "account.biometric.face" : "account.biometric.finger")}
                 </AppText>
                 <Switch
@@ -186,7 +187,7 @@ export default function Security() {
                   accessibilityLabel={t(bio.available === "face" ? "account.biometric.face" : "account.biometric.finger")}
                 />
               </View>
-              <AppText style={{ fontFamily: fonts.light, fontSize: 13, lineHeight: 22, color: c.muted }}>{t("account.biometric.body")}</AppText>
+              <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, lineHeight: lh(fs.body), color: c.muted }}>{t("account.biometric.body")}</AppText>
             </Row>
           ) : null}
         </Rows>

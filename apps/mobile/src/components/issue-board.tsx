@@ -10,6 +10,7 @@ import type { IssueRow, Status } from "@/api/types";
 import { AppText, BottomSheet, fonts, metrics, SheetDivider, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { formatDuration } from "@/lib/time";
+import { fs } from "@/lib/type-scale";
 import { Micro, projectColor } from "./kit";
 
 export const PRIORITY_TONE: Record<string, string> = {
@@ -52,13 +53,13 @@ export function IssueCard({ issue, onMove, dense }: { issue: IssueRow; onMove?: 
       })}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
         <View style={{ width: 7, height: 7, borderRadius: 1.5, backgroundColor: TYPE_TONE[issue.issue_type] ?? c.muted }} />
-        <AppText style={{ fontFamily: fonts.mono, fontSize: 11, color: c.muted }}>{issue.key}</AppText>
+        <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.muted }}>{issue.key}</AppText>
         <View style={{ flex: 1 }} />
         {issue.human_only ? <UserRound size={13} color={c.muted} strokeWidth={1.6} accessibilityLabel={t("issues.humanOnly")} /> : null}
         {issue.agent_seconds > 0 ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
             <Bot size={13} color={c.muted} strokeWidth={1.6} />
-            <AppText style={{ fontFamily: fonts.mono, fontSize: 10.5, color: c.muted }}>{formatDuration(issue.agent_seconds)}</AppText>
+            <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.muted }}>{formatDuration(issue.agent_seconds)}</AppText>
           </View>
         ) : null}
         <View
@@ -66,15 +67,15 @@ export function IssueCard({ issue, onMove, dense }: { issue: IssueRow; onMove?: 
           style={{ width: 16, height: 4, borderRadius: 2, backgroundColor: PRIORITY_TONE[issue.priority] ?? c.soft }}
         />
       </View>
-      <AppText style={{ fontFamily: fonts.medium, fontSize: 14, color: c.fg, lineHeight: 21 }} numberOfLines={dense ? 2 : 3}>
+      <AppText style={{ fontFamily: fonts.medium, fontSize: fs.item, color: c.fg, lineHeight: Math.round(fs.item * 1.45) }} numberOfLines={dense ? 2 : 3}>
         {issue.title}
       </AppText>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <AppText style={{ fontFamily: fonts.regular, fontSize: 11.5, color: c.muted }}>{t(`issues.type.${issue.issue_type}` as "issues.type.bug")}</AppText>
+        <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.muted }}>{t(`issues.type.${issue.issue_type}` as "issues.type.bug")}</AppText>
         {issue.comment_count ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
             <MessageSquare size={12} color={c.muted} strokeWidth={1.6} />
-            <AppText style={{ fontFamily: fonts.mono, fontSize: 10.5, color: c.muted }}>{issue.comment_count}</AppText>
+            <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.muted }}>{issue.comment_count}</AppText>
           </View>
         ) : null}
         <View style={{ flex: 1 }} />
@@ -93,10 +94,10 @@ function ColumnHead({ col, count }: { col: Status; count: number }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10 }}>
       <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: projectColor(col.color) }} />
-      <AppText style={{ fontFamily: fonts.medium, fontSize: 13.5, color: c.fg, flexShrink: 1 }} numberOfLines={1}>
+      <AppText style={{ fontFamily: fonts.medium, fontSize: fs.item, color: c.fg, flexShrink: 1 }} numberOfLines={1}>
         {col.name}
       </AppText>
-      <AppText style={{ fontFamily: fonts.mono, fontSize: 11, color: c.muted }}>{count}</AppText>
+      <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.muted }}>{count}</AppText>
     </View>
   );
 }
@@ -155,7 +156,7 @@ export function IssueBoard({
             }}
             style={{ minHeight: 46, flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: projectColor(col.color) }} />
-            <AppText style={{ flex: 1, fontFamily: here ? fonts.medium : fonts.regular, fontSize: 14.5, color: here ? c.goldText : c.fg }}>{col.name}</AppText>
+            <AppText style={{ flex: 1, fontFamily: here ? fonts.medium : fonts.regular, fontSize: fs.row, color: here ? c.goldText : c.fg }}>{col.name}</AppText>
             {here ? <Check size={17} color={c.goldText} strokeWidth={1.8} /> : null}
           </Pressable>
         );

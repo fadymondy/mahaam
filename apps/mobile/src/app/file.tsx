@@ -14,6 +14,7 @@ import { AppText, ErrorLine, Field, FilterStrip, fonts, FooterBar, PrimaryButton
 import { useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { mahaam } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 type IssueType = "bug" | "feature" | "task";
 type RequestKind = "feature" | "change" | "bug";
@@ -135,7 +136,7 @@ export default function FileScreen() {
                 ) : null}
               </Actions>
             )}
-            {note ? <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: submit.isSuccess ? c.okText : c.muted }}>{note}</AppText> : null}
+            {note ? <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: submit.isSuccess ? c.okText : c.muted }}>{note}</AppText> : null}
             {submit.error ? <ErrorLine text={errText(submit.error)} /> : null}
           </Row>
         </Rows>

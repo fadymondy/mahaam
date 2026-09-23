@@ -10,6 +10,7 @@ import { useErrorText } from "@/components/kit";
 import { AppText, ErrorLine, fonts, PasswordField, passwordScore, PrimaryButton, Row, Rows, Screen, StackHeader, StrengthMeter, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { mahaam } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 export default function ChangePassword() {
   const t = useT();
@@ -29,7 +30,7 @@ export default function ChangePassword() {
             <PasswordField label={t("auth.reset.newPassword")} value={next} onChangeText={setNext} autoComplete="new-password" />
             <StrengthMeter score={passwordScore(next)} caption={t("auth.strengthHint")} />
             {change.error ? <ErrorLine text={wrong ? t("account.password.wrong") : errText(change.error)} /> : null}
-            {change.isSuccess ? <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.okText }}>{t("account.password.changed")}</AppText> : null}
+            {change.isSuccess ? <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.okText }}>{t("account.password.changed")}</AppText> : null}
             <PrimaryButton
               label={t("account.password.submit")}
               icon={<KeyRound size={17} color={c.onAction} strokeWidth={1.6} />}

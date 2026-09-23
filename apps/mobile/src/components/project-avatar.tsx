@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { View } from "react-native";
 
 import { AppText, fonts, metrics, useColors } from "@/grid";
+import { fs } from "@/lib/type-scale";
 import { projectColor } from "./kit";
 
 const initials = (name: string) =>
@@ -21,7 +22,7 @@ export function ProjectAvatar({ project, size = 40 }: { project: { name: string;
   const tone = projectColor(project.color);
   return (
     <View style={[box, { backgroundColor: `${tone}26`, borderColor: `${tone}66`, alignItems: "center", justifyContent: "center" }]}>
-      <AppText style={{ fontFamily: fonts.medium, fontSize: size * 0.36, color: tone, writingDirection: "ltr" }}>{initials(project.name)}</AppText>
+      <AppText style={{ fontFamily: fonts.medium, fontSize: Math.max(fs.count, size * 0.36), color: tone, writingDirection: "ltr" }}>{initials(project.name)}</AppText>
     </View>
   );
 }

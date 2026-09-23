@@ -11,6 +11,7 @@ import { useProfile } from "@/features/account";
 import { AppText, ErrorLine, Field, fonts, OtpField, PasswordField, PrimaryButton, Row, Rows, Screen, StackHeader, useColors } from "@/grid";
 import { useI18n } from "@/i18n";
 import { mahaam, useSession } from "@/lib/session";
+import { fs, lh } from "@/lib/type-scale";
 
 export default function ChangeEmail() {
   const { t, locale } = useI18n();
@@ -43,7 +44,7 @@ export default function ChangeEmail() {
       <Screen header={<StackHeader title={t("account.email.title")} />}>
         <Rows>
           <Row>
-            <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, lineHeight: 25, color: c.muted }}>
+            <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, lineHeight: lh(fs.body), color: c.muted }}>
               {step === "form" ? t("account.email.body", { email: profile.data?.email ?? "" }) : t("auth.reset.sent", { email: email.trim() })}
             </AppText>
           </Row>

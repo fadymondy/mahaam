@@ -14,6 +14,7 @@ import { useWs } from "@/lib/hooks";
 import { usePolling } from "@/lib/live";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 type Filter = "all" | "pending" | "accepted" | "declined";
 
@@ -99,7 +100,7 @@ export default function Requests() {
             }}
             style={{ minHeight: 48, flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: projectColor(p.color) }} />
-            <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: 14.5, color: c.fg }}>{p.name}</AppText>
+            <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: fs.row, color: c.fg }}>{p.name}</AppText>
           </Pressable>
         ))}
       </BottomSheet>

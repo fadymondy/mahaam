@@ -21,6 +21,7 @@ import { useWs } from "@/lib/hooks";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
 import { formatDuration } from "@/lib/time";
+import { fs } from "@/lib/type-scale";
 
 type Tab = "overview" | "board" | "issues" | "requests" | "time" | "invoices" | "activity";
 
@@ -109,7 +110,7 @@ function Board({ id }: { id: string }) {
         );
       })}
       <Row style={{ paddingVertical: 10 }}>
-        <AppText style={{ fontFamily: fonts.regular, fontSize: 12, color: c.muted }}>{t("portal.boardReadOnly")}</AppText>
+        <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.muted }}>{t("portal.boardReadOnly")}</AppText>
       </Row>
     </>
   );
@@ -270,7 +271,7 @@ export default function PortalProjectScreen() {
                     <View style={{ flex: 1 }}>
                       <Progress value={p.percent_done} color={projectColor(p.color)} label={t("portal.progress", { p: p.percent_done })} />
                     </View>
-                    <AppText style={{ fontFamily: fonts.mono, fontSize: 12, color: c.goldText }}>{`${p.percent_done}%`}</AppText>
+                    <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.goldText }}>{`${p.percent_done}%`}</AppText>
                   </View>
                   <StatCells
                     items={[
@@ -288,7 +289,7 @@ export default function PortalProjectScreen() {
                         label={t("project.budget")}
                       />
                       {p.used_minutes > p.budget_minutes ? (
-                        <AppText style={{ fontFamily: fonts.regular, fontSize: 12.5, color: c.dangerText }}>{t("project.overBudget")}</AppText>
+                        <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.dangerText }}>{t("project.overBudget")}</AppText>
                       ) : null}
                     </View>
                   ) : null}
@@ -306,7 +307,7 @@ export default function PortalProjectScreen() {
                         padV={10}
                         leading={
                           <View style={{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: c.line, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
-                            <AppText style={{ fontFamily: fonts.mono, fontSize: 11, color: c.body }}>{m.initials}</AppText>
+                            <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.body }}>{m.initials}</AppText>
                           </View>
                         }>
                         <AppText variant="rowTitle">{m.name}</AppText>

@@ -12,6 +12,7 @@ import { useFormat, useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 export default function TaskScreen() {
   const { key } = useLocalSearchParams<{ key: string }>();
@@ -99,7 +100,7 @@ export default function TaskScreen() {
               {d.checklist.map((i) => (
                 <Checkbox key={i.id} checked={i.done} onChange={(done) => d.can_write && toggle.mutate({ id: i.id, done })}>
                   <AppText
-                    style={{ fontFamily: fonts.regular, fontSize: 13.5, color: i.done ? c.muted : c.fg, textDecorationLine: i.done ? "line-through" : "none" }}>
+                    style={{ fontFamily: fonts.regular, fontSize: fs.item, color: i.done ? c.muted : c.fg, textDecorationLine: i.done ? "line-through" : "none" }}>
                     {i.title}
                   </AppText>
                 </Checkbox>
