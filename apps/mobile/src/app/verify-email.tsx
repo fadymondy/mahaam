@@ -13,6 +13,7 @@ import { useProfile, useVerifyState } from "@/features/account";
 import { AppText, ErrorLine, fonts, OtpField, PrimaryButton, ResendCountdown, Row, Rows, Screen, StackHeader, TextButton, useColors } from "@/grid";
 import { useI18n } from "@/i18n";
 import { mahaam, useSession } from "@/lib/session";
+import { fs, lh } from "@/lib/type-scale";
 
 export default function VerifyEmail() {
   const { t, locale } = useI18n();
@@ -48,7 +49,7 @@ export default function VerifyEmail() {
       <Screen header={<StackHeader title={t("account.verify.title")} onBack={leave} />}>
         <Rows>
           <Row>
-            <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, lineHeight: 25, color: c.muted }}>
+            <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, lineHeight: lh(fs.body), color: c.muted }}>
               {t("account.verify.body", { email: profile.data?.email ?? user?.email ?? "" })}
             </AppText>
           </Row>

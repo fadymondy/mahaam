@@ -32,6 +32,7 @@ import {
 } from "@/grid";
 import { useFormat, useT } from "@/i18n";
 import { openCount } from "@/lib/stages";
+import { fs } from "@/lib/type-scale";
 
 type Show = "all" | "open" | "review";
 
@@ -78,7 +79,7 @@ function ProjectRow({ p, last }: { p: Project; last: boolean }) {
         <View style={{ flex: 1 }}>
           <Progress value={pct} label={t("portal.progress", { p: pct })} color={projectColor(p.color)} />
         </View>
-        <AppText style={{ fontFamily: fonts.mono, fontSize: 11.5, color: c.goldText }}>{`${pct}%`}</AppText>
+        <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.goldText }}>{`${pct}%`}</AppText>
       </View>
       <Meta items={[t("portal.tasksDone", { done: p.tasks.done, total }), open ? t("portal.openIssues", { n: open }) : t("projects.noOpenIssues")]} />
       <IssueTrack issues={p.issues} />
@@ -161,7 +162,7 @@ export default function Projects() {
                 setClient("all");
                 setShow("all");
               }}>
-              <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: c.goldText }}>{t("projects.clearFilters")}</AppText>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.goldText }}>{t("projects.clearFilters")}</AppText>
             </Pressable>
           </Row>
         ) : null}

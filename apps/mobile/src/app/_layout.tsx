@@ -1,4 +1,6 @@
-// First: swaps the grid's sans faces for Inter in English before anything renders (lib/fonts.ts).
+// First: the readable type scale and text-size floor (lib/type-scale.ts), then the grid's sans faces
+// swapped for Inter in English (lib/fonts.ts) — both before anything renders.
+import "@/lib/type-scale";
 import { useUiFonts } from "@/lib/fonts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { focusManager } from "@tanstack/react-query";
@@ -18,6 +20,7 @@ import { persister, queryClient } from "@/lib/query";
 import { BiometricGate } from "@/lib/biometric";
 import { MonitorBoundary, useMonitor } from "@/lib/monitor";
 import { SessionProvider, useSession } from "@/lib/session";
+import { UpdateLoader } from "@/lib/updates";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -79,6 +82,7 @@ function Navigator() {
           <Stack.Screen name="(customer)" />
           <Stack.Screen name="file" options={{ presentation: "modal" }} />
         </Stack>
+        <UpdateLoader />
       </View>
     </ThemeProvider>
   );

@@ -42,6 +42,8 @@ export function useFormat() {
     () => ({
       date: (iso: string) => new Date(iso.length === 10 ? iso + "T00:00:00" : iso).toLocaleDateString(tag, { day: "numeric", month: "short", year: "numeric" }),
       day: (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString(tag, { weekday: "short", day: "numeric" }),
+      weekday: (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString(tag, { weekday: "short" }),
+      dayOfMonth: (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString(tag, { day: "numeric" }),
       time: (iso: string) => new Date(iso).toLocaleTimeString(tag, { hour: "2-digit", minute: "2-digit" }),
       money: (minor: number, currency: string) => {
         try {

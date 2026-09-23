@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import type { Project } from "@/api/types";
 import { AppText, fonts, metrics, useColors } from "@/grid";
 import { useT } from "@/i18n";
+import { fs } from "@/lib/type-scale";
 import { projectColor } from "./kit";
 
 /**
@@ -34,7 +35,7 @@ export function ProjectPicker({
   ];
   return (
     <View style={{ gap: 8 }}>
-      <AppText style={{ fontFamily: fonts.medium, fontSize: 11, color: c.muted }}>{label}</AppText>
+      <AppText style={{ fontFamily: fonts.medium, fontSize: fs.meta, color: c.muted }}>{label}</AppText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="radiogroup" accessibilityLabel={label}>
         <View style={{ flexDirection: "row", gap: 8 }}>
           {items.map((p) => {
@@ -58,7 +59,7 @@ export function ProjectPicker({
                   gap: 8,
                 }}>
                 {p.id ? <View style={{ width: 8, height: 8, borderRadius: 1.5, backgroundColor: projectColor(p.color) }} /> : null}
-                <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: on ? c.goldText : c.muted }}>{p.name}</AppText>
+                <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: on ? c.goldText : c.muted }}>{p.name}</AppText>
               </Pressable>
             );
           })}

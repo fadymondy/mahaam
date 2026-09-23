@@ -38,6 +38,7 @@ import {
 import { useFormat, useI18n } from "@/i18n";
 import { formatDuration } from "@/lib/time";
 import { shareReportMarkdown, shareReportPdf } from "@/lib/share-report";
+import { fs } from "@/lib/type-scale";
 
 type Section = "overview" | "issues" | "reports";
 
@@ -62,10 +63,10 @@ function Bars({ rows, color, count }: { rows: { label: string; seconds: number }
       {rows.map((r, i) => (
         <View key={i} style={{ gap: 5 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: 13, color: c.body }} numberOfLines={1}>
+            <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: fs.meta, color: c.body }} numberOfLines={1}>
               {r.label}
             </AppText>
-            <AppText style={{ fontFamily: fonts.mono, fontSize: 12, color: c.fg }}>{count ? r.seconds : formatDuration(r.seconds)}</AppText>
+            <AppText style={{ fontFamily: fonts.mono, fontSize: fs.mono, color: c.fg }}>{count ? r.seconds : formatDuration(r.seconds)}</AppText>
           </View>
           <View style={{ height: 4, borderRadius: 2, backgroundColor: c.soft, overflow: "hidden" }}>
             <View style={{ width: `${(r.seconds / max) * 100}%`, height: 4, backgroundColor: color }} />
@@ -111,7 +112,7 @@ function Overview({ id }: { id: string }) {
           <View style={{ flex: 1 }}>
             <Progress value={pct} color={projectColor(p.color)} label={t("portal.progress", { p: pct })} />
           </View>
-          <AppText style={{ fontFamily: fonts.mono, fontSize: 12, color: c.goldText }}>{`${pct}%`}</AppText>
+          <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.goldText }}>{`${pct}%`}</AppText>
         </View>
         <StatCells
           columns={3}
@@ -171,7 +172,7 @@ function Overview({ id }: { id: string }) {
         <Band title={t("project.activity")}>
           {report.data.activity.slice(0, 12).map((a, i, all) => (
             <ListItem key={i} last={i === all.length - 1} padV={10}>
-              <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: c.body }}>{`${a.actor} · ${a.action.replace(/[._]/g, " ")}`}</AppText>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.body }}>{`${a.actor} · ${a.action.replace(/[._]/g, " ")}`}</AppText>
               <Meta items={[`${f.date(a.at)} ${f.time(a.at)}`, a.subject]} />
             </ListItem>
           ))}

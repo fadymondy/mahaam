@@ -10,6 +10,7 @@ import { useErrorText } from "@/components/kit";
 import { AppText, ErrorLine, Field, fonts, OtpField, PasswordField, passwordScore, PrimaryButton, ResendCountdown, Row, Rows, Screen, StackHeader, StrengthMeter, useColors } from "@/grid";
 import { useI18n } from "@/i18n";
 import { mahaam } from "@/lib/session";
+import { fs, lh } from "@/lib/type-scale";
 
 export default function Forgot() {
   const { email: initial } = useLocalSearchParams<{ email?: string }>();
@@ -49,7 +50,7 @@ export default function Forgot() {
       <Screen header={<StackHeader title={t("auth.reset.title")} />}>
         <Rows>
           <Row>
-            <AppText style={{ fontFamily: fonts.light, fontSize: 13.5, lineHeight: 25, color: c.muted }}>
+            <AppText style={{ fontFamily: fonts.light, fontSize: fs.body, lineHeight: lh(fs.body), color: c.muted }}>
               {step === "email" ? t("auth.reset.body") : step === "code" ? t("auth.reset.sent", { email: email.trim() }) : t("auth.reset.done")}
             </AppText>
           </Row>

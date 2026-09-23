@@ -13,6 +13,7 @@ import { useT, type TKey } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 // Project colours are palette keys on the web (app/styles/mahaam-palette.css); approximate here.
 const PROJECT: Record<string, string> = {
@@ -75,7 +76,7 @@ export function Chip({ label, tone = "neutral", dot }: { label: string; tone?: T
         alignSelf: "flex-start",
       }}>
       {dot ? <View style={{ width: 7, height: 7, borderRadius: 1.5, backgroundColor: dot }} /> : null}
-      <AppText style={{ fontFamily: fonts.regular, fontSize: 11.5, color }}>{label}</AppText>
+      <AppText style={{ fontFamily: fonts.regular, fontSize: fs.chip, color }}>{label}</AppText>
     </View>
   );
 }

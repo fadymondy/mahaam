@@ -5,6 +5,15 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 const ID = "com.fadymondy.mahaam";
 const asset = (f: string) => `./assets/brand/mahaam-${f}.png`;
 
+// Over-the-air updates (src/lib/updates.tsx). The EAS project id comes from the environment (EAS
+// env vars / .env), never from this file; without it the build has no updates URL and the updater
+// stays off. Each build profile's channel is in eas.json (development / preview / production).
+// The runtime version is the native fingerprint, so an update only reaches binaries whose native
+// code it was built against. The app checks for itself on launch and on foreground, so the native
+// launch check only runs to recover from a crashing update.
+const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID;
+const UPDATES_URL = EAS_PROJECT_ID ? `https://u.expo.dev/${EAS_PROJECT_ID}` : undefined;
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Mahaam",
@@ -15,6 +24,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // mahaam:// — also the native redirect scheme the API's OAuth accepts (MH-79).
   scheme: "mahaam",
   userInterfaceStyle: "automatic",
+  runtimeVersion: { policy: "fingerprint" },
+  updates: UPDATES_URL
+    ? { url: UPDATES_URL, checkAutomatically: "ON_ERROR_RECOVERY", fallbackToCacheTimeout: 0 }
+    : { enabled: false },
   ios: {
     bundleIdentifier: ID,
     // Icon Composer bundle (MH-339): the mark as two glass layers on the grid's grounds — paper in
@@ -64,6 +77,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: { typedRoutes: false, reactCompiler: true },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? null,
-    eas: process.env.EAS_PROJECT_ID ? { projectId: process.env.EAS_PROJECT_ID } : undefined,
+    eas: EAS_PROJECT_ID ? { projectId: EAS_PROJECT_ID } : undefined,
   },
 });

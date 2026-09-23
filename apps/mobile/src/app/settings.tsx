@@ -32,6 +32,7 @@ import { useBiometric } from "@/lib/biometric";
 import { legalUrl, supportEmail } from "@/lib/links";
 import { FEEDBACK_ENABLED } from "@/lib/monitor";
 import { useSession } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 export default function ProfileHub() {
   const { t, locale } = useI18n();
@@ -58,9 +59,9 @@ export default function ProfileHub() {
           )}
           <View style={{ flex: 1, gap: 2 }}>
             <AppText variant="rowTitle">{p?.name || t("account.noName")}</AppText>
-            <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: c.muted, writingDirection: "ltr" }}>{p?.email ?? user?.email ?? ""}</AppText>
+            <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.muted, writingDirection: "ltr" }}>{p?.email ?? user?.email ?? ""}</AppText>
             {p && !p.email_verified ? (
-              <AppText style={{ fontFamily: fonts.regular, fontSize: 12, color: c.goldText }} onPress={() => router.push("/verify-email")}>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.goldText }} onPress={() => router.push("/verify-email")}>
                 {t("account.verify.pending")}
               </AppText>
             ) : null}

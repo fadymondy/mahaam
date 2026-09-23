@@ -42,6 +42,7 @@ import { useFormat, useI18n } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { qk } from "@/lib/query";
 import { mahaam, useSession } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 const PRIORITIES = ["highest", "high", "medium", "low", "lowest"] as const;
 const TYPES = ["bug", "feature", "task", "story", "epic"] as const;
@@ -205,7 +206,7 @@ export default function TeamIssueScreen() {
                   </Grow>
                 </Actions>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                  <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: 14, color: c.fg }}>{t("issues.humanOnlyToggle")}</AppText>
+                  <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: fs.item, color: c.fg }}>{t("issues.humanOnlyToggle")}</AppText>
                   <Switch value={i.human_only} onValueChange={(v) => patch.mutate({ human_only: v })} trackColor={{ true: c.gold, false: c.soft }} accessibilityLabel={t("issues.humanOnlyToggle")} />
                 </View>
               </Row>
@@ -250,7 +251,7 @@ export default function TeamIssueScreen() {
           .filter((m) => m.role !== "client" && m.status === "active")
           .map((m) => (
             <Checkbox key={m.user_id} checked={picked.includes(m.user_id)} onChange={(on) => setPicked((p) => (on ? [...p, m.user_id] : p.filter((x) => x !== m.user_id)))}>
-              <AppText style={{ fontFamily: fonts.regular, fontSize: 14, color: c.fg, writingDirection: "ltr" }}>{m.email}</AppText>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.item, color: c.fg, writingDirection: "ltr" }}>{m.email}</AppText>
             </Checkbox>
           ))}
         <PrimaryButton label={t("common.save")} disabled={assign.isPending} onPress={() => assign.mutate(picked, { onSuccess: () => setAssigning(false) })} />

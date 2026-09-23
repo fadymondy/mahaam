@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { View } from "react-native";
 
 import { AppText, fonts, ForwardChevron, ListItem, Row, Tile, useColors } from "@/grid";
+import { fs } from "@/lib/type-scale";
 import { Micro } from "./kit";
 
 export function HubGroup({ title, children }: { title: string; children: ReactNode }) {
@@ -46,9 +47,9 @@ export function HubItem({
       }
       trailing={trailing ?? (onPress ? <ForwardChevron /> : undefined)}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: 14.5, color: danger ? c.dangerText : c.fg }}>{label}</AppText>
+        <AppText style={{ flex: 1, fontFamily: fonts.regular, fontSize: fs.row, color: danger ? c.dangerText : c.fg }}>{label}</AppText>
         {value ? (
-          <AppText numberOfLines={1} style={{ maxWidth: "55%", fontFamily: fonts.regular, fontSize: 13, color: c.muted }}>
+          <AppText numberOfLines={1} style={{ maxWidth: "55%", fontFamily: fonts.regular, fontSize: fs.meta, color: c.muted }}>
             {value}
           </AppText>
         ) : null}

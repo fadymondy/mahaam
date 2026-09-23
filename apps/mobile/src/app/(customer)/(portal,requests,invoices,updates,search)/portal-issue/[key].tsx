@@ -10,6 +10,7 @@ import { useFormat, useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
+import { fs } from "@/lib/type-scale";
 
 /** The client portal's view of an issue: what the customer filed, its status, and the thread. */
 export default function PortalIssueScreen() {
@@ -44,7 +45,7 @@ export default function PortalIssueScreen() {
               </View>
               <Meta items={[f.date(i.created_at)]} />
               {i.body ? <Markdown source={i.body} /> : null}
-              {i.resolution ? <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: c.okText }}>{i.resolution}</AppText> : null}
+              {i.resolution ? <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.okText }}>{i.resolution}</AppText> : null}
               <IssueActions issue={i} />
             </Row>
             <Thread

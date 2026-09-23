@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { AppText, fonts, useColors } from "@/grid";
 import { useT } from "@/i18n";
 import { STAGE_TONE, STAGES } from "@/lib/stages";
+import { fs } from "@/lib/type-scale";
 
 /**
  * A project's issue track: one segment per stage, sized by its count, then the counts. The same
@@ -26,8 +27,8 @@ export function IssueTrack({ issues, compact }: { issues: Record<string, number>
           {present.map((s) => (
             <View key={s} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
               <View style={{ width: 6, height: 6, borderRadius: 1.5, backgroundColor: STAGE_TONE[s] }} />
-              <AppText style={{ fontFamily: fonts.regular, fontSize: 11, color: c.muted }}>{t(`issues.status.${s}`)}</AppText>
-              <AppText style={{ fontFamily: fonts.mono, fontSize: 11, color: c.body }}>{issues![s]}</AppText>
+              <AppText style={{ fontFamily: fonts.regular, fontSize: fs.chip, color: c.muted }}>{t(`issues.status.${s}`)}</AppText>
+              <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: c.body }}>{issues![s]}</AppText>
             </View>
           ))}
         </View>

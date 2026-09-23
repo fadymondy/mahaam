@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, View } from "react-native";
 
 import { AppText, fonts, metrics, useColors } from "@/grid";
+import { fs } from "@/lib/type-scale";
 
 export type LineTab<T extends string> = { value: T; label: string; count?: number };
 
@@ -31,10 +32,10 @@ export function LineTabs<T extends string>({ options, value, onChange }: { optio
               alignItems: "center",
               gap: 7,
             }}>
-            <AppText style={{ fontFamily: fonts.regular, fontSize: 13, color: on ? c.goldText : c.muted }}>{o.label}</AppText>
+            <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: on ? c.goldText : c.muted }}>{o.label}</AppText>
             {o.count !== undefined ? (
               <View style={{ minWidth: 18, paddingHorizontal: 5, borderRadius: 4, backgroundColor: on ? `${c.gold}26` : c.soft, alignItems: "center" }}>
-                <AppText style={{ fontFamily: fonts.mono, fontSize: 10.5, color: on ? c.goldText : c.muted }}>{o.count}</AppText>
+                <AppText style={{ fontFamily: fonts.mono, fontSize: fs.count, color: on ? c.goldText : c.muted }}>{o.count}</AppText>
               </View>
             ) : null}
           </Pressable>
