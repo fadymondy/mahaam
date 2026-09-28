@@ -138,6 +138,10 @@ export function MyIssuesView() {
       </ViewHeader>
       {q.isError ? (
         <ErrorState error={q.error} onRetry={() => void q.refetch()} />
+      ) : !me ? (
+        // Signed in, but the server hasn't told us who we are yet (it was unreachable at launch).
+        // The session keeps asking (main/session.ts resettle); a loader here would never end.
+        <EmptyState title={t("common.reconnecting")} body={t("common.offline")} />
       ) : loading ? (
         <RowsSkeleton rows={10} />
       ) : (

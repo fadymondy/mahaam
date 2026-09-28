@@ -1,9 +1,10 @@
 // Settings, a native preferences window like Zekra's and Health Debug's (and macOS's own): a title
 // row naming the section, a row of toolbar tabs (icon over label) and the section's grouped rows
 // below. The route's `section` picks it (⌘, and the menus open General); ⌘W or Esc closes it.
-import { BellIcon, InfoIcon, KeyboardIcon, LayersIcon, SlidersHorizontalIcon, UserRoundIcon, type LucideIcon } from "lucide-react";
+import { BellIcon, BotIcon, InfoIcon, KeyboardIcon, LayersIcon, SlidersHorizontalIcon, UserRoundIcon, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { AgentsSettings } from "@/components/agents/AgentsSettings";
 import { AboutSettings } from "@/components/settings/About";
 import { AccountSettings } from "@/components/settings/Account";
 import { GeneralSettings } from "@/components/settings/General";
@@ -19,6 +20,7 @@ const SECTIONS = [
   { id: "notifications", icon: BellIcon },
   { id: "account", icon: UserRoundIcon },
   { id: "workspaces", icon: LayersIcon },
+  { id: "agents", icon: BotIcon },
   { id: "shortcuts", icon: KeyboardIcon },
   { id: "about", icon: InfoIcon },
 ] as const satisfies readonly { id: string; icon: LucideIcon }[];
@@ -119,6 +121,8 @@ export function SettingsView({ section }: { section?: string }) {
             <AccountSettings />
           ) : current === "workspaces" ? (
             <WorkspaceSettings />
+          ) : current === "agents" ? (
+            <AgentsSettings />
           ) : current === "shortcuts" ? (
             <ShortcutSettings />
           ) : (

@@ -3,7 +3,7 @@
 // toggle; under it the Mahaam mark and name with search and a new issue; then the workspace (its
 // name is the section title and opens the workspace menu) with Inbox, My issues and Time; the
 // projects; and at the foot the update and timer pills and the Settings gear.
-import { ChevronDownIcon, CircleDotIcon, ClockIcon, InboxIcon, PanelLeftIcon, SearchIcon, SettingsIcon, SquarePenIcon } from "lucide-react";
+import { BarChart3Icon, BriefcaseIcon, ChevronDownIcon, CircleDotIcon, ClockIcon, InboxIcon, UsersIcon, UsersRoundIcon, PanelLeftIcon, SearchIcon, SettingsIcon, SquarePenIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { Route } from "../../shared/types";
@@ -63,6 +63,10 @@ export function Sidebar({ onSearch, onCreate, onCollapse }: { onSearch: () => vo
             <>
               <Item to={{ name: "my-issues" }} active={route.name === "my-issues"} icon={<CircleDotIcon />} label={t("nav.myIssues")} />
               <Item to={{ name: "time" }} active={route.name === "time"} icon={<ClockIcon />} label={t("nav.time")} />
+              <Item to={{ name: "reports" }} active={route.name === "reports"} icon={<BarChart3Icon />} label={t("nav.reports")} />
+              <Item to={{ name: "clients" }} active={route.name === "clients" || route.name === "client"} icon={<BriefcaseIcon />} label={t("nav.clients")} />
+              <Item to={{ name: "members" }} active={route.name === "members"} icon={<UsersIcon />} label={t("nav.members")} />
+              <Item to={{ name: "teams" }} active={route.name === "teams" || route.name === "team"} icon={<UsersRoundIcon />} label={t("nav.teams")} />
             </>
           ) : null}
         </div>

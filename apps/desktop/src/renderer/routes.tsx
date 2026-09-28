@@ -10,6 +10,12 @@ import { MyIssuesView } from "./views/MyIssues";
 import { ProjectView } from "./views/Project";
 import { ProjectsView } from "./views/Projects";
 import { TimeView } from "./views/Time";
+import { ClientView } from "./views/clients/Client";
+import { ClientsView } from "./views/clients/Clients";
+import { ReportsView } from "./views/Reports";
+import { MembersView } from "./views/team/Members";
+import { TeamView } from "./views/team/Team";
+import { TeamsView } from "./views/team/Teams";
 
 export function View({ route }: { route: Route }) {
   switch (route.name) {
@@ -20,11 +26,23 @@ export function View({ route }: { route: Route }) {
     case "projects":
       return <ProjectsView />;
     case "project":
-      return <ProjectView key={route.id} id={route.id} view={route.view} />;
+      return <ProjectView key={route.id} id={route.id} view={route.view} tab={route.tab} />;
     case "issue":
       return <IssueView key={route.key} issueKey={route.key} />;
     case "time":
       return <TimeView />;
+    case "clients":
+      return <ClientsView />;
+    case "client":
+      return <ClientView key={route.id} id={route.id} />;
+    case "members":
+      return <MembersView />;
+    case "teams":
+      return <TeamsView />;
+    case "team":
+      return <TeamView key={route.id} id={route.id} />;
+    case "reports":
+      return <ReportsView />;
     case "settings":
       // Settings is its own window (⌘,); a link or an old saved route here opens that instead.
       return <OpenSettingsWindow section={route.section} />;

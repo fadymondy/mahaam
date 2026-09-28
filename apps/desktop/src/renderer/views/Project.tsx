@@ -1,10 +1,12 @@
-// A project: its issues as a List (grouped by status, board order) or a Board, a filter row, and
-// an About panel. The List/Board choice is remembered per project; so is whether About is open.
+// A project: a row of tabs under its header (Issues, Overview, Reports, GitHub, Vault, Billing,
+// Settings), each its own file under views/project/. Issues is the list or board with a filter row
+// and an About panel; the List/Board choice is remembered per project, and so is whether About is
+// open. The tab is part of the route, so back/forward walk between tabs too.
 import { useQuery } from "@tanstack/react-query";
 import { KanbanIcon, ListIcon, PanelRightIcon, PlusIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import type { Task } from "../../shared/types";
+import type { ProjectTab, Task } from "../../shared/types";
 import { EmptyState, ErrorState, Kbd, ProjectMark, RowsSkeleton, StatusIcon, ViewHeader } from "@/components/kit";
 import { Board } from "@/components/issues/Board";
 import { HeaderButton, Segmented } from "@/components/issues/controls";
@@ -19,12 +21,21 @@ import { useI18n } from "@/lib/i18n";
 import { qk } from "@/lib/query";
 import { useRouter } from "@/lib/router";
 import { useShell } from "@/lib/shell";
+import { cn } from "@/lib/utils";
+import { ProjectBilling } from "./project/Billing";
+import { ProjectGitHub } from "./project/GitHub";
+import { ProjectOverview } from "./project/Overview";
+import { ProjectReports } from "./project/Reports";
+import { ProjectSettings } from "./project/Settings";
+import { ProjectVault } from "./project/Vault";
+
+const TABS: ProjectTab[] = ["issues", "overview", "reports", "github", "vault", "billing", "settings"];
 
 type Mode = "list" | "board";
 const modeKey = (id: string) => `mahaam.projectView.${id}`;
 const ABOUT_KEY = "mahaam.projectAbout";
 
-export function ProjectView({ id, view }: { id: string; view?: Mode }) {
+export function ProjectView({ id, view, tab = "issues" }: { id: string; view?: Mode; tab?: ProjectTab }) {
   const { t } = useI18n();
   const { ws } = useApp();
   const { navigate } = useRouter();
@@ -43,7 +54,7 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
   const setMode = (m: Mode) => {
     localStorage.setItem(modeKey(id), m);
     setModeState(m);
-    navigate({ name: "project", id, view: m }, { replace: true });
+    navigate({ name: "project", id, view: m, tab: "issues" }, { replace: true });
   };
   const [about, setAboutState] = useState(() => localStorage.getItem(ABOUT_KEY) === "1");
   const toggleAbout = () =>
@@ -53,7 +64,7 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
     });
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
 
-  useKeys({ "mod+i": toggleAbout, v: () => setMode(mode === "list" ? "board" : "list") });
+  useKeys(tab === "issues" ? { "mod+i": toggleAbout, v: () => setMode(mode === "list" ? "board" : "list") } : {});
 
   const statuses = useMemo(() => sortStatuses(board.data?.statuses), [board.data]);
   const all = board.data?.tasks ?? [];
@@ -115,6 +126,7 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
         icon={name ? <ProjectMark name={name} color={color} size={18} id={id} /> : null}
         title={name}
         actions={
+          tab !== "issues" ? null : (
           <>
             <HeaderButton icon={<PanelRightIcon className="rtl:-scale-x-100" />} label={t("issues.project.about")} showLabel={false} active={about} onClick={toggleAbout} data-action="about" />
             <button
@@ -128,8 +140,10 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
               <Kbd combo="c" className="border-grid-on-action/30 bg-transparent text-grid-on-action/80" />
             </button>
           </>
+          )
         }
       >
+        {tab === "issues" ? (
         <Segmented
           label={t("issues.project.layout")}
           value={mode}
@@ -140,7 +154,23 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
             { value: "board", label: t("issues.project.board"), icon: <KanbanIcon /> },
           ]}
         />
+        ) : null}
       </ViewHeader>
+      <ProjectTabs id={id} tab={tab} mode={mode} />
+      {tab === "overview" ? (
+        <ProjectOverview projectId={id} />
+      ) : tab === "reports" ? (
+        <ProjectReports projectId={id} />
+      ) : tab === "github" ? (
+        <ProjectGitHub projectId={id} />
+      ) : tab === "vault" ? (
+        <ProjectVault projectId={id} />
+      ) : tab === "billing" ? (
+        <ProjectBilling projectId={id} />
+      ) : tab === "settings" ? (
+        <ProjectSettings projectId={id} />
+      ) : (
+      <>
       <FilterBar value={filters} onChange={setFilters} members={members} labels={labels} shown={tasks.length} total={all.length} />
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col" data-project-mode={mode}>
@@ -163,7 +193,35 @@ export function ProjectView({ id, view }: { id: string; view?: Mode }) {
         </div>
         {about ? <ProjectAbout project={project} memberMap={memberMap} /> : null}
       </div>
+      </>
+      )}
     </>
+  );
+}
+
+/** The project's sections, as a tab row under the header. */
+function ProjectTabs({ id, tab, mode }: { id: string; tab: ProjectTab; mode: Mode }) {
+  const { t } = useI18n();
+  const { navigate } = useRouter();
+  return (
+    <nav role="tablist" aria-label={t("project.tabs")} className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b border-line px-3" data-project-tabs>
+      {TABS.map((x) => (
+        <button
+          key={x}
+          type="button"
+          role="tab"
+          aria-selected={x === tab}
+          data-project-tab={x}
+          onClick={() => navigate({ name: "project", id, tab: x, ...(x === "issues" ? { view: mode } : {}) }, { replace: false })}
+          className={cn(
+            "-mb-px h-9 shrink-0 border-b-2 px-2.5 text-[13.5px]",
+            x === tab ? "border-grid-action font-medium text-grid-fg" : "border-transparent text-grid-muted hover:text-grid-fg",
+          )}
+        >
+          {t(`project.tab.${x}`)}
+        </button>
+      ))}
+    </nav>
   );
 }
 

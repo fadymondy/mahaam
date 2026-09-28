@@ -85,12 +85,21 @@ export type Command =
   | { type: "timer-palette" }
   | { type: "settings"; section?: string };
 
+/** The sections of a project, as tabs under its header (renderer/views/Project.tsx). */
+export type ProjectTab = "issues" | "overview" | "reports" | "github" | "vault" | "billing" | "settings";
+
 /** Every screen in the app. Views register themselves in renderer/routes.tsx. */
 export type Route =
   | { name: "inbox" }
   | { name: "my-issues" }
   | { name: "projects" }
-  | { name: "project"; id: string; view?: "list" | "board" }
+  | { name: "project"; id: string; view?: "list" | "board"; tab?: ProjectTab }
+  | { name: "clients" }
+  | { name: "client"; id: string }
+  | { name: "members" }
+  | { name: "teams" }
+  | { name: "team"; id: string }
+  | { name: "reports" }
   | { name: "issue"; key: string }
   | { name: "time" }
   | { name: "settings"; section?: string };

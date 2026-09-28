@@ -27,6 +27,12 @@ import type {
 } from "../shared/types";
 
 import { accountApi } from "./api-account";
+import { projectApi } from "./api-project";
+import { projectMoneyApi } from "./api-projectMoney";
+import { clientsApi } from "./api-clients";
+import { teamApi } from "./api-team";
+import { reportsApi } from "./api-reports";
+import { agentsApi } from "./api-agents";
 import { issuesApi } from "./api-issues";
 import { timeApi } from "./api-time";
 
@@ -99,6 +105,12 @@ export function makeApi(c: MahaamClient, hooks: { timerChanged: (running: TimeEn
     ...issuesApi(c),
     ...timeApi(c),
     ...accountApi(c),
+    ...projectApi(c),
+    ...projectMoneyApi(c),
+    ...clientsApi(c),
+    ...teamApi(c),
+    ...reportsApi(c),
+    ...agentsApi(c),
   };
 }
 
