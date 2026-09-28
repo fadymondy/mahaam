@@ -363,11 +363,11 @@ function mount(cfg: Cfg) {
     let selector: string | null = null
     let busy = false
 
-    const titleIn = h("input", { id: "mf-title", dir: "auto", placeholder: L.titlePlaceholder, maxlength: "200", required: true })
+    const titleIn = h("input", { id: "mf-title", placeholder: L.titlePlaceholder, maxlength: "200", required: true })
     const typeSel = h("select", { id: "mf-type" }, ...TYPES.map((t) => h("option", { value: t }, X.types[t])))
     const prioSel = h("select", { id: "mf-priority" }, ...PRIORITIES.map((p) => h("option", { value: p }, X.priorities[p])))
     prioSel.value = "medium"
-    const body = h("textarea", { id: "mf-body", dir: "auto", rows: "7", placeholder: L.bodyPlaceholder })
+    const body = h("textarea", { id: "mf-body", rows: "7", placeholder: L.bodyPlaceholder })
     const err = h("p", { class: "err", role: "alert" })
     err.hidden = true
     const selLine = h("p", { class: "sel" })
