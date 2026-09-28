@@ -7,7 +7,7 @@
  *           data-key="pfk_…" defer></script>
  *
  * Optional attributes: data-locale="en|ar", data-theme="light|dark|auto",
- * data-position="end|start", data-endpoint (defaults to <script origin>/api/feedback/embed),
+ * data-position="end|start|<v>-<side>", data-shape="pill|circle|square|tab", data-endpoint (defaults to <script origin>/api/feedback/embed),
  * data-launcher="false" (no floating button; open with window.MahaamFeedback.open(); window.ManagyFeedback is kept as an alias).
  *
  * It renders a floating launcher inside a Shadow DOM (so the host page's CSS and the
@@ -44,9 +44,10 @@ type Cfg = {
   locale: Locale
   theme: "light" | "dark" | "auto"
   position: string
+  shape: string
   launcher: boolean
-  /** Which of locale / theme / position the <script> tag set (they win over the key's config). */
-  set: { locale: boolean; theme: boolean; position: boolean }
+  /** Which of locale / theme / position / shape the <script> tag set (they win over the key's config). */
+  set: { locale: boolean; theme: boolean; position: boolean; shape: boolean }
   look: Look
 }
 
@@ -130,8 +131,14 @@ function readConfig(): Cfg | null {
     locale: lang.toLowerCase().startsWith("ar") ? "ar" : "en",
     theme: theme === "light" || theme === "dark" ? theme : "auto",
     position: attr("data-position") === "start" ? "bottom-start" : attr("data-position") || "bottom-end",
+    shape: attr("data-shape"),
     launcher: attr("data-launcher") !== "false",
-    set: { locale: !!attr("data-locale"), theme: !!attr("data-theme"), position: !!attr("data-position") },
+    set: {
+      locale: !!attr("data-locale"),
+      theme: !!attr("data-theme"),
+      position: !!attr("data-position"),
+      shape: !!attr("data-shape"),
+    },
     look: {},
   }
 }
@@ -336,7 +343,11 @@ function mount(cfg: Cfg) {
     ? createLauncher({
         root,
         storageKey: "mahaam-feedback:" + cfg.key,
-        look: { ...cfg.look, position: cfg.set.position ? cfg.position : cfg.look.position || cfg.position },
+        look: {
+          ...cfg.look,
+          position: cfg.set.position ? cfg.position : cfg.look.position || cfg.position,
+          ...(cfg.set.shape && { shape: cfg.shape }),
+        },
         rtl: cfg.locale === "ar",
         strings: { label: L.launcher, ...X.launcher } as LauncherStrings,
         iconFor: (name) => (ICONS[name] ? icon(name) : null),
@@ -586,7 +597,7 @@ function dataUrlToBlob(dataUrl: string): Blob {
 }
 
 // The key's look from Mahaam (project settings / MCP set_feedback_widget). The <script>
-// tag's own data-locale / data-theme / data-position win over it. A slow or failed fetch
+// tag's own data-locale / data-theme / data-position / data-shape win over it. A slow or failed fetch
 // never blocks the widget: after 2 s it mounts with the default look.
 async function loadLook(cfg: Cfg): Promise<void> {
   try {
