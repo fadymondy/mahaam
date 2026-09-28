@@ -1,6 +1,21 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  pointerWithin,
+  rectIntersection,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragMoveEvent,
+} from "@dnd-kit/core"
 import { ClockIcon, PlusIcon, SearchIcon, UserRoundIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -75,6 +90,47 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
   // Where in the target column the card would land. null means "at the end".
   const [dropIndex, setDropIndex] = useState<number | null>(null)
 
+  // dnd-kit (pointer events), not the HTML5 drag API: that one never fires on touch screens and
+  // is unreliable when the press starts on the card's title button.
+  // Touch waits for a press-and-hold, so a swipe still scrolls the column.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  )
+  // The card under the pointer wins over its column; a column's empty space drops at its end.
+  const collide: CollisionDetection = (args) => {
+    const hits = pointerWithin(args)
+    const cards = hits.filter((h) => String(h.id).startsWith("card:"))
+    if (cards.length) return cards
+    return hits.length ? hits : rectIntersection(args)
+  }
+  const onDragMove = ({ active, over }: DragMoveEvent) => {
+    const data = over?.data.current as { status: string; index?: number } | undefined
+    if (!data) {
+      setDragOverStatus(null)
+      setDropIndex(null)
+      return
+    }
+    setDragOverStatus(data.status)
+    if (data.index === undefined) {
+      setDropIndex(null)
+      return
+    }
+    const me = active.rect.current.translated
+    const mid = me ? me.top + me.height / 2 : 0
+    setDropIndex(mid > over!.rect.top + over!.rect.height / 2 ? data.index + 1 : data.index)
+  }
+  const endDrag = () => {
+    setDragging(null)
+    setDragOverStatus(null)
+    setDropIndex(null)
+  }
+  const onDragEnd = ({ over }: DragEndEvent) => {
+    const status = (over?.data.current as { status?: string } | undefined)?.status
+    if (dragging && status) void dropCard(dragging, status, dropIndex)
+    endDrag()
+  }
+
   // The project's columns ARE the workflow (Settings → Board columns): the board renders them,
   // in their order, with their names and colours. An item sits in its card's column.
   const project = useProject(ws.id, projectId)
@@ -121,7 +177,11 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
    * or the end of an empty column.
    */
   async function dropCard(issue: Issue, status: string, index: number | null) {
-    const column = (byStatus.get(status) ?? []).filter((r) => r.key !== issue.key)
+    // index counts the column as drawn, dragged card included; below it, one slot is its own.
+    const drawn = byStatus.get(status) ?? []
+    const self = drawn.findIndex((r) => r.key === issue.key)
+    if (index !== null && self >= 0 && self < index) index--
+    const column = drawn.filter((r) => r.key !== issue.key)
     const at = index === null ? column.length : Math.max(0, Math.min(index, column.length))
     const before = column[at - 1]
     const after = column[at]
@@ -203,6 +263,14 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
         </div>
       ) : (
         /* Columns scroll horizontally; each is a fixed width so cards stay legible. */
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collide}
+          onDragStart={({ active }) => setDragging(issues.find((i) => i.key === active.id) ?? null)}
+          onDragMove={onDragMove}
+          onDragEnd={onDragEnd}
+          onDragCancel={endDrag}
+        >
         <div className="flex flex-1 overflow-hidden">
           {columns.map((column) => {
             const status = column.id
@@ -210,30 +278,13 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
             const isTarget = dragOverStatus === status
 
             return (
-              <section
+              <DropColumn
                 key={status}
+                status={status}
                 className={cn(
                   "flex max-h-[calc(100vh-12rem)] min-w-0 flex-1 basis-0 flex-col border-e border-line transition-colors last:border-e-0",
                   isTarget && "bg-grid-action/[0.06] inset-ring-1 inset-ring-grid-action/40",
                 )}
-                onDragOver={(e) => {
-                  if (!dragging) return
-                  e.preventDefault()
-                  e.dataTransfer.dropEffect = "move"
-                  setDragOverStatus(status)
-                }}
-                onDragLeave={(e) => {
-                  // Only when the pointer actually leaves the column, not a child card.
-                  if (e.currentTarget.contains(e.relatedTarget as Node)) return
-                  setDragOverStatus((s) => (s === status ? null : s))
-                  setDropIndex(null)
-                }}
-                onDrop={() => {
-                  if (dragging) void dropCard(dragging, status, dropIndex)
-                  setDragging(null)
-                  setDragOverStatus(null)
-                  setDropIndex(null)
-                }}
               >
                 <h2 className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5 font-mono text-xs tracking-wider text-grid-muted uppercase">
                   <span className="flex min-w-0 items-center gap-1.5">
@@ -247,20 +298,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
                 <div className="flex flex-1 flex-col divide-y divide-line overflow-y-auto">
                   {cards.map((issue, index) => (
-                    <div
-                      key={issue.key}
-                      className="relative"
-                      onDragOver={(e) => {
-                        if (!dragging) return
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setDragOverStatus(status)
-                        // Above or below the midpoint decides which side of this card the drop lands on.
-                        const box = e.currentTarget.getBoundingClientRect()
-                        const after = e.clientY > box.top + box.height / 2
-                        setDropIndex(after ? index + 1 : index)
-                      }}
-                    >
+                    <DragCard key={issue.key} id={issue.key} status={status} index={index} disabled={!canWrite}>
                       {/* The landing line, drawn on the edge it would land on. */}
                       {isTarget && dropIndex === index ? <span aria-hidden className="absolute inset-x-0 top-0 z-10 h-0.5 bg-grid-action" /> : null}
                       {isTarget && dropIndex === index + 1 && index === cards.length - 1 ? (
@@ -270,25 +308,30 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                       <IssueCard
                         issue={issue}
                         canWrite={canWrite}
-                        onDragStart={() => setDragging(issue)}
-                        onDragEnd={() => {
-                          setDragging(null)
-                          setDragOverStatus(null)
-                          setDropIndex(null)
-                        }}
+                        dragging={dragging?.key === issue.key}
                         columns={columns}
                         column={status}
                         onStatusChange={(s) => void changeStatus(issue.key, s)}
                         onOpen={() => setSelectedKey(issue.key)}
                         onChanged={refresh}
                       />
-                    </div>
+                    </DragCard>
                   ))}
+                  {/* The empty space under the last card drops at the end. */}
+                  <div className="min-h-12 flex-1" />
                 </div>
-              </section>
+              </DropColumn>
             )
           })}
         </div>
+        <DragOverlay dropAnimation={null}>
+          {dragging ? (
+            <div className="w-64 border border-grid-action bg-background px-3 py-2.5 text-sm font-medium shadow-lg" dir="auto">
+              {dragging.title}
+            </div>
+          ) : null}
+        </DragOverlay>
+        </DndContext>
       )}
 
       <IssueFormDialog open={creating} onOpenChange={setCreating} projectId={projectId} onSaved={refresh} />
@@ -303,11 +346,40 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
   )
 }
 
+function DropColumn({ status, className, children }: { status: string; className: string; children: ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: `column:${status}`, data: { status } })
+  return (
+    <section ref={setNodeRef} className={className} data-status-id={status}>
+      {children}
+    </section>
+  )
+}
+
+function DragCard({ id, status, index, disabled, children }: { id: string; status: string; index: number; disabled: boolean; children: ReactNode }) {
+  const drag = useDraggable({ id, disabled, data: { status, index } })
+  const drop = useDroppable({ id: `card:${id}`, data: { status, index } })
+  return (
+    <div
+      ref={(node) => {
+        drag.setNodeRef(node)
+        drop.setNodeRef(node)
+      }}
+      {...drag.attributes}
+      {...drag.listeners}
+      role={undefined}
+      tabIndex={undefined}
+      className="relative"
+      data-task-key={id}
+    >
+      {children}
+    </div>
+  )
+}
+
 function IssueCard({
   issue,
   canWrite,
-  onDragStart,
-  onDragEnd,
+  dragging,
   onStatusChange,
   columns,
   column,
@@ -318,14 +390,12 @@ function IssueCard({
   column: string
   issue: Issue
   canWrite: boolean
-  onDragStart: () => void
-  onDragEnd: () => void
+  dragging: boolean
   onStatusChange: (status: string) => void
   onOpen: () => void
   onChanged: () => void | Promise<unknown>
 }) {
   const { t } = useTranslations()
-  const [dragging, setDragging] = useState(false)
   const mark = PRIORITY_MARK[issue.priority]
   const agentTime = formatAgentTime(issue.agent_seconds)
   const busy = Boolean(issue.started_at && !issue.finished_at)
@@ -333,37 +403,6 @@ function IssueCard({
   return (
     <IssueContextMenu issue={issue} onChanged={onChanged}>
       <article
-        draggable={canWrite}
-        onDragStart={(e) => {
-          e.dataTransfer.effectAllowed = "move"
-          e.dataTransfer.setData("text/plain", issue.key)
-
-          const node = e.currentTarget as HTMLElement
-          const box = node.getBoundingClientRect()
-
-          // Snapshot a DETACHED CLONE, not the live node: the live card is about to
-          // change (opacity-40), and the ghost would drift away from the cursor.
-          const ghost = node.cloneNode(true) as HTMLElement
-          ghost.style.width = `${box.width}px`
-          ghost.style.height = `${box.height}px`
-          ghost.style.position = "fixed"
-          ghost.style.top = "-10000px"
-          ghost.style.left = "-10000px"
-          ghost.style.opacity = "1"
-          ghost.style.pointerEvents = "none"
-          ghost.style.background = "var(--background)"
-          ghost.style.border = "1px solid var(--grid-action)"
-          document.body.appendChild(ghost)
-          e.dataTransfer.setDragImage(ghost, e.clientX - box.left, e.clientY - box.top)
-          requestAnimationFrame(() => ghost.remove())
-
-          setDragging(true)
-          onDragStart()
-        }}
-        onDragEnd={() => {
-          setDragging(false)
-          onDragEnd()
-        }}
         className={cn(
           "group/issue flex flex-col gap-2 px-3 py-2.5 transition-[opacity,background-color] duration-150",
           canWrite && "cursor-grab active:cursor-grabbing",
