@@ -23,6 +23,8 @@
   "int.github.reinstall": "تغيير التثبيت",
   "int.github.repo": "المستودع",
   "int.github.pickRepo": "اختر مستودعًا",
+  "int.github.searchRepo": "ابحث في المستودعات",
+  "int.github.noMatch": "لا يوجد مستودع مطابق",
   "int.github.link": "ربط المستودع",
   "int.github.linked": "تم ربط المستودع",
   "int.github.noRepos": "لا يرى التثبيت أي مستودع بعد — امنحه مستودعًا على GitHub.",

@@ -123,7 +123,9 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const [repo, setRepo] = useState("")
-  const needsRepo = !!it && it.status !== "disabled" && canManage
+  // With no GitHub row yet, the repos call falls back to the App installation another project in
+  // this workspace made (GitHub installs once per account), so the picker shows without a second install.
+  const needsRepo = it?.status !== "disabled" && canManage
   const repos = useSWR<{ repos: Repo[] | null }>(
     needsRepo ? [`/api/w/projects/${projectId}/integrations/github/repos`, ws.id] : null,
     ([p, id]: [string, string]) => api(p, { workspaceId: id }),
@@ -163,24 +165,13 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
       ) : null}
       {canManage ? (
         <div className="flex flex-wrap items-end gap-2">
-          <Button variant={it ? "outline" : "default"} onClick={install}>
+          <Button variant={it || list.length ? "outline" : "default"} onClick={install}>
             {it ? t("int.github.reinstall") : t("int.github.install")}
           </Button>
           {needsRepo && repos.data ? (
             list.length ? (
               <>
-                <Select items={list.map((r) => ({ value: r.full_name, label: r.full_name }))} value={repo} onValueChange={(v) => setRepo(String(v ?? ""))}>
-                  <SelectTrigger className="min-w-64" aria-label={t("int.github.repo")}>
-                    <SelectValue placeholder={t("int.github.pickRepo")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {list.map((r) => (
-                      <SelectItem key={r.full_name} value={r.full_name}>
-                        <span dir="ltr">{r.full_name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <RepoSearch repos={list.map((r) => r.full_name)} value={repo} onChange={setRepo} />
                 <Button variant="outline" disabled={!repo} onClick={link}>
                   {t("int.github.link")}
                 </Button>
@@ -189,9 +180,40 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
               <p className="text-sm text-grid-muted">{t("int.github.noRepos")}</p>
             )
           ) : null}
-          {repos.error ? <p className="text-sm text-destructive">{errorText(repos.error, t("common.networkError"))}</p> : null}
+          {repos.error && it ? <p className="text-sm text-destructive">{errorText(repos.error, t("common.networkError"))}</p> : null}
         </div>
       ) : null}
+    </div>
+  )
+}
+
+// A searchable list rather than a select: an account can have hundreds of repositories.
+function RepoSearch({ repos, value, onChange }: { repos: string[]; value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslations()
+  const [q, setQ] = useState("")
+  const needle = q.trim().toLowerCase()
+  const shown = needle ? repos.filter((r) => r.toLowerCase().includes(needle)) : repos
+  return (
+    <div className="w-full max-w-md space-y-1" data-repo-search>
+      <Input dir="ltr" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("int.github.searchRepo")} aria-label={t("int.github.searchRepo")} />
+      <ul role="listbox" aria-label={t("int.github.repo")} className="max-h-60 overflow-y-auto rounded-md border border-line">
+        {shown.length ? (
+          shown.slice(0, 200).map((r) => (
+            <li key={r} role="option" aria-selected={r === value}>
+              <button
+                type="button"
+                dir="ltr"
+                onClick={() => onChange(r)}
+                className={`block w-full truncate px-3 py-1.5 text-start text-sm hover:bg-grid-soft ${r === value ? "bg-grid-soft font-medium" : ""}`}
+              >
+                {r}
+              </button>
+            </li>
+          ))
+        ) : (
+          <li className="px-3 py-2 text-sm text-grid-muted">{t("int.github.noMatch")}</li>
+        )}
+      </ul>
     </div>
   )
 }

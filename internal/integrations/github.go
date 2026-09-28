@@ -213,20 +213,58 @@ func (g *GitHubApp) repos(ctx context.Context, installationID string) ([]Repo, e
 
 // Repos lists the repositories the project's installation can access (manager+).
 func (sv *Service) Repos(ctx context.Context, projectRef string) ([]Repo, error) {
-	_, r, g, err := sv.github(ctx, projectRef, authz.IntegrationsManage, false)
+	_, inst, g, err := sv.installation(ctx, projectRef)
 	if err != nil {
 		return nil, err
 	}
-	list, err := g.repos(ctx, r.cfg("installation_id"))
+	list, err := g.repos(ctx, inst)
 	if err != nil {
 		return nil, upstream(err)
 	}
 	return list, nil
 }
 
+// installation resolves the GitHub App installation a manager+ may pick a repository from: the
+// project's own, or, when the project has none yet, the one another project in the same workspace
+// already installed. GitHub installs an App once per account; installing it again only shows
+// "already configured" and never calls back, so a second project must reuse the first install.
+// The reused installation was verified for this workspace when it was installed. It returns the
+// project's row, nil when it has none.
+func (sv *Service) installation(ctx context.Context, projectRef string) (*row, string, *GitHubApp, error) {
+	_, r, g, err := sv.github(ctx, projectRef, authz.IntegrationsManage, false)
+	if err == nil {
+		return r, r.cfg("installation_id"), g, nil
+	}
+	if e, ok := work.AsError(err); !ok || e.Status != http.StatusNotFound {
+		return nil, "", nil, err
+	}
+	if _, _, err = sv.project(ctx, projectRef, authz.IntegrationsManage); err != nil {
+		return nil, "", nil, err
+	}
+	sc, _ := tenant.From(ctx)
+	var inst string
+	err = sv.DB.QueryRowContext(ctx, `SELECT config->>'installation_id' FROM project_integrations
+		WHERE workspace_id = $1 AND provider = 'github' AND status <> 'disabled' AND COALESCE(config->>'installation_id', '') <> ''
+		ORDER BY (status = 'active') DESC, updated_at DESC LIMIT 1`, sc.WorkspaceID).Scan(&inst)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, "", nil, notFound("github integration")
+	}
+	if err != nil {
+		return nil, "", nil, err
+	}
+	if g, err = sv.GitHub(); err != nil {
+		return nil, "", nil, unavailable(err)
+	}
+	return nil, inst, g, nil
+}
+
 // LinkRepo links one of the installation's repositories to the project (manager+).
 func (sv *Service) LinkRepo(ctx context.Context, projectRef, fullName string) (*Integration, error) {
-	s, r, g, err := sv.github(ctx, projectRef, authz.IntegrationsManage, false)
+	r, inst, g, err := sv.installation(ctx, projectRef)
+	if err != nil {
+		return nil, err
+	}
+	s, p, err := sv.project(ctx, projectRef, authz.IntegrationsManage)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +275,7 @@ func (sv *Service) LinkRepo(ctx context.Context, projectRef, fullName string) (*
 	if !repoRe.MatchString(fullName) {
 		return nil, invalid("repo must be owner/name")
 	}
-	list, err := g.repos(ctx, r.cfg("installation_id"))
+	list, err := g.repos(ctx, inst)
 	if err != nil {
 		return nil, upstream(err)
 	}
@@ -253,14 +291,21 @@ func (sv *Service) LinkRepo(ctx context.Context, projectRef, fullName string) (*
 	var out *row
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
 		patch, _ := json.Marshal(map[string]any{"repo": found.FullName, "default_branch": found.DefaultBranch})
-		out, err = scanRow(tx.QueryRowContext(ctx, `UPDATE project_integrations SET config = config || $3::jsonb,
-			status = 'active', last_error = NULL, updated_at = now() WHERE workspace_id = $1 AND id = $2 RETURNING `+cols,
-			s.WorkspaceID, r.ID, string(patch)))
+		if r == nil {
+			// The workspace's installation, adopted by this project on its first repository.
+			cfg, _ := json.Marshal(map[string]any{"installation_id": inst, "repo": found.FullName, "default_branch": found.DefaultBranch})
+			out, err = scanRow(tx.QueryRowContext(ctx, `INSERT INTO project_integrations (workspace_id, project_id, provider, status, config, created_by)
+				VALUES ($1, $2, 'github', 'active', $3::jsonb, $4) RETURNING `+cols, s.WorkspaceID, p.ID, string(cfg), s.UserID))
+		} else {
+			out, err = scanRow(tx.QueryRowContext(ctx, `UPDATE project_integrations SET config = config || $3::jsonb,
+				status = 'active', last_error = NULL, updated_at = now() WHERE workspace_id = $1 AND id = $2 RETURNING `+cols,
+				s.WorkspaceID, r.ID, string(patch)))
+		}
 		if err != nil {
 			return err
 		}
-		return work.RecordActivity(ctx, tx, s, work.ActivityEntry{ProjectID: r.ProjectID, Action: "integration.github_repo_linked",
-			SubjectType: "integration", SubjectID: r.ID, Changes: map[string]any{"repo": found.FullName}})
+		return work.RecordActivity(ctx, tx, s, work.ActivityEntry{ProjectID: p.ID, Action: "integration.github_repo_linked",
+			SubjectType: "integration", SubjectID: out.ID, Changes: map[string]any{"repo": found.FullName}})
 	})
 	if err != nil {
 		return nil, err

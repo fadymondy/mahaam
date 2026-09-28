@@ -23,6 +23,8 @@
   "int.github.reinstall": "Change installation",
   "int.github.repo": "Repository",
   "int.github.pickRepo": "Pick a repository",
+  "int.github.searchRepo": "Search repositories",
+  "int.github.noMatch": "No repository matches",
   "int.github.link": "Link repository",
   "int.github.linked": "Repository linked",
   "int.github.noRepos": "The installation cannot see any repository yet — grant it one on GitHub.",
