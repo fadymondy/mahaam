@@ -104,7 +104,9 @@ export function createLauncher(opts: {
     const [v, side] = pos.split("-") as [string, string]
     // "end" is the reading end: right in LTR, left in RTL.
     const right = side === "end" ? !opts.rtl : opts.rtl
-    const x = right ? vw() - w - MARGIN : MARGIN
+    // A tab at the middle of an edge is flush with it, as a tab is; everything else keeps a margin.
+    const mx = shape === "tab" && v === "middle" ? 0 : MARGIN
+    const x = right ? vw() - w - mx : mx
     const y = v === "top" ? MARGIN : v === "middle" ? (vh() - h) / 2 : vh() - h - MARGIN
     return { x, y }
   }
@@ -149,6 +151,8 @@ export function createLauncher(opts: {
     } else {
       el.classList.remove("dock-right", "dock-left")
     }
+    el.classList.toggle("edge-left", !docked && x <= 0)
+    el.classList.toggle("edge-right", !docked && x >= vw() - size().w)
     el.style.left = `${x}px`
     el.style.top = `${y}px`
   }
@@ -382,6 +386,8 @@ export const LAUNCHER_CSS = `
 .launcher.circle .lbl, .launcher.square .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .launcher.tab { height: auto; padding: 14px 9px; writing-mode: vertical-rl; border-radius: 10px; gap: 10px; }
 .launcher.tab .i { transform: rotate(90deg); }
+.launcher.tab.edge-left { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.launcher.tab.edge-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .launcher.docked.dock-right { border-start-end-radius: 0; border-end-end-radius: 0; }
 .launcher.docked.dock-left { border-start-start-radius: 0; border-end-start-radius: 0; }
 .root[dir="rtl"] .launcher.docked.dock-right { border-radius: 9999px 0 0 9999px; }
