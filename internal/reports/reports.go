@@ -68,6 +68,8 @@ type Report struct {
 	RequestState                               *string
 	ID, WorkspaceID, Key, Title                string
 	Number, SortOrder, AgentSeconds            int64
+	AIInputTokens, AIOutputTokens, AICacheTokens, AICostMinor int64
+	AICurrency                                 string
 	IssueType, Status, State, Priority         string
 	Body, Resolution, Route, PageURL, Selector *string
 	Screenshot, ConsoleLog, NetworkLog         *string
@@ -85,7 +87,8 @@ type Report struct {
 const reportCols = `id, workspace_id, key, title, number, sort_order, agent_seconds, issue_type, status, state, priority,
 	body, resolution, route, page_url, selector, screenshot, console_log, network_log, viewport, user_agent, reporter_id,
 	project_id, ai_model, ai_effort, agent, skill, source,
-	closed_at, started_at, finished_at, human_only, created_at, updated_at, request_state`
+	closed_at, started_at, finished_at, human_only, created_at, updated_at, request_state,
+	ai_input_tokens, ai_output_tokens, ai_cache_tokens, ai_cost_minor, ai_currency`
 
 func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 	r := &Report{}
@@ -94,7 +97,8 @@ func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 		&r.Body, &r.Resolution, &r.Route, &r.PageURL, &r.Selector, &r.Screenshot, &r.ConsoleLog, &r.NetworkLog,
 		&r.Viewport, &r.UserAgent, &r.ReporterID,
 		&r.ProjectID, &r.AIModel, &r.AIEffort, &r.Agent, &r.Skill, &r.Source,
-		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt, &r.RequestState)
+		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt, &r.RequestState,
+		&r.AIInputTokens, &r.AIOutputTokens, &r.AICacheTokens, &r.AICostMinor, &r.AICurrency)
 	return r, err
 }
 

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeftIcon, ClockIcon, SendIcon, UserRoundIcon } from "lucide-react";
+import { ArrowLeftIcon, ClockIcon, SendIcon, SparklesIcon, UserRoundIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ import { MentionTextarea } from "./mention-textarea"
 import { CardExtras, CardPlanning } from "@/components/work/task-sheet";
 import { useCommentAuthor, useCommentForm } from "./issue-comments";
 import { IssueToolbar } from "./issue-toolbar";
-import { formatAgentTime, useIssueHref } from "./shared";
+import { formatAICost, formatAgentTime, issueSeconds, useIssueHref } from "./shared";
 
 /**
  * Issue detail laid out like a blog post — back link, title, meta row, body —
@@ -111,8 +111,9 @@ export function IssueDetailView({
     }
   }
 
-  const agentTime = formatAgentTime(report.agent_seconds);
-  const busy = Boolean(report.started_at && !report.finished_at);
+  const busy = Boolean(report.started_at);
+  const agentTime = busy ? formatAgentTime(issueSeconds(report)) || "0m" : formatAgentTime(report.agent_seconds);
+  const aiCost = formatAICost(report);
   const comments = report.comments ?? [];
   const dateTag = locale === "ar" ? "ar-EG" : "en-US";
 
@@ -208,6 +209,18 @@ export function IssueDetailView({
               <dd className={cn("flex items-center gap-1", busy && "text-grid-action")}>
                 <ClockIcon className="size-3.5" />
                 <span dir="ltr">{agentTime}</span>
+              </dd>
+            </>
+          ) : null}
+
+          {aiCost ? (
+            <>
+              <span aria-hidden className="text-grid-muted/50">
+                ·
+              </span>
+              <dd className="flex items-center gap-1" title={t("issues.aiCost")}>
+                <SparklesIcon className="size-3.5" />
+                <span dir="ltr">{aiCost}</span>
               </dd>
             </>
           ) : null}

@@ -162,6 +162,116 @@ func (sv *Service) RecordAIUsage(ctx context.Context, projectRef string, rows []
 	return out, err
 }
 
+// IssueUsage is what one agent session spent on one issue.
+type IssueUsage struct {
+	Total AIUsage // the project's ai_usage row for the day after adding this session
+	// The issue's running totals.
+	InputTokens, OutputTokens, CacheTokens, CostMinor int64
+	Currency                                          string
+}
+
+// RecordIssueUsage adds one session's tokens and cost to an issue (reportID in projectRef)
+// and to its project's usage for the day (source defaults to "issues"). Unlike
+// RecordAIUsage it ADDS: every session on the issue pushes only what it spent itself.
+func (sv *Service) RecordIssueUsage(ctx context.Context, projectRef, reportID string, in AIUsageInput) (*IssueUsage, error) {
+	s, err := caller(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := require(s, authz.AIUsageRecord); err != nil {
+		return nil, err
+	}
+	if err := feature(ctx, s, limits.FeatureAIUsage); err != nil {
+		return nil, err
+	}
+	p, err := sv.FindProject(ctx, projectRef)
+	if err != nil {
+		return nil, err
+	}
+	day := time.Now().UTC()
+	if v := strings.TrimSpace(in.Day); v != "" {
+		if day, err = time.Parse("2006-01-02", v); err != nil {
+			return nil, invalid("day must be YYYY-MM-DD")
+		}
+	}
+	model := strings.TrimSpace(in.Model)
+	if model == "" {
+		return nil, invalid("model is required")
+	}
+	if in.InputTokens < 0 || in.OutputTokens < 0 || in.CacheReadTokens < 0 || in.CacheWriteTokens < 0 || in.Requests < 0 {
+		return nil, invalid("token counts can't be negative")
+	}
+	cost, err := parseMoney(in.Cost)
+	if err != nil {
+		return nil, err
+	}
+	provider := strings.ToLower(strings.TrimSpace(in.Provider))
+	if provider == "" {
+		provider = "anthropic"
+	}
+	source := strings.TrimSpace(in.Source)
+	if source == "" {
+		source = "issues"
+	}
+	currency := strings.ToUpper(strings.TrimSpace(in.Currency))
+	if currency == "" {
+		currency = "USD"
+	}
+	requests := in.Requests
+	if requests == 0 {
+		requests = 1
+	}
+	out := &IssueUsage{}
+	err = sv.tx(ctx, func(tx *sql.Tx) error {
+		err := tx.QueryRowContext(ctx, `UPDATE reports SET ai_input_tokens = ai_input_tokens + $3,
+				ai_output_tokens = ai_output_tokens + $4, ai_cache_tokens = ai_cache_tokens + $5,
+				ai_cost_minor = ai_cost_minor + $6, ai_currency = $7, updated_at = now()
+			WHERE workspace_id = $1 AND id = $2 AND project_id = $8
+			RETURNING ai_input_tokens, ai_output_tokens, ai_cache_tokens, ai_cost_minor, ai_currency`,
+			s.WorkspaceID, reportID, in.InputTokens, in.OutputTokens, in.CacheReadTokens+in.CacheWriteTokens, cost, currency, p.ID,
+		).Scan(&out.InputTokens, &out.OutputTokens, &out.CacheTokens, &out.CostMinor, &out.Currency)
+		if errors.Is(err, sql.ErrNoRows) {
+			return notFound("issue")
+		}
+		if err != nil {
+			return err
+		}
+		u := &out.Total
+		var dayOut time.Time
+		err = tx.QueryRowContext(ctx, `INSERT INTO ai_usage (workspace_id, project_id, day, provider, model, source,
+				input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, requests, cost_minor, currency, billable, user_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			ON CONFLICT (workspace_id, project_id, day, provider, model, source) DO UPDATE SET
+				input_tokens = ai_usage.input_tokens + EXCLUDED.input_tokens,
+				output_tokens = ai_usage.output_tokens + EXCLUDED.output_tokens,
+				cache_read_tokens = ai_usage.cache_read_tokens + EXCLUDED.cache_read_tokens,
+				cache_write_tokens = ai_usage.cache_write_tokens + EXCLUDED.cache_write_tokens,
+				requests = ai_usage.requests + EXCLUDED.requests, cost_minor = ai_usage.cost_minor + EXCLUDED.cost_minor,
+				updated_at = now()
+				WHERE ai_usage.invoice_id IS NULL
+			RETURNING id, project_id, day, provider, model, source, input_tokens, output_tokens, cache_read_tokens,
+				cache_write_tokens, requests, cost_minor, currency, billable, invoice_id`,
+			s.WorkspaceID, p.ID, day, provider, truncate(model, 100), truncate(source, 100),
+			in.InputTokens, in.OutputTokens, in.CacheReadTokens, in.CacheWriteTokens, requests, cost, currency,
+			in.Billable == nil || *in.Billable, s.UserID).Scan(&u.ID, &u.ProjectID, &dayOut, &u.Provider, &u.Model, &u.Source,
+			&u.InputTokens, &u.OutputTokens, &u.CacheReadTokens, &u.CacheWriteTokens, &u.Requests, &u.CostMinor, &u.Currency,
+			&u.Billable, &u.InvoiceID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return conflict(fmt.Sprintf("%s %s on %s is already invoiced; record it with another day", provider, model, day.Format("2006-01-02")))
+		}
+		if err != nil {
+			return err
+		}
+		u.Day = dayOut.Format("2006-01-02")
+		return record(ctx, tx, s, entry{ProjectID: p.ID, Action: "ai_usage.recorded", SubjectType: "report", SubjectID: reportID,
+			Changes: map[string]any{"model": model, "input_tokens": in.InputTokens, "output_tokens": in.OutputTokens, "cost_minor": cost}})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AIUsageFilter narrows AIUsageSummary.
 type AIUsageFilter struct {
 	ProjectRef string

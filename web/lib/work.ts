@@ -230,6 +230,11 @@ export type Issue = {
   skill: string | null
   sort_order: number
   agent_seconds: number
+  ai_input_tokens?: number
+  ai_output_tokens?: number
+  ai_cache_tokens?: number
+  ai_cost_minor?: number
+  ai_currency?: string
   comment_count: number
   started_at: string | null
   finished_at: string | null

@@ -32,6 +32,22 @@ export function formatAgentTime(seconds: number | null | undefined): string | nu
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
+/** Banked agent seconds plus the running span, when the clock is on. */
+export function issueSeconds(issue: Pick<Issue, "agent_seconds" | "started_at">, now = Date.now()): number {
+  const running = issue.started_at ? Math.max(0, Math.floor((now - Date.parse(issue.started_at)) / 1000)) : 0
+  return (issue.agent_seconds ?? 0) + running
+}
+
+/** What agents reported spending on the issue: "$1.50 · 12.4k tok", or null when nothing was reported. */
+export function formatAICost(issue: Pick<Issue, "ai_input_tokens" | "ai_output_tokens" | "ai_cache_tokens" | "ai_cost_minor" | "ai_currency">): string | null {
+  const tokens = (issue.ai_input_tokens ?? 0) + (issue.ai_output_tokens ?? 0) + (issue.ai_cache_tokens ?? 0)
+  const cost = issue.ai_cost_minor ?? 0
+  if (!tokens && !cost) return null
+  const money = new Intl.NumberFormat("en-US", { style: "currency", currency: issue.ai_currency || "USD" }).format(cost / 100)
+  const tok = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(tokens)
+  return `${money} · ${tok} tok`
+}
+
 /** The issue's page: inside its project when it has one, else the workspace redirect. */
 export function useIssueHref() {
   const { locale } = useTranslations()

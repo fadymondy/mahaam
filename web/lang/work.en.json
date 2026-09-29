@@ -402,6 +402,7 @@
   "issues.noBody": "No description.",
   "issues.humanOnly": "Human only",
   "issues.humanOnlyHint": "Agents will not pick this issue up.",
+  "issues.aiCost": "AI cost",
   "issues.agentTime": "Agent time",
   "issues.noAgentTime": "None yet",
   "issues.startedAt": "Started {when}",

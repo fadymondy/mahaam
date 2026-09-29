@@ -89,6 +89,11 @@ type Issue struct {
 	Skill        *string    `json:"skill" doc:"Skill the agent runs for this issue"`
 	SortOrder    int64      `json:"sort_order"`
 	AgentSeconds int64      `json:"agent_seconds" doc:"Time an agent has banked on the issue"`
+	AIInputTokens  int64    `json:"ai_input_tokens" doc:"Input tokens agents reported on this issue"`
+	AIOutputTokens int64    `json:"ai_output_tokens"`
+	AICacheTokens  int64    `json:"ai_cache_tokens" doc:"Cache read + write tokens"`
+	AICostMinor    int64    `json:"ai_cost_minor" doc:"What the AI work on this issue cost, in minor units"`
+	AICurrency     string   `json:"ai_currency"`
 	CommentCount int64      `json:"comment_count"`
 	StartedAt    *time.Time `json:"started_at"`
 	FinishedAt   *time.Time `json:"finished_at"`
@@ -144,6 +149,7 @@ func toIssue(r *Report) Issue {
 		ConsoleLog: r.ConsoleLog, NetworkLog: r.NetworkLog, Viewport: r.Viewport,
 		UserAgent: r.UserAgent, ReporterID: r.ReporterID, ProjectID: r.ProjectID, Source: r.Source,
 		HumanOnly: r.HumanOnly, AIModel: r.AIModel, AIEffort: r.AIEffort, Agent: r.Agent, Skill: r.Skill, SortOrder: r.SortOrder, AgentSeconds: r.AgentSeconds,
+		AIInputTokens: r.AIInputTokens, AIOutputTokens: r.AIOutputTokens, AICacheTokens: r.AICacheTokens, AICostMinor: r.AICostMinor, AICurrency: r.AICurrency,
 		StartedAt: r.StartedAt, FinishedAt: r.FinishedAt, ClosedAt: r.ClosedAt,
 		CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, RequestState: r.RequestState,
 	}

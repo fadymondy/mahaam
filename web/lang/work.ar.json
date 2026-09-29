@@ -402,6 +402,7 @@
   "issues.noBody": "لا يوجد وصف.",
   "issues.humanOnly": "للبشر فقط",
   "issues.humanOnlyHint": "لن يتولى الوكلاء هذه المشكلة.",
+  "issues.aiCost": "تكلفة الذكاء الاصطناعي",
   "issues.agentTime": "وقت الوكيل",
   "issues.noAgentTime": "لا شيء بعد",
   "issues.startedAt": "بدأ {when}",

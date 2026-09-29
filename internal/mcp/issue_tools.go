@@ -303,7 +303,7 @@ func IssueTools() []Tool {
 				return "Started " + r.Key + ".", reports.Start(ctx, a.SQLDB, r, uid, "agent", v)
 			}),
 		lifecycleTool("review_issue",
-			"The normal end of agent work: moves the issue to in_review, banks the time and posts \"Ready for review\" with your note.",
+			"The normal end of agent work: moves the issue to in_review, banks the time and posts \"Ready for review\" with your note. Report your tokens and cost with record_issue_usage first.",
 			"note", "What changed and how it was verified",
 			func(ctx context.Context, a *app.App, r *reports.Report, uid, v string) (string, error) {
 				return r.Key + " is ready for review.", reports.Review(ctx, a.SQLDB, r, uid, "agent", v)

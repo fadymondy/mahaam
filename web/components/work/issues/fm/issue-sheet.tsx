@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ClockIcon, ExternalLinkIcon, LinkIcon, MoreHorizontalIcon, PencilIcon, SendIcon, UserRoundIcon, XIcon } from "lucide-react"
+import { ClockIcon, ExternalLinkIcon, LinkIcon, MoreHorizontalIcon, PencilIcon, SendIcon, SparklesIcon, UserRoundIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -30,7 +30,7 @@ import { CardExtras, CardPlanning } from "@/components/work/task-sheet"
 import { ContextPanel } from "@/components/work/issues/issue-detail"
 import { useCommentAuthor, useCommentForm } from "./issue-comments"
 import { IssueFormDialog } from "./issue-form-dialog"
-import { copyText, formatAgentTime, useIssueHref } from "./shared"
+import { copyText, formatAICost, formatAgentTime, issueSeconds, useIssueHref } from "./shared"
 
 /**
  * Clicking a board card opens the issue here rather than navigating: the board
@@ -82,7 +82,8 @@ export function IssueSheet({
     await onChanged?.()
   }
 
-  const agentTime = draft ? formatAgentTime(draft.agent_seconds) : null
+  const agentTime = !draft ? null : draft.started_at ? formatAgentTime(issueSeconds(draft)) || "0m" : formatAgentTime(draft.agent_seconds)
+  const aiCost = draft ? formatAICost(draft) : null
 
   const fields: { key: "status" | "priority" | "issue_type"; label: string; value: string; options: readonly string[]; labels: Record<string, string> }[] = draft
     ? [
@@ -212,6 +213,12 @@ export function IssueSheet({
                     <p className="flex items-center gap-1.5 font-mono text-xs text-grid-muted" title={t("issues.agentTime")}>
                       <ClockIcon className="size-3.5" />
                       <span dir="ltr">{agentTime}</span>
+                    </p>
+                  ) : null}
+                  {aiCost ? (
+                    <p className="flex items-center gap-1.5 font-mono text-xs text-grid-muted" title={t("issues.aiCost")}>
+                      <SparklesIcon className="size-3.5" />
+                      <span dir="ltr">{aiCost}</span>
                     </p>
                   ) : null}
                 </div>

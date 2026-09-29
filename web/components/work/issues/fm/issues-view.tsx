@@ -16,7 +16,7 @@ import {
   type DragEndEvent,
   type DragMoveEvent,
 } from "@dnd-kit/core"
-import { ClockIcon, PlusIcon, SearchIcon, UserRoundIcon } from "lucide-react"
+import { ClockIcon, PlusIcon, SearchIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,7 @@ import {
 import { IssueContextMenu } from "./issue-actions"
 import { IssueFormDialog } from "./issue-form-dialog"
 import { IssueSheet } from "./issue-sheet"
-import { PRIORITY_MARK, TYPE_DOT, formatAgentTime } from "./shared"
+import { PRIORITY_MARK, TYPE_DOT, formatAICost, formatAgentTime, issueSeconds } from "./shared"
 
 /** fadymondy.com's issue board, scoped to one Mahaam project. */
 export function IssuesView({ projectId, title }: { projectId: string; title?: string }) {
@@ -397,8 +397,9 @@ function IssueCard({
 }) {
   const { t } = useTranslations()
   const mark = PRIORITY_MARK[issue.priority]
-  const agentTime = formatAgentTime(issue.agent_seconds)
-  const busy = Boolean(issue.started_at && !issue.finished_at)
+  const busy = Boolean(issue.started_at)
+  const agentTime = busy ? formatAgentTime(issueSeconds(issue)) || "0m" : formatAgentTime(issue.agent_seconds)
+  const aiCost = formatAICost(issue)
 
   return (
     <IssueContextMenu issue={issue} onChanged={onChanged}>
@@ -440,6 +441,13 @@ function IssueCard({
             <span className={cn("flex items-center gap-1", busy && "text-grid-action")} title={t("issues.agentTime")}>
               <ClockIcon className="size-3" />
               <span dir="ltr">{agentTime}</span>
+            </span>
+          ) : null}
+
+          {aiCost ? (
+            <span className="flex items-center gap-1" title={t("issues.aiCost")}>
+              <SparklesIcon className="size-3" />
+              <span dir="ltr">{aiCost}</span>
             </span>
           ) : null}
         </div>
