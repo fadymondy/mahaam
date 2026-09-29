@@ -12,7 +12,7 @@ Work your Mahaam board from Claude Code. The plugin bundles:
 ## Install
 
 ```text
-/plugin marketplace add fadymondy/mahaam
+/plugin marketplace add fadymondy/mahaam-plugin
 /plugin install mahaam@mahaam
 ```
 

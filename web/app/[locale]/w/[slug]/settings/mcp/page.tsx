@@ -13,6 +13,7 @@ import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { ConnectAgentDialog } from "@/components/mcp/connect-agent-dialog"
+import { AgentKitGuide } from "@/components/mcp/agent-kit-guide"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError, type McpScope, type McpToken } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -83,6 +84,11 @@ export default function McpTokensPage() {
           </Table>
         </div>
       )}
+
+      <section className="border-b border-line px-6 py-6">
+        <h2 className="mb-3 text-base font-medium text-grid-fg">{t("mcp.kitTitle")}</h2>
+        <AgentKitGuide />
+      </section>
 
       <ConnectAgentDialog open={creating} onOpenChange={setCreating} onCreated={() => tokens.mutate()} />
     </>

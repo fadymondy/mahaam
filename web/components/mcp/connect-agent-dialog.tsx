@@ -13,6 +13,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegen
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CopyField, Ltr } from "@/components/copy-field"
+import { AgentKitGuide } from "@/components/mcp/agent-kit-guide"
 import { LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError, type McpToken } from "@/lib/api"
@@ -99,6 +100,12 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
               <DialogTitle>{t("mcp.connectTitle")}</DialogTitle>
               <DialogDescription>{t("mcp.connectHint")}</DialogDescription>
             </DialogHeader>
+            <details className="border border-line bg-grid-card p-3">
+              <summary className="cursor-pointer text-sm font-medium text-grid-fg">{t("mcp.kitTitle")}</summary>
+              <div className="pt-3">
+                <AgentKitGuide />
+              </div>
+            </details>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="ca-name">{t("mcp.name")}</FieldLabel>
