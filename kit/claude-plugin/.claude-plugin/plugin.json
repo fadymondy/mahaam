@@ -1,0 +1,10 @@
+{
+  "name": "mahaam",
+  "version": "0.1.0",
+  "description": "Mahaam project management in Claude Code: the MCP server, skills for the issues loop, time and AI cost, agents, and hooks that bank each issue's tokens and cost automatically.",
+  "author": { "name": "Mahaam", "email": "info@3x1.io", "url": "https://mahaam.app" },
+  "homepage": "https://mahaam.app",
+  "repository": "https://github.com/fadymondy/mahaam",
+  "license": "MIT",
+  "keywords": ["mahaam", "project-management", "issues", "time-tracking", "mcp", "ai-cost"]
+}

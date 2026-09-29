@@ -55,7 +55,7 @@ const issuedTokenDays = 30
 
 // defaultOAuthScopes mirrors the web "Connect AI agent" dialog's default set: broad enough to be
 // useful without asking a chat client to understand Mahaam's full scope catalogue up front.
-var defaultOAuthScopes = []string{"projects:read", "tasks:read", "tasks:write", "issues:read", "issues:write", "time:read", "time:write"}
+var defaultOAuthScopes = []string{"projects:read", "tasks:read", "tasks:write", "issues:read", "issues:write", "time:read", "time:write", "ai:record"}
 
 // mcpURL is the public base URL the OAuth/MCP discovery metadata, issuer and resource
 // identifiers report — MCP_URL if set (mcp.mahaam.app, a separate hostname so it reads like a

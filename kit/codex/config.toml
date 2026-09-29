@@ -1,0 +1,4 @@
+# Append to ~/.codex/config.toml
+[mcp_servers.mahaam]
+url = "https://console.mahaam.app/api/mcp"
+bearer_token_env_var = "MAHAAM_TOKEN"
