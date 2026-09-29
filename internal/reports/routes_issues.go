@@ -121,6 +121,8 @@ type IssueDetail struct {
 // IssueList is the body of GET /api/w/issues.
 type IssueList struct {
 	Issues []Issue `json:"issues"`
+	// ColumnTotals (with per_column): how many items each board column holds in all.
+	ColumnTotals map[string]int `json:"column_totals,omitempty"`
 }
 
 // Priorities is the issue priority allowlist (the MCP tools' enum).
@@ -191,6 +193,7 @@ func (h *issueRoutes) mount() {
 		Project          string `query:"project" doc:"Project id or name (must be visible to you)"`
 		IncludeHumanOnly bool   `query:"include_human_only" default:"true" doc:"Include issues marked human-only"`
 		IncludeBoard     bool   `query:"include_board" doc:"Also list items created on the project board (the board shows everything; the issue queue only what was filed as an issue)"`
+		PerColumn        int    `query:"per_column" minimum:"0" maximum:"500" doc:"With project: only the first N items of each board column, plus column_totals (the board's paging)"`
 	}) (*work.Resp[IssueList], error) {
 		s, err := h.reader(ctx)
 		if err != nil {
@@ -200,10 +203,29 @@ func (h *issueRoutes) mount() {
 		if err != nil {
 			return nil, err
 		}
-		rows, err := List(ctx, h.db, s.WorkspaceID, Filter{
-			Status: in.Status, State: in.State, IssueType: in.Type, Q: in.Q,
+		f := Filter{
+			Status: in.Status, State: in.State, IssueType: in.Type, Q: in.Q, Priority: in.Priority,
 			ProjectID: projectID, HideHumanOnly: !in.IncludeHumanOnly, IncludeBoard: in.IncludeBoard, Limit: 500,
-		})
+		}
+		if in.PerColumn > 0 && projectID != "" {
+			page, err := ListBoard(ctx, h.db, s.WorkspaceID, f, in.PerColumn)
+			if err != nil {
+				return nil, h.fail(err)
+			}
+			counts, err := h.commentCounts(ctx, s.WorkspaceID, page.Reports)
+			if err != nil {
+				return nil, h.fail(err)
+			}
+			out := IssueList{Issues: make([]Issue, 0, len(page.Reports)), ColumnTotals: page.Totals}
+			for _, rep := range page.Reports {
+				i := toIssue(rep)
+				i.CommentCount = counts[rep.ID]
+				i.ColumnID = page.Column[rep.Key]
+				out.Issues = append(out.Issues, i)
+			}
+			return &work.Resp[IssueList]{Body: out}, nil
+		}
+		rows, err := List(ctx, h.db, s.WorkspaceID, f)
 		if err != nil {
 			return nil, h.fail(err)
 		}
@@ -226,9 +248,6 @@ func (h *issueRoutes) mount() {
 		}
 		out := IssueList{Issues: make([]Issue, 0, len(rows))}
 		for _, rep := range rows {
-			if in.Priority != "" && rep.Priority != in.Priority {
-				continue
-			}
 			i := toIssue(rep)
 			i.CommentCount = counts[rep.ID]
 			i.ColumnID = columns[rep.Key]

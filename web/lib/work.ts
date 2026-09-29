@@ -260,11 +260,11 @@ const opts = {
   revalidateOnFocus: false,
 }
 
-function useW<T>(path: string | null, workspaceId: string | null | undefined) {
+function useW<T>(path: string | null, workspaceId: string | null | undefined, extra?: { keepPreviousData?: boolean }) {
   return useSWR<T>(
     path && workspaceId ? [path, workspaceId] : null,
     ([p, id]: [string, string]) => api<T>(p, { workspaceId: id }),
-    opts,
+    extra ? { ...opts, ...extra } : opts,
   )
 }
 
@@ -293,15 +293,15 @@ export const useClient = (ws: string, id: string | null, enabled = true) =>
 export const useTeams = (ws: string, enabled = true) => useW<{ teams: Team[] }>(enabled ? "/api/w/teams" : null, ws)
 export const useLabels = (ws: string) => useW<{ labels: Label[] }>("/api/w/labels", ws)
 
-export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string; project?: string; state?: string; include_board?: string }
+export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string; project?: string; state?: string; include_board?: string; per_column?: string }
 function issueQs(q: IssueQuery) {
   const s = new URLSearchParams()
-  for (const k of ["status", "priority", "type", "q", "project", "state", "include_board"] as const) if (q[k]) s.set(k, q[k]!)
+  for (const k of ["status", "priority", "type", "q", "project", "state", "include_board", "per_column"] as const) if (q[k]) s.set(k, q[k]!)
   const str = s.toString()
   return str ? `?${str}` : ""
 }
 export const useIssues = (ws: string, query: IssueQuery = {}, enabled = true) =>
-  useW<{ issues: Issue[] }>(enabled ? `/api/w/issues${issueQs(query)}` : null, ws)
+  useW<{ issues: Issue[]; column_totals?: Record<string, number> }>(enabled ? `/api/w/issues${issueQs(query)}` : null, ws, { keepPreviousData: true })
 export const useIssue = (ws: string, key: string | null, enabled = true) =>
   useW<IssueDetail>(key && enabled ? `/api/w/issues/${encodeURIComponent(key)}` : null, ws)
 

@@ -116,22 +116,29 @@ func originAllowed(origins []string, origin string) bool {
 	return false
 }
 
+// EmbedPreflight answers the CORS preflight for POST /api/feedback/embed. The install
+// snippets send the key as X-Mahaam-Key and feedback-core posts with credentials, so the
+// request is never "simple". The auth plugin's app-wide CORS answers every OPTIONS before
+// routing with its own header list, so the guard (internal/server/guard.go) calls this
+// first. The origin is reflected because there is no key to check it against yet; the POST
+// enforces the key's allowlist.
+func EmbedPreflight(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Mahaam-Key")
+	w.Header().Set("Access-Control-Max-Age", "600")
+	if origin := r.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Vary", "Origin")
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func embedIntake(w http.ResponseWriter, r *http.Request, a *app.App) {
 	origin := r.Header.Get("Origin")
 
-	// CORS preflight (only fires if the SDK ever sends a non-simple request). Answer
-	// after the key/origin are known below; a bare OPTIONS with no key gets a generic 403.
 	if r.Method == http.MethodOptions {
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("Access-Control-Max-Age", "600")
-		// The origin is echoed only once the key confirms it; without a key we cannot,
-		// so reflect it here for the preflight and let the POST enforce the allowlist.
-		if origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Vary", "Origin")
-		}
-		w.WriteHeader(http.StatusNoContent)
+		EmbedPreflight(w, r)
 		return
 	}
 	if r.Method != http.MethodPost {
@@ -144,7 +151,10 @@ func embedIntake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		return
 	}
 
-	key, err := lookupKey(r.Context(), a.SysDB, fields["public_key"])
+	// The key comes in the form (the script-tag widget) or the X-Mahaam-Key header (the
+	// feedback-core snippets from get_feedback_install).
+	publicKey := strings.TrimSpace(firstNonEmpty(fields["public_key"], r.Header.Get("X-Mahaam-Key")))
+	key, err := lookupKey(r.Context(), a.SysDB, publicKey)
 	if err != nil {
 		// Never distinguish "unknown" from "revoked" from "wrong origin" to a stranger.
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "feedback is not available here"})
@@ -161,7 +171,10 @@ func embedIntake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		return
 	}
 	if origin != "" {
+		// feedback-core submits with credentials: "include". The endpoint reads no cookies,
+		// so allowing credentials for an allowlisted origin exposes nothing extra.
 		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Vary", "Origin")
 	}
 
@@ -213,7 +226,7 @@ func embedIntake(w http.ResponseWriter, r *http.Request, a *app.App) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not file the report"})
 		return
 	}
-	_, _ = a.SysDB.ExecContext(r.Context(), `UPDATE project_feedback_keys SET last_used_at = now() WHERE public_key = $1`, strings.TrimSpace(fields["public_key"]))
+	_, _ = a.SysDB.ExecContext(r.Context(), `UPDATE project_feedback_keys SET last_used_at = now() WHERE public_key = $1`, publicKey)
 	a.Emit(r.Context(), "report.created", map[string]string{"key": rep.Key})
 	writeJSON(w, http.StatusCreated, map[string]string{"key": rep.Key})
 }

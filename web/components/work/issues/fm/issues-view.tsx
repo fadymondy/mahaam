@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -16,7 +16,7 @@ import {
   type DragEndEvent,
   type DragMoveEvent,
 } from "@dnd-kit/core"
-import { ClockIcon, PlusIcon, SearchIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
+import { ClockIcon, Loader2Icon, PlusIcon, SearchIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -47,6 +47,9 @@ import { IssueFormDialog } from "./issue-form-dialog"
 import { IssueSheet } from "./issue-sheet"
 import { PRIORITY_MARK, TYPE_DOT, formatAICost, formatAgentTime, issueSeconds } from "./shared"
 
+// Items per board column per page.
+const PAGE = 20
+
 /** fadymondy.com's issue board, scoped to one Mahaam project. */
 export function IssuesView({ projectId, title }: { projectId: string; title?: string }) {
   const { t } = useTranslations()
@@ -66,9 +69,13 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
   // The project board is the one board: issues filed as issues (SDK, portal, MCP, in-app) and
   // items created here, all the same thing.
+  // Each column shows its first `perColumn` items; scrolling to a column's end loads the next page.
+  const [perColumn, setPerColumn] = useState(PAGE)
+  useEffect(() => setPerColumn(PAGE), [projectId, debouncedQuery, typeFilter, priorityFilter])
   const list = useIssues(ws.id, {
     project: projectId,
     include_board: "true",
+    per_column: String(perColumn),
     q: debouncedQuery || undefined,
     type: typeFilter === "all" ? undefined : typeFilter,
     priority: priorityFilter === "all" ? undefined : priorityFilter,
@@ -276,6 +283,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
             const status = column.id
             const cards = byStatus.get(status) ?? []
             const isTarget = dragOverStatus === status
+            const total = Math.max(list.data?.column_totals?.[status] ?? 0, cards.length)
 
             return (
               <DropColumn
@@ -292,7 +300,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                     <span className="truncate" dir="auto">{column.name}</span>
                   </span>
                   <span dir="ltr" className="tabular-nums">
-                    {cards.length}
+                    {total}
                   </span>
                 </h2>
 
@@ -317,6 +325,9 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                       />
                     </DragCard>
                   ))}
+                  {total > cards.length ? (
+                    <LoadMore loading={list.isValidating} onVisible={() => setPerColumn((n) => (cards.length >= n ? n + PAGE : n))} />
+                  ) : null}
                   {/* The empty space under the last card drops at the end. */}
                   <div className="min-h-12 flex-1" />
                 </div>
@@ -472,5 +483,24 @@ function IssueCard({
         </Select>
       </article>
     </IssueContextMenu>
+  )
+}
+
+/** The end of a column that holds more than it shows: loads the next page when scrolled into view. */
+function LoadMore({ loading, onVisible }: { loading: boolean; onVisible: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const cb = useRef(onVisible)
+  cb.current = onVisible
+  useEffect(() => {
+    const el = ref.current
+    if (!el || loading) return
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && cb.current(), { rootMargin: "200px" })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [loading])
+  return (
+    <div ref={ref} className="flex justify-center py-3">
+      <Loader2Icon className="size-4 animate-spin text-grid-muted" aria-hidden />
+    </div>
   )
 }

@@ -117,7 +117,7 @@ func ValidStatus(s string) bool {
 
 // Filter narrows List.
 type Filter struct {
-	Status, State, IssueType, Q string
+	Status, State, IssueType, Q, Priority string
 	// ProjectID limits to one project's issues; ReporterID to one reporter's
 	// (both used by the client portal, which never sees other people's issues).
 	ProjectID, ReporterID string
@@ -139,7 +139,83 @@ type Filter struct {
 
 // List returns a workspace's reports, board order first.
 func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Report, error) {
-	q := `SELECT ` + reportCols + ` FROM reports WHERE workspace_id = $1`
+	where, args := filterSQL(ctx, workspaceID, f)
+	if f.Limit <= 0 || f.Limit > 500 {
+		f.Limit = 50
+	}
+	args = append(args, f.Limit)
+	q := `SELECT ` + reportCols + ` FROM reports WHERE ` + where + fmt.Sprintf(" ORDER BY sort_order ASC, created_at DESC LIMIT $%d", len(args))
+
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("could not list issues: %w", err)
+	}
+	defer rows.Close()
+	var out []*Report
+	for rows.Next() {
+		r, err := scanReport(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// BoardPage is one page of a project board: the first N items of every column.
+type BoardPage struct {
+	Reports []*Report
+	Column  map[string]string // issue key → column id
+	Totals  map[string]int    // column id → items in it (all of them, not just this page)
+}
+
+// ListBoard returns the first perColumn items of each board column, board order, plus how many
+// each column holds, so the board can load more as a column scrolls. An item sits in its card's
+// column; one without a card sits in the first column of its stage (or the project's first).
+func ListBoard(ctx context.Context, db *sql.DB, workspaceID string, f Filter, perColumn int) (*BoardPage, error) {
+	where, args := filterSQL(ctx, workspaceID, f)
+	args = append(args, perColumn)
+	q := `SELECT ` + reportCols + `, board_col, col_total FROM (
+		SELECT *, row_number() OVER (PARTITION BY board_col ORDER BY sort_order ASC, created_at DESC) AS rn,
+			count(*) OVER (PARTITION BY board_col) AS col_total
+		FROM (SELECT reports.*, COALESCE(
+				(SELECT t.status_id FROM tasks t WHERE t.workspace_id = reports.workspace_id AND t.id = reports.task_id),
+				(SELECT s.id FROM task_statuses s WHERE s.workspace_id = reports.workspace_id AND s.project_id = reports.project_id
+					ORDER BY (s.stage = reports.status) DESC, s.position LIMIT 1), '') AS board_col
+			FROM reports WHERE ` + where + `) cols
+	) ranked WHERE rn <= $` + fmt.Sprint(len(args)) + ` ORDER BY sort_order ASC, created_at DESC`
+
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("could not list the board: %w", err)
+	}
+	defer rows.Close()
+	page := &BoardPage{Column: map[string]string{}, Totals: map[string]int{}}
+	for rows.Next() {
+		var col string
+		var total int
+		r, err := scanReport(extraScan{rows, []any{&col, &total}})
+		if err != nil {
+			return nil, err
+		}
+		page.Reports = append(page.Reports, r)
+		page.Column[r.Key] = col
+		page.Totals[col] = total
+	}
+	return page, rows.Err()
+}
+
+// extraScan appends trailing destinations to a scan, for queries that add columns after reportCols.
+type extraScan struct {
+	rows  *sql.Rows
+	extra []any
+}
+
+func (e extraScan) Scan(dest ...any) error { return e.rows.Scan(append(dest, e.extra...)...) }
+
+// filterSQL is the WHERE clause (without the keyword) and its args for a Filter.
+func filterSQL(ctx context.Context, workspaceID string, f Filter) (string, []any) {
+	q := `workspace_id = $1`
 	args := []any{workspaceID}
 	add := func(cond string, v any) {
 		args = append(args, v)
@@ -153,6 +229,9 @@ func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Rep
 	}
 	if f.IssueType != "" {
 		add("issue_type = $%d", f.IssueType)
+	}
+	if f.Priority != "" {
+		add("priority = $%d", f.Priority)
 	}
 	if f.Q != "" {
 		add("title ILIKE $%d", "%"+f.Q+"%")
@@ -175,26 +254,7 @@ func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Rep
 	if !f.IncludeRequests {
 		q += " AND (request_state IS NULL OR request_state = 'accepted')"
 	}
-	if f.Limit <= 0 || f.Limit > 500 {
-		f.Limit = 50
-	}
-	args = append(args, f.Limit)
-	q += fmt.Sprintf(" ORDER BY sort_order ASC, created_at DESC LIMIT $%d", len(args))
-
-	rows, err := db.QueryContext(ctx, q, args...)
-	if err != nil {
-		return nil, fmt.Errorf("could not list issues: %w", err)
-	}
-	defer rows.Close()
-	var out []*Report
-	for rows.Next() {
-		r, err := scanReport(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, r)
-	}
-	return out, rows.Err()
+	return q, args
 }
 
 // Find accepts the key (MG-12, case-insensitive) or the row id.
