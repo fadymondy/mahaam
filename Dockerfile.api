@@ -5,6 +5,10 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+# internal/db/gen and internal/graph/gen are gitignored: generate them, so a clean
+# git checkout (Hosbah builds straight from the repository) compiles.
+COPY --from=sqlc/sqlc:1.31.1 /workspace/sqlc /usr/local/bin/sqlc
+RUN sqlc generate && go run github.com/99designs/gqlgen generate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /out/api ./cmd/api \
  && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /out/migrate ./cmd/migrate \
  && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /out/mahaam-admin ./cmd/mahaam-admin
