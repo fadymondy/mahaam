@@ -18,35 +18,35 @@ export function AgentKitGuide() {
   const codex = `[mcp_servers.mahaam]\nurl = "${url}"\nbearer_token_env_var = "MAHAAM_TOKEN"`
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-grid-body">
+      <p className="text-sm text-nq-fg-body">
         {t("mcp.kitHint")}{" "}
-        <a href={PLUGIN_REPO} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-grid-action hover:underline">
+        <a href={PLUGIN_REPO} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-nq-accent-text hover:underline">
           <Ltr mono>fadymondy/mahaam-plugin</Ltr>
           <ExternalLinkIcon className="size-3.5" />
         </a>
       </p>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.kitClaude")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.kitClaude")}</p>
         <CopyField value={"/plugin marketplace add fadymondy/mahaam-plugin\n/plugin install mahaam@mahaam"} label={t("mcp.kitClaude")} />
-        <p className="text-meta text-grid-muted">{t("mcp.kitClaudeHint")}</p>
+        <p className="text-caption text-muted-foreground">{t("mcp.kitClaudeHint")}</p>
         {MCP_ORIGIN !== "https://console.mahaam.app" ? (
-          <p className="text-meta text-grid-muted">
+          <p className="text-caption text-muted-foreground">
             {t("mcp.kitSelfHosted")} <Ltr mono>MAHAAM_URL={MCP_ORIGIN}</Ltr>
           </p>
         ) : null}
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.kitChatgpt")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.kitChatgpt")}</p>
         <CopyField value={url} label={t("mcp.serverUrl")} />
-        <p className="text-meta text-grid-muted">{t("mcp.kitChatgptHint")}</p>
+        <p className="text-caption text-muted-foreground">{t("mcp.kitChatgptHint")}</p>
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.kitCodex")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.kitCodex")}</p>
         <CopyField value={codex} label={t("mcp.kitCodex")} />
-        <p className="text-meta text-grid-muted">{t("mcp.kitCodexHint")}</p>
+        <p className="text-caption text-muted-foreground">{t("mcp.kitCodexHint")}</p>
       </div>
     </div>
   )

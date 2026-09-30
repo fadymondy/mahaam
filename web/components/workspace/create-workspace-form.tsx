@@ -64,7 +64,7 @@ export function CreateWorkspaceForm({ onCreated, autoFocus }: { onCreated?: () =
         </Field>
         <Field data-invalid={!!error || undefined}>
           <FieldLabel htmlFor="ws-slug">
-            {t("workspaces.slug")} <span className="font-normal text-grid-muted">({t("common.optional")})</span>
+            {t("workspaces.slug")} <span className="font-normal text-muted-foreground">({t("common.optional")})</span>
           </FieldLabel>
           <Input
             id="ws-slug"

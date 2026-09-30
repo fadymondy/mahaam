@@ -39,10 +39,10 @@ function BudgetsView() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-6 py-3" data-print-hide data-report-toolbar>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-3" data-print-hide data-report-toolbar>
         <div className="min-w-0">
           <h2 className="text-sm font-medium">{t("budget.allTitle")}</h2>
-          <p className="text-meta text-grid-muted">
+          <p className="text-caption text-muted-foreground">
             {t("budget.allHint", { money: data?.finance ? t("budget.allHintMoney") : "" })} {t("budget.levels")}
           </p>
         </div>
@@ -79,7 +79,7 @@ function BudgetsView() {
                         {b.project_name}
                       </span>
                     </Link>
-                    <span className="mt-1 flex flex-wrap items-center gap-2 text-meta text-grid-muted">
+                    <span className="mt-1 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
                       {b.client_name ? <span dir="auto">{b.client_name}</span> : null}
                       <span>{t(`billing.${b.billing_mode}`)}</span>
                       {b.archived ? <Badge variant="neutral">{t("budget.archived")}</Badge> : null}

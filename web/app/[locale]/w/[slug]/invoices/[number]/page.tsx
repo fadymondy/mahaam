@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ChevronLeftIcon, DownloadIcon, PrinterIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Field, FieldError, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
@@ -43,7 +43,7 @@ export default function InvoiceDetailPage() {
   const iv = invoice.data
   useDocumentTitle(`${iv?.number ?? t("invoices.title")} · ${ws.summary.name}`)
 
-  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-grid-muted">{t("invoices.noPermission")}</p>
+  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("invoices.noPermission")}</p>
 
   if (invoice.error) {
     return invoice.error instanceof ApiError && invoice.error.status === 404 ? (
@@ -87,7 +87,7 @@ export default function InvoiceDetailPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
+        <Link href={back} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("invoiceDetail.back")}
         </Link>
@@ -145,9 +145,9 @@ export default function InvoiceDetailPage() {
         }
       />
 
-      <div className="grid gap-px border-y border-line bg-grid-line lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-px border-y border-border bg-border lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* lines + totals */}
-        <div className="min-w-0 bg-grid-bg">
+        <div className="min-w-0 bg-background">
           <h2 className="px-6 pt-5 pb-3 text-base font-medium">{t("invoiceDetail.lines")}</h2>
           <Table>
             <TableHeader>
@@ -165,7 +165,7 @@ export default function InvoiceDetailPage() {
                   <TableCell className="text-end tabular-nums">
                     <Ltr>{l.quantity}</Ltr>
                   </TableCell>
-                  <TableCell className="text-end tabular-nums text-grid-muted">
+                  <TableCell className="text-end tabular-nums text-muted-foreground">
                     <Ltr>{money(l.unit_minor, iv.currency, locale)}</Ltr>
                   </TableCell>
                   <TableCell className="pe-6 text-end tabular-nums">
@@ -175,7 +175,7 @@ export default function InvoiceDetailPage() {
               ))}
             </TableBody>
           </Table>
-          <dl className="ms-auto grid max-w-sm gap-px border-t border-line bg-grid-line text-sm">
+          <dl className="ms-auto grid max-w-sm gap-px border-t border-border bg-border text-sm">
             <TotalRow label={t("invoiceDetail.subtotal")} value={money(iv.subtotal_minor, iv.currency, locale)} />
             <TotalRow label={`${t("invoiceDetail.tax")} (${iv.tax_rate})`} value={money(iv.tax_minor, iv.currency, locale)} />
             <TotalRow label={t("invoiceDetail.total")} value={money(iv.total_minor, iv.currency, locale)} strong />
@@ -187,26 +187,26 @@ export default function InvoiceDetailPage() {
             ) : null}
           </dl>
           {iv.notes ? (
-            <div className="border-t border-line px-6 py-4">
-              <p className="grid-micro mb-1">{t("invoiceDetail.notes")}</p>
-              <p className="text-sm whitespace-pre-wrap text-grid-body">{iv.notes}</p>
+            <div className="border-t border-border px-6 py-4">
+              <p className="text-eyebrow uppercase mb-1">{t("invoiceDetail.notes")}</p>
+              <p className="text-sm whitespace-pre-wrap text-nq-fg-body">{iv.notes}</p>
             </div>
           ) : null}
         </div>
 
         {/* payments + info */}
-        <aside className="min-w-0 bg-grid-bg">
+        <aside className="min-w-0 bg-background">
           {lockedEntries > 0 ? (
-            <p className="border-b border-line px-6 py-4 text-meta text-grid-muted">{t("invoiceDetail.entriesLocked", { count: lockedEntries })}</p>
+            <p className="border-b border-border px-6 py-4 text-caption text-muted-foreground">{t("invoiceDetail.entriesLocked", { count: lockedEntries })}</p>
           ) : null}
           <h2 className="px-6 pt-5 pb-3 text-base font-medium">{t("invoiceDetail.payments")}</h2>
           {iv.payments.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-grid-muted">{t("invoiceDetail.noPayments")}</p>
+            <p className="px-6 pb-6 text-sm text-muted-foreground">{t("invoiceDetail.noPayments")}</p>
           ) : (
-            <ul className="divide-y divide-line border-y border-line">
+            <ul className="divide-y divide-line border-y border-border">
               {iv.payments.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-2 px-6 py-3 text-sm">
-                  <span className="text-grid-muted">
+                  <span className="text-muted-foreground">
                     <Ltr mono>{p.paid_at.slice(0, 10)}</Ltr>
                     {p.ref ? <span className="ms-2">{p.ref}</span> : null}
                   </span>
@@ -242,9 +242,9 @@ export default function InvoiceDetailPage() {
 
 function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-4 bg-grid-bg px-6 py-2">
-      <dt className={strong ? "font-medium text-grid-fg" : "text-grid-muted"}>{label}</dt>
-      <dd className={strong ? "font-semibold tabular-nums" : "tabular-nums text-grid-body"}>
+    <div className="flex items-center justify-between gap-4 bg-background px-6 py-2">
+      <dt className={strong ? "font-medium text-foreground" : "text-muted-foreground"}>{label}</dt>
+      <dd className={strong ? "font-semibold tabular-nums" : "tabular-nums text-nq-fg-body"}>
         <Ltr>{value}</Ltr>
       </dd>
     </div>

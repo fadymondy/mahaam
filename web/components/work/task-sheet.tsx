@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { IssueSourceChip } from "@/components/work/issues/issue-bits";
-import { toast } from "sonner";
+import { toast } from "@fadymondy/nasaq/web";
 
 import { Badge, Button, Checkbox, Input, Progress, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, Skeleton, Textarea } from "@fadymondy/nasaq/web"
 
@@ -145,7 +145,7 @@ function Row({
 }) {
   return (
     <div className="grid grid-cols-[7.5rem_1fr] items-center gap-3 px-6 py-1.5">
-      <label htmlFor={htmlFor} className="text-meta text-grid-muted">
+      <label htmlFor={htmlFor} className="text-caption text-muted-foreground">
         {label}
       </label>
       <div className="flex min-w-0 items-center">{children}</div>
@@ -165,10 +165,10 @@ function Section({
   action?: ReactNode;
 }) {
   return (
-    <section className="border-t border-line">
+    <section className="border-t border-border">
       <div className="flex items-center gap-2 px-6 pt-4 pb-2">
-        <h3 className="text-sm font-medium text-grid-fg">{title}</h3>
-        {count != null ? <span className="text-meta text-grid-muted">{count}</span> : null}
+        <h3 className="text-sm font-medium text-foreground">{title}</h3>
+        {count != null ? <span className="text-caption text-muted-foreground">{count}</span> : null}
         <span className="ms-auto">{action}</span>
       </div>
       {children}
@@ -245,7 +245,7 @@ export function TaskBody({
       {d.issue && !d.issue.from_board ? (
         <Link
           href={`/${locale}/w/${ws.slug}/projects/${d.project.id}/issues/${d.key}`}
-          className="inline-flex items-center gap-1 text-grid-action hover:underline"
+          className="inline-flex items-center gap-1 text-nq-accent-text hover:underline"
           title={t("task.issueReportHint")}
         >
           <IssueSourceChip issue={d.issue} />
@@ -261,7 +261,7 @@ export function TaskBody({
       {!page ? (
         <Link
           href={`/${locale}/w/${ws.slug}/projects/${d.project.id}/tasks/${d.key}`}
-          className="ms-auto inline-flex items-center gap-1 text-grid-muted hover:text-grid-fg"
+          className="ms-auto inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
         >
           <ExternalLinkIcon className="size-3.5" />
           {t("task.openFullPage")}
@@ -272,11 +272,11 @@ export function TaskBody({
 
   return (
     <>
-      <HeaderWrap className="gap-1 border-b border-line px-6 pt-5 pb-4">
+      <HeaderWrap className="gap-1 border-b border-border px-6 pt-5 pb-4">
         {page ? (
-          <p className="flex items-center gap-2 text-meta text-grid-muted">{meta}</p>
+          <p className="flex items-center gap-2 text-caption text-muted-foreground">{meta}</p>
         ) : (
-          <SheetDescription className="flex items-center gap-2 text-meta">{meta}</SheetDescription>
+          <SheetDescription className="flex items-center gap-2 text-caption">{meta}</SheetDescription>
         )}
         {page ? (
           <h1 className="sr-only">{d.title}</h1>
@@ -296,10 +296,10 @@ export function TaskBody({
                 (e.target as HTMLTextAreaElement).blur();
               }
             }}
-            className="min-h-0 resize-none border-transparent bg-transparent px-0 text-lg font-medium shadow-none hover:border-line focus-visible:border-line dark:bg-transparent"
+            className="min-h-0 resize-none border-transparent bg-transparent px-0 text-lg font-medium shadow-none hover:border-border focus-visible:border-border dark:bg-transparent"
           />
         ) : (
-          <p className="text-lg font-medium text-grid-fg">{d.title}</p>
+          <p className="text-lg font-medium text-foreground">{d.title}</p>
         )}
         {!d.project.archived ? (
           <div className="flex items-center gap-2 pt-1">
@@ -310,7 +310,7 @@ export function TaskBody({
           <button
             type="button"
             onClick={() => onOpen(d.parent!.key)}
-            className="text-start text-meta text-grid-muted hover:text-grid-fg"
+            className="text-start text-caption text-muted-foreground hover:text-foreground"
           >
             {t("task.subtaskOf")} <Ltr mono>{d.parent.key}</Ltr> {d.parent.title}
           </button>
@@ -383,7 +383,7 @@ export function TaskBody({
                 if (n !== (d.estimate_minutes ?? 0)) void patch({ estimate_minutes: n });
               }}
             />
-            <span className="text-meta text-grid-muted">{t("task.minutes")}</span>
+            <span className="text-caption text-muted-foreground">{t("task.minutes")}</span>
           </div>
         </Row>
       </div>
@@ -414,7 +414,7 @@ export function TaskBody({
       </Section>
 
       {d.can_delete ? (
-        <div className="flex justify-end border-t border-line px-6 py-4">
+        <div className="flex justify-end border-t border-border px-6 py-4">
           <ConfirmButton
             label={
               <>
@@ -434,7 +434,7 @@ export function TaskBody({
           />
         </div>
       ) : null}
-      <p className="px-6 pb-6 text-meta text-grid-muted">
+      <p className="px-6 pb-6 text-caption text-muted-foreground">
         {t("task.createdBy", { name: "" })}
         <span dir="ltr">{useDirectoryName(dir, d.created_by)}</span> ·{" "}
         <Ltr>{timeAgo(d.created_at, locale)}</Ltr>
@@ -495,7 +495,7 @@ function Checklist({
         {d.checklist.map((c) => (
           <li
             key={c.id}
-            className="group flex items-center gap-3 px-2 py-1.5 hover:bg-grid-soft"
+            className="group flex items-center gap-3 px-2 py-1.5 hover:bg-muted"
             data-item={c.id}
           >
             <Checkbox
@@ -507,7 +507,7 @@ function Checklist({
               }
             />
             <span
-              className={cn("min-w-0 flex-1 text-sm", c.done && "text-grid-muted line-through")}
+              className={cn("min-w-0 flex-1 text-sm", c.done && "text-muted-foreground line-through")}
             >
               {c.title}
             </span>
@@ -549,7 +549,7 @@ function Checklist({
           </Button>
         </form>
       ) : d.checklist.length ? null : (
-        <p className="px-6 pb-4 text-sm text-grid-muted">{t("task.noChecklist")}</p>
+        <p className="px-6 pb-4 text-sm text-muted-foreground">{t("task.noChecklist")}</p>
       )}
     </Section>
   );
@@ -587,17 +587,17 @@ function Subtasks({
             <button
               type="button"
               onClick={() => onOpen(s.key)}
-              className="flex w-full items-center gap-3 px-2 py-1.5 text-start text-sm hover:bg-grid-soft"
+              className="flex w-full items-center gap-3 px-2 py-1.5 text-start text-sm hover:bg-muted"
             >
               {s.done ? (
-                <CheckCircle2Icon className="size-4 text-grid-ok-text" />
+                <CheckCircle2Icon className="size-4 text-nq-ok-text" />
               ) : (
-                <CircleIcon className="size-4 text-grid-muted" />
+                <CircleIcon className="size-4 text-muted-foreground" />
               )}
-              <Ltr mono className="text-xs text-grid-muted">
+              <Ltr mono className="text-xs text-muted-foreground">
                 {s.key}
               </Ltr>
-              <span className={cn("truncate", s.done && "text-grid-muted line-through")}>
+              <span className={cn("truncate", s.done && "text-muted-foreground line-through")}>
                 {s.title}
               </span>
             </button>
@@ -632,7 +632,7 @@ function Subtasks({
           </Button>
         </form>
       ) : d.subtasks.length ? null : (
-        <p className="px-6 pb-4 text-sm text-grid-muted">{t("task.noSubtasks")}</p>
+        <p className="px-6 pb-4 text-sm text-muted-foreground">{t("task.noSubtasks")}</p>
       )}
     </Section>
   );
@@ -662,11 +662,11 @@ function ImageThumb({ ws, a }: { ws: string; a: Attachment }) {
       if (revoke) URL.revokeObjectURL(revoke);
     };
   }, [ws, a.id]);
-  if (!url) return <span className="size-14 shrink-0 animate-pulse border border-line bg-grid-soft" aria-hidden />;
+  if (!url) return <span className="size-14 shrink-0 animate-pulse border border-border bg-muted" aria-hidden />;
   return (
     <a href={url} target="_blank" rel="noreferrer" className="shrink-0" aria-label={a.file_name}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt={a.file_name} className="size-14 border border-line object-cover" />
+      <img src={url} alt={a.file_name} className="size-14 border border-border object-cover" />
     </a>
   );
 }
@@ -724,7 +724,7 @@ function Attachments({
         </div>
       ) : null}
       {list.length ? (
-        <ul className="divide-y divide-line border-y border-line" data-attachments>
+        <ul className="divide-y divide-line border-y border-border" data-attachments>
           {list.map((a) => (
             <li key={a.id} className="flex items-center gap-3 px-6 py-2 text-sm">
               {a.content_type.startsWith("image/") ? <ImageThumb ws={ws.id} a={a} /> : null}
@@ -732,7 +732,7 @@ function Attachments({
                 <p className="truncate font-medium" dir="auto">
                   {a.file_name}
                 </p>
-                <p className="text-meta text-grid-muted">
+                <p className="text-caption text-muted-foreground">
                   <Ltr>{fileSize(a.size)}</Ltr> · <span dir="ltr">{dir.name(a.uploaded_by)}</span> ·{" "}
                   <Ltr>{timeAgo(a.created_at, locale)}</Ltr>
                 </p>
@@ -766,7 +766,7 @@ function Attachments({
           ))}
         </ul>
       ) : !can ? (
-        <p className="px-6 pb-4 text-sm text-grid-muted">{t("task.noAttachments")}</p>
+        <p className="px-6 pb-4 text-sm text-muted-foreground">{t("task.noAttachments")}</p>
       ) : null}
     </Section>
   );
@@ -788,13 +788,13 @@ function CommentBody({ c, dir }: { c: Comment; dir: Directory }) {
   const mentioned = new Set(c.mentions.map((id) => dir.name(id).toLowerCase()));
   const parts = c.body.split(MENTION_TOKEN);
   return (
-    <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">
+    <p className="text-sm whitespace-pre-wrap text-nq-fg-body" dir="auto">
       {parts.map((part, i) => {
         if (i % 2 === 1) {
           const h = part.slice(1).toLowerCase();
           const hit = [...mentioned].some((e) => e === h || e.split("@")[0] === h);
           return hit ? (
-            <span key={i} className="font-medium text-grid-action" dir="ltr" data-mention>
+            <span key={i} className="font-medium text-nq-accent-text" dir="ltr" data-mention>
               {part}
             </span>
           ) : (
@@ -915,8 +915,8 @@ function Comments({
             <li key={c.id} className="flex gap-3" data-comment={c.id}>
               <PersonAvatar id={c.author_id} dir={dir} className="mt-0.5" />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 text-meta text-grid-muted">
-                  <span className="font-medium text-grid-fg" dir="ltr">
+                <div className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
+                  <span className="font-medium text-foreground" dir="ltr">
                     {dir.name(c.author_id)}
                   </span>
                   {c.author_kind === "agent" ? (
@@ -991,7 +991,7 @@ function Comments({
           ))}
         </ol>
       ) : (
-        <p className="px-6 pb-3 text-sm text-grid-muted">{t("task.noComments")}</p>
+        <p className="px-6 pb-3 text-sm text-muted-foreground">{t("task.noComments")}</p>
       )}
       {can ? (
         <div className="relative px-6 pb-5">
@@ -1010,7 +1010,7 @@ function Comments({
             <ul
               role="listbox"
               aria-label={t("task.mentionSomeone")}
-              className="brand-surface absolute inset-x-6 z-10 mt-1 border border-line bg-popover py-1 shadow-md"
+              className="brand-surface absolute inset-x-6 z-10 mt-1 border border-border bg-popover py-1 shadow-md"
             >
               {suggestions.map((m, i) => (
                 <li
@@ -1023,13 +1023,13 @@ function Comments({
                   }}
                   className={cn(
                     "flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm",
-                    i === active && "bg-grid-soft",
+                    i === active && "bg-muted",
                   )}
                 >
                   <span className="font-medium" dir="ltr">
                     @{handleFor(m.email, emails)}
                   </span>
-                  <span className="truncate text-meta text-grid-muted" dir="ltr">
+                  <span className="truncate text-caption text-muted-foreground" dir="ltr">
                     {m.email}
                   </span>
                 </li>
@@ -1037,7 +1037,7 @@ function Comments({
             </ul>
           ) : null}
           <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-meta text-grid-muted">{t("task.commentHint")}</p>
+            <p className="text-caption text-muted-foreground">{t("task.commentHint")}</p>
             <Button variant="primary" size="sm" disabled={busy || !body.trim()} onClick={() => void send()}>
               {busy ? t("common.working") : t("task.addComment")}
             </Button>
@@ -1073,7 +1073,7 @@ function useCard(taskKey: string) {
 
 function MicroLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="font-mono text-xs tracking-wider text-grid-muted uppercase">{children}</span>
+    <span className="font-mono text-xs tracking-wider text-muted-foreground uppercase">{children}</span>
   );
 }
 
@@ -1097,7 +1097,7 @@ export function CardPlanning({ taskKey }: { taskKey: string }) {
     return l;
   };
   return (
-    <div className="flex flex-col gap-4 border-t border-line pt-4">
+    <div className="flex flex-col gap-4 border-t border-border pt-4">
       {!d.project.archived ? <StartTimerButton task={{ id: d.id, key: d.key, title: d.title }} /> : null}
       <div className="flex flex-col gap-1.5">
         <MicroLabel>{t("task.assignees")}</MicroLabel>
@@ -1145,7 +1145,7 @@ export function CardPlanning({ taskKey }: { taskKey: string }) {
               if (n !== (d.estimate_minutes ?? 0)) void patch({ estimate_minutes: n });
             }}
           />
-          <span className="text-meta text-grid-muted">{t("task.minutes")}</span>
+          <span className="text-caption text-muted-foreground">{t("task.minutes")}</span>
         </div>
       </div>
     </div>

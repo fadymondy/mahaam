@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { BrainIcon, CopyIcon, EyeIcon, EyeOffIcon, KeyRoundIcon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Tabs, TabsList, TabsTab, Textarea } from "@fadymondy/nasaq/web"
@@ -101,7 +101,7 @@ export default function VaultPage() {
     <div className="space-y-4 p-6">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-56 flex-1">
-          <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-grid-muted" aria-hidden />
+          <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("vault.search")} className="ps-8" aria-label={t("vault.search")} />
         </div>
         <Tabs value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
@@ -122,7 +122,7 @@ export default function VaultPage() {
           </Button>
         ) : null}
       </div>
-      <p className="text-sm text-grid-muted">{t("vault.hint")}</p>
+      <p className="text-sm text-muted-foreground">{t("vault.hint")}</p>
 
       {list.error ? (
         <ErrorState error={list.error} />
@@ -131,14 +131,14 @@ export default function VaultPage() {
       ) : items.length === 0 ? (
         <EmptyState title={query ? t("vault.noMatch") : t("vault.empty")} body={query ? undefined : t("vault.emptyBody")} />
       ) : (
-        <ul className="divide-y divide-line border border-line">
+        <ul className="divide-y divide-line border border-border">
           {items.map((v) => (
             <li key={v.id} className="space-y-2 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 {v.kind === "secret" ? (
-                  <KeyRoundIcon className="size-4 text-grid-gold-text" aria-hidden />
+                  <KeyRoundIcon className="size-4 text-nq-warning-text" aria-hidden />
                 ) : (
-                  <BrainIcon className="size-4 text-grid-muted" aria-hidden />
+                  <BrainIcon className="size-4 text-muted-foreground" aria-hidden />
                 )}
                 <h3 className="font-medium" dir="auto">
                   {v.title}
@@ -149,16 +149,16 @@ export default function VaultPage() {
                     {tag}
                   </Badge>
                 ))}
-                <span className="ms-auto text-meta text-grid-muted">{t("vault.updated", { when: timeAgo(v.updated_at, locale) })}</span>
+                <span className="ms-auto text-caption text-muted-foreground">{t("vault.updated", { when: timeAgo(v.updated_at, locale) })}</span>
               </div>
               {v.body ? (
-                <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">
+                <p className="text-sm whitespace-pre-wrap text-nq-fg-body" dir="auto">
                   {v.body}
                 </p>
               ) : null}
               {v.kind === "secret" ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  <code dir="ltr" className="min-w-0 flex-1 truncate border border-line bg-grid-soft px-2 py-1 font-mono text-xs">
+                  <code dir="ltr" className="min-w-0 flex-1 truncate border border-border bg-muted px-2 py-1 font-mono text-xs">
                     {revealed[v.id] ?? "••••••••••••"}
                   </code>
                   {canSecrets ? (
@@ -172,7 +172,7 @@ export default function VaultPage() {
                     </Button>
                   ) : null}
                   {v.last_revealed_at ? (
-                    <span className="text-meta text-grid-muted">{t("vault.lastRevealed", { when: timeAgo(v.last_revealed_at, locale) })}</span>
+                    <span className="text-caption text-muted-foreground">{t("vault.lastRevealed", { when: timeAgo(v.last_revealed_at, locale) })}</span>
                   ) : null}
                 </div>
               ) : null}

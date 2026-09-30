@@ -39,19 +39,19 @@ export default function ProjectOverviewPage() {
 
   return (
     <>
-      <section className="grid gap-px border-b border-line bg-grid-line sm:grid-cols-3" aria-label={t("projects.progress")}>
+      <section className="grid gap-px border-b border-border bg-border sm:grid-cols-3" aria-label={t("projects.progress")}>
         {(["todo", "doing", "done"] as const).map((c) => (
-          <div key={c} className="bg-grid-bg px-6 py-4">
-            <p className="grid-micro">{t(`category.${c}`)}</p>
-            <p className="mt-1 text-2xl font-medium text-grid-fg">
+          <div key={c} className="bg-background px-6 py-4">
+            <p className="text-eyebrow uppercase">{t(`category.${c}`)}</p>
+            <p className="mt-1 text-2xl font-medium text-foreground">
               <Ltr>{p.tasks[c]}</Ltr>
             </p>
           </div>
         ))}
       </section>
-      <div className="flex items-center gap-3 border-b border-line px-6 py-3">
+      <div className="flex items-center gap-3 border-b border-border px-6 py-3">
         <Progress value={pct} className="max-w-sm flex-1" aria-label={t("projects.progress")} />
-        <span className="text-sm text-grid-muted">
+        <span className="text-sm text-muted-foreground">
           <Ltr>{pct}%</Ltr> {t("project.done")}
         </span>
         {ws.can("reports:read") ? <ProjectReportMenu projectId={p.id} className="ms-auto" /> : null}
@@ -59,17 +59,17 @@ export default function ProjectOverviewPage() {
 
       <ProjectBudgetPanel projectId={p.id} canManage={p.can_manage} settingsHref={`${base}/settings`} />
 
-      {p.description ? <p className="border-b border-line px-6 py-4 text-sm whitespace-pre-wrap text-grid-body">{p.description}</p> : null}
+      {p.description ? <p className="border-b border-border px-6 py-4 text-sm whitespace-pre-wrap text-nq-fg-body">{p.description}</p> : null}
 
-      <dl className="grid grid-cols-2 gap-px border-b border-line bg-grid-line text-sm md:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-px border-b border-border bg-border text-sm md:grid-cols-4">
         {facts.map(([label, value]) => (
-          <div key={label} className="bg-grid-bg px-6 py-3">
-            <dt className="grid-micro mb-1">{label}</dt>
-            <dd className="text-grid-fg">{value}</dd>
+          <div key={label} className="bg-background px-6 py-3">
+            <dt className="text-eyebrow uppercase mb-1">{label}</dt>
+            <dd className="text-foreground">{value}</dd>
           </div>
         ))}
-        <div className="bg-grid-bg px-6 py-3">
-          <dt className="grid-micro mb-1">{t("project.people")}</dt>
+        <div className="bg-background px-6 py-3">
+          <dt className="text-eyebrow uppercase mb-1">{t("project.people")}</dt>
           <dd>{people.length ? <AvatarStack ids={people} dir={dir} max={6} /> : "—"}</dd>
         </div>
       </dl>

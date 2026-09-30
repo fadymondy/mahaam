@@ -27,10 +27,10 @@ export default function AdminDashboard() {
 
 function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="space-y-1 bg-grid-card px-5 py-4">
-      <p className="grid-micro">{label}</p>
-      <Ltr className="block text-2xl font-semibold text-grid-fg tabular-nums">{value}</Ltr>
-      {sub ? <p className="text-meta text-grid-muted">{sub}</p> : null}
+    <div className="space-y-1 bg-card px-5 py-4">
+      <p className="text-eyebrow uppercase">{label}</p>
+      <Ltr className="block text-2xl font-semibold text-foreground tabular-nums">{value}</Ltr>
+      {sub ? <p className="text-caption text-muted-foreground">{sub}</p> : null}
     </div>
   )
 }
@@ -41,7 +41,7 @@ function Dashboard({ s }: { s: AdminStats }) {
   const hours = Math.round(s.time_seconds / 3600)
   return (
     <div className="space-y-8 pb-10">
-      <div className="grid grid-cols-2 gap-px border-y border-line bg-line lg:grid-cols-4" data-stat-tiles>
+      <div className="grid grid-cols-2 gap-px border-y border-border bg-line lg:grid-cols-4" data-stat-tiles>
         <Tile label={t("admin.stats.users")} value={n(s.users)} sub={t("admin.stats.usersSub", { admins: n(s.admins), suspended: n(s.suspended_users) })} />
         <Tile label={t("admin.stats.activeUsers")} value={n(s.active_users_7d)} sub={t("admin.stats.last30", { n: n(s.active_users_30d) })} />
         <Tile label={t("admin.stats.workspaces")} value={n(s.workspaces)} sub={t("admin.stats.suspended", { n: n(s.suspended_workspaces) })} />
@@ -53,19 +53,19 @@ function Dashboard({ s }: { s: AdminStats }) {
       </div>
 
       <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("admin.dashboard.signups")}</h2>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("admin.dashboard.signups")}</h2>
         <div className="px-4">
           <SignupsChart data={s.signups ?? []} />
         </div>
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("admin.dashboard.plans")}</h2>
-        <ul className="divide-y divide-line border-y border-line" data-plan-counts>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("admin.dashboard.plans")}</h2>
+        <ul className="divide-y divide-line border-y border-border" data-plan-counts>
           {(s.plans ?? []).map((p) => (
             <li key={p.plan} className="flex items-center justify-between px-6 py-2.5 text-sm">
               <span>
-                {planName(p, locale)} <Ltr className="text-meta text-grid-muted">{p.plan}</Ltr>
+                {planName(p, locale)} <Ltr className="text-caption text-muted-foreground">{p.plan}</Ltr>
               </span>
               <Ltr className="tabular-nums">{n(p.count)}</Ltr>
             </li>
@@ -79,8 +79,8 @@ function Dashboard({ s }: { s: AdminStats }) {
 function SignupsChart({ data }: { data: { day: string; users: number; workspaces: number }[] }) {
   const { t, locale, isRtl } = useTranslations()
   const config = {
-    users: { label: t("admin.stats.users"), color: "var(--grid-action)" },
-    workspaces: { label: t("admin.stats.workspaces"), color: "var(--grid-brand-accent)" },
+    users: { label: t("admin.stats.users"), color: "var(--nq-action)" },
+    workspaces: { label: t("admin.stats.workspaces"), color: "var(--nq-accent)" },
   } satisfies ChartConfig
   return (
     <ChartContainer config={config} className="aspect-auto h-64 w-full" role="img" aria-label={t("admin.dashboard.signups")} data-signups-chart={data.length}>

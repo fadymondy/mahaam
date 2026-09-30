@@ -118,7 +118,7 @@ export function ResetPasswordForm() {
           ) : (
             <form onSubmit={reset} noValidate>
               <div className="flex flex-col gap-4">
-                {notice ? <p className="text-sm text-grid-muted" role="status">{notice}</p> : null}
+                {notice ? <p className="text-sm text-muted-foreground" role="status">{notice}</p> : null}
                 <Field data-invalid={!!error || undefined}>
                   <FieldLabel htmlFor="code">{t("auth.resetCode")}</FieldLabel>
                   <Input
@@ -158,8 +158,8 @@ export function ResetPasswordForm() {
               </div>
             </form>
           )}
-          <p className="mt-6 text-center text-sm text-grid-muted">
-            <Link href={`/${locale}/login`} className="font-medium text-grid-fg underline underline-offset-4">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            <Link href={`/${locale}/login`} className="font-medium text-foreground underline underline-offset-4">
               {t("auth.backToSignIn")}
             </Link>
           </p>

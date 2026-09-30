@@ -56,13 +56,13 @@ export function ColorPicker({ value, onChange, label }: { value: string; onChang
           title={t(`palette.${k}`)}
           onClick={() => onChange(k)}
           className={cn(
-            "flex size-7 items-center justify-center border transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-grid-action",
-            value === k ? "border-grid-fg" : "border-line",
+            "flex size-7 items-center justify-center border transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-nq-action",
+            value === k ? "border-foreground" : "border-border",
           )}
           style={{ background: soft(k) }}
         >
           <span className="flex size-4 items-center justify-center rounded-full" style={{ background: solid(k) }}>
-            {value === k ? <CheckIcon className="size-3 text-grid-bg" /> : null}
+            {value === k ? <CheckIcon className="size-3 text-background" /> : null}
           </span>
         </button>
       ))}

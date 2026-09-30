@@ -2,7 +2,7 @@
 
 import { useState, type ReactElement, type ReactNode } from "react"
 import { ExternalLinkIcon, LinkIcon, LockIcon, PencilIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@fadymondy/nasaq/web"
 

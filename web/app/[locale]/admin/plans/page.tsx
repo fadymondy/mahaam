@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { PlusIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
@@ -47,7 +47,7 @@ export default function AdminPlansPage() {
       ) : rows.length === 0 ? (
         <EmptyState title={t("admin.plans.empty")} />
       ) : (
-        <div className="border-y border-line">
+        <div className="border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -68,7 +68,7 @@ export default function AdminPlansPage() {
                     <Link href={`/${locale}/admin/plans/${encodeURIComponent(p.key)}`} className="font-medium hover:underline">
                       {planName(p, locale)}
                     </Link>{" "}
-                    <Ltr className="text-meta text-grid-muted">{p.key}</Ltr>
+                    <Ltr className="text-caption text-muted-foreground">{p.key}</Ltr>
                     {!p.active ? (
                       <Badge variant="outline" className="ms-2">
                         {t("admin.plans.inactive")}
@@ -77,9 +77,9 @@ export default function AdminPlansPage() {
                   </TableCell>
                   <TableCell>
                     <Ltr>{money(p.base_fee_minor, p.currency, locale)}</Ltr>
-                    <span className="block text-meta text-grid-muted">{locale === "ar" ? p.price_label_ar : p.price_label_en}</span>
+                    <span className="block text-caption text-muted-foreground">{locale === "ar" ? p.price_label_ar : p.price_label_en}</span>
                   </TableCell>
-                  <TableCell className="hidden text-meta text-grid-body lg:table-cell">
+                  <TableCell className="hidden text-caption text-nq-fg-body lg:table-cell">
                     {SUMMARY.map((k) => {
                       const r = p.limits?.[k]
                       return (
@@ -95,7 +95,7 @@ export default function AdminPlansPage() {
                         {plans.data.polar_products[p.key]}
                       </Ltr>
                     ) : (
-                      <span className="text-meta text-grid-muted">{t("billing.notSynced")}</span>
+                      <span className="text-caption text-muted-foreground">{t("billing.notSynced")}</span>
                     )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -165,8 +165,8 @@ function PolarSync({ onApplied }: { onApplied: () => void }) {
     <section className="space-y-3 py-8" data-polar-sync>
       <div className="flex flex-wrap items-end justify-between gap-3 px-6">
         <div className="space-y-1">
-          <h2 className="text-sm font-medium text-grid-fg">{t("billing.sync.title")}</h2>
-          <p className="text-sm text-grid-muted">{t("billing.sync.hint")}</p>
+          <h2 className="text-sm font-medium text-foreground">{t("billing.sync.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("billing.sync.hint")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" disabled={busy} onClick={() => run(true)}>
@@ -178,13 +178,13 @@ function PolarSync({ onApplied }: { onApplied: () => void }) {
         </div>
       </div>
       {error ? (
-        <p role="alert" className="border-y border-line px-6 py-3 text-sm text-grid-danger-text">
+        <p role="alert" className="border-y border-border px-6 py-3 text-sm text-nq-danger-text">
           {error}
         </p>
       ) : actions === null ? null : actions.length === 0 ? (
-        <p className="border-y border-line px-6 py-3 text-sm text-grid-muted">{t("billing.sync.nothing")}</p>
+        <p className="border-y border-border px-6 py-3 text-sm text-muted-foreground">{t("billing.sync.nothing")}</p>
       ) : (
-        <ul className="divide-y divide-line border-y border-line">
+        <ul className="divide-y divide-line border-y border-border">
           {actions.map((a, i) => (
             <li key={i} className="px-6 py-2">
               <Ltr mono className="text-xs">

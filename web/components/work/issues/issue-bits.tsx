@@ -24,9 +24,9 @@ import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 const TYPE_ICON: Record<string, { Icon: LucideIcon; tone: string }> = {
-  bug: { Icon: BugIcon, tone: "text-grid-danger" },
+  bug: { Icon: BugIcon, tone: "text-nq-danger-text" },
   feature: { Icon: SparklesIcon, tone: "text-(--nq-tag-amber)" },
-  task: { Icon: CheckSquareIcon, tone: "text-grid-action" },
+  task: { Icon: CheckSquareIcon, tone: "text-nq-accent-text" },
   story: { Icon: BookmarkIcon, tone: "text-(--nq-tag-green)" },
   epic: { Icon: ZapIcon, tone: "text-(--nq-tag-violet)" },
 }
@@ -38,12 +38,12 @@ export function IssueTypeIcon({ type, className }: { type: string; className?: s
 }
 
 const PRIORITY_MARK: Record<string, { Icon: LucideIcon; tone: string }> = {
-  highest: { Icon: ChevronsUpIcon, tone: "text-grid-danger" },
-  urgent: { Icon: ChevronsUpIcon, tone: "text-grid-danger" },
+  highest: { Icon: ChevronsUpIcon, tone: "text-nq-danger-text" },
+  urgent: { Icon: ChevronsUpIcon, tone: "text-nq-danger-text" },
   high: { Icon: ChevronUpIcon, tone: "text-(--nq-tag-orange)" },
   medium: { Icon: EqualIcon, tone: "text-(--nq-tag-amber)" },
-  low: { Icon: ChevronDownIcon, tone: "text-grid-action" },
-  lowest: { Icon: ChevronsDownIcon, tone: "text-grid-muted" },
+  low: { Icon: ChevronDownIcon, tone: "text-nq-accent-text" },
+  lowest: { Icon: ChevronsDownIcon, tone: "text-muted-foreground" },
 }
 
 export function IssuePriorityMark({ priority, withLabel, className }: { priority: string; withLabel?: boolean; className?: string }) {
@@ -53,7 +53,7 @@ export function IssuePriorityMark({ priority, withLabel, className }: { priority
   return (
     <span className={cn("inline-flex items-center gap-1", m.tone, className)} title={label}>
       <m.Icon className="size-3.5 shrink-0" aria-hidden />
-      {withLabel ? <span className="text-meta font-medium">{label}</span> : <span className="sr-only">{label}</span>}
+      {withLabel ? <span className="text-caption font-medium">{label}</span> : <span className="sr-only">{label}</span>}
     </span>
   )
 }
@@ -100,7 +100,7 @@ export function AuthorKindBadge({ kind }: { kind: string }) {
       variant="outline"
       className={cn(
         "gap-1 text-xs",
-        kind === "agent" && "border-grid-action/40 text-grid-action",
+        kind === "agent" && "border-nq-action/40 text-nq-accent-text",
         kind === "admin" && "border-(--nq-tag-orange)/40 text-(--nq-tag-orange)",
       )}
     >
@@ -120,7 +120,7 @@ export function IssueSourceChip({ issue }: { issue: { type: string; source: stri
   return (
     <span className="inline-flex items-center gap-1" data-issue-source={issue.source}>
       <IssueTypeIcon type={issue.type} />
-      <span className="rounded-sm border border-line px-1 text-xs uppercase tracking-wide">
+      <span className="rounded-sm border border-border px-1 text-xs uppercase tracking-wide">
         {known.includes(issue.source) ? t(`issues.source.${issue.source}`) : issue.source}
       </span>
       {issue.screenshot ? <ImageIcon className="size-3" aria-label={t("issues.hasScreenshot")} role="img" /> : null}

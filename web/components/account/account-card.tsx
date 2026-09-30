@@ -7,7 +7,7 @@ import { useMemo, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
 
@@ -45,9 +45,9 @@ export function AccountCard() {
   const profile = useSWR<Profile>(PROFILE, (p: string) => api<Profile>(p))
 
   return (
-    <section className="border-y border-line px-6 py-5" data-account-card>
+    <section className="border-y border-border px-6 py-5" data-account-card>
       <h2 className="text-base font-medium">{t("account.title")}</h2>
-      <p className="mt-1 max-w-2xl text-sm text-grid-muted">{t("account.hint")}</p>
+      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("account.hint")}</p>
       <div className="mt-5">
         {profile.error ? (
           <ErrorState error={profile.error} />
@@ -144,10 +144,10 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
           {profile.avatar ? (
             // A data: URL the API produced (256px JPEG); next/image adds nothing for one.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.avatar} alt="" className="size-16 rounded-full border border-line object-cover" data-avatar />
+            <img src={profile.avatar} alt="" className="size-16 rounded-full border border-border object-cover" data-avatar />
           ) : (
             <span
-              className="grid size-16 place-items-center rounded-full border border-line bg-grid-soft text-lg font-medium text-grid-muted"
+              className="grid size-16 place-items-center rounded-full border border-border bg-muted text-lg font-medium text-muted-foreground"
               aria-hidden
               data-avatar-initials
             >
@@ -273,7 +273,7 @@ function EmailForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profil
 
   return (
     <div>
-      <h3 className="grid-micro mb-2">{t("account.email")}</h3>
+      <h3 className="text-eyebrow uppercase mb-2">{t("account.email")}</h3>
       <Ltr className="block truncate text-sm" data-current-email>
         {profile.email}
       </Ltr>
@@ -313,7 +313,7 @@ function EmailForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profil
       ) : (
         <form onSubmit={confirm} noValidate className="mt-4">
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-grid-muted" role="status">
+            <p className="text-sm text-muted-foreground" role="status">
               {t("account.emailSent", { email: email.trim() })}
             </p>
             <Field data-invalid={!!error || undefined}>
@@ -375,7 +375,7 @@ function PasswordForm() {
 
   return (
     <form onSubmit={save} noValidate>
-      <h3 className="grid-micro mb-2">{t("account.password")}</h3>
+      <h3 className="text-eyebrow uppercase mb-2">{t("account.password")}</h3>
       <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="acc-pw-current">{t("account.currentPassword")}</FieldLabel>
@@ -449,9 +449,9 @@ function DeleteAccount() {
   }
 
   return (
-    <div className="mt-8 border-t border-line pt-5" data-delete-account>
-      <h3 className="grid-micro mb-2 text-grid-danger">{t("account.deleteTitle")}</h3>
-      <p className="max-w-2xl text-sm text-grid-muted">{t("account.deleteHint")}</p>
+    <div className="mt-8 border-t border-border pt-5" data-delete-account>
+      <h3 className="text-eyebrow uppercase mb-2 text-nq-danger-text">{t("account.deleteTitle")}</h3>
+      <p className="max-w-2xl text-sm text-muted-foreground">{t("account.deleteHint")}</p>
       {!open ? (
         <Button type="button" variant="danger" size="sm" className="mt-3" onClick={() => setOpen(true)}>
           {t("account.deleteOpen")}
@@ -489,7 +489,7 @@ function DeleteAccount() {
             ) : null}
             {error ? <FieldError>{error}</FieldError> : null}
             {owned ? (
-              <div className="rounded-md border border-line p-3 text-sm" role="alert" data-sole-owner>
+              <div className="rounded-md border border-border p-3 text-sm" role="alert" data-sole-owner>
                 <p>{t("account.deleteSoleOwner")}</p>
                 <ul className="mt-2 list-disc ps-5">
                   {owned.map((w) => (

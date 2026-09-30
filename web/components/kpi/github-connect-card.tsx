@@ -5,7 +5,7 @@
 // browser back to /{locale}/w/{slug}/me?github=connected (or ?github_error=…).
 import { useState } from "react"
 import { GitBranchIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Badge, Button } from "@fadymondy/nasaq/web"
 
@@ -47,13 +47,13 @@ export function GitHubConnectCard() {
 
   const acc = status.data?.account
   return (
-    <section className="border-y border-line px-6 py-5">
+    <section className="border-y border-border px-6 py-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-base font-medium">
             <GitBranchIcon className="size-4" aria-hidden /> {t("kpi.connectTitle")}
           </h2>
-          <p className="mt-1 max-w-2xl text-sm text-grid-muted">{t("kpi.connectHint")}</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("kpi.connectHint")}</p>
         </div>
         {status.data ? (
           acc ? (
@@ -75,25 +75,25 @@ export function GitHubConnectCard() {
         ) : acc ? (
           <dl className="grid gap-2 text-sm sm:grid-cols-3">
             <div>
-              <dt className="grid-micro mb-1">{t("kpi.login")}</dt>
+              <dt className="text-eyebrow uppercase mb-1">{t("kpi.login")}</dt>
               <dd className="flex items-center gap-2">
                 <Ltr>@{acc.login}</Ltr>
                 <Badge variant="outline">{t(`kpi.via.${acc.connected_via}`)}</Badge>
               </dd>
             </div>
             <div>
-              <dt className="grid-micro mb-1">{t("kpi.emails")}</dt>
+              <dt className="text-eyebrow uppercase mb-1">{t("kpi.emails")}</dt>
               <dd className="space-y-0.5">
                 {(acc.emails ?? []).length === 0 ? "—" : (acc.emails ?? []).map((e) => <Ltr key={e} className="block truncate">{e}</Ltr>)}
               </dd>
             </div>
             <div>
-              <dt className="grid-micro mb-1">{t("kpi.connectedAt")}</dt>
+              <dt className="text-eyebrow uppercase mb-1">{t("kpi.connectedAt")}</dt>
               <dd>{formatDate(acc.connected_at)}</dd>
             </div>
           </dl>
         ) : (
-          <p className="text-sm text-grid-muted">{status.data.oauth_available ? t("kpi.notConnectedBody") : t("kpi.oauthOff")}</p>
+          <p className="text-sm text-muted-foreground">{status.data.oauth_available ? t("kpi.notConnectedBody") : t("kpi.oauthOff")}</p>
         )}
       </div>
     </section>

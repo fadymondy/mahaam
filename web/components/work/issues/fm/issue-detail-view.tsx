@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon, ClockIcon, SendIcon, SparklesIcon, UserRoundIcon } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@fadymondy/nasaq/web";
 
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
 
@@ -144,9 +144,9 @@ export function IssueDetailView({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-3">
         <Link
-          className="flex items-center gap-1.5 px-1 font-mono text-sm text-grid-muted transition-colors hover:text-grid-fg"
+          className="flex items-center gap-1.5 px-1 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
           href={back}
         >
           <ArrowLeftIcon className="size-4 rtl:-scale-x-100" />
@@ -161,16 +161,16 @@ export function IssueDetailView({
         />
       </div>
 
-      <header className="border-b border-line px-4 py-8">
+      <header className="border-b border-border px-4 py-8">
         <h1 dir="auto" className="text-3xl font-medium tracking-tight text-balance">
           {report.title}
         </h1>
 
-        <dl className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm text-grid-muted">
+        <dl className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm text-muted-foreground">
           <dt className="sr-only">Key</dt>
           <dd dir="ltr">{report.key}</dd>
 
-          <span aria-hidden className="text-grid-muted/50">
+          <span aria-hidden className="text-muted-foreground/50">
             ·
           </span>
           <dt className="sr-only">Created</dt>
@@ -186,7 +186,7 @@ export function IssueDetailView({
 
           {report.human_only ? (
             <>
-              <span aria-hidden className="text-grid-muted/50">
+              <span aria-hidden className="text-muted-foreground/50">
                 ·
               </span>
               <dd className="flex items-center gap-1">
@@ -198,10 +198,10 @@ export function IssueDetailView({
 
           {agentTime ? (
             <>
-              <span aria-hidden className="text-grid-muted/50">
+              <span aria-hidden className="text-muted-foreground/50">
                 ·
               </span>
-              <dd className={cn("flex items-center gap-1", busy && "text-grid-action")}>
+              <dd className={cn("flex items-center gap-1", busy && "text-nq-accent-text")}>
                 <ClockIcon className="size-3.5" />
                 <span dir="ltr">{agentTime}</span>
               </dd>
@@ -210,7 +210,7 @@ export function IssueDetailView({
 
           {aiCost ? (
             <>
-              <span aria-hidden className="text-grid-muted/50">
+              <span aria-hidden className="text-muted-foreground/50">
                 ·
               </span>
               <dd className="flex items-center gap-1" title={t("issues.aiCost")}>
@@ -224,21 +224,21 @@ export function IssueDetailView({
 
       {/* Two columns, like the sheet: the item's content, and a side menu with every field. */}
       <div className="grid lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="min-w-0 lg:border-e border-line">
+        <div className="min-w-0 lg:border-e border-border">
           {report.body ? (
-            <div className="border-b border-line px-4 py-8">
+            <div className="border-b border-border px-4 py-8">
               <Markdown>{report.body}</Markdown>
             </div>
           ) : null}
 
           <ContextPanel issue={report} />
 
-          <div className="border-b border-line px-4 pb-4">
+          <div className="border-b border-border px-4 pb-4">
             <CardExtras taskKey={report.key} />
           </div>
 
           <section id="comments">
-            <h2 className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-3 font-mono text-xs tracking-wider text-grid-muted uppercase">
+            <h2 className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-3 font-mono text-xs tracking-wider text-muted-foreground uppercase">
               {t("issues.comments")}
               <span dir="ltr" className="tabular-nums">
                 {comments.length}
@@ -248,10 +248,10 @@ export function IssueDetailView({
             {comments.length > 0 ? (
               <ul>
                 {comments.map((comment) => (
-                  <li key={comment.id} className="border-b border-line p-4">
-                    <p className="flex flex-wrap items-center gap-x-2 font-mono text-xs text-grid-muted">
+                  <li key={comment.id} className="border-b border-border p-4">
+                    <p className="flex flex-wrap items-center gap-x-2 font-mono text-xs text-muted-foreground">
                       <span dir="ltr">{author(comment)}</span>
-                      <span aria-hidden className="text-grid-muted/50">
+                      <span aria-hidden className="text-muted-foreground/50">
                         ·
                       </span>
                       <time dateTime={comment.created_at}>
@@ -263,7 +263,7 @@ export function IssueDetailView({
                 ))}
               </ul>
             ) : (
-              <p className="border-b border-line px-4 py-6 text-sm text-grid-muted">
+              <p className="border-b border-border px-4 py-6 text-sm text-muted-foreground">
                 {t("issues.noComments")}
               </p>
             )}
@@ -278,7 +278,7 @@ export function IssueDetailView({
                   disabled={form.posting}
                   placeholder={t("issues.commentPlaceholder")}
                 />
-                <p className="text-meta text-grid-muted">{t("issues.mentionHint")}</p>
+                <p className="text-caption text-muted-foreground">{t("issues.mentionHint")}</p>
 
                 {form.error ? (
                   <p role="alert" className="text-sm text-destructive">
@@ -300,19 +300,19 @@ export function IssueDetailView({
           </section>
         </div>
 
-        <aside className="min-w-0 max-lg:border-t border-line lg:sticky lg:top-14 lg:max-h-[calc(100vh-3.5rem)] lg:self-start lg:overflow-y-auto">
+        <aside className="min-w-0 max-lg:border-t border-border lg:sticky lg:top-14 lg:max-h-[calc(100vh-3.5rem)] lg:self-start lg:overflow-y-auto">
           {/* Editable fields — each writes straight through, no save button. */}
-          <dl className="flex flex-col border-b border-line">
+          <dl className="flex flex-col border-b border-border">
             {fields.map((field, i) => (
               <div
                 key={field.key}
                 className={cn(
                   "flex flex-col gap-2 p-4",
                   i < fields.length - 1 && "border-b",
-                  "border-line",
+                  "border-border",
                 )}
               >
-                <dt className="font-mono text-xs tracking-wider text-grid-muted uppercase">
+                <dt className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
                   {field.label}
                 </dt>
                 <dd>
@@ -339,12 +339,12 @@ export function IssueDetailView({
             ))}
           </dl>
 
-          <section className="border-b border-line p-4 [&>div]:border-t-0 [&>div]:pt-0 ">
+          <section className="border-b border-border p-4 [&>div]:border-t-0 [&>div]:pt-0 ">
             <CardPlanning taskKey={report.key} />
           </section>
 
-          <section className="border-b border-line p-4">
-            <h2 className="mb-4 font-mono text-xs tracking-wider text-grid-muted uppercase">
+          <section className="border-b border-border p-4">
+            <h2 className="mb-4 font-mono text-xs tracking-wider text-muted-foreground uppercase">
               {t("issues.agent.title")}
             </h2>
             <IssueAgentSettings issue={report} onPatch={patch} disabled={!canWrite} />

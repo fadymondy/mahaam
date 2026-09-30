@@ -66,15 +66,15 @@ export function AttachmentDropzone({
         {...getRootProps()}
         data-dropzone
         className={cn(
-          "flex flex-col items-center justify-center gap-2 border border-dashed border-line px-4 py-5 text-center transition-colors",
-          isDragActive && "border-grid-action bg-grid-soft",
+          "flex flex-col items-center justify-center gap-2 border border-dashed border-border px-4 py-5 text-center transition-colors",
+          isDragActive && "border-nq-action bg-muted",
           disabled && "opacity-50",
         )}
       >
         <input {...getInputProps()} aria-label={t("upload.choose")} />
-        <CloudUpload className="size-5 text-grid-muted" />
-        <p className="text-sm text-grid-body">{isDragActive ? t("upload.drop") : t("upload.hint")}</p>
-        <p className="text-xs text-grid-muted">{t("upload.limit")}</p>
+        <CloudUpload className="size-5 text-muted-foreground" />
+        <p className="text-sm text-nq-fg-body">{isDragActive ? t("upload.drop") : t("upload.hint")}</p>
+        <p className="text-xs text-muted-foreground">{t("upload.limit")}</p>
         <Button type="button" variant="secondary" size="sm" onClick={open} disabled={disabled}>
           {t("upload.browse")}
         </Button>
@@ -82,17 +82,17 @@ export function AttachmentDropzone({
       {items.length > 0 ? (
         <ul className="space-y-1" aria-live="polite">
           {items.map((i) => (
-            <li key={i.id} className="flex items-center gap-3 border border-line bg-grid-card px-3 py-2 text-sm">
-              <FileIcon className="size-4 shrink-0 text-grid-muted" />
+            <li key={i.id} className="flex items-center gap-3 border border-border bg-card px-3 py-2 text-sm">
+              <FileIcon className="size-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium" dir="auto">
                   {i.name}
                 </p>
-                <p className={cn("flex items-center gap-1.5 text-xs", i.status === "error" ? "text-grid-danger-text" : "text-grid-muted")}>
+                <p className={cn("flex items-center gap-1.5 text-xs", i.status === "error" ? "text-nq-danger-text" : "text-muted-foreground")}>
                   <Ltr>{fileSize(i.size)}</Ltr>
                   <span aria-hidden>·</span>
                   {i.status === "uploading" ? <Loader2 className="size-3 animate-spin" /> : null}
-                  {i.status === "done" ? <CheckCircle2 className="size-3 text-grid-ok-text" /> : null}
+                  {i.status === "done" ? <CheckCircle2 className="size-3 text-nq-ok-text" /> : null}
                   {i.status === "error" ? <TriangleAlert className="size-3" /> : null}
                   {i.status === "uploading" ? t("upload.uploading") : i.status === "done" ? t("upload.done") : i.message}
                 </p>

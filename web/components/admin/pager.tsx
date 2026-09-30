@@ -16,7 +16,7 @@ export function Pager({ page, perPage, total, onPage }: { page: number; perPage:
   const { t } = useTranslations()
   const pages = Math.max(1, Math.ceil(total / Math.max(1, perPage)))
   return (
-    <div className="flex items-center justify-between gap-3 px-6 py-3 text-sm text-grid-muted" data-pager>
+    <div className="flex items-center justify-between gap-3 px-6 py-3 text-sm text-muted-foreground" data-pager>
       <span>
         {t("admin.pager", { page: "⁨" + page + "⁩", pages: "⁨" + pages + "⁩" })} · <Ltr>{total}</Ltr> {t("admin.total")}
       </span>
@@ -73,7 +73,7 @@ export function SearchBox({ onSearch, placeholder }: { onSearch: (q: string) => 
   }, [q])
   return (
     <div className="relative w-full sm:w-72">
-      <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-grid-muted" />
+      <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} aria-label={placeholder} className="h-9 ps-8" type="search" />
     </div>
   )

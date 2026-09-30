@@ -64,7 +64,7 @@ export default function OverviewPage() {
         </Button>
       </div>
 
-      <dl className="grid grid-cols-1 divide-y divide-line border-y border-line text-sm sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
+      <dl className="grid grid-cols-1 divide-y divide-line border-y border-border text-sm sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
         {[
           [t("overview.slug"), <Ltr key="s" mono>/{ws.slug}</Ltr>],
           [t("overview.locale"), details?.locale ? <Ltr key="l" mono>{details.locale}</Ltr> : "—"],
@@ -72,8 +72,8 @@ export default function OverviewPage() {
           [t("overview.currency"), details?.currency ? <Ltr key="c" mono>{details.currency}</Ltr> : "—"],
         ].map(([label, value], i) => (
           <div key={i} className="px-6 py-4">
-            <dt className="grid-micro mb-1">{label}</dt>
-            <dd className="text-grid-fg">{value}</dd>
+            <dt className="text-eyebrow uppercase mb-1">{label}</dt>
+            <dd className="text-foreground">{value}</dd>
           </div>
         ))}
       </dl>

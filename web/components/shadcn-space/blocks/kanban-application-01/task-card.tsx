@@ -34,7 +34,7 @@ export function TaskCardBody({
   const overdue = isOverdue(task.due_at, task.completed_at);
   return (
     <>
-      <div className="flex items-center gap-2 text-xs text-grid-muted">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Ltr mono>{task.key}</Ltr>
         {task.priority !== "none" ? <PriorityIcon priority={task.priority} /> : null}
         {task.issue && !task.issue.from_board ? (
@@ -46,8 +46,8 @@ export function TaskCardBody({
       </div>
       <p
         className={cn(
-          "mt-1 text-sm font-medium break-words text-grid-fg",
-          task.completed_at && "text-grid-muted line-through",
+          "mt-1 text-sm font-medium break-words text-foreground",
+          task.completed_at && "text-muted-foreground line-through",
         )}
       >
         {task.title}
@@ -57,9 +57,9 @@ export function TaskCardBody({
           <LabelChips ids={task.label_ids} labels={labels} />
         </div>
       ) : null}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-grid-muted">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         {task.due_at ? (
-          <span className={cn("flex items-center gap-1", overdue && "text-grid-danger-text")}>
+          <span className={cn("flex items-center gap-1", overdue && "text-nq-danger-text")}>
             <CalendarIcon className="size-3" />
             <Ltr>{formatDay(task.due_at, locale, "short")}</Ltr>
           </span>
@@ -142,7 +142,7 @@ export default function TaskCard({
           listeners?.onKeyDown?.(e);
         }}
         className={cn(
-          "w-full border border-line bg-grid-card p-3 pe-10 text-start transition-colors outline-none hover:border-grid-muted focus-visible:ring-2 focus-visible:ring-grid-action",
+          "w-full border border-border bg-card p-3 pe-10 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action",
           draggable && "cursor-grab touch-none active:cursor-grabbing",
           isDragging && "opacity-40",
         )}

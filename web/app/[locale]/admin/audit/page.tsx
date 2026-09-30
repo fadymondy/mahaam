@@ -46,7 +46,7 @@ export default function AdminAuditPage() {
         <EmptyState title={t("admin.audit.empty")} />
       ) : (
         <>
-          <div className="border-y border-line">
+          <div className="border-y border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -65,7 +65,7 @@ export default function AdminAuditPage() {
                 {rows.map((e) => (
                   <Fragment key={e.id}>
                     <TableRow data-audit={e.action}>
-                      <TableCell className="ps-6 whitespace-nowrap text-grid-muted">
+                      <TableCell className="ps-6 whitespace-nowrap text-muted-foreground">
                         <Ltr>{at(e.at)}</Ltr>
                       </TableCell>
                       <TableCell className="max-w-0">
@@ -78,15 +78,15 @@ export default function AdminAuditPage() {
                       </TableCell>
                       <TableCell className="hidden max-w-0 md:table-cell">
                         <span className="block truncate text-sm">
-                          <span className="text-grid-muted">{e.target_type}</span> {e.target_label ? <Ltr>{e.target_label}</Ltr> : null}
+                          <span className="text-muted-foreground">{e.target_type}</span> {e.target_label ? <Ltr>{e.target_label}</Ltr> : null}
                         </span>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Ltr mono className="text-xs text-grid-muted">
+                        <Ltr mono className="text-xs text-muted-foreground">
                           {e.ip ?? "—"}
                         </Ltr>
                       </TableCell>
-                      <TableCell className="hidden text-grid-muted lg:table-cell">{e.via ?? "—"}</TableCell>
+                      <TableCell className="hidden text-muted-foreground lg:table-cell">{e.via ?? "—"}</TableCell>
                       <TableCell className="pe-6 text-end">
                         {e.changes ? (
                           <Button
@@ -103,7 +103,7 @@ export default function AdminAuditPage() {
                     </TableRow>
                     {open === e.id && e.changes ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="bg-grid-soft/50 px-6">
+                        <TableCell colSpan={7} className="bg-muted/50 px-6">
                           <pre dir="ltr" className="max-h-80 overflow-auto text-start font-mono text-xs whitespace-pre-wrap">
                             {JSON.stringify(e.changes, null, 2)}
                           </pre>

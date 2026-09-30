@@ -60,13 +60,13 @@ export function targetBody(t: Target): { project?: string; task?: string } {
 
 export function TargetLabel({ target, className }: { target: Target; className?: string }) {
   const { t } = useTranslations()
-  if (!target.project && !target.task) return <span className={cn("text-grid-muted", className)}>{t("timer.noProject")}</span>
+  if (!target.project && !target.task) return <span className={cn("text-muted-foreground", className)}>{t("timer.noProject")}</span>
   return (
     <span className={cn("flex min-w-0 items-center gap-2", className)}>
       <ColorDot color={target.project?.color} />
       {target.task ? (
         <>
-          <Ltr mono className="shrink-0 text-xs text-grid-muted">
+          <Ltr mono className="shrink-0 text-xs text-muted-foreground">
             {target.task.key}
           </Ltr>
           <span className="truncate">{target.task.title}</span>
@@ -94,7 +94,7 @@ export function TargetPicker({ value, onChange, id, disabled }: { value: Target;
         render={<Button id={id} variant="secondary" disabled={disabled} className="w-full justify-between font-normal" data-target-picker />}
       >
         <TargetLabel target={value} />
-        <ChevronsUpDownIcon className="text-grid-muted" />
+        <ChevronsUpDownIcon className="text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-(--anchor-width) min-w-72 p-0">
         <Command shouldFilter={false}>
@@ -103,7 +103,7 @@ export function TargetPicker({ value, onChange, id, disabled }: { value: Target;
             <CommandEmpty>{t("timer.noMatch")}</CommandEmpty>
             <CommandGroup>
               <CommandItem value="__none" onSelect={() => pick({})}>
-                <span className="text-grid-muted">{t("timer.noProject")}</span>
+                <span className="text-muted-foreground">{t("timer.noProject")}</span>
                 {!value.project && !value.task ? <CheckIcon className="ms-auto" /> : null}
               </CommandItem>
             </CommandGroup>
@@ -123,7 +123,7 @@ export function TargetPicker({ value, onChange, id, disabled }: { value: Target;
                 {tasks.map((task) => (
                   <CommandItem key={task.id} value={`t:${task.id}`} onSelect={() => pick(taskTarget(task, byProject))} data-target-task={task.key}>
                     <ColorDot color={byProject.get(task.project_id)?.color} />
-                    <Ltr mono className="text-xs text-grid-muted">
+                    <Ltr mono className="text-xs text-muted-foreground">
                       {task.key}
                     </Ltr>
                     <span className="truncate">{task.title}</span>

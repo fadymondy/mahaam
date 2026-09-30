@@ -13,12 +13,12 @@ import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 const DOT: Record<string, string> = {
-  active: "bg-grid-ok",
-  past_due: "bg-grid-warn",
-  canceled: "bg-grid-warn",
-  revoked: "bg-grid-danger",
-  expired: "bg-grid-danger",
-  none: "bg-grid-muted",
+  active: "bg-nq-ok",
+  past_due: "bg-nq-warn",
+  canceled: "bg-nq-warn",
+  revoked: "bg-nq-danger",
+  expired: "bg-nq-danger",
+  none: "bg-nq-fg-muted",
 }
 
 export function BillingStatusBadge({ billing }: { billing: Billing | null | undefined }) {
@@ -31,9 +31,9 @@ export function BillingStatusBadge({ billing }: { billing: Billing | null | unde
         {t(`billing.status.${status}`)}
       </Badge>
       {billing?.period_end && (billing.cancel_at_period_end || status === "canceled") ? (
-        <span className="text-meta text-(--grid-warn-text)">{t("billing.cancelsOn", { date: formatDay(billing.period_end, locale) })}</span>
+        <span className="text-caption text-(--nq-warn-text)">{t("billing.cancelsOn", { date: formatDay(billing.period_end, locale) })}</span>
       ) : billing?.period_end && status === "active" ? (
-        <span className="text-meta text-grid-muted">{t("billing.renewsOn", { date: formatDay(billing.period_end, locale) })}</span>
+        <span className="text-caption text-muted-foreground">{t("billing.renewsOn", { date: formatDay(billing.period_end, locale) })}</span>
       ) : null}
     </span>
   )
@@ -67,7 +67,7 @@ export function BillingCard({ billing }: { billing: Billing | null | undefined }
           <Ltr mono className="text-xs">
             {b.last_webhook_type ?? "—"}
           </Ltr>{" "}
-          <span className="text-grid-muted">· {timeAgo(b.last_webhook_at, locale)}</span>
+          <span className="text-muted-foreground">· {timeAgo(b.last_webhook_at, locale)}</span>
         </span>
       ) : (
         "—"
@@ -76,12 +76,12 @@ export function BillingCard({ billing }: { billing: Billing | null | undefined }
   ]
   return (
     <section className="space-y-3 py-6" data-billing-card>
-      <h2 className="px-6 text-sm font-medium text-grid-fg">{t("billing.title")}</h2>
-      <dl className="grid grid-cols-1 gap-px border-y border-line bg-line text-sm sm:grid-cols-2 lg:grid-cols-3">
+      <h2 className="px-6 text-sm font-medium text-foreground">{t("billing.title")}</h2>
+      <dl className="grid grid-cols-1 gap-px border-y border-border bg-line text-sm sm:grid-cols-2 lg:grid-cols-3">
         {rows.map(([k, v]) => (
-          <div key={k} className="bg-grid-card px-6 py-3">
-            <dt className="grid-micro">{k}</dt>
-            <dd className="mt-1 text-grid-fg">{v}</dd>
+          <div key={k} className="bg-card px-6 py-3">
+            <dt className="text-eyebrow uppercase">{k}</dt>
+            <dd className="mt-1 text-foreground">{v}</dd>
           </div>
         ))}
       </dl>

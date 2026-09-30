@@ -129,7 +129,7 @@ export function ProjectForm({ project, onSaved, onCancel }: { project?: ProjectD
         </Field>
         <Field>
           <FieldLabel htmlFor="p-desc">
-            {t("project.description")} <span className="text-grid-muted">({t("common.optional")})</span>
+            {t("project.description")} <span className="text-muted-foreground">({t("common.optional")})</span>
           </FieldLabel>
           <Textarea id="p-desc" rows={3} value={v.description} onChange={(e) => set("description", e.target.value)} />
         </Field>

@@ -4,7 +4,7 @@
 // Markdown, in the UI's language. Markdown is the exact format for Arabic (see README P8.4).
 import { useState } from "react"
 import { DownloadIcon, FileCodeIcon, FileTypeIcon, LoaderIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@fadymondy/nasaq/web"
 

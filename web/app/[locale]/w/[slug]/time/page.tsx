@@ -7,7 +7,7 @@ import Link from "next/link"
 import { Suspense, useState, type ReactNode } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { BotIcon, LockIcon, PencilIcon, PlusIcon, SquareIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
@@ -58,8 +58,8 @@ const rowKey = (r: { project_id: string | null; task_id: string | null }) => `${
 
 function Stat({ label, children, data }: { label: string; children: ReactNode; data?: string }) {
   return (
-    <div className="flex flex-col gap-1 border-line px-6 py-4 max-md:border-b max-md:odd:border-e md:border-e md:last:border-e-0" data-stat={data}>
-      <dt className="grid-micro">{label}</dt>
+    <div className="flex flex-col gap-1 border-border px-6 py-4 max-md:border-b max-md:odd:border-e md:border-e md:last:border-e-0" data-stat={data}>
+      <dt className="text-eyebrow uppercase">{label}</dt>
       <dd className="text-xl font-medium tabular-nums">{children}</dd>
     </div>
   )
@@ -89,7 +89,7 @@ function TimeView() {
   const [picked, setPicked] = useState<string | null>(null)
   const [editing, setEditing] = useState<TimeEntry | "new" | null>(null)
 
-  if (ws.current && !canTrack) return <p className="px-6 py-6 text-sm text-grid-muted">{t("time.noPermission")}</p>
+  if (ws.current && !canTrack) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("time.noPermission")}</p>
 
   function setQuery(next: Record<string, string | null>) {
     const q = new URLSearchParams(params.toString())
@@ -149,13 +149,13 @@ function TimeView() {
   const label = (r: { project_name: string | null; task_key: string | null; task_title: string | null }) =>
     r.task_key ? (
       <span className="flex min-w-0 items-center gap-2">
-        <Ltr mono className="shrink-0 text-xs text-grid-muted">
+        <Ltr mono className="shrink-0 text-xs text-muted-foreground">
           {r.task_key}
         </Ltr>
         <span className="truncate">{r.task_title}</span>
       </span>
     ) : (
-      <span className={cn("truncate", !r.project_name && "text-grid-muted")}>{r.project_name ?? t("time.noProject")}</span>
+      <span className={cn("truncate", !r.project_name && "text-muted-foreground")}>{r.project_name ?? t("time.noProject")}</span>
     )
 
   return (
@@ -181,7 +181,7 @@ function TimeView() {
         <LoadingRows rows={4} />
       ) : (
         <>
-          <dl className="grid grid-cols-2 border-t border-line md:grid-cols-4" data-time-totals>
+          <dl className="grid grid-cols-2 border-t border-border md:grid-cols-4" data-time-totals>
             <Stat label={t("time.total")} data="total">
               <Ltr mono>{hm(total, "0:00")}</Ltr>
             </Stat>
@@ -193,17 +193,17 @@ function TimeView() {
             </Stat>
             <Stat label={t("time.runningNow")} data="running">
               {ts.running ? (
-                <Ltr mono className="text-grid-action">
+                <Ltr mono className="text-nq-accent-text">
                   {clock(entrySeconds(ts.running, now))}
                 </Ltr>
               ) : (
-                <span className="text-grid-muted">—</span>
+                <span className="text-muted-foreground">—</span>
               )}
             </Stat>
           </dl>
 
           {/* The week grid: desktop. Below md the day strip + day list carry the same data. */}
-          <section className="hidden border-t border-line md:block" data-week-grid aria-label={t("time.grid")}>
+          <section className="hidden border-t border-border md:block" data-week-grid aria-label={t("time.grid")}>
             {ts.rows.length === 0 ? (
               <EmptyState title={t("time.noTime")} body={t("time.noTimeBody")} />
             ) : (
@@ -212,8 +212,8 @@ function TimeView() {
                   <TableRow>
                     <TableHead className="ps-6">{t("time.project")}</TableHead>
                     {days.map((d) => (
-                      <TableHead key={d} className={cn("w-[8%] text-end", d === today && "text-grid-fg")}>
-                        <span className="block text-xs font-normal text-grid-muted">{weekdayShort(d, locale)}</span>
+                      <TableHead key={d} className={cn("w-[8%] text-end", d === today && "text-foreground")}>
+                        <span className="block text-xs font-normal text-muted-foreground">{weekdayShort(d, locale)}</span>
                         <Ltr>{Number(d.slice(8))}</Ltr>
                       </TableHead>
                     ))}
@@ -228,13 +228,13 @@ function TimeView() {
                           <ColorDot color={r.project_color} />
                           <span className="min-w-0">
                             {label(r)}
-                            {r.task_key && r.project_name ? <span className="block truncate text-meta text-grid-muted">{r.project_name}</span> : null}
+                            {r.task_key && r.project_name ? <span className="block truncate text-caption text-muted-foreground">{r.project_name}</span> : null}
                           </span>
                         </span>
                       </TableCell>
                       {days.map((d, i) => (
-                        <TableCell key={d} className={cn("text-end tabular-nums", d === today && "bg-grid-soft/60")}>
-                          <Ltr mono className={cell(r, i) ? "" : "text-grid-line"} data-cell={d}>
+                        <TableCell key={d} className={cn("text-end tabular-nums", d === today && "bg-muted/60")}>
+                          <Ltr mono className={cell(r, i) ? "" : "text-border"} data-cell={d}>
                             {hm(cell(r, i), "·")}
                           </Ltr>
                         </TableCell>
@@ -262,7 +262,7 @@ function TimeView() {
             )}
           </section>
 
-          <div className="grid grid-cols-7 border-y border-line" role="tablist" aria-label={t("time.grid")} data-day-strip>
+          <div className="grid grid-cols-7 border-y border-border" role="tablist" aria-label={t("time.grid")} data-day-strip>
             {days.map((d, i) => (
               <button
                 key={d}
@@ -272,13 +272,13 @@ function TimeView() {
                 onClick={() => setPicked(d)}
                 data-day={d}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 border-e border-line px-1 py-2 text-center transition-colors last:border-e-0 hover:bg-grid-soft",
-                  d === selected ? "bg-grid-soft shadow-[inset_0_-2px_0_var(--grid-action)]" : "",
+                  "flex flex-col items-center gap-0.5 border-e border-border px-1 py-2 text-center transition-colors last:border-e-0 hover:bg-muted",
+                  d === selected ? "bg-muted shadow-[inset_0_-2px_0_var(--nq-action)]" : "",
                 )}
               >
-                <span className={cn("text-xs", d === today ? "font-medium text-grid-action" : "text-grid-muted")}>{weekdayShort(d, locale)}</span>
+                <span className={cn("text-xs", d === today ? "font-medium text-nq-accent-text" : "text-muted-foreground")}>{weekdayShort(d, locale)}</span>
                 <Ltr className="text-sm font-medium">{Number(d.slice(8))}</Ltr>
-                <Ltr mono className="text-xs text-grid-muted">
+                <Ltr mono className="text-xs text-muted-foreground">
                   {hm(dayTotal(i), "–")}
                 </Ltr>
               </button>
@@ -286,7 +286,7 @@ function TimeView() {
           </div>
 
           <section data-day-list={selected}>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-3">
               <h2 className="text-sm font-medium">{dayLabel(selected, locale, "long")}</h2>
               <Button variant="primary" size="sm" onClick={() => setEditing("new")} data-add-time>
                 <PlusIcon />
@@ -294,9 +294,9 @@ function TimeView() {
               </Button>
             </div>
             {daySlices.length === 0 ? (
-              <p className="px-6 py-8 text-center text-sm text-grid-muted">{t("time.noEntriesDay")}</p>
+              <p className="px-6 py-8 text-center text-sm text-muted-foreground">{t("time.noEntriesDay")}</p>
             ) : (
-              <ul className="divide-y divide-line border-b border-line">
+              <ul className="divide-y divide-line border-b border-border">
                 {daySlices.map(({ slice, entry: e }) => {
                   const running = !e.ended_at
                   const fromPrev = slice.start !== new Date(e.started_at).toISOString().replace(".000Z", "Z") && Date.parse(slice.start) > Date.parse(e.started_at)
@@ -313,8 +313,8 @@ function TimeView() {
                         {timeIn(slice.start, tz)}–{running ? "…" : timeIn(slice.end, tz)}
                       </Ltr>
                       <div className="order-last w-full min-w-0 md:order-none md:w-auto md:flex-1">
-                        <p className={cn("truncate text-sm", !e.description && "text-grid-muted")}>{e.description || t("time.descriptionPlaceholder")}</p>
-                        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-meta text-grid-muted">
+                        <p className={cn("truncate text-sm", !e.description && "text-muted-foreground")}>{e.description || t("time.descriptionPlaceholder")}</p>
+                        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted-foreground">
                           <ColorDot color={e.project_color} />
                           {label(e)}
                           {e.task_key && e.project_name ? <span className="truncate">· {e.project_name}</span> : null}
@@ -323,7 +323,7 @@ function TimeView() {
                           {e.billable ? <Badge variant="neutral">{t("time.billable")}</Badge> : null}
                         </div>
                       </div>
-                      <span className="hidden w-24 shrink-0 text-meta text-grid-muted md:block">
+                      <span className="hidden w-24 shrink-0 text-caption text-muted-foreground md:block">
                         {e.source === "mcp" ? (
                           <span className="inline-flex items-center gap-1">
                             <BotIcon className="size-3.5" />
@@ -333,12 +333,12 @@ function TimeView() {
                           t(`time.source.${e.source}`)
                         )}
                       </span>
-                      <Ltr mono className={cn("ms-auto w-16 shrink-0 text-end text-sm tabular-nums md:ms-0", running && "text-grid-action")} data-entry-duration>
+                      <Ltr mono className={cn("ms-auto w-16 shrink-0 text-end text-sm tabular-nums md:ms-0", running && "text-nq-accent-text")} data-entry-duration>
                         {running ? clock(entrySeconds(e, now)) : hm(slice.seconds, "0:00")}
                       </Ltr>
                       <div className="flex w-24 shrink-0 justify-end gap-0.5">
                         {e.locked ? (
-                          <span title={t("time.locked")} aria-label={t("time.locked")} className="p-1.5 text-grid-muted">
+                          <span title={t("time.locked")} aria-label={t("time.locked")} className="p-1.5 text-muted-foreground">
                             <LockIcon className="size-4" />
                           </span>
                         ) : null}

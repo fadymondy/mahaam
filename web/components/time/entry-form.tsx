@@ -5,7 +5,7 @@
 // New entries send date + HH:MM and the server places them (an end at or before the start is the
 // next day); edits send exact instants computed here in the workspace timezone (DST-safe).
 import { useState, type FormEvent } from "react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
 
@@ -122,7 +122,7 @@ export function EntryForm({
           </Field>
         </div>
         <FieldDescription>{t(entry ? "time.editHint" : "time.addHint", { tz })}</FieldDescription>
-        <label className="flex items-center gap-2 text-sm text-grid-body">
+        <label className="flex items-center gap-2 text-sm text-nq-fg-body">
           <Switch checked={billable ?? false} onCheckedChange={(v) => setBillable(v)} />
           {t("time.billable")}
         </label>

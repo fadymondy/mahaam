@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { ExternalLinkIcon, RocketIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Tabs, TabsList, TabsPanel, TabsTab, Textarea } from "@fadymondy/nasaq/web"
 
@@ -42,7 +42,7 @@ export default function ProjectGitHubPage() {
   if (!linked) {
     return (
       <div className="px-6 py-8 text-sm">
-        <p className="text-grid-muted">{t("gh.notLinked")}</p>
+        <p className="text-muted-foreground">{t("gh.notLinked")}</p>
         {p.can_manage ? (
           <Button variant="secondary" className="mt-3" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/projects/${p.id}/settings?s=integrations`} />}>
             {t("gh.goSettings")}
@@ -97,8 +97,8 @@ function State<T>({ q, render }: { q: { data?: T; error?: unknown }; render: (d:
 
 function Rows({ children, empty }: { children: React.ReactNode[]; empty: boolean }) {
   const { t } = useTranslations()
-  if (empty) return <p className="text-sm text-grid-muted">{t("gh.empty")}</p>
-  return <ul className="divide-y divide-line border-y border-line">{children}</ul>
+  if (empty) return <p className="text-sm text-muted-foreground">{t("gh.empty")}</p>
+  return <ul className="divide-y divide-line border-y border-border">{children}</ul>
 }
 
 function Ext({ href, children }: { href: string; children: React.ReactNode }) {
@@ -118,10 +118,10 @@ function Commits({ projectId, branch, active }: { projectId: string; branch: str
       <Rows empty={!d.commits?.length}>
         {(d.commits ?? []).map((c) => (
           <li key={c.sha} className="flex items-center gap-3 py-2 text-sm">
-            <code className="text-xs text-grid-muted" dir="ltr">{c.sha.slice(0, 7)}</code>
+            <code className="text-xs text-muted-foreground" dir="ltr">{c.sha.slice(0, 7)}</code>
             <Ext href={c.url}>{c.message}</Ext>
-            <span className="text-meta text-grid-muted" dir="ltr">{c.author_login || c.author_name}</span>
-            <span className="w-28 text-end text-meta text-grid-muted">{formatDate(c.date)}</span>
+            <span className="text-caption text-muted-foreground" dir="ltr">{c.author_login || c.author_name}</span>
+            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(c.date)}</span>
           </li>
         ))}
       </Rows>
@@ -138,11 +138,11 @@ function Pulls({ projectId, active }: { projectId: string; active: boolean }) {
       <Rows empty={!d.pulls?.length}>
         {(d.pulls ?? []).map((x) => (
           <li key={x.number} className="flex items-center gap-3 py-2 text-sm">
-            <span className="text-meta text-grid-muted" dir="ltr">#{x.number}</span>
+            <span className="text-caption text-muted-foreground" dir="ltr">#{x.number}</span>
             <Ext href={x.url}>{x.title}</Ext>
             {x.merged_at ? <Badge variant="brand">{t("gh.merged")}</Badge> : x.draft ? <Badge variant="neutral">{t("gh.draft")}</Badge> : <Badge variant="outline">{x.state}</Badge>}
-            <span className="hidden text-meta text-grid-muted sm:inline" dir="ltr">{x.head} → {x.base}</span>
-            <span className="w-28 text-end text-meta text-grid-muted">{formatDate(x.updated_at)}</span>
+            <span className="hidden text-caption text-muted-foreground sm:inline" dir="ltr">{x.head} → {x.base}</span>
+            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(x.updated_at)}</span>
           </li>
         ))}
       </Rows>
@@ -167,8 +167,8 @@ function Runs({ projectId, active }: { projectId: string; active: boolean }) {
           <li key={r.id} className="flex items-center gap-3 py-2 text-sm">
             <Badge variant={runVariant(r)} dir="ltr">{r.conclusion || r.status}</Badge>
             <Ext href={r.url}>{r.name}</Ext>
-            <span className="text-meta text-grid-muted" dir="ltr">{r.branch} · {r.event}</span>
-            <span className="w-28 text-end text-meta text-grid-muted">{formatDate(r.created_at)}</span>
+            <span className="text-caption text-muted-foreground" dir="ltr">{r.branch} · {r.event}</span>
+            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(r.created_at)}</span>
           </li>
         ))}
       </Rows>
@@ -189,9 +189,9 @@ function Deployments({ projectId, active }: { projectId: string; active: boolean
               {x.state || "—"}
             </Badge>
             <span className="min-w-0 flex-1 truncate font-medium" dir="ltr">{x.environment}</span>
-            <span className="text-meta text-grid-muted" dir="ltr">{x.ref} · {x.sha.slice(0, 7)}</span>
+            <span className="text-caption text-muted-foreground" dir="ltr">{x.ref} · {x.sha.slice(0, 7)}</span>
             {x.url ? <a href={x.url} target="_blank" rel="noreferrer" aria-label="log"><ExternalLinkIcon className="size-3.5" /></a> : null}
-            <span className="w-28 text-end text-meta text-grid-muted">{formatDate(x.created_at)}</span>
+            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(x.created_at)}</span>
           </li>
         ))}
       </Rows>

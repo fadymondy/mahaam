@@ -39,11 +39,11 @@ function ProfitabilityView() {
   const res = useProfitability(ws.id, query, state.ready && allowed)
   const p = res.data
 
-  if (ws.current && !allowed) return <p className="px-6 py-6 text-sm text-grid-muted">{t("profit.noPermission")}</p>
+  if (ws.current && !allowed) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("profit.noPermission")}</p>
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-6 py-3" data-print-hide data-report-toolbar>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-3" data-print-hide data-report-toolbar>
         <div className="flex flex-wrap items-center gap-2">
           <SavedViews kind="profitability" filters={pf} base={`/${locale}/w/${ws.slug}/reports`} />
           <ResetButton onReset={state.reset} />
@@ -59,9 +59,9 @@ function ProfitabilityView() {
         <LoadingRows rows={4} />
       ) : (
         <div data-profit-body className={cn(res.isValidating && "opacity-70 transition-opacity")}>
-          <p className="border-b border-line px-6 py-3 text-sm text-grid-body">{t("profit.hint")}</p>
+          <p className="border-b border-border px-6 py-3 text-sm text-nq-fg-body">{t("profit.hint")}</p>
           {p.other_currency_entries ? (
-            <p className="border-b border-line bg-grid-soft px-6 py-2.5 text-meta text-grid-body">{t("reports.otherCurrency", { n: p.other_currency_entries })}</p>
+            <p className="border-b border-border bg-muted px-6 py-2.5 text-caption text-nq-fg-body">{t("reports.otherCurrency", { n: p.other_currency_entries })}</p>
           ) : null}
           <ProfitTable p={p} by="project" rows={p.projects} query={query} />
           <ProfitTable p={p} by="client" rows={p.clients} query={query} />
@@ -103,7 +103,7 @@ function ProfitTable({ p, by, rows, query }: { p: Profitability; by: "project" |
       {rows.length === 0 ? (
         <EmptyState title={t("profit.empty")} />
       ) : (
-        <div className="print-table border-t border-line">
+        <div className="print-table border-t border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -127,13 +127,13 @@ function ProfitTable({ p, by, rows, query }: { p: Profitability; by: "project" |
                         </span>
                       </span>
                     ) : (
-                      <span className="text-grid-muted italic" data-none>
+                      <span className="text-muted-foreground italic" data-none>
                         {t(`reports.none.${by}`)}
                       </span>
                     )}
                   </TableCell>
                   {cells(x).map((c, i, all) => (
-                    <TableCell key={i} className={cn(num, i === all.length - 1 && "pe-6", neg(i, x) && "text-(--grid-danger-text)")}>
+                    <TableCell key={i} className={cn(num, i === all.length - 1 && "pe-6", neg(i, x) && "text-(--nq-danger-text)")}>
                       <Ltr mono data-cell>
                         {c || "—"}
                       </Ltr>

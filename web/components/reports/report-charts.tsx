@@ -17,8 +17,8 @@ const hours = (s: number) => Math.round((s / 3600) * 100) / 100
 export function SeriesChart({ series }: { series: ReportPoint[] }) {
   const { t, locale, isRtl } = useTranslations()
   const config = {
-    billable: { label: t("reports.chart.billable"), color: "var(--grid-action)" },
-    non_billable: { label: t("reports.chart.nonBillable"), color: "var(--grid-muted)" },
+    billable: { label: t("reports.chart.billable"), color: "var(--nq-action)" },
+    non_billable: { label: t("reports.chart.nonBillable"), color: "var(--nq-fg-muted)" },
   } satisfies ChartConfig
   const data = series.map((p) => ({ day: p.day, billable: hours(p.billable_rounded_s), non_billable: hours(p.non_billable_rounded_s) }))
   const long = data.length > 16
@@ -58,7 +58,7 @@ export type BreakdownItem = { key: string; name: string; color?: string | null; 
 
 export function BreakdownChart({ items, colored }: { items: BreakdownItem[]; colored: boolean }) {
   const { t, isRtl } = useTranslations()
-  const config = { hours: { label: t("reports.chart.hours"), color: "var(--grid-action)" } } satisfies ChartConfig
+  const config = { hours: { label: t("reports.chart.hours"), color: "var(--nq-action)" } } satisfies ChartConfig
   const data = items.map((r) => ({ key: r.key || "none", name: r.name, hours: hours(r.seconds), fill: colored ? solid(r.color) : "var(--color-hours)" }))
   const height = Math.max(120, data.length * 30 + 24)
   return (

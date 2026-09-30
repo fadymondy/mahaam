@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { useParams } from "next/navigation"
 import { InfoIcon, LogOutIcon, ShieldIcon, ShieldOffIcon, UserCheckIcon, UserXIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
@@ -61,7 +61,7 @@ export default function AdminUserPage() {
           <span className="flex flex-wrap items-center gap-3">
             <StatusBadge status={u.status} />
             {u.is_admin ? (
-              <span className="inline-flex items-center gap-1 text-meta">
+              <span className="inline-flex items-center gap-1 text-caption">
                 <ShieldIcon className="size-3" />
                 {t("admin.users.isAdmin")}
               </span>
@@ -70,21 +70,21 @@ export default function AdminUserPage() {
         }
       />
       {u.status === "suspended" && u.suspended_reason ? (
-        <p className="border-t border-line bg-grid-soft/50 px-6 py-3 text-sm text-grid-danger-text" data-suspended-reason>
+        <p className="border-t border-border bg-muted/50 px-6 py-3 text-sm text-nq-danger-text" data-suspended-reason>
           {t("admin.suspendedBecause", { reason: u.suspended_reason })}
         </p>
       ) : null}
 
-      <dl className="grid grid-cols-2 gap-px border-y border-line bg-line text-sm md:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-px border-y border-border bg-line text-sm md:grid-cols-4">
         {[
           [t("admin.col.created"), formatDay(u.created_at, locale)],
           [t("admin.col.lastSeen"), u.last_seen_at ? timeAgo(u.last_seen_at, locale) : t("admin.never")],
           [t("admin.users.mcpTokens"), String(detail.data.mcp_tokens)],
           [t("admin.users.adminTokens"), String(detail.data.admin_tokens)],
         ].map(([k, v]) => (
-          <div key={k} className="bg-grid-card px-6 py-3">
-            <dt className="grid-micro">{k}</dt>
-            <dd className="mt-1 text-grid-fg">
+          <div key={k} className="bg-card px-6 py-3">
+            <dt className="text-eyebrow uppercase">{k}</dt>
+            <dd className="mt-1 text-foreground">
               <Ltr>{v}</Ltr>
             </dd>
           </div>
@@ -92,7 +92,7 @@ export default function AdminUserPage() {
       </dl>
 
       <section className="space-y-3 py-6">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("admin.users.actions")}</h2>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("admin.users.actions")}</h2>
         <div className="flex flex-wrap gap-2 px-6">
           {u.status === "suspended" ? (
             <Button variant="secondary" disabled={busy} onClick={() => run(() => adminApi.reactivateUser(u.id), t("admin.users.reactivated"))}>
@@ -129,19 +129,19 @@ export default function AdminUserPage() {
             onConfirm={() => run(() => adminApi.signOutUser(u.id), t("admin.users.signedOut"))}
           />
         </div>
-        {self ? <p className="px-6 text-meta text-grid-muted">{t("admin.users.selfNote")}</p> : null}
-        <p className="flex items-start gap-2 px-6 text-meta text-grid-muted" data-no-reset>
+        {self ? <p className="px-6 text-caption text-muted-foreground">{t("admin.users.selfNote")}</p> : null}
+        <p className="flex items-start gap-2 px-6 text-caption text-muted-foreground" data-no-reset>
           <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
           {t("admin.users.noReset")}
         </p>
       </section>
 
       <section className="space-y-3 pb-10">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("admin.col.workspaces")}</h2>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("admin.col.workspaces")}</h2>
         {(u.workspaces ?? []).length === 0 ? (
           <EmptyState title={t("admin.users.noWorkspaces")} />
         ) : (
-          <div className="border-y border-line">
+          <div className="border-y border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -157,7 +157,7 @@ export default function AdminUserPage() {
                       <Link href={`/${locale}/admin/workspaces/${w.id}`} className="font-medium hover:underline">
                         {w.name}
                       </Link>{" "}
-                      <Ltr className="text-meta text-grid-muted">{w.slug}</Ltr>
+                      <Ltr className="text-caption text-muted-foreground">{w.slug}</Ltr>
                     </TableCell>
                     <TableCell>{t(`role.${w.role}`)}</TableCell>
                     <TableCell className="pe-6">

@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 import { PlusIcon, Trash2Icon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
 import { Badge, Button, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
@@ -38,7 +38,7 @@ type Grant = {
   created_at: string
 }
 
-const selectCls = "h-8 w-full rounded-lg border border-line bg-transparent px-2 text-sm"
+const selectCls = "h-8 w-full rounded-lg border border-border bg-transparent px-2 text-sm"
 
 export default function AccessPage() {
   const { t } = useTranslations()
@@ -83,7 +83,7 @@ export default function AccessPage() {
     <div className="space-y-6 p-6">
       <SectionHeader title={t("access.title")} description={t("access.description")} />
 
-      <form onSubmit={add} className="grid gap-3 border border-line p-4 md:grid-cols-[repeat(4,minmax(0,1fr))_auto] md:items-end">
+      <form onSubmit={add} className="grid gap-3 border border-border p-4 md:grid-cols-[repeat(4,minmax(0,1fr))_auto] md:items-end">
         <Field>
           <FieldLabel htmlFor="g-subject-type">{t("access.who")}</FieldLabel>
           <select
@@ -158,14 +158,14 @@ export default function AccessPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("access.empty")} body={t("access.emptyBody")} />
       ) : (
-        <ul className="divide-y divide-line border border-line">
+        <ul className="divide-y divide-line border border-border">
           {list.map((g) => (
             <li key={g.id} className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
               <Badge variant="neutral">{g.subject_type === "team" ? t("access.team") : t("access.employee")}</Badge>
               <span className="font-medium" dir="auto">
                 {g.subject_type === "user" ? dir.name(g.subject_id) : g.subject_name}
               </span>
-              <span className="text-grid-muted">→</span>
+              <span className="text-muted-foreground">→</span>
               <Badge variant="outline">{g.scope_type === "label" ? t("access.labelScope") : t("access.taskScope")}</Badge>
               <span dir="auto">{g.scope_name}</span>
               <span className="ms-auto">

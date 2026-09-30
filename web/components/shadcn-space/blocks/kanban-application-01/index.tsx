@@ -17,7 +17,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core"
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import KanbanColumn from "@/components/shadcn-space/blocks/kanban-application-01/kanban-column"
 import { TaskCardBody } from "@/components/shadcn-space/blocks/kanban-application-01/task-card"
@@ -177,7 +177,7 @@ export default function KanbanBoard({
         </div>
         <DragOverlay>
           {active ? (
-            <div className="w-72 rotate-1 border border-line bg-grid-card p-3 shadow-lg">
+            <div className="w-72 rotate-1 border border-border bg-card p-3 shadow-lg">
               <TaskCardBody task={active} dir={dir} labels={labels} />
             </div>
           ) : null}

@@ -87,7 +87,7 @@ export default function OAuthAuthorizePage() {
     return (
       <PublicFrame title={t("oauth.title")}>
         <PublicPanel>
-          <p className="p-6 text-sm text-grid-muted">{t("oauth.badRequest")}</p>
+          <p className="p-6 text-sm text-muted-foreground">{t("oauth.badRequest")}</p>
         </PublicPanel>
       </PublicFrame>
     )
@@ -104,11 +104,11 @@ export default function OAuthAuthorizePage() {
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center border border-line bg-grid-soft">
-                  <BotIcon className="size-5 text-grid-action" />
+                <span className="flex size-10 shrink-0 items-center justify-center border border-border bg-muted">
+                  <BotIcon className="size-5 text-nq-accent-text" />
                 </span>
-                <p className="text-sm text-grid-body">
-                  <span className="font-medium text-grid-fg" dir="auto">
+                <p className="text-sm text-nq-fg-body">
+                  <span className="font-medium text-foreground" dir="auto">
                     {info.data.client_name}
                   </span>{" "}
                   {t("oauth.wantsToConnect")}
@@ -117,7 +117,7 @@ export default function OAuthAuthorizePage() {
 
               {workspaces.length > 1 ? (
                 <div className="flex flex-col gap-1.5">
-                  <span className="grid-micro">{t("oauth.workspace")}</span>
+                  <span className="text-eyebrow uppercase">{t("oauth.workspace")}</span>
                   <Select items={workspaces.map((w) => ({ value: w.id, label: w.name }))} value={selected} onValueChange={(v) => setWorkspaceId(String(v ?? selected))}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -132,19 +132,19 @@ export default function OAuthAuthorizePage() {
                   </Select>
                 </div>
               ) : workspaces.length === 1 ? (
-                <p className="text-sm text-grid-muted">
-                  {t("oauth.workspace")}: <span className="text-grid-fg">{workspaces[0].name}</span>
+                <p className="text-sm text-muted-foreground">
+                  {t("oauth.workspace")}: <span className="text-foreground">{workspaces[0].name}</span>
                 </p>
               ) : (
-                <p className="text-sm text-grid-muted">{t("oauth.noWorkspaces")}</p>
+                <p className="text-sm text-muted-foreground">{t("oauth.noWorkspaces")}</p>
               )}
 
               <div className="flex flex-col gap-1.5">
-                <span className="grid-micro">{t("oauth.willBeAbleTo")}</span>
+                <span className="text-eyebrow uppercase">{t("oauth.willBeAbleTo")}</span>
                 <ul className="flex flex-col gap-1.5">
                   {info.data.scopes.map((s) => (
-                    <li key={s.scope} className="flex items-start gap-2 text-sm text-grid-body">
-                      <ShieldCheckIcon className="mt-0.5 size-3.5 shrink-0 text-grid-muted" />
+                    <li key={s.scope} className="flex items-start gap-2 text-sm text-nq-fg-body">
+                      <ShieldCheckIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                       <span>{s.description}</span>
                     </li>
                   ))}

@@ -24,7 +24,7 @@ export function ProjectBudgetPanel({ projectId, canManage, settingsHref }: { pro
   const finance = ws.can("reports:finance")
 
   return (
-    <section className="border-b border-line px-6 py-4" aria-label={t("budget.title")} data-budget-panel data-level={b?.level ?? ""}>
+    <section className="border-b border-border px-6 py-4" aria-label={t("budget.title")} data-budget-panel data-level={b?.level ?? ""}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-medium">{t("budget.title")}</h2>
         {b && b.level !== "none" ? <LevelBadge level={b.level} /> : null}
@@ -34,8 +34,8 @@ export function ProjectBudgetPanel({ projectId, canManage, settingsHref }: { pro
       ) : b.level === "none" ? (
         <div className="flex flex-wrap items-center justify-between gap-3" data-budget-none>
           <div className="space-y-0.5">
-            <p className="text-sm text-grid-body">{t("budget.none")}</p>
-            {canManage ? <p className="text-meta text-grid-muted">{t("budget.noneManager")}</p> : null}
+            <p className="text-sm text-nq-fg-body">{t("budget.none")}</p>
+            {canManage ? <p className="text-caption text-muted-foreground">{t("budget.noneManager")}</p> : null}
           </div>
           {canManage ? (
             <Button variant="secondary" size="sm" nativeButton={false} render={<Link href={settingsHref} />} data-budget-settings>

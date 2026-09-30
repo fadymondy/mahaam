@@ -26,13 +26,13 @@ export default function ReportsLayout({ children }: { children: ReactNode }) {
   ].filter((x) => x.show)
   const tab = pathname.endsWith("/budgets") ? "budgets" : pathname.endsWith("/profitability") ? "profitability" : "time"
 
-  if (ws.current && !ws.can("reports:read")) return <p className="px-6 py-6 text-sm text-grid-muted">{t("reports.noPermission")}</p>
+  if (ws.current && !ws.can("reports:read")) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("reports.noPermission")}</p>
 
   return (
     <div data-reports={tab}>
       <div data-print-hide>
         <SectionHeader micro={ws.summary.name} title={t("reports.title")} description={t("reports.hint")} />
-        <div className="border-b border-line px-6">
+        <div className="border-b border-border px-6">
           <Tabs value={tab}>
             <TabsList variant="underline">
               {tabs.map((x) => (

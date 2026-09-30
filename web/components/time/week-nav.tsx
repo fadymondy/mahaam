@@ -17,7 +17,7 @@ export function WeekNav({ days, onWeek, isCurrent }: { days: string[] | undefine
   return (
     <div className="flex flex-wrap items-center gap-2" data-week-nav>
       {first && last ? (
-        <Ltr className="me-1 text-sm text-grid-body" data-week-range>
+        <Ltr className="me-1 text-sm text-nq-fg-body" data-week-range>
           {dayLabel(first, locale)} – {dayLabel(last, locale)}
         </Ltr>
       ) : null}

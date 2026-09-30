@@ -32,7 +32,7 @@ export default function TeamKpiPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={base} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
+        <Link href={base} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.members")}
         </Link>
@@ -44,7 +44,7 @@ export default function TeamKpiPage() {
         action={allowed ? <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} /> : null}
       />
       {!allowed ? (
-        <p className="px-6 py-6 text-sm text-grid-muted">{t("kpi.teamNoPermission")}</p>
+        <p className="px-6 py-6 text-sm text-muted-foreground">{t("kpi.teamNoPermission")}</p>
       ) : team.error ? (
         <ErrorState error={team.error} />
       ) : !team.data ? (
@@ -52,7 +52,7 @@ export default function TeamKpiPage() {
       ) : rows.length === 0 ? (
         <EmptyState title={t("kpi.teamEmpty")} />
       ) : (
-        <div className="overflow-x-auto border-y border-line">
+        <div className="overflow-x-auto border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -75,10 +75,10 @@ export default function TeamKpiPage() {
               {rows.map((r) => (
                 <TableRow key={r.member.user_id}>
                   <TableCell className="ps-6">
-                    <Link href={`${base}/${r.member.user_id}`} className="font-medium text-grid-fg hover:underline">
+                    <Link href={`${base}/${r.member.user_id}`} className="font-medium text-foreground hover:underline">
                       <Ltr>{r.member.email}</Ltr>
                     </Link>
-                    <span className="ms-2 text-meta text-grid-muted">{t(`role.${r.member.role}`)}</span>
+                    <span className="ms-2 text-caption text-muted-foreground">{t(`role.${r.member.role}`)}</span>
                   </TableCell>
                   <TableCell className={num}>
                     <Ltr mono>{hm(r.tracked_s, "0:00")}</Ltr>

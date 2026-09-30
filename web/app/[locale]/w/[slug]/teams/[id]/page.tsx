@@ -32,7 +32,7 @@ export default function TeamDetailPage() {
   const team = (teams.data?.teams ?? []).find((tm) => tm.id === id)
   useDocumentTitle(`${team?.name ?? t("nav.teams")} · ${ws.summary.name}`)
 
-  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-grid-muted">{t("teams.noPermission")}</p>
+  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("teams.noPermission")}</p>
   if (teams.error) return <ErrorState error={teams.error} />
   if (teams.isLoading) return <LoadingRows rows={5} />
   if (!team) {
@@ -42,7 +42,7 @@ export default function TeamDetailPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
+        <Link href={back} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.teams")}
         </Link>
@@ -58,22 +58,22 @@ export default function TeamDetailPage() {
         description={team.description || t("teams.hint")}
       />
 
-      <div className="grid gap-px border-y border-line bg-grid-line lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid gap-px border-y border-border bg-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* members */}
-        <div className="min-w-0 bg-grid-bg">
+        <div className="min-w-0 bg-background">
           <h2 className="flex items-baseline justify-between px-6 pt-5 pb-3">
             <span className="text-base font-medium">{t("teams.members")}</span>
-            <span className="text-meta text-grid-muted">{t("teams.memberCount", { n: team.member_ids.length })}</span>
+            <span className="text-caption text-muted-foreground">{t("teams.memberCount", { n: team.member_ids.length })}</span>
           </h2>
           {team.member_ids.length === 0 ? (
             <EmptyState title={t("teamDetail.noMembers")} />
           ) : (
-            <ul className="divide-y divide-line border-y border-line">
+            <ul className="divide-y divide-line border-y border-border">
               {team.member_ids.map((uid) => (
                 <li key={uid}>
-                  <Link href={`/${locale}/w/${ws.slug}/members/${uid}`} className="flex items-center gap-3 px-6 py-3 hover:bg-grid-soft">
+                  <Link href={`/${locale}/w/${ws.slug}/members/${uid}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted">
                     <PersonAvatar id={uid} dir={dir} />
-                    <Ltr className="min-w-0 flex-1 truncate text-grid-fg">{dir.name(uid)}</Ltr>
+                    <Ltr className="min-w-0 flex-1 truncate text-foreground">{dir.name(uid)}</Ltr>
                   </Link>
                 </li>
               ))}
@@ -82,10 +82,10 @@ export default function TeamDetailPage() {
         </div>
 
         {/* projects the team is attached to */}
-        <div className="min-w-0 bg-grid-bg">
+        <div className="min-w-0 bg-background">
           <h2 className="flex items-baseline justify-between px-6 pt-5 pb-3">
             <span className="text-base font-medium">{t("teamDetail.projects")}</span>
-            <span className="text-meta text-grid-muted">{t("teams.projectCount", { n: team.project_count })}</span>
+            <span className="text-caption text-muted-foreground">{t("teams.projectCount", { n: team.project_count })}</span>
           </h2>
           {projects.error ? (
             <ErrorState error={projects.error} />
@@ -94,7 +94,7 @@ export default function TeamDetailPage() {
           ) : team.project_count === 0 ? (
             <EmptyState title={t("teamDetail.noProjects")} />
           ) : (
-            <ul className="divide-y divide-line border-y border-line">
+            <ul className="divide-y divide-line border-y border-border">
               {(projects.data?.projects ?? []).map((p) => (
                 <TeamProjectRow key={p.id} project={p} teamId={team.id} />
               ))}
@@ -115,9 +115,9 @@ function TeamProjectRow({ project, teamId }: { project: Project; teamId: string 
   if (!attached) return null
   return (
     <li>
-      <Link href={`/${locale}/w/${ws.slug}/projects/${project.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-grid-soft">
+      <Link href={`/${locale}/w/${ws.slug}/projects/${project.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted">
         <ColorDot color={project.color} className="size-3" />
-        <span className="min-w-0 flex-1 truncate font-medium text-grid-fg">{project.name}</span>
+        <span className="min-w-0 flex-1 truncate font-medium text-foreground">{project.name}</span>
         <Badge variant="outline">{t(`projectStatus.${project.status}`)}</Badge>
       </Link>
     </li>

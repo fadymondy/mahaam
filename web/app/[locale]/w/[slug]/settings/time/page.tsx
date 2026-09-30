@@ -5,7 +5,7 @@
 // reminders. Everyone reads them (the timesheets depend on them); admins change them.
 import { useMemo, useState, type FormEvent, type ReactNode } from "react"
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 import { useSWRConfig } from "swr"
 
 import { Button, FieldError, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
@@ -39,12 +39,12 @@ function zones(): string[] {
 
 function Row({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor?: string; children: ReactNode }) {
   return (
-    <div className="grid gap-2 border-b border-line px-6 py-5 md:grid-cols-[18rem_1fr] md:gap-8">
+    <div className="grid gap-2 border-b border-border px-6 py-5 md:grid-cols-[18rem_1fr] md:gap-8">
       <div>
-        <label htmlFor={htmlFor} className="text-sm font-medium text-grid-fg">
+        <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
           {label}
         </label>
-        {hint ? <p className="mt-1 text-meta text-grid-muted">{hint}</p> : null}
+        {hint ? <p className="mt-1 text-caption text-muted-foreground">{hint}</p> : null}
       </div>
       <div className="flex max-w-xl items-center">{children}</div>
     </div>
@@ -138,14 +138,14 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
   }
 
   return (
-    <form onSubmit={submit} className="border-t border-line" data-time-settings>
-      {!canEdit ? <p className="border-b border-line bg-grid-soft px-6 py-3 text-sm text-grid-body">{t("timeSettings.readOnly")}</p> : null}
+    <form onSubmit={submit} className="border-t border-border" data-time-settings>
+      {!canEdit ? <p className="border-b border-border bg-muted px-6 py-3 text-sm text-nq-fg-body">{t("timeSettings.readOnly")}</p> : null}
       <fieldset disabled={!canEdit || busy} className="contents">
         <Row label={t("timeSettings.timezone")} hint={t("timeSettings.timezoneHint")} htmlFor="ts-tz">
           <Popover open={tzOpen} onOpenChange={setTzOpen}>
             <PopoverTrigger render={<Button id="ts-tz" variant="secondary" disabled={!canEdit} className="w-full justify-between font-normal" data-timezone={v.timezone} />}>
               <span dir="ltr">{v.timezone}</span>
-              <ChevronsUpDownIcon className="text-grid-muted" />
+              <ChevronsUpDownIcon className="text-muted-foreground" />
             </PopoverTrigger>
             <PopoverContent align="start" className="w-(--anchor-width) min-w-72 p-0">
               <Command>
@@ -218,18 +218,18 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
         {canRates ? (
           <Row label={t("timeSettings.rates")} hint={t("timeSettings.defaultsHint")}>
             <div className="grid w-full gap-3 sm:grid-cols-2">
-              <label className="space-y-1.5 text-meta text-grid-muted">
+              <label className="space-y-1.5 text-caption text-muted-foreground">
                 <span>{t("timeSettings.defaultBill")}</span>
                 <span className="flex items-center gap-2">
                   <Input dir="ltr" inputMode="decimal" disabled={!ratesEditable} value={v.bill} onChange={(e) => setV((s) => ({ ...s, bill: e.target.value }))} placeholder="0.00" />
-                  <span className="font-mono text-grid-muted">{v.currency}</span>
+                  <span className="font-mono text-muted-foreground">{v.currency}</span>
                 </span>
               </label>
-              <label className="space-y-1.5 text-meta text-grid-muted">
+              <label className="space-y-1.5 text-caption text-muted-foreground">
                 <span>{t("timeSettings.defaultCost")}</span>
                 <span className="flex items-center gap-2">
                   <Input dir="ltr" inputMode="decimal" disabled={!ratesEditable} value={v.cost} onChange={(e) => setV((s) => ({ ...s, cost: e.target.value }))} placeholder="0.00" />
-                  <span className="font-mono text-grid-muted">{v.currency}</span>
+                  <span className="font-mono text-muted-foreground">{v.currency}</span>
                 </span>
               </label>
             </div>
@@ -237,11 +237,11 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
         ) : null}
         <Row label={t("timeSettings.reminders")} hint={t("timeSettings.remindersHint")}>
           <div className="w-full space-y-3">
-            <label className="flex items-center justify-between gap-4 text-sm text-grid-body">
+            <label className="flex items-center justify-between gap-4 text-sm text-nq-fg-body">
               <span>{t("timeSettings.runningHours")}</span>
               <Input dir="ltr" type="number" min={1} max={24} className="w-20" value={v.hours} onChange={(e) => setV((s) => ({ ...s, hours: e.target.value }))} />
             </label>
-            <label className="flex items-center justify-between gap-4 text-sm text-grid-body">
+            <label className="flex items-center justify-between gap-4 text-sm text-nq-fg-body">
               <span>{t("timeSettings.daily")}</span>
               <Switch checked={v.daily} disabled={!canEdit} onCheckedChange={(x) => setV((s) => ({ ...s, daily: x }))} />
             </label>

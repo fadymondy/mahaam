@@ -68,13 +68,13 @@ export function ActivityFeed({
   }
 
   return (
-    <ol className="divide-y divide-line border-y border-line" aria-label={t("activity.title")}>
+    <ol className="divide-y divide-line border-y border-border" aria-label={t("activity.title")}>
       {items.map((a) => (
         <li key={a.id} className="flex items-start gap-3 px-6 py-3 text-sm" data-action={a.action}>
           <PersonAvatar id={a.actor_id} dir={dir} className="mt-0.5" />
           <div className="min-w-0 flex-1">
-            <p className="text-grid-body">
-              <span className="font-medium text-grid-fg" dir="ltr">
+            <p className="text-nq-fg-body">
+              <span className="font-medium text-foreground" dir="ltr">
                 {dir.name(a.actor_id)}
               </span>{" "}
               {sentence(a)}
@@ -86,10 +86,10 @@ export function ActivityFeed({
               ) : null}
             </p>
             {typeof a.changes.excerpt === "string" && a.changes.excerpt ? (
-              <p className="mt-1 line-clamp-2 border-s-2 border-line ps-2 text-grid-muted">{a.changes.excerpt}</p>
+              <p className="mt-1 line-clamp-2 border-s-2 border-border ps-2 text-muted-foreground">{a.changes.excerpt}</p>
             ) : null}
           </div>
-          <time className="shrink-0 text-meta text-grid-muted" dateTime={a.created_at} title={new Date(a.created_at).toLocaleString()}>
+          <time className="shrink-0 text-caption text-muted-foreground" dateTime={a.created_at} title={new Date(a.created_at).toLocaleString()}>
             <Ltr>{timeAgo(a.created_at, locale)}</Ltr>
           </time>
         </li>

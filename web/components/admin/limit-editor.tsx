@@ -92,7 +92,7 @@ export function RuleFields({ id, draft, onChange, currency }: { id: string; draf
 export function RuleHeader({ currency }: { currency: string }) {
   const { t } = useTranslations()
   return (
-    <div className="grid grid-cols-2 gap-2 text-meta text-grid-muted sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 text-caption text-muted-foreground sm:grid-cols-4">
       <span>{t("admin.limit.limit")}</span>
       <span>{t("plan.col.policy")}</span>
       <span className="hidden sm:block">{t("admin.limit.unitPrice", { currency })}</span>

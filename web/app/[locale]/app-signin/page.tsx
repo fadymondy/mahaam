@@ -85,7 +85,7 @@ export default function AppSigninPage() {
     return (
       <PublicFrame title={t("appSignin.title")}>
         <PublicPanel>
-          <p className="p-6 text-sm text-grid-muted">{t("appSignin.badRequest")}</p>
+          <p className="p-6 text-sm text-muted-foreground">{t("appSignin.badRequest")}</p>
         </PublicPanel>
       </PublicFrame>
     )
@@ -96,25 +96,25 @@ export default function AppSigninPage() {
       <PublicPanel>
         <div className="flex flex-col gap-5 p-6" data-app-signin>
           {done ? (
-            <p className="text-sm text-grid-body" role="status" data-app-signin-done>
+            <p className="text-sm text-nq-fg-body" role="status" data-app-signin-done>
               {t("appSignin.done")}
             </p>
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center border border-line bg-grid-soft">
-                  {phone ? <SmartphoneIcon className="size-5 text-grid-action" /> : <LaptopIcon className="size-5 text-grid-action" />}
+                <span className="flex size-10 shrink-0 items-center justify-center border border-border bg-muted">
+                  {phone ? <SmartphoneIcon className="size-5 text-nq-accent-text" /> : <LaptopIcon className="size-5 text-nq-accent-text" />}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-grid-fg" dir="auto">
+                  <p className="truncate text-sm font-medium text-foreground" dir="auto">
                     {device || t("appSignin.anApp")}
                   </p>
-                  <p className="text-sm text-grid-muted">{t("appSignin.wantsToSignIn")}</p>
+                  <p className="text-sm text-muted-foreground">{t("appSignin.wantsToSignIn")}</p>
                 </div>
               </div>
-              <p className="text-sm text-grid-body">
+              <p className="text-sm text-nq-fg-body">
                 {t("appSignin.as")}{" "}
-                <span className="font-medium text-grid-fg" dir="ltr">
+                <span className="font-medium text-foreground" dir="ltr">
                   {me.data.email}
                 </span>
               </p>
@@ -132,7 +132,7 @@ export default function AppSigninPage() {
                   {t("appSignin.switch")}
                 </Button>
               </div>
-              <p className="text-meta text-grid-muted">{t("appSignin.notYou")}</p>
+              <p className="text-caption text-muted-foreground">{t("appSignin.notYou")}</p>
             </>
           )}
         </div>

@@ -40,9 +40,9 @@ export function TaskList({ board, labels, dir, onOpen }: { board: Board; labels:
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 border-b border-line px-6 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-6 py-3">
         <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-grid-muted" />
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("list.search")} aria-label={t("list.search")} className="ps-8" />
         </div>
         <Select items={whoItems} value={who} onValueChange={(v) => setWho(String(v ?? "all"))}>
@@ -67,10 +67,10 @@ export function TaskList({ board, labels, dir, onOpen }: { board: Board; labels:
           if (!rows.length) return null
           return (
             <section key={s.id} aria-label={s.name}>
-              <h2 className="flex items-center gap-2 border-b border-line bg-grid-soft px-6 py-2 text-sm font-medium">
+              <h2 className="flex items-center gap-2 border-b border-border bg-muted px-6 py-2 text-sm font-medium">
                 <ColorDot color={s.color} />
                 {s.name}
-                <span className="text-meta font-normal text-grid-muted">
+                <span className="text-caption font-normal text-muted-foreground">
                   <Ltr>{rows.length}</Ltr>
                 </span>
               </h2>
@@ -97,17 +97,17 @@ export function TaskList({ board, labels, dir, onOpen }: { board: Board; labels:
                         if (e.key === "Enter") onOpen(task.key)
                       }}
                     >
-                      <TableCell className="w-24 ps-6 text-meta text-grid-muted">
+                      <TableCell className="w-24 ps-6 text-caption text-muted-foreground">
                         <Ltr mono>{task.key}</Ltr>
                       </TableCell>
-                      <TableCell className={cn("max-w-md truncate font-medium", task.completed_at && "text-grid-muted line-through")}>{task.title}</TableCell>
+                      <TableCell className={cn("max-w-md truncate font-medium", task.completed_at && "text-muted-foreground line-through")}>{task.title}</TableCell>
                       <TableCell className="hidden md:table-cell">
                         <LabelChips ids={task.label_ids} labels={labels} />
                       </TableCell>
                       <TableCell className="w-10">
                         <PriorityIcon priority={task.priority} />
                       </TableCell>
-                      <TableCell className={cn("w-28 text-meta", isOverdue(task.due_at, task.completed_at) ? "text-grid-danger-text" : "text-grid-muted")}>
+                      <TableCell className={cn("w-28 text-caption", isOverdue(task.due_at, task.completed_at) ? "text-nq-danger-text" : "text-muted-foreground")}>
                         {task.due_at ? <Ltr>{formatDay(task.due_at, locale, "short")}</Ltr> : null}
                       </TableCell>
                       <TableCell className="w-28 pe-6">

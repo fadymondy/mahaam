@@ -93,7 +93,7 @@ export default function ProjectsPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-line px-6 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border px-6 py-3">
         <Tabs value={archived ? "archived" : "active"} onValueChange={(v) => setArchived(v === "archived")}>
           <TabsList>
             <TabsTab value="active">{t("projects.active")}</TabsTab>
@@ -101,7 +101,7 @@ export default function ProjectsPage() {
           </TabsList>
         </Tabs>
         <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-grid-muted" aria-hidden />
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("projects.search")} aria-label={t("projects.search")} className="h-9 ps-8" dir="auto" />
         </div>
         <FilterSelect value={status} onChange={setStatus} label={t("project.status")} items={[{ value: "", label: t("projects.allStatuses") }, ...PROJECT_STATUSES.map((x) => ({ value: x, label: t(`projectStatus.${x}`) }))]} />
@@ -127,7 +127,7 @@ export default function ProjectsPage() {
           }
         />
       ) : (
-        <ul className="divide-y divide-line border-y border-line" data-project-list>
+        <ul className="divide-y divide-line border-y border-border" data-project-list>
           {shown.map((p) => {
             const total = p.tasks.todo + p.tasks.doing + p.tasks.done
             const pct = total ? Math.round((p.tasks.done / total) * 100) : 0
@@ -135,16 +135,16 @@ export default function ProjectsPage() {
             const open = ISSUE_STATUSES.filter((x) => x !== "done").reduce((n, x) => n + (issues[x] ?? 0), 0)
             return (
               <li key={p.id} data-project={p.id}>
-                <Link href={`${base}/${p.id}/board`} className="flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-4 transition-colors hover:bg-grid-soft">
+                <Link href={`${base}/${p.id}/board`} className="flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-4 transition-colors hover:bg-muted">
                   <ProjectAvatar project={p} />
 
                   <span className="min-w-48 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="truncate text-base font-medium text-grid-fg" dir="auto">{p.name}</span>
+                      <span className="truncate text-base font-medium text-foreground" dir="auto">{p.name}</span>
                       <Badge variant="outline">{t(`projectStatus.${p.status}`)}</Badge>
-                      {p.visibility === "members" ? <LockIcon className="size-3.5 text-grid-muted" aria-label={t("project.private")} /> : null}
+                      {p.visibility === "members" ? <LockIcon className="size-3.5 text-muted-foreground" aria-label={t("project.private")} /> : null}
                     </span>
-                    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-grid-muted">
+                    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-muted-foreground">
                       {p.client_name ? (
                         <span className="inline-flex items-center gap-1" dir="auto">
                           <BriefcaseIcon className="size-3" /> {p.client_name}
@@ -164,12 +164,12 @@ export default function ProjectsPage() {
 
                   {/* The issue track: one segment per board status. */}
                   <span className="flex w-full flex-col gap-1.5 sm:w-72">
-                    <span className="flex h-1.5 w-full overflow-hidden bg-grid-soft" aria-hidden>
+                    <span className="flex h-1.5 w-full overflow-hidden bg-muted" aria-hidden>
                       {ISSUE_STATUSES.map((x) =>
                         issues[x] ? <span key={x} style={{ flexGrow: issues[x], background: STATUS_TONE[x] }} title={`${t(`issues.status.${x}`)}: ${issues[x]}`} /> : null,
                       )}
                     </span>
-                    <span className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-xs text-grid-muted">
+                    <span className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-xs text-muted-foreground">
                       {ISSUE_STATUSES.filter((x) => issues[x]).map((x) => (
                         <span key={x} className="inline-flex items-center gap-1">
                           <span className="size-1.5" style={{ background: STATUS_TONE[x] }} aria-hidden />
@@ -181,9 +181,9 @@ export default function ProjectsPage() {
                   </span>
 
                   <span className="flex w-24 shrink-0 flex-col items-end gap-1">
-                    <Ltr className="text-sm tabular-nums text-grid-fg">{pct}%</Ltr>
+                    <Ltr className="text-sm tabular-nums text-foreground">{pct}%</Ltr>
                     <Progress value={pct} className="h-1 w-full" />
-                    <Ltr className="text-meta tabular-nums text-grid-muted">
+                    <Ltr className="text-caption tabular-nums text-muted-foreground">
                       {p.tasks.done}/{total}
                     </Ltr>
                   </span>
@@ -191,7 +191,7 @@ export default function ProjectsPage() {
               </li>
             )
           })}
-          {shown.length === 0 ? <li className="px-6 py-10 text-center text-sm text-grid-muted">{t("projects.noMatch")}</li> : null}
+          {shown.length === 0 ? <li className="px-6 py-10 text-center text-sm text-muted-foreground">{t("projects.noMatch")}</li> : null}
         </ul>
       )}
 

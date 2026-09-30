@@ -40,15 +40,15 @@ export function PriorityIcon({ priority, className }: { priority: Priority; clas
   const cls = cn("size-3.5 shrink-0", className)
   switch (priority) {
     case "urgent":
-      return <SirenIcon aria-label={label} className={cn(cls, "text-grid-danger-text")} />
+      return <SirenIcon aria-label={label} className={cn(cls, "text-nq-danger-text")} />
     case "high":
-      return <SignalHighIcon aria-label={label} className={cn(cls, "text-grid-warn-text")} />
+      return <SignalHighIcon aria-label={label} className={cn(cls, "text-nq-warn-text")} />
     case "medium":
       return <SignalMediumIcon aria-label={label} className={cls} />
     case "low":
-      return <SignalLowIcon aria-label={label} className={cn(cls, "text-grid-muted")} />
+      return <SignalLowIcon aria-label={label} className={cn(cls, "text-muted-foreground")} />
     default:
-      return <MinusIcon aria-label={label} className={cn(cls, "text-grid-muted")} />
+      return <MinusIcon aria-label={label} className={cn(cls, "text-muted-foreground")} />
   }
 }
 
@@ -152,7 +152,7 @@ export function DateField({
               variant="secondary"
               size="sm"
               disabled={disabled}
-              className={cn("min-w-0 flex-1 justify-start font-normal", !value && "text-grid-muted", tone === "danger" && "text-grid-danger-text")}
+              className={cn("min-w-0 flex-1 justify-start font-normal", !value && "text-muted-foreground", tone === "danger" && "text-nq-danger-text")}
             />
           }
         >
@@ -217,14 +217,14 @@ export function MemberPicker({
         {selected.length ? (
           <>
             <AvatarStack ids={selected} dir={dir} />
-            <span className="truncate text-meta" dir="ltr">
+            <span className="truncate text-caption" dir="ltr">
               {selected.length === 1 ? dir.name(selected[0]) : ""}
             </span>
           </>
         ) : (
           <>
             <UserPlusIcon />
-            <span className="text-grid-muted">{t("task.unassigned")}</span>
+            <span className="text-muted-foreground">{t("task.unassigned")}</span>
           </>
         )}
       </PopoverTrigger>
@@ -236,13 +236,13 @@ export function MemberPicker({
             <CommandGroup>
               {pool.map((id) => (
                 <CommandItem key={id} value={dir.name(id)} onSelect={() => toggle(id)} data-user={id}>
-                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(id) ? "border-grid-action bg-grid-action text-grid-on-action" : "border-line")}>
+                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(id) ? "border-nq-action bg-nq-action text-nq-on-action" : "border-border")}>
                     {selected.includes(id) ? <CheckIcon className="size-3" /> : null}
                   </span>
                   <span className="truncate" dir="ltr">
                     {dir.name(id)}
                   </span>
-                  {id === dir.me ? <span className="ms-auto text-meta text-grid-muted">{t("people.you")}</span> : null}
+                  {id === dir.me ? <span className="ms-auto text-caption text-muted-foreground">{t("people.you")}</span> : null}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -298,7 +298,7 @@ export function LabelPicker({
         ) : (
           <>
             <TagIcon />
-            <span className="text-grid-muted">{t("task.noLabels")}</span>
+            <span className="text-muted-foreground">{t("task.noLabels")}</span>
           </>
         )}
       </PopoverTrigger>
@@ -310,7 +310,7 @@ export function LabelPicker({
             <CommandGroup>
               {labels.map((l) => (
                 <CommandItem key={l.id} value={l.name} onSelect={() => toggle(l.id)}>
-                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(l.id) ? "border-grid-action bg-grid-action text-grid-on-action" : "border-line")}>
+                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(l.id) ? "border-nq-action bg-nq-action text-nq-on-action" : "border-border")}>
                     {selected.includes(l.id) ? <CheckIcon className="size-3" /> : null}
                   </span>
                   <ColorDot color={l.color} />

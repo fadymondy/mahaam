@@ -13,16 +13,16 @@
     color: #000 !important;
   }
 
-  .grid-shell-nav,
-  header[data-live],
+  [data-slot="app-sidebar"],
+  [data-slot="app-shell-sheet"],
+  [data-slot="app-header"],
   [data-print-hide],
-  [data-mobile-nav],
   [data-sonner-toaster],
   button {
     display: none !important;
   }
 
-  .grid-shell {
+  [data-slot="app-shell"] {
     display: block !important;
   }
 

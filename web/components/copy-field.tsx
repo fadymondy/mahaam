@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { CheckIcon, CopyIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button } from "@fadymondy/nasaq/web"
 
@@ -25,18 +25,18 @@ export function CopyField({ value, label }: { value: string; label?: string }) {
   }
 
   return (
-    <div className="flex items-stretch border border-line bg-grid-card">
+    <div className="flex items-stretch border border-border bg-card">
       <code
         dir="ltr"
         aria-label={label}
-        className="ltr-isolate min-w-0 flex-1 overflow-x-auto px-3 py-2 font-mono text-xs leading-5 break-all whitespace-pre-wrap text-grid-fg select-all"
+        className="ltr-isolate min-w-0 flex-1 overflow-x-auto px-3 py-2 font-mono text-xs leading-5 break-all whitespace-pre-wrap text-foreground select-all"
       >
         {value}
       </code>
       <Button
         type="button"
         variant="ghost"
-        className="h-auto shrink-0 rounded-none border-s border-line px-3"
+        className="h-auto shrink-0 rounded-none border-s border-border px-3"
         onClick={copy}
         aria-label={t("common.copy")}
       >

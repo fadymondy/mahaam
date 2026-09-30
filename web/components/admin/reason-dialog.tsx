@@ -81,12 +81,12 @@ export function StatusBadge({ status }: { status: string }) {
     <span
       className={
         status === "suspended"
-          ? "inline-flex items-center gap-1.5 text-meta text-grid-danger-text"
-          : "inline-flex items-center gap-1.5 text-meta text-(--grid-ok-text)"
+          ? "inline-flex items-center gap-1.5 text-caption text-nq-danger-text"
+          : "inline-flex items-center gap-1.5 text-caption text-(--nq-ok-text)"
       }
       data-status={status}
     >
-      <span aria-hidden className={status === "suspended" ? "size-1.5 rounded-full bg-grid-danger" : "size-1.5 rounded-full bg-grid-ok"} />
+      <span aria-hidden className={status === "suspended" ? "size-1.5 rounded-full bg-nq-danger" : "size-1.5 rounded-full bg-nq-ok"} />
       {t(`admin.status.${status}`)}
     </span>
   )

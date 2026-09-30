@@ -81,19 +81,19 @@ export default function InvitePage() {
         </div>
       ) : (
         <>
-          <dl className="divide-y divide-line border border-line text-sm">
+          <dl className="divide-y divide-line border border-border text-sm">
             <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <dt className="text-grid-muted">{t("invite.workspace")}</dt>
+              <dt className="text-muted-foreground">{t("invite.workspace")}</dt>
               <dd className="font-medium">{inv.workspace_name}</dd>
             </div>
             <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <dt className="text-grid-muted">{t("invite.invitedEmail")}</dt>
+              <dt className="text-muted-foreground">{t("invite.invitedEmail")}</dt>
               <dd>
                 <Ltr>{inv.email}</Ltr>
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <dt className="text-grid-muted">{t("invite.role")}</dt>
+              <dt className="text-muted-foreground">{t("invite.role")}</dt>
               <dd>
                 <Badge variant="outline">{t(`role.${inv.role}`)}</Badge>
               </dd>
@@ -104,12 +104,12 @@ export default function InvitePage() {
             {inv.accepted ? (
               <p className="text-sm">{t("invite.alreadyAccepted")}</p>
             ) : inv.expired ? (
-              <p className="text-sm text-grid-danger-text">{t("invite.expired")}</p>
+              <p className="text-sm text-nq-danger-text">{t("invite.expired")}</p>
             ) : me.isLoading ? (
               <Skeleton className="h-9 w-40" />
             ) : !me.data ? (
               <>
-                <p className="text-sm text-grid-body">{t("invite.signInFirst")}</p>
+                <p className="text-sm text-nq-fg-body">{t("invite.signInFirst")}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="primary" nativeButton={false} render={<Link href={`/${locale}/login?next=${encodeURIComponent(here)}`} />}>
                     {t("auth.signIn")}
@@ -121,10 +121,10 @@ export default function InvitePage() {
               </>
             ) : (
               <>
-                <p className="text-sm text-grid-body">
-                  {t("invite.signedInAs")} <Ltr className="font-medium text-grid-fg">{signedInEmail}</Ltr>
+                <p className="text-sm text-nq-fg-body">
+                  {t("invite.signedInAs")} <Ltr className="font-medium text-foreground">{signedInEmail}</Ltr>
                 </p>
-                {emailMismatch ? <p className="text-sm text-grid-warn-text">{t("invite.mismatchHint")}</p> : null}
+                {emailMismatch ? <p className="text-sm text-nq-warn-text">{t("invite.mismatchHint")}</p> : null}
                 <Button variant="primary" onClick={accept} disabled={busy}>
                   {busy ? t("common.working") : t("invite.accept")}
                 </Button>
@@ -136,7 +136,7 @@ export default function InvitePage() {
               </Button>
             ) : null}
             {error ? (
-              <p role="alert" className="text-sm text-grid-danger-text">
+              <p role="alert" className="text-sm text-nq-danger-text">
                 {error}
               </p>
             ) : null}

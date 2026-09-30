@@ -6,7 +6,7 @@
 import { useEffect, useState, type FormEvent } from "react"
 import useSWR from "swr"
 import QRCode from "qrcode"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, Field, FieldDescription, FieldError, FieldLabel, Input } from "@fadymondy/nasaq/web"
 
@@ -46,7 +46,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
   return (
     <div className="space-y-3" data-recovery-codes>
       <p className="text-sm">{t("twofa.recoveryHint")}</p>
-      <ul className="grid grid-cols-2 gap-1 rounded-md border border-line p-3 font-mono text-sm" dir="ltr">
+      <ul className="grid grid-cols-2 gap-1 rounded-md border border-border p-3 font-mono text-sm" dir="ltr">
         {codes.map((c) => (
           <li key={c}>{c}</li>
         ))}
@@ -137,9 +137,9 @@ export function TwoFactor() {
 
   const s = state.data
   return (
-    <div className="mt-8 border-t border-line pt-5" data-two-factor>
-      <h3 className="grid-micro mb-2">{t("twofa.title")}</h3>
-      <p className="max-w-2xl text-sm text-grid-muted">
+    <div className="mt-8 border-t border-border pt-5" data-two-factor>
+      <h3 className="text-eyebrow uppercase mb-2">{t("twofa.title")}</h3>
+      <p className="max-w-2xl text-sm text-muted-foreground">
         {s?.enabled ? t("twofa.on", { n: s.recovery_codes_left }) : t("twofa.off")}
       </p>
 
@@ -207,15 +207,15 @@ export function TwoFactor() {
             })
           }
         >
-          <div className="rounded-md border border-line bg-white p-2">
+          <div className="rounded-md border border-border bg-white p-2">
             {/* The QR is a data: URL generated in the browser from the otpauth link. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {qr ? <img src={qr} alt={t("twofa.qrAlt")} width={192} height={192} data-twofa-qr /> : <div className="size-48" />}
           </div>
           <div className="flex flex-col gap-4">
             <p className="text-sm">{t("twofa.scan")}</p>
-            <p className="text-sm text-grid-muted">
-              {t("twofa.manual")} <Ltr mono className="break-all text-grid-fg" data-twofa-secret>{enroll.secret}</Ltr>
+            <p className="text-sm text-muted-foreground">
+              {t("twofa.manual")} <Ltr mono className="break-all text-foreground" data-twofa-secret>{enroll.secret}</Ltr>
             </p>
             <a href={enroll.otpauth_url} className="text-sm underline underline-offset-4">
               {t("twofa.openApp")}

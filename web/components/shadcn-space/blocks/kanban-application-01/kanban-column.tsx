@@ -47,16 +47,16 @@ export default function KanbanColumn({ column, canWrite, dir, labels, onOpen, on
 
   return (
     <section
-      className="flex min-w-64 flex-1 basis-0 flex-col border border-line bg-grid-soft data-[over=true]:border-grid-action"
+      className="flex min-w-64 flex-1 basis-0 flex-col border border-border bg-muted data-[over=true]:border-nq-action"
       data-over={isOver}
       data-status-id={column.status.id}
       data-category={column.status.category}
       aria-label={column.status.name}
     >
-      <header className="flex items-center gap-2 border-b border-line px-3 py-2">
+      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
         <ColorDot color={column.status.color} />
-        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-grid-fg">{column.status.name}</h2>
-        <span className="text-xs text-grid-muted">
+        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{column.status.name}</h2>
+        <span className="text-xs text-muted-foreground">
           <Ltr>{column.tasks.length}</Ltr>
         </span>
         {canWrite ? (
@@ -72,7 +72,7 @@ export default function KanbanColumn({ column, canWrite, dir, labels, onOpen, on
             <TaskCard key={task.id} task={task} dir={dir} labels={labels} draggable={canWrite} onOpen={() => onOpen(task.key)} />
           ))}
         </SortableContext>
-        {column.tasks.length === 0 && !adding ? <p className="px-1 py-4 text-center text-xs text-grid-muted">{t("board.emptyColumn")}</p> : null}
+        {column.tasks.length === 0 && !adding ? <p className="px-1 py-4 text-center text-xs text-muted-foreground">{t("board.emptyColumn")}</p> : null}
 
         {adding ? (
           <Input
@@ -90,7 +90,7 @@ export default function KanbanColumn({ column, canWrite, dir, labels, onOpen, on
             onBlur={() => void commit()}
             placeholder={t("board.newTaskPlaceholder")}
             aria-label={t("board.newTaskPlaceholder")}
-            className="bg-grid-card text-sm"
+            className="bg-card text-sm"
           />
         ) : null}
       </div>

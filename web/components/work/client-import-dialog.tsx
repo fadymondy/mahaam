@@ -5,7 +5,7 @@
 // /api/w/clients/import/*; the server re-plans on commit, so the preview is only what the user saw.
 import { useEffect, useMemo, useState } from "react"
 import { FileUpIcon, LoaderIcon, RefreshCwIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
 
@@ -205,41 +205,41 @@ export function ClientImportDialog({
           {tab === "file" ? (
             <>
               <FilePick accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" label={t("clientImport.fileLabel")} name={fileName} onFile={onFile} />
-              <p className="text-grid-muted">{t("clientImport.fileHelp")}</p>
+              <p className="text-muted-foreground">{t("clientImport.fileHelp")}</p>
             </>
           ) : tab === "google" ? (
             <>
-              <p className="text-grid-muted">{t("clientImport.googleHelp")}</p>
+              <p className="text-muted-foreground">{t("clientImport.googleHelp")}</p>
               {sources?.google ? (
                 <Button variant="primary" onClick={connectGoogle} disabled={!!busy} data-google-connect>
                   {busy === "google" ? <LoaderIcon className="animate-spin" /> : null}
                   {t("clientImport.googleConnect")}
                 </Button>
               ) : sources ? (
-                <p className="text-grid-muted" data-not-configured="google">
+                <p className="text-muted-foreground" data-not-configured="google">
                   {t("clientImport.notConfigured")}
                 </p>
               ) : null}
-              <p className="text-grid-muted">{t("clientImport.googleCsv")}</p>
+              <p className="text-muted-foreground">{t("clientImport.googleCsv")}</p>
             </>
           ) : (
             <>
               <FilePick accept=".vcf,text/vcard,text/x-vcard" label={t("clientImport.waVcf")} name={fileName} onFile={onFile} />
-              <p className="text-grid-muted">{t("clientImport.waHelp")}</p>
+              <p className="text-muted-foreground">{t("clientImport.waHelp")}</p>
               {sources?.whatsapp_api ? (
                 <Button variant="secondary" disabled={!!busy} onClick={() => runPreview({ source: "whatsapp_api" })} data-whatsapp-api>
                   <RefreshCwIcon />
                   {t("clientImport.waApi")}
                 </Button>
               ) : sources ? (
-                <p className="text-grid-muted" data-not-configured="whatsapp">
+                <p className="text-muted-foreground" data-not-configured="whatsapp">
                   {t("clientImport.waApi")}: {t("clientImport.notConfigured")}
                 </p>
               ) : null}
             </>
           )}
 
-          <label className="flex items-center gap-2 text-grid-body">
+          <label className="flex items-center gap-2 text-nq-fg-body">
             <Switch
               checked={updateExisting}
               onCheckedChange={(v) => {
@@ -256,7 +256,7 @@ export function ClientImportDialog({
             </p>
           ) : null}
           {busy === "preview" ? (
-            <p className="flex items-center gap-2 text-grid-muted">
+            <p className="flex items-center gap-2 text-muted-foreground">
               <LoaderIcon className="size-4 animate-spin" />
               {t("clientImport.previewing")}
             </p>
@@ -266,7 +266,7 @@ export function ClientImportDialog({
         {preview && preview.headers.length > 0 ? (
           <section className="space-y-2" aria-label={t("clientImport.mapping")}>
             <h3 className="text-sm font-medium">{t("clientImport.mapping")}</h3>
-            <p className="text-meta text-grid-muted">{preview.header_row > 0 ? t("clientImport.headerRow", { n: preview.header_row }) : t("clientImport.noHeader")}</p>
+            <p className="text-caption text-muted-foreground">{preview.header_row > 0 ? t("clientImport.headerRow", { n: preview.header_row }) : t("clientImport.noHeader")}</p>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {preview.headers.map((h) => (
                 <label key={h} className="flex items-center gap-2 text-sm">
@@ -296,7 +296,7 @@ export function ClientImportDialog({
             <p className="text-sm" data-import-counts>
               {t("clientImport.counts", { ...preview.counts })}
             </p>
-            <div className="max-h-80 overflow-auto border border-line">
+            <div className="max-h-80 overflow-auto border border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -320,9 +320,9 @@ export function ClientImportDialog({
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-48 truncate">{r.name || "—"}</TableCell>
-                      <TableCell className="hidden text-grid-muted md:table-cell">{r.email ? <Ltr>{r.email}</Ltr> : "—"}</TableCell>
-                      <TableCell className="hidden text-grid-muted md:table-cell">{r.phone ? <Ltr>{r.phone}</Ltr> : "—"}</TableCell>
-                      <TableCell className="text-meta text-grid-muted">
+                      <TableCell className="hidden text-muted-foreground md:table-cell">{r.email ? <Ltr>{r.email}</Ltr> : "—"}</TableCell>
+                      <TableCell className="hidden text-muted-foreground md:table-cell">{r.phone ? <Ltr>{r.phone}</Ltr> : "—"}</TableCell>
+                      <TableCell className="text-caption text-muted-foreground">
                         {r.errors?.length
                           ? r.errors.map((e, i) => (
                               <span key={i} className="block text-destructive">
@@ -342,7 +342,7 @@ export function ClientImportDialog({
                 </TableBody>
               </Table>
             </div>
-            {preview.rows.length > SHOWN ? <p className="text-meta text-grid-muted">{t("clientImport.more", { n: preview.rows.length - SHOWN })}</p> : null}
+            {preview.rows.length > SHOWN ? <p className="text-caption text-muted-foreground">{t("clientImport.more", { n: preview.rows.length - SHOWN })}</p> : null}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={reset}>
                 {t("clientImport.back")}
@@ -362,11 +362,11 @@ export function ClientImportDialog({
 function FilePick({ accept, label, name, onFile }: { accept: string; label: string; name: string; onFile: (f: File | undefined) => void }) {
   const { t } = useTranslations()
   return (
-    <label className="flex cursor-pointer items-center gap-3 border border-dashed border-line px-4 py-3 hover:bg-grid-hover">
-      <FileUpIcon className="size-5 text-grid-muted" />
+    <label className="flex cursor-pointer items-center gap-3 border border-dashed border-border px-4 py-3 hover:bg-nq-hover">
+      <FileUpIcon className="size-5 text-muted-foreground" />
       <span className="flex-1">
         <span className="block font-medium">{label}</span>
-        <span className="block text-meta text-grid-muted">{name || t("clientImport.choose")}</span>
+        <span className="block text-caption text-muted-foreground">{name || t("clientImport.choose")}</span>
       </span>
       <input
         type="file"

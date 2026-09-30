@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { PlusIcon, SearchIcon } from "lucide-react"
 import { ListFilter } from "@/components/list-filter"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
 
@@ -84,7 +84,7 @@ export default function InvoicesPage() {
   }, [all, q, client, due])
   const filtered = !!(q.trim() || client || due)
 
-  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-grid-muted">{t("invoices.noPermission")}</p>
+  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("invoices.noPermission")}</p>
 
   return (
     <>
@@ -101,9 +101,9 @@ export default function InvoicesPage() {
           ) : null
         }
       />
-      <div className="flex flex-wrap items-center gap-2 border-t border-line px-6 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border px-6 py-3">
         <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-grid-muted" aria-hidden />
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("invoices.search")} aria-label={t("invoices.search")} className="h-9 ps-8" dir="auto" />
         </div>
         <ListFilter value={client} onChange={setClient} label={t("invoices.col.client")} items={[{ value: "", label: t("invoices.filter.allClients") }, ...clientOptions]} />
@@ -131,7 +131,7 @@ export default function InvoicesPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("invoices.none")} body={canWrite ? t("invoices.noneHint") : undefined} />
       ) : (
-        <div className="border-y border-line">
+        <div className="border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -150,11 +150,11 @@ export default function InvoicesPage() {
                       <Ltr mono>{iv.number}</Ltr>
                     </Link>
                   </TableCell>
-                  <TableCell className="text-grid-body">{iv.client_name ?? "—"}</TableCell>
+                  <TableCell className="text-nq-fg-body">{iv.client_name ?? "—"}</TableCell>
                   <TableCell>
                     <StatusBadge status={iv.status} />
                   </TableCell>
-                  <TableCell className="hidden text-grid-muted sm:table-cell">
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
                     <Ltr mono>{iv.issue_date}</Ltr>
                   </TableCell>
                   <TableCell className="pe-6 text-end tabular-nums">
@@ -251,7 +251,7 @@ function NewInvoiceForm({ onDone }: { onDone: (iv?: Invoice) => void }) {
             </SelectContent>
           </Select>
           {v.client ? (
-            <p className="mt-1 text-meta text-grid-muted" data-unbilled-preview>
+            <p className="mt-1 text-caption text-muted-foreground" data-unbilled-preview>
               {u
                 ? u.entry_count === 0
                   ? t("newInvoice.noUnbilled")

@@ -31,23 +31,23 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
               aria-current={d === doc ? "page" : undefined}
               className={cn(
                 "underline-offset-4",
-                d === doc ? "font-medium text-grid-fg" : "text-grid-muted hover:text-grid-fg hover:underline",
+                d === doc ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground hover:underline",
               )}
             >
               {legalText(d, locale).title}
             </Link>
           ))}
-          <span className="grid-micro ms-auto">{t("legal.updated", { date: formatDate(LEGAL_UPDATED) })}</span>
+          <span className="text-eyebrow uppercase ms-auto">{t("legal.updated", { date: formatDate(LEGAL_UPDATED) })}</span>
         </nav>
         {!LEGAL_REVIEWED ? (
-          <p className="mb-6 rounded-md border border-line p-3 text-sm text-grid-muted" role="note" data-legal-draft>
+          <p className="mb-6 rounded-md border border-border p-3 text-sm text-muted-foreground" role="note" data-legal-draft>
             {t("legal.draft")}
           </p>
         ) : null}
         <article className="max-w-[68ch] text-[15px] leading-relaxed" data-legal-doc={doc}>
           {text.sections.map((s) => (
             <section key={s.id} id={s.id} aria-labelledby={`${s.id}-heading`} className="mt-8 scroll-mt-20 first:mt-0">
-              <h2 id={`${s.id}-heading`} className="mb-2 text-base font-semibold text-grid-fg">
+              <h2 id={`${s.id}-heading`} className="mb-2 text-base font-semibold text-foreground">
                 <a href={`#${s.id}`} className="underline-offset-4 hover:underline">
                   {s.heading}
                 </a>

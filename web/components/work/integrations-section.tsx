@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
 import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
@@ -40,12 +40,12 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
   const reload = () => void list.mutate()
 
   return (
-    <section id="integrations" className="border-b border-line">
+    <section id="integrations" className="border-b border-border">
       <div className="px-6 pt-6 pb-3">
         <h2 className="text-base font-medium">{t("int.title")}</h2>
-        <p className="mt-1 text-sm text-grid-muted">{t("int.hint")}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("int.hint")}</p>
       </div>
-      <div className="divide-y divide-line border-y border-line">
+      <div className="divide-y divide-line border-y border-border">
         <GitHubCard projectId={projectId} it={by("github")} canManage={canManage} onChanged={reload} />
         <JiraCard projectId={projectId} it={by("jira")} canManage={canManage} onChanged={reload} />
         <LinearCard projectId={projectId} it={by("linear")} canManage={canManage} onChanged={reload} />
@@ -82,10 +82,10 @@ function Header({ name, desc, it, canManage, projectId, onChanged }: { name: str
           <h3 className="font-medium">{name}</h3>
           {it ? <Badge variant={statusVariant(it.status)}>{t(`int.status.${it.status}`)}</Badge> : <Badge variant="outline">{t("int.notConnected")}</Badge>}
           {it ? (
-            <span className="text-meta text-grid-muted">{it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")}</span>
+            <span className="text-caption text-muted-foreground">{it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")}</span>
           ) : null}
         </div>
-        <p className="mt-1 text-sm text-grid-muted">{desc}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
         {it?.last_error ? (
           <p className="mt-2 text-sm text-destructive" dir="auto">
             {it.last_error}
@@ -178,7 +178,7 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-grid-muted">{t("int.github.noRepos")}</p>
+              <p className="text-sm text-muted-foreground">{t("int.github.noRepos")}</p>
             )
           ) : null}
           {repos.error && it ? <p className="text-sm text-destructive">{errorText(repos.error, t("common.networkError"))}</p> : null}
@@ -197,7 +197,7 @@ function RepoSearch({ repos, value, onChange }: { repos: string[]; value: string
   return (
     <div className="w-full max-w-md space-y-1" data-repo-search>
       <Input dir="ltr" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("int.github.searchRepo")} aria-label={t("int.github.searchRepo")} />
-      <ul role="listbox" aria-label={t("int.github.repo")} className="max-h-60 overflow-y-auto rounded-md border border-line">
+      <ul role="listbox" aria-label={t("int.github.repo")} className="max-h-60 overflow-y-auto rounded-md border border-border">
         {shown.length ? (
           shown.slice(0, 200).map((r) => (
             <li key={r} role="option" aria-selected={r === value}>
@@ -205,14 +205,14 @@ function RepoSearch({ repos, value, onChange }: { repos: string[]; value: string
                 type="button"
                 dir="ltr"
                 onClick={() => onChange(r)}
-                className={`block w-full truncate px-3 py-1.5 text-start text-sm hover:bg-grid-soft ${r === value ? "bg-grid-soft font-medium" : ""}`}
+                className={`block w-full truncate px-3 py-1.5 text-start text-sm hover:bg-muted ${r === value ? "bg-muted font-medium" : ""}`}
               >
                 {r}
               </button>
             </li>
           ))
         ) : (
-          <li className="px-3 py-2 text-sm text-grid-muted">{t("int.github.noMatch")}</li>
+          <li className="px-3 py-2 text-sm text-muted-foreground">{t("int.github.noMatch")}</li>
         )}
       </ul>
     </div>

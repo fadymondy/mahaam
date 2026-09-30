@@ -126,7 +126,7 @@ export function MentionTextarea({
         aria-expanded={matches.length > 0}
       />
       {matches.length ? (
-        <ul role="listbox" className="absolute inset-x-0 top-full z-50 mt-1 max-h-64 overflow-y-auto border border-line bg-popover shadow-md">
+        <ul role="listbox" className="absolute inset-x-0 top-full z-50 mt-1 max-h-64 overflow-y-auto border border-border bg-popover shadow-md">
           {matches.map((s, i) => {
             const I = Icon[s.kind]
             return (
@@ -136,13 +136,13 @@ export function MentionTextarea({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => pick(s)}
                   onMouseEnter={() => setActive(i)}
-                  className={cn("flex w-full items-center gap-2 px-3 py-2 text-start text-sm", i === active && "bg-grid-soft")}
+                  className={cn("flex w-full items-center gap-2 px-3 py-2 text-start text-sm", i === active && "bg-muted")}
                 >
-                  <I className="size-3.5 shrink-0 text-grid-muted" />
+                  <I className="size-3.5 shrink-0 text-muted-foreground" />
                   <span dir="ltr" className="font-mono">
                     {s.kind === "skill" ? s.label : "@" + s.label}
                   </span>
-                  <span className="ms-auto truncate text-meta text-grid-muted">
+                  <span className="ms-auto truncate text-caption text-muted-foreground">
                     {s.kind === "agent" ? t("issues.mention.agent") : s.kind === "skill" ? t("issues.mention.skill") : s.hint}
                   </span>
                 </button>

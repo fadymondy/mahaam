@@ -52,7 +52,7 @@ export function StartTimerButton({
 
   if (variant === "icon") {
     return (
-      <Button size="icon-sm" variant={here ? "primary" : "secondary"} className={cn("bg-grid-card", here && "bg-grid-action", className)} {...common}>
+      <Button size="icon-sm" variant={here ? "primary" : "secondary"} className={cn("bg-card", here && "bg-nq-action", className)} {...common}>
         {here ? <SquareIcon /> : <PlayIcon />}
       </Button>
     )

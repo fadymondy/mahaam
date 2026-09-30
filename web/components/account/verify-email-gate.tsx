@@ -7,7 +7,7 @@
 // was about to act.
 import { useState, type FormEvent, type ReactNode } from "react"
 import useSWR from "swr"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, Field, FieldDescription, FieldError, FieldLabel, Input } from "@fadymondy/nasaq/web"
 

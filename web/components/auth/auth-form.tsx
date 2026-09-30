@@ -167,7 +167,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         {challenge ? (
           <form onSubmit={onSecondFactor} noValidate data-mfa-form>
             <div className="flex flex-col gap-4">
-              <p className="text-sm text-grid-muted" role="status">
+              <p className="text-sm text-muted-foreground" role="status">
                 {useRecovery ? t("auth.mfaRecoveryHint") : t("auth.mfaHint")}
               </p>
               <Field data-invalid={!!error || undefined}>
@@ -207,7 +207,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <div className="flex flex-col gap-4">
             {mode === "login" && params.get("deleted") ? (
               // Arrived from deleting the account: say when, and that signing in is the undo.
-              <p className="rounded-md border border-line p-3 text-sm" role="status" data-deleted-notice>
+              <p className="rounded-md border border-border p-3 text-sm" role="status" data-deleted-notice>
                 {t("auth.deletedNotice", { date: formatDate(params.get("deleted")) })}
               </p>
             ) : null}
@@ -240,7 +240,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               {mode === "login" ? (
                 <Link
                   href={`/${locale}/forgot-password`}
-                  className="self-end text-sm text-grid-muted underline-offset-4 hover:text-grid-fg hover:underline"
+                  className="self-end text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
                   {t("auth.forgotPassword")}
                 </Link>
@@ -258,7 +258,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <div className="mt-6 space-y-3">
             <div className="flex items-center gap-3">
               <Separator className="flex-1" />
-              <span className="grid-micro">{t("auth.or")}</span>
+              <span className="text-eyebrow uppercase">{t("auth.or")}</span>
               <Separator className="flex-1" />
             </div>
             {providers.map((p) => (
@@ -288,7 +288,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         {mode === "register" ? (
           // Links rather than a checkbox: submitting the form is the agreement, and a box that
           // must be ticked before the button works adds a step without adding consent.
-          <p className="mt-4 text-center text-meta text-grid-muted" data-consent>
+          <p className="mt-4 text-center text-caption text-muted-foreground" data-consent>
             {t("auth.consent")
               .split(/(\{terms\}|\{privacy\})/)
               .map((part, i) =>
@@ -296,7 +296,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                   <Link
                     key={i}
                     href={`/${locale}/legal/${part === "{terms}" ? "terms" : "privacy"}`}
-                    className="text-grid-fg underline underline-offset-4"
+                    className="text-foreground underline underline-offset-4"
                   >
                     {t(part === "{terms}" ? "auth.consentTerms" : "auth.consentPrivacy")}
                   </Link>
@@ -306,9 +306,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               )}
           </p>
         ) : null}
-        <p className="mt-6 text-center text-sm text-grid-muted">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "login" ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
-          <Link href={otherHref} className="font-medium text-grid-fg underline underline-offset-4">
+          <Link href={otherHref} className="font-medium text-foreground underline underline-offset-4">
             {mode === "login" ? t("auth.createAccount") : t("auth.signIn")}
           </Link>
         </p>

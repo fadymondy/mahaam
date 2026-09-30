@@ -5,7 +5,7 @@
 // running-timer cache on timer.started / timer.stopped.
 import { useEffect, useState, type FormEvent } from "react"
 import { CornerDownLeftIcon, PlayIcon, SquareIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
@@ -91,15 +91,15 @@ export function TimerBar() {
   return (
     <div data-timer-bar data-running={timer ? "true" : "false"} className="flex min-w-0 items-center">
       {timer ? (
-        <div className="flex h-8 min-w-0 items-center gap-2 border border-line bg-grid-card ps-2.5 pe-0.5" data-timer-running={timer.id}>
+        <div className="flex h-8 min-w-0 items-center gap-2 border border-border bg-card ps-2.5 pe-0.5" data-timer-running={timer.id}>
           <span className="relative flex size-2.5 shrink-0" aria-hidden>
-            <span className="absolute inline-flex size-full animate-ping rounded-full opacity-60 motion-reduce:animate-none" style={{ background: "var(--grid-action)" }} />
+            <span className="absolute inline-flex size-full animate-ping rounded-full opacity-60 motion-reduce:animate-none" style={{ background: "var(--nq-action)" }} />
             <ColorDot color={timer.project_color ?? "violet"} className="relative" />
           </span>
           <span className="hidden max-w-[16rem] min-w-0 truncate text-sm md:inline" title={where ? `${what} — ${where}` : what} data-timer-what>
             {what}
           </span>
-          {where ? <span className="hidden max-w-[12rem] truncate text-meta text-grid-muted xl:inline">{where}</span> : null}
+          {where ? <span className="hidden max-w-[12rem] truncate text-caption text-muted-foreground xl:inline">{where}</span> : null}
           <Ltr mono className="text-sm tabular-nums" data-timer-elapsed>
             {clock(entrySeconds(timer, now))}
           </Ltr>
@@ -112,7 +112,7 @@ export function TimerBar() {
           <PopoverTrigger render={<Button variant="secondary" size="sm" aria-label={t("timer.start")} title={t("timer.shortcut")} data-timer-start />}>
             <PlayIcon />
             <span className="hidden sm:inline">{t("timer.start")}</span>
-            <kbd className="hidden font-mono text-xs text-grid-muted lg:inline" dir="ltr">
+            <kbd className="hidden font-mono text-xs text-muted-foreground lg:inline" dir="ltr">
               ⌘K
             </kbd>
           </PopoverTrigger>
@@ -182,7 +182,7 @@ function StartPalette({ open, onOpenChange, onStart }: { open: boolean; onOpenCh
               <CommandItem value="__free" onSelect={() => go({})} data-palette-free>
                 <PlayIcon />
                 <span className="truncate">{text ? t("timer.startFree", { text }) : t("timer.startBlank")}</span>
-                <CornerDownLeftIcon className="ms-auto text-grid-muted" />
+                <CornerDownLeftIcon className="ms-auto text-muted-foreground" />
               </CommandItem>
             </CommandGroup>
             {tasks.length ? (
@@ -190,11 +190,11 @@ function StartPalette({ open, onOpenChange, onStart }: { open: boolean; onOpenCh
                 {tasks.map((task) => (
                   <CommandItem key={task.id} value={`t:${task.id}`} onSelect={() => go(taskTarget(task, byProject), false)} data-palette-task={task.key}>
                     <ColorDot color={byProject.get(task.project_id)?.color} />
-                    <Ltr mono className="text-xs text-grid-muted">
+                    <Ltr mono className="text-xs text-muted-foreground">
                       {task.key}
                     </Ltr>
                     <span className="truncate">{task.title}</span>
-                    <span className="ms-auto truncate text-meta text-grid-muted">{byProject.get(task.project_id)?.name}</span>
+                    <span className="ms-auto truncate text-caption text-muted-foreground">{byProject.get(task.project_id)?.name}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>

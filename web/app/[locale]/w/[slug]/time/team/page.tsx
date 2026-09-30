@@ -44,7 +44,7 @@ function TeamView() {
   const week = params.get("week")
   const team = useTeamTimesheet(ws.id, week, manage)
 
-  if (ws.current && !manage) return <p className="px-6 py-6 text-sm text-grid-muted">{t("team.noPermission")}</p>
+  if (ws.current && !manage) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("team.noPermission")}</p>
 
   const tt = team.data
   const tz = tt?.timezone ?? ws.current?.workspace.timezone ?? "UTC"
@@ -67,14 +67,14 @@ function TeamView() {
       ) : tt.members.length === 0 ? (
         <EmptyState title={t("team.empty")} />
       ) : (
-        <div className="border-y border-line" data-team-grid>
+        <div className="border-y border-border" data-team-grid>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="ps-6">{t("team.member")}</TableHead>
                 {days.map((d) => (
-                  <TableHead key={d} className={cn("hidden w-[7%] text-end md:table-cell", d === today && "text-grid-fg")}>
-                    <span className="block text-xs font-normal text-grid-muted">{weekdayShort(d, locale)}</span>
+                  <TableHead key={d} className={cn("hidden w-[7%] text-end md:table-cell", d === today && "text-foreground")}>
+                    <span className="block text-xs font-normal text-muted-foreground">{weekdayShort(d, locale)}</span>
                     <Ltr>{Number(d.slice(8))}</Ltr>
                   </TableHead>
                 ))}
@@ -93,11 +93,11 @@ function TeamView() {
                       <PersonAvatar id={m.user_id} dir={dir} />
                       <span className="min-w-0">
                         <Ltr className="block truncate text-sm">{dir.name(m.user_id)}</Ltr>
-                        <span className="flex items-center gap-2 text-meta text-grid-muted">
+                        <span className="flex items-center gap-2 text-caption text-muted-foreground">
                           {t(`role.${m.role}`)}
                           {m.running ? (
                             <Badge variant="outline" className="gap-1.5" data-team-running>
-                              <span className="size-1.5 animate-pulse rounded-full bg-grid-action motion-reduce:animate-none" aria-hidden />
+                              <span className="size-1.5 animate-pulse rounded-full bg-nq-action motion-reduce:animate-none" aria-hidden />
                               {t("team.runningNow")}
                             </Badge>
                           ) : null}
@@ -106,8 +106,8 @@ function TeamView() {
                     </span>
                   </TableCell>
                   {days.map((d, i) => (
-                    <TableCell key={d} className={cn("hidden text-end tabular-nums md:table-cell", d === today && "bg-grid-soft/60")}>
-                      <Ltr mono className={m.seconds[i] ? "" : "text-grid-line"}>
+                    <TableCell key={d} className={cn("hidden text-end tabular-nums md:table-cell", d === today && "bg-muted/60")}>
+                      <Ltr mono className={m.seconds[i] ? "" : "text-border"}>
                         {hm(m.seconds[i], "·")}
                       </Ltr>
                     </TableCell>
@@ -115,7 +115,7 @@ function TeamView() {
                   <TableCell className="text-end font-medium tabular-nums">
                     <Ltr mono>{hm(m.total_s, "0:00")}</Ltr>
                   </TableCell>
-                  <TableCell className="hidden text-end text-grid-muted tabular-nums sm:table-cell">
+                  <TableCell className="hidden text-end text-muted-foreground tabular-nums sm:table-cell">
                     <Ltr mono>{hm(m.billable_s, "0:00")}</Ltr>
                   </TableCell>
                   <TableCell className="pe-6 text-end">

@@ -7,7 +7,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { BotIcon, KeyRoundIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Button } from "@fadymondy/nasaq/web"
 
@@ -56,14 +56,14 @@ export function ConnectAiCard() {
   )
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-line bg-card" data-connect-ai>
-      <header className="flex flex-wrap items-center gap-3 border-b border-line bg-grid-action/5 px-5 py-4">
-        <span className="grid size-10 place-items-center rounded-lg bg-grid-action/15 text-grid-action">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card" data-connect-ai>
+      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-nq-action/5 px-5 py-4">
+        <span className="grid size-10 place-items-center rounded-lg bg-nq-action/15 text-nq-accent-text">
           <BotIcon className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="font-medium">{t("connectAi.title")}</h2>
-          <p className="text-sm text-grid-muted">{t("connectAi.body")}</p>
+          <p className="text-sm text-muted-foreground">{t("connectAi.body")}</p>
         </div>
         {!token ? (
           <Button variant="primary" onClick={mint} disabled={busy} data-action="mint-token">
@@ -73,25 +73,25 @@ export function ConnectAiCard() {
       </header>
       <div className="space-y-4 p-5">
         <div className="space-y-1.5">
-          <p className="grid-micro">{t("connectAi.endpoint")}</p>
+          <p className="text-eyebrow uppercase">{t("connectAi.endpoint")}</p>
           <CopyField value={url} />
         </div>
         {token ? (
           <div className="space-y-1.5">
-            <p className="grid-micro">{t("connectAi.token")}</p>
+            <p className="text-eyebrow uppercase">{t("connectAi.token")}</p>
             <CopyField value={token} />
-            <p className="text-meta text-grid-warn-text">{t("mcp.shownOnce")}</p>
+            <p className="text-caption text-nq-warn-text">{t("mcp.shownOnce")}</p>
           </div>
         ) : null}
         <div className="space-y-1.5">
-          <p className="grid-micro">{t("connectAi.claudeCode")}</p>
-          <pre dir="ltr" className="overflow-x-auto rounded-md border border-line bg-muted/40 p-3 text-xs">
+          <p className="text-eyebrow uppercase">{t("connectAi.claudeCode")}</p>
+          <pre dir="ltr" className="overflow-x-auto rounded-md border border-border bg-muted/40 p-3 text-xs">
             <code>{claudeCode}</code>
           </pre>
         </div>
         <div className="space-y-1.5">
-          <p className="grid-micro">{t("connectAi.desktop")}</p>
-          <pre dir="ltr" className="overflow-x-auto rounded-md border border-line bg-muted/40 p-3 text-xs">
+          <p className="text-eyebrow uppercase">{t("connectAi.desktop")}</p>
+          <pre dir="ltr" className="overflow-x-auto rounded-md border border-border bg-muted/40 p-3 text-xs">
             <code>{desktop}</code>
           </pre>
           <Button
@@ -105,9 +105,9 @@ export function ConnectAiCard() {
             {t("connectAi.copyConfig")}
           </Button>
         </div>
-        <p className="text-meta text-grid-muted">
+        <p className="text-caption text-muted-foreground">
           {t("connectAi.tools")}{" "}
-          <Link href={`/${locale}/w/${ws.slug}/settings/mcp`} className="text-grid-action hover:underline">
+          <Link href={`/${locale}/w/${ws.slug}/settings/mcp`} className="text-nq-accent-text hover:underline">
             {t("connectAi.manage")}
           </Link>
         </p>
