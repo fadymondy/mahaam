@@ -192,53 +192,130 @@ func (s *hubStack) count(q string, args ...any) int {
 	return n
 }
 
-// The whole browser round trip: login -> hub authorize -> callback. The fake hub's ID token has no
-// email_verified claim, so an unverified address must be refused — with no account created.
-func TestCircleXOLoginRoundTrip(t *testing.T) {
-	s := bootHub(t)
-	if code, _ := s.get("/api/circlexo/config"); code != 200 {
-		t.Fatalf("config: %d", code)
-	}
-	email := "roundtrip-" + rnd() + "@example.test"
+// roundTrip is the whole browser flow for one hub user: /auth/circlexo/login -> the hub's authorize
+// endpoint (which signs the fake user in) -> /auth/circlexo/callback. It returns where the callback
+// sent the browser and the cookie jar the flow ran in.
+func (s *hubStack) roundTrip(u circlexotest.User, launch string) (string, *http.Client) {
+	s.t.Helper()
 	s.hub.Lock()
-	s.hub.User = circlexotest.User{ID: "sub-" + rnd(), Email: email, Name: "Round Trip", OrgID: "", OrgRole: ""}
+	s.hub.User = u
 	s.hub.Unlock()
-
-	noFollow := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	jar := newClient(t, s.srv.URL).http.Jar
-	noFollow.Jar = jar
-
-	res, err := noFollow.Get(s.srv.URL + hub.LoginPath)
-	if err != nil {
-		t.Fatal(err)
+	noFollow := func() *http.Client {
+		return &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	}
-	res.Body.Close()
+	browser := noFollow()
+	browser.Jar = newClient(s.t, s.srv.URL).http.Jar
+	step := func(c *http.Client, u string) *http.Response {
+		res, err := c.Get(u)
+		if err != nil {
+			s.t.Fatal(err)
+		}
+		res.Body.Close()
+		return res
+	}
+	start := hub.LoginPath
+	if launch != "" {
+		start = hub.LaunchPath + "?org=" + url.QueryEscape(launch)
+	}
+	res := step(browser, s.srv.URL+start)
+	if launch != "" { // the launch URL bounces to the login route
+		res = step(browser, s.srv.URL+res.Header.Get("Location"))
+	}
 	to := res.Header.Get("Location")
 	if res.StatusCode != http.StatusFound || !strings.HasPrefix(to, s.hub.URL) {
-		t.Fatalf("login should redirect to the hub, got %d %q", res.StatusCode, to)
+		s.t.Fatalf("login should redirect to the hub, got %d %q", res.StatusCode, to)
 	}
-	// The hub signs the fake user in and redirects to the registered callback (WEB_URL).
-	hubClient := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	res, err = hubClient.Get(to)
-	if err != nil {
-		t.Fatal(err)
-	}
-	res.Body.Close()
+	res = step(noFollow(), to) // the hub, signed in as u
 	cb, err := url.Parse(res.Header.Get("Location"))
 	if err != nil || cb.Path != hub.CallbackPath {
-		t.Fatalf("the hub sent us to %q", res.Header.Get("Location"))
+		s.t.Fatalf("the hub sent us to %q", res.Header.Get("Location"))
 	}
-	res, err = noFollow.Get(s.srv.URL + cb.Path + "?" + cb.RawQuery)
+	res = step(browser, s.srv.URL+cb.Path+"?"+cb.RawQuery)
+	if res.StatusCode != http.StatusFound {
+		s.t.Fatalf("callback: %d", res.StatusCode)
+	}
+	return res.Header.Get("Location"), browser
+}
+
+// signedIn reports whether the browser's session works.
+func (s *hubStack) signedIn(b *http.Client) bool {
+	s.t.Helper()
+	res, err := b.Get(s.srv.URL + "/api/auth/me")
 	if err != nil {
-		t.Fatal(err)
+		s.t.Fatal(err)
 	}
 	res.Body.Close()
-	if loc := res.Header.Get("Location"); loc != "/login?circlexo_error=email_unverified" {
-		t.Fatalf("an unverified address must be refused, got %q", loc)
+	return res.StatusCode == 200
+}
+
+// The whole browser round trip against the test hub, which now vouches for the address
+// (email_verified) unless the user says otherwise.
+func TestCircleXOLoginRoundTrip(t *testing.T) {
+	s := bootHub(t)
+	if code, b := s.get("/api/circlexo/config"); code != 200 || !strings.Contains(string(b), `"enabled":true`) {
+		t.Fatalf("config: %d %s", code, b)
 	}
-	if n := s.count(`SELECT count(*) FROM users WHERE lower(email) = $1`, email); n != 0 {
-		t.Fatalf("a refused sign-in created %d account(s)", n)
-	}
+
+	t.Run("new user is created, linked and signed in", func(t *testing.T) {
+		email, sub := "roundtrip-"+rnd()+"@example.test", "sub-"+rnd()
+		to, browser := s.roundTrip(circlexotest.User{ID: sub, Email: email, Name: "Round Trip"}, "")
+		if to != "/" || !s.signedIn(browser) {
+			t.Fatalf("landing %q, signed in %v", to, s.signedIn(browser))
+		}
+		if n := s.count(`SELECT count(*) FROM circlexo_user_links l JOIN users u ON u.id = l.user_id WHERE l.subject = $1 AND lower(u.email) = $2 AND l.linked_via = 'created'`, sub, email); n != 1 {
+			t.Fatalf("expected one created link, got %d", n)
+		}
+		// Signing in again is the same user, not a second account.
+		before := s.count(`SELECT count(*) FROM users`)
+		if _, b2 := s.roundTrip(circlexotest.User{ID: sub, Email: email}, ""); !s.signedIn(b2) || s.count(`SELECT count(*) FROM users`) != before {
+			t.Fatal("a second sign-in did not reuse the account")
+		}
+	})
+
+	t.Run("linked by verified e-mail to an existing account", func(t *testing.T) {
+		_, uid, email := signup(t, s.a, s.srv.URL, "rtlink")
+		if _, err := s.a.SysDB.Exec(`INSERT INTO platform_users (user_id, email_verified_at) VALUES ($1, now())
+			ON CONFLICT (user_id) DO UPDATE SET email_verified_at = now()`, uid); err != nil {
+			t.Fatal(err)
+		}
+		sub := "sub-" + rnd()
+		before := s.count(`SELECT count(*) FROM users`)
+		_, browser := s.roundTrip(circlexotest.User{ID: sub, Email: email}, "")
+		if !s.signedIn(browser) || s.count(`SELECT count(*) FROM users`) != before {
+			t.Fatal("expected to sign in to the existing account")
+		}
+		var linked, via string
+		if e := s.a.SysDB.QueryRow(`SELECT user_id, linked_via FROM circlexo_user_links WHERE subject = $1`, sub).Scan(&linked, &via); e != nil || linked != uid || via != "email" {
+			t.Fatalf("expected an email link to %s, got %s %s %v", uid, linked, via, e)
+		}
+	})
+
+	t.Run("an unverified address is refused and creates nothing", func(t *testing.T) {
+		email := "unverified-" + rnd() + "@example.test"
+		to, browser := s.roundTrip(circlexotest.User{ID: "sub-" + rnd(), Email: email, EmailUnverified: true}, "")
+		if to != "/login?circlexo_error=email_unverified" || s.signedIn(browser) {
+			t.Fatalf("got %q (signed in %v)", to, s.signedIn(browser))
+		}
+		if n := s.count(`SELECT count(*) FROM users WHERE lower(email) = $1`, email); n != 0 {
+			t.Fatalf("a refused sign-in created %d account(s)", n)
+		}
+	})
+
+	t.Run("launch URL lands in the org's workspace", func(t *testing.T) {
+		org := hubOrg()
+		s.install(org, [2]string{"own-" + rnd(), "owner"})
+		if code, _ := s.provision(org); code != 200 {
+			t.Fatal("provision")
+		}
+		_, slug, _ := s.workspaceOf(org)
+		s.hub.Lock()
+		delete(s.hub.Entitlements, org)
+		s.hub.Unlock()
+		to, browser := s.roundTrip(circlexotest.User{ID: "sub-" + rnd(), Email: "launch-" + rnd() + "@example.test", OrgID: org, OrgRole: "member"}, slug)
+		if to != "/en/w/"+slug || !s.signedIn(browser) {
+			t.Fatalf("launch landed on %q", to)
+		}
+	})
 }
 
 func (s *hubStack) get(path string) (int, []byte) {

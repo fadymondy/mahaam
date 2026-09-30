@@ -42,7 +42,7 @@ require github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/agnivade/levenshtein v1.2.0 // indirect
-	github.com/circlexo/circlexo-go v0.0.0-00010101000000-000000000000
+	github.com/circlexo/circlexo-go v0.1.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-pdf/fpdf v0.9.0
@@ -86,5 +86,3 @@ require (
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
-
-replace github.com/circlexo/circlexo-go => ../circlexo-go

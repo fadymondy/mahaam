@@ -46,7 +46,7 @@ disabled; Mahaam still starts.
 
 The provision and deprovision request/response shape (`{org_id, slug, name, locale}` in,
 `{product_tenant_id, slug}` out, signed like a webhook) was designed by Mahaam: no hub code calls
-those URLs yet. Confirm it against the hub before relying on it; the webhooks below are the
+those URLs yet (the hub does not call them; webhooks do the work). Confirm the shape with the hub before relying on it; the webhooks below are the
 contractual path and do the same work.
 
 Webhooks handled: `org.app_installed`, `org.app_removed`, `member.added`, `member.role_changed`,
@@ -122,23 +122,27 @@ entries as `changes.hub_actors`.
   works by remembering (user, `iat`) of hub-born sessions; two sessions of one user minted in the
   same second share an `iat`, so revoking one ends both. Password sessions are unaffected.
 - No per-effect hub scopes exist for MCP tools; the mapping above stands in for them.
-- The SDK's test hub omits `email_verified` from ID tokens and fixes org name/slug, so the e2e
-  round trip only proves the unverified refusal; the linking matrix is tested by calling
-  `FinishLogin` directly.
+- The SDK's test hub fixes the org name and slug (`org`); provisioning tests that need real slugs
+  read them from what Mahaam created. The e2e login tests run the full round trip (new user, link by
+  verified email, unverified refusal, launch URL).
 
 ## SDK dependency
 
-`github.com/circlexo/circlexo-go` is a private module. `go get` could not fetch it without
-credentials, so `go.mod` has `replace github.com/circlexo/circlexo-go => ../circlexo-go`, a sibling
-checkout. **That replace cannot work in `Dockerfile.api` or CI** (the path is outside the build
-context). Before merging: remove the replace, `go get github.com/circlexo/circlexo-go@<version>`,
-set `GOPRIVATE=github.com/circlexo/*`, and give the Docker build and the CI job a read token for
-the private repo (owner action: create `CIRCLEXO_GO_TOKEN`, pass it as a build secret, and use it
-in a `git config url.<...>.insteadOf` rewrite; do not bake it into an image layer).
+`github.com/circlexo/circlexo-go` is a private module, pinned at `v0.1.0` in `go.mod` (no
+`replace`). To fetch it locally you need git credentials that reach the repo and
+`GOPRIVATE=github.com/circlexo/*`. The token is only needed for **Docker and CI builds**:
+
+- `Dockerfile.api` sets `GOPRIVATE` and reads an optional BuildKit secret `CIRCLEXO_GO_TOKEN` for the
+  `go mod download` step only, through per-process git config (nothing lands in a layer or in
+  history): `docker build --secret id=CIRCLEXO_GO_TOKEN,env=CIRCLEXO_GO_TOKEN -f Dockerfile.api .`
+  Without the secret the step is unchanged.
+- `.github/workflows/ci.yml` sets `GOPRIVATE` and, when the repository secret `CIRCLEXO_GO_TOKEN`
+  exists, a `url.insteadOf` rewrite. Owner action: create a read-only token for the private repo and
+  store it as that secret (and as the build secret wherever the image is built).
 
 ## Owner cut-over checklist
 
-1. Remove the `replace`, pin the SDK version, and add the private-module token to the Dockerfile and CI (above).
+1. Create the read-only `CIRCLEXO_GO_TOKEN` (repository secret for CI, BuildKit secret for the image build); see SDK dependency.
 2. Register Mahaam at the hub; note the app id, client credentials, app key and webhook secret.
 3. Register the redirect URI (`<WEB_URL>/auth/circlexo/callback`), the post-logout URI (`<WEB_URL>/login`), the launch URL (`<WEB_URL>/sso/circlexo`), the webhook URL (`<API>/api/circlexo/events`) and the provision/deprovision URLs.
 4. Set the `CIRCLEXO_*` variables from `.env.example` in the environment (not the repo).
