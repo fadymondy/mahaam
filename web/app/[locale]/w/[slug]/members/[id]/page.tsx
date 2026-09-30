@@ -4,8 +4,9 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ChevronLeftIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { NotFoundState } from "@/components/not-found-state"
@@ -53,7 +54,7 @@ export default function MemberDetailPage() {
   return (
     <>
       <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
+        <Link href={back} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.members")}
         </Link>
@@ -62,24 +63,24 @@ export default function MemberDetailPage() {
         micro={ws.summary.name}
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <PersonAvatar id={id} dir={dir} size="default" />
+            <PersonAvatar id={id} dir={dir} size="md" />
             <Ltr>{member.email}</Ltr>
             <Badge variant="outline">{t(`role.${member.role}`)}</Badge>
           </span>
         }
       />
 
-      <div className="grid gap-px border-y border-line bg-grid-line lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-px border-y border-border bg-border lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* main */}
-        <div className="min-w-0 bg-grid-bg">
-          <dl className="grid grid-cols-2 gap-px border-b border-line bg-grid-line text-sm">
-            <div className="bg-grid-bg px-6 py-3">
-              <dt className="grid-micro mb-1">{t("members.role")}</dt>
-              <dd className="text-grid-fg">{t(`role.${member.role}`)}</dd>
+        <div className="min-w-0 bg-background">
+          <dl className="grid grid-cols-2 gap-px border-b border-border bg-border text-sm">
+            <div className="bg-background px-6 py-3">
+              <dt className="text-eyebrow uppercase mb-1">{t("members.role")}</dt>
+              <dd className="text-foreground">{t(`role.${member.role}`)}</dd>
             </div>
-            <div className="bg-grid-bg px-6 py-3">
-              <dt className="grid-micro mb-1">{t("members.joined")}</dt>
-              <dd className="text-grid-fg">{member.joined_at ? <Ltr>{formatDay(member.joined_at, locale)}</Ltr> : "—"}</dd>
+            <div className="bg-background px-6 py-3">
+              <dt className="text-eyebrow uppercase mb-1">{t("members.joined")}</dt>
+              <dd className="text-foreground">{member.joined_at ? <Ltr>{formatDay(member.joined_at, locale)}</Ltr> : "—"}</dd>
             </div>
           </dl>
 
@@ -89,13 +90,13 @@ export default function MemberDetailPage() {
           ) : memberTeams.length === 0 ? (
             <EmptyState title={t("memberDetail.noTeams")} />
           ) : (
-            <ul className="divide-y divide-line border-y border-line">
+            <ul className="divide-y divide-line border-y border-border">
               {memberTeams.map((tm) => (
                 <li key={tm.id}>
-                  <Link href={`/${locale}/w/${ws.slug}/teams/${tm.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-grid-soft">
+                  <Link href={`/${locale}/w/${ws.slug}/teams/${tm.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted">
                     <ColorDot color={tm.color} className="size-3" />
-                    <span className="min-w-0 flex-1 truncate font-medium text-grid-fg">{tm.name}</span>
-                    <span className="text-meta text-grid-muted">{t("teams.memberCount", { n: tm.member_ids.length })}</span>
+                    <span className="min-w-0 flex-1 truncate font-medium text-foreground">{tm.name}</span>
+                    <span className="text-caption text-muted-foreground">{t("teams.memberCount", { n: tm.member_ids.length })}</span>
                   </Link>
                 </li>
               ))}
@@ -104,7 +105,7 @@ export default function MemberDetailPage() {
 
           <h2 className="px-6 pt-6 pb-3 text-base font-medium">{t("memberDetail.recentTime")}</h2>
           {!canTime ? (
-            <p className="px-6 pb-6 text-sm text-grid-muted">{t("memberDetail.timeNoPermission")}</p>
+            <p className="px-6 pb-6 text-sm text-muted-foreground">{t("memberDetail.timeNoPermission")}</p>
           ) : sheet.error ? (
             <ErrorState error={sheet.error} />
           ) : !sheet.data ? (
@@ -112,7 +113,7 @@ export default function MemberDetailPage() {
           ) : sheet.data.rows.length === 0 ? (
             <EmptyState title={t("memberDetail.noTime")} />
           ) : (
-            <div className="border-y border-line">
+            <div className="border-y border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -126,9 +127,9 @@ export default function MemberDetailPage() {
                       <TableCell className="ps-6">
                         <span className="flex min-w-0 items-center gap-2">
                           {row.project_color ? <ColorDot color={row.project_color} /> : null}
-                          <span className="min-w-0 truncate text-grid-fg">
+                          <span className="min-w-0 truncate text-foreground">
                             {row.project_name ?? t("project.noClient")}
-                            {row.task_title ? <span className="text-grid-muted"> · {row.task_title}</span> : null}
+                            {row.task_title ? <span className="text-muted-foreground"> · {row.task_title}</span> : null}
                           </span>
                         </span>
                       </TableCell>
@@ -144,37 +145,37 @@ export default function MemberDetailPage() {
         </div>
 
         {/* side rail: rates (managers only) */}
-        <aside className="min-w-0 bg-grid-bg">
+        <aside className="min-w-0 bg-background">
           <h2 className="px-6 pt-5 pb-3 text-base font-medium">{t("memberDetail.rates")}</h2>
           {!canRates ? (
-            <p className="px-6 pb-6 text-sm text-grid-muted">{t("memberDetail.ratesNoPermission")}</p>
+            <p className="px-6 pb-6 text-sm text-muted-foreground">{t("memberDetail.ratesNoPermission")}</p>
           ) : rates.error ? (
             <ErrorState error={rates.error} />
           ) : !rates.data ? (
             <LoadingRows rows={2} />
           ) : (
             <>
-              <dl className="grid grid-cols-2 gap-px border-y border-line bg-grid-line text-sm">
-                <div className="bg-grid-bg px-6 py-3">
-                  <dt className="grid-micro mb-1">{t("memberDetail.billRate")}</dt>
-                  <dd className="text-grid-fg"><Ltr>{rateFor(rateEntry?.current?.bill_rate_minor ?? null)}</Ltr></dd>
+              <dl className="grid grid-cols-2 gap-px border-y border-border bg-border text-sm">
+                <div className="bg-background px-6 py-3">
+                  <dt className="text-eyebrow uppercase mb-1">{t("memberDetail.billRate")}</dt>
+                  <dd className="text-foreground"><Ltr>{rateFor(rateEntry?.current?.bill_rate_minor ?? null)}</Ltr></dd>
                 </div>
-                <div className="bg-grid-bg px-6 py-3">
-                  <dt className="grid-micro mb-1">{t("memberDetail.costRate")}</dt>
-                  <dd className="text-grid-fg"><Ltr>{rateFor(rateEntry?.current?.cost_rate_minor ?? null)}</Ltr></dd>
+                <div className="bg-background px-6 py-3">
+                  <dt className="text-eyebrow uppercase mb-1">{t("memberDetail.costRate")}</dt>
+                  <dd className="text-foreground"><Ltr>{rateFor(rateEntry?.current?.cost_rate_minor ?? null)}</Ltr></dd>
                 </div>
               </dl>
               <h3 className="px-6 pt-5 pb-2 text-sm font-medium">{t("memberDetail.rateHistory")}</h3>
               {!rateEntry || rateEntry.history.length === 0 ? (
-                <p className="px-6 pb-6 text-sm text-grid-muted">{t("memberDetail.noRateHistory")}</p>
+                <p className="px-6 pb-6 text-sm text-muted-foreground">{t("memberDetail.noRateHistory")}</p>
               ) : (
-                <ul className="divide-y divide-line border-y border-line text-sm">
+                <ul className="divide-y divide-line border-y border-border text-sm">
                   {rateEntry.history.map((h) => (
                     <li key={h.id} className="flex flex-wrap items-baseline justify-between gap-2 px-6 py-2.5">
-                      <span className="text-grid-muted"><Ltr>{formatDay(h.effective_from, locale)}</Ltr></span>
-                      <span className="tabular-nums text-grid-fg">
+                      <span className="text-muted-foreground"><Ltr>{formatDay(h.effective_from, locale)}</Ltr></span>
+                      <span className="tabular-nums text-foreground">
                         <Ltr>{money(h.bill_rate_minor, h.currency, locale)}</Ltr>
-                        <span className="text-grid-muted"> · {money(h.cost_rate_minor, h.currency, locale)}</span>
+                        <span className="text-muted-foreground"> · {money(h.cost_rate_minor, h.currency, locale)}</span>
                       </span>
                     </li>
                   ))}

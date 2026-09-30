@@ -17,11 +17,13 @@ import {
   XIcon,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { Button, Calendar, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { ColorChip, ColorDot } from "@/components/work/palette"
 import { AvatarStack, type Directory } from "@/components/work/people"
@@ -38,15 +40,15 @@ export function PriorityIcon({ priority, className }: { priority: Priority; clas
   const cls = cn("size-3.5 shrink-0", className)
   switch (priority) {
     case "urgent":
-      return <SirenIcon aria-label={label} className={cn(cls, "text-grid-danger-text")} />
+      return <SirenIcon aria-label={label} className={cn(cls, "text-nq-danger-text")} />
     case "high":
-      return <SignalHighIcon aria-label={label} className={cn(cls, "text-grid-warn-text")} />
+      return <SignalHighIcon aria-label={label} className={cn(cls, "text-nq-warn-text")} />
     case "medium":
       return <SignalMediumIcon aria-label={label} className={cls} />
     case "low":
-      return <SignalLowIcon aria-label={label} className={cn(cls, "text-grid-muted")} />
+      return <SignalLowIcon aria-label={label} className={cn(cls, "text-muted-foreground")} />
     default:
-      return <MinusIcon aria-label={label} className={cn(cls, "text-grid-muted")} />
+      return <MinusIcon aria-label={label} className={cn(cls, "text-muted-foreground")} />
   }
 }
 
@@ -55,7 +57,7 @@ export function PrioritySelect({ value, onChange, disabled, id }: { value: Prior
   const items = PRIORITIES.map((p) => ({ value: p, label: t(`priority.${p}`) }))
   return (
     <Select items={items} value={value} onValueChange={(v) => v && onChange(v as Priority)} disabled={disabled}>
-      <SelectTrigger id={id} size="sm" className="w-full" aria-label={t("task.priority")}>
+      <SelectTrigger id={id} className="w-full" aria-label={t("task.priority")}>
         <SelectValue>
           {(v: string) => (
             <span className="flex items-center gap-2">
@@ -97,7 +99,7 @@ export function StatusSelect({
   const byId = new Map(statuses.map((s) => [s.id, s]))
   return (
     <Select items={items} value={value} onValueChange={(v) => v && onChange(String(v))} disabled={disabled}>
-      <SelectTrigger id={id} size="sm" className="w-full" aria-label={t("task.status")}>
+      <SelectTrigger id={id} className="w-full" aria-label={t("task.status")}>
         <SelectValue>
           {(v: string) => (
             <span className="flex items-center gap-2">
@@ -137,7 +139,7 @@ export function DateField({
   id?: string
   tone?: "danger"
 }) {
-  const { t, locale, isRtl } = useTranslations()
+  const { t, locale } = useTranslations()
   const [open, setOpen] = useState(false)
   const selected = value ? new Date(value + "T00:00:00") : undefined
   return (
@@ -147,10 +149,10 @@ export function DateField({
           render={
             <Button
               id={id}
-              variant="outline"
+              variant="secondary"
               size="sm"
               disabled={disabled}
-              className={cn("min-w-0 flex-1 justify-start font-normal", !value && "text-grid-muted", tone === "danger" && "text-grid-danger-text")}
+              className={cn("min-w-0 flex-1 justify-start font-normal", !value && "text-muted-foreground", tone === "danger" && "text-nq-danger-text")}
             />
           }
         >
@@ -160,10 +162,8 @@ export function DateField({
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            dir={isRtl ? "rtl" : "ltr"}
-            selected={selected}
-            defaultMonth={selected}
-            onSelect={(d: Date | undefined) => {
+            value={selected}
+            onValueChange={(d: Date | null) => {
               if (d) {
                 const y = d.getFullYear()
                 const m = String(d.getMonth() + 1).padStart(2, "0")
@@ -212,19 +212,19 @@ export function MemberPicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={<Button variant="outline" size="sm" disabled={disabled} className="min-w-0 flex-1 justify-start font-normal" aria-label={label ?? t("task.assignees")} />}
+        render={<Button variant="secondary" size="sm" disabled={disabled} className="min-w-0 flex-1 justify-start font-normal" aria-label={label ?? t("task.assignees")} />}
       >
         {selected.length ? (
           <>
             <AvatarStack ids={selected} dir={dir} />
-            <span className="truncate text-meta" dir="ltr">
+            <span className="truncate text-caption" dir="ltr">
               {selected.length === 1 ? dir.name(selected[0]) : ""}
             </span>
           </>
         ) : (
           <>
             <UserPlusIcon />
-            <span className="text-grid-muted">{t("task.unassigned")}</span>
+            <span className="text-muted-foreground">{t("task.unassigned")}</span>
           </>
         )}
       </PopoverTrigger>
@@ -236,13 +236,13 @@ export function MemberPicker({
             <CommandGroup>
               {pool.map((id) => (
                 <CommandItem key={id} value={dir.name(id)} onSelect={() => toggle(id)} data-user={id}>
-                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(id) ? "border-grid-action bg-grid-action text-grid-on-action" : "border-line")}>
+                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(id) ? "border-nq-action bg-nq-action text-nq-on-action" : "border-border")}>
                     {selected.includes(id) ? <CheckIcon className="size-3" /> : null}
                   </span>
                   <span className="truncate" dir="ltr">
                     {dir.name(id)}
                   </span>
-                  {id === dir.me ? <span className="ms-auto text-meta text-grid-muted">{t("people.you")}</span> : null}
+                  {id === dir.me ? <span className="ms-auto text-caption text-muted-foreground">{t("people.you")}</span> : null}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -292,13 +292,13 @@ export function LabelPicker({
   const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="outline" size="sm" disabled={disabled} className="h-auto min-h-7 min-w-0 flex-1 justify-start py-1 font-normal" aria-label={t("task.labels")} />}>
+      <PopoverTrigger render={<Button variant="secondary" size="sm" disabled={disabled} className="h-auto min-h-7 min-w-0 flex-1 justify-start py-1 font-normal" aria-label={t("task.labels")} />}>
         {selected.length ? (
           <LabelChips ids={selected} labels={labels} />
         ) : (
           <>
             <TagIcon />
-            <span className="text-grid-muted">{t("task.noLabels")}</span>
+            <span className="text-muted-foreground">{t("task.noLabels")}</span>
           </>
         )}
       </PopoverTrigger>
@@ -310,7 +310,7 @@ export function LabelPicker({
             <CommandGroup>
               {labels.map((l) => (
                 <CommandItem key={l.id} value={l.name} onSelect={() => toggle(l.id)}>
-                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(l.id) ? "border-grid-action bg-grid-action text-grid-on-action" : "border-line")}>
+                  <span className={cn("flex size-4 items-center justify-center border", selected.includes(l.id) ? "border-nq-action bg-nq-action text-nq-on-action" : "border-border")}>
                     {selected.includes(l.id) ? <CheckIcon className="size-3" /> : null}
                   </span>
                   <ColorDot color={l.color} />

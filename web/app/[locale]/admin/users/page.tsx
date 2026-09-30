@@ -4,8 +4,9 @@ import Link from "next/link"
 import { useState } from "react"
 import { ShieldIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { FilterSelect, Pager, SearchBox } from "@/components/admin/pager"
 import { StatusBadge } from "@/components/admin/reason-dialog"
 import { Ltr } from "@/components/copy-field"
@@ -59,7 +60,7 @@ export default function AdminUsersPage() {
         <EmptyState title={t("admin.users.empty")} />
       ) : (
         <>
-          <div className="border-y border-line">
+          <div className="border-y border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -86,9 +87,9 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <StatusBadge status={u.status} />
                     </TableCell>
-                    <TableCell className="hidden text-grid-muted md:table-cell">{u.last_seen_at ? timeAgo(u.last_seen_at, locale) : t("admin.never")}</TableCell>
+                    <TableCell className="hidden text-muted-foreground md:table-cell">{u.last_seen_at ? timeAgo(u.last_seen_at, locale) : t("admin.never")}</TableCell>
                     <TableCell className="hidden max-w-0 pe-6 lg:table-cell">
-                      <span className="block truncate text-sm text-grid-body">
+                      <span className="block truncate text-sm text-nq-fg-body">
                         {(u.workspaces ?? []).length
                           ? (u.workspaces ?? []).map((w) => `${w.name} (${t(`role.${w.role}`)})`).join(", ")
                           : "—"}

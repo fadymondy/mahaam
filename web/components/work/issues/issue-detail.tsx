@@ -11,13 +11,14 @@ const AI_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 import { useEffect, useState, type FormEvent, type ReactNode } from "react"
 import Link from "next/link"
 import { BotIcon, ChevronLeftIcon, ExternalLinkIcon, PencilIcon, SendIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState, LoadingRows } from "@/components/states"
@@ -74,8 +75,8 @@ export function IssueDetailView({ issueKey: key, back, backLabel }: { issueKey: 
 
   return (
     <>
-      <div className="flex items-center gap-2 px-6 pt-5 text-meta text-grid-muted">
-        <Link href={back} className="inline-flex items-center gap-1 hover:text-grid-fg">
+      <div className="flex items-center gap-2 px-6 pt-5 text-caption text-muted-foreground">
+        <Link href={back} className="inline-flex items-center gap-1 hover:text-foreground">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {backLabel}
         </Link>
@@ -86,7 +87,7 @@ export function IssueDetailView({ issueKey: key, back, backLabel }: { issueKey: 
         {i.project_id && ws.can("tasks:read") ? (
           <Link
             href={`/${locale}/w/${ws.slug}/projects/${i.project_id}/board?task=${encodeURIComponent(i.key)}`}
-            className="ms-auto inline-flex items-center gap-1 text-grid-action hover:underline"
+            className="ms-auto inline-flex items-center gap-1 text-nq-accent-text hover:underline"
           >
             <ExternalLinkIcon className="size-3.5" />
             {t("issues.openOnBoard")}
@@ -95,9 +96,9 @@ export function IssueDetailView({ issueKey: key, back, backLabel }: { issueKey: 
       </div>
 
       {i.request_state && ws.can("requests:manage") ? (
-        <div className="mx-6 mt-3 flex flex-wrap items-center gap-2 rounded-md border border-line bg-grid-action/5 px-3 py-2 text-sm" data-request-banner={i.request_state}>
+        <div className="mx-6 mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-nq-action/5 px-3 py-2 text-sm" data-request-banner={i.request_state}>
           <span>{t(`requests.banner.${i.request_state}`)}</span>
-          <Link href={`/${locale}/w/${ws.slug}/requests?state=all&key=${i.key}`} className="font-medium text-grid-action hover:underline">
+          <Link href={`/${locale}/w/${ws.slug}/requests?state=all&key=${i.key}`} className="font-medium text-nq-accent-text hover:underline">
             {t("requests.openRequest")}
           </Link>
         </div>
@@ -105,19 +106,19 @@ export function IssueDetailView({ issueKey: key, back, backLabel }: { issueKey: 
 
       <TitleEditor issue={i} canWrite={canWrite} onSave={(title) => save({ title })} />
 
-      <div className="grid gap-px border-y border-line bg-grid-line lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="min-w-0 bg-grid-bg">
+      <div className="grid gap-px border-y border-border bg-border lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 bg-background">
           <BodyEditor issue={i} canWrite={canWrite} onSave={(body) => save({ body })} />
           {i.resolution ? (
-            <div className="border-b border-line px-6 py-4">
-              <p className="grid-micro mb-1">{t("issues.resolution")}</p>
-              <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">{i.resolution}</p>
+            <div className="border-b border-border px-6 py-4">
+              <p className="text-eyebrow uppercase mb-1">{t("issues.resolution")}</p>
+              <p className="text-sm whitespace-pre-wrap text-nq-fg-body" dir="auto">{i.resolution}</p>
             </div>
           ) : null}
           <CommentThread issue={i} onChanged={() => void issue.mutate()} />
         </div>
 
-        <aside className="min-w-0 bg-grid-bg">
+        <aside className="min-w-0 bg-background">
           <Fields issue={i} canWrite={canWrite} onSave={save} />
           <ContextPanel issue={i} />
         </aside>
@@ -163,8 +164,8 @@ function TitleEditor({ issue, canWrite, onSave }: { issue: IssueDetail; canWrite
           className="h-auto py-1 text-2xl font-semibold"
         />
       ) : (
-        <h1 className="group flex items-start gap-2 text-2xl font-semibold text-grid-fg" dir="auto">
-          <span className={cn("min-w-0 break-words", issue.status === "done" && "text-grid-muted")}>{issue.title}</span>
+        <h1 className="group flex items-start gap-2 text-2xl font-semibold text-foreground" dir="auto">
+          <span className={cn("min-w-0 break-words", issue.status === "done" && "text-muted-foreground")}>{issue.title}</span>
           {canWrite ? (
             <Button variant="ghost" size="icon-sm" className="mt-1 shrink-0 opacity-60 group-hover:opacity-100" aria-label={t("issues.editTitle")} onClick={() => setEditing(true)}>
               <PencilIcon />
@@ -183,13 +184,13 @@ function BodyEditor({ issue, canWrite, onSave }: { issue: IssueDetail; canWrite:
   const [busy, setBusy] = useState(false)
 
   return (
-    <section className="border-b border-line px-6 py-4">
+    <section className="border-b border-border px-6 py-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="grid-micro">{t("issues.fieldBody")}</h2>
+        <h2 className="text-eyebrow uppercase">{t("issues.fieldBody")}</h2>
         {canWrite && !editing ? (
           <Button
             variant="ghost"
-            size="xs"
+            size="sm"
             onClick={() => {
               setValue(issue.body ?? "")
               setEditing(true)
@@ -204,10 +205,10 @@ function BodyEditor({ issue, canWrite, onSave }: { issue: IssueDetail; canWrite:
         <div className="flex flex-col gap-2">
           <Textarea autoFocus rows={8} dir="auto" value={value} onChange={(e) => setValue(e.target.value)} placeholder={t("issues.bodyPlaceholder")} disabled={busy} />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditing(false)} disabled={busy}>
+            <Button variant="secondary" size="sm" onClick={() => setEditing(false)} disabled={busy}>
               {t("common.cancel")}
             </Button>
-            <Button
+            <Button variant="primary"
               size="sm"
               disabled={busy}
               onClick={async () => {
@@ -221,9 +222,9 @@ function BodyEditor({ issue, canWrite, onSave }: { issue: IssueDetail; canWrite:
           </div>
         </div>
       ) : issue.body ? (
-        <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">{issue.body}</p>
+        <p className="text-sm whitespace-pre-wrap text-nq-fg-body" dir="auto">{issue.body}</p>
       ) : (
-        <p className="text-sm text-grid-muted">{t("issues.noBody")}</p>
+        <p className="text-sm text-muted-foreground">{t("issues.noBody")}</p>
       )}
     </section>
   )
@@ -231,9 +232,9 @@ function BodyEditor({ issue, canWrite, onSave }: { issue: IssueDetail; canWrite:
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5 bg-grid-bg px-6 py-3">
-      <dt className="grid-micro">{label}</dt>
-      <dd className="text-sm text-grid-body">{children}</dd>
+    <div className="flex flex-col gap-1.5 bg-background px-6 py-3">
+      <dt className="text-eyebrow uppercase">{label}</dt>
+      <dd className="text-sm text-nq-fg-body">{children}</dd>
     </div>
   )
 }
@@ -277,7 +278,7 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
   const spent = agentTime(issue.agent_seconds)
 
   return (
-    <dl className="grid grid-cols-1 gap-px border-b border-line bg-grid-line sm:grid-cols-2 lg:grid-cols-1">
+    <dl className="grid grid-cols-1 gap-px border-b border-border bg-border sm:grid-cols-2 lg:grid-cols-1">
       {compact ? null : picker(t("issues.statusLabel"), issue.status, ISSUE_STATUSES.map((s) => ({ value: s, label: t(`issues.status.${s}`) })), "status")}
       {compact ? null : picker(
         t("issues.priorityLabel"),
@@ -290,7 +291,7 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
       <Row label={t("issues.humanOnly")}>
         <label className="flex items-start gap-3">
           <Switch checked={issue.human_only} disabled={!canWrite || busy} onCheckedChange={(v) => void run({ human_only: v })} className="mt-0.5" />
-          <span className="text-meta text-grid-muted">{t("issues.humanOnlyHint")}</span>
+          <span className="text-caption text-muted-foreground">{t("issues.humanOnlyHint")}</span>
         </label>
       </Row>
       {picker(
@@ -327,11 +328,11 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
       ))}
       <Row label={t("issues.agentTime")}>
         <span className="inline-flex items-center gap-1.5">
-          <BotIcon className="size-3.5 text-grid-muted" aria-hidden />
-          {spent ? <Ltr>{spent}</Ltr> : <span className="text-grid-muted">{t("issues.noAgentTime")}</span>}
+          <BotIcon className="size-3.5 text-muted-foreground" aria-hidden />
+          {spent ? <Ltr>{spent}</Ltr> : <span className="text-muted-foreground">{t("issues.noAgentTime")}</span>}
         </span>
         {issue.started_at ? (
-          <span className="mt-1 block text-meta text-grid-muted">
+          <span className="mt-1 block text-caption text-muted-foreground">
             {t("issues.startedAt", { when: timeAgo(issue.started_at, locale) })}
             {issue.finished_at ? ` · ${t("issues.finishedAt", { when: timeAgo(issue.finished_at, locale) })}` : null}
           </span>
@@ -351,9 +352,9 @@ function Fields({ issue, canWrite, onSave, compact }: { issue: IssueDetail; canW
             <Ltr>{dir.name(issue.reporter_id)}</Ltr>
           </span>
         ) : (
-          <span className="text-grid-muted">{t("issues.anonymous")}</span>
+          <span className="text-muted-foreground">{t("issues.anonymous")}</span>
         )}
-        <span className="mt-1 block text-meta text-grid-muted">
+        <span className="mt-1 block text-caption text-muted-foreground">
           {t(`issues.source.${["portal", "embed", "monitor", "mcp", "github", "jira", "linear"].includes(issue.source) ? issue.source : "app"}`)} · {formatDay(issue.created_at, locale)}
         </span>
       </Row>
@@ -375,29 +376,29 @@ export function ContextPanel({ issue }: { issue: Pick<IssueDetail, "route" | "se
   const safeUrl = issue.page_url && /^https?:\/\//i.test(issue.page_url) ? issue.page_url : null
 
   return (
-    <details className="group border-b border-line bg-grid-bg" open>
-      <summary className="grid-micro cursor-pointer px-6 py-3 hover:bg-grid-soft">{t("issues.ctx.title")}</summary>
+    <details className="group border-b border-border bg-background" open>
+      <summary className="text-eyebrow uppercase cursor-pointer px-6 py-3 hover:bg-muted">{t("issues.ctx.title")}</summary>
       <div className="space-y-4 px-6 pb-5">
         {issue.page_url ? (
-          <div className="text-meta">
-            <p className="grid-micro mb-1">{t("issues.ctx.pageUrl")}</p>
+          <div className="text-caption">
+            <p className="text-eyebrow uppercase mb-1">{t("issues.ctx.pageUrl")}</p>
             {safeUrl ? (
-              <a href={safeUrl} target="_blank" rel="noreferrer noopener" className="inline-flex max-w-full items-center gap-1 break-all text-grid-action hover:underline">
+              <a href={safeUrl} target="_blank" rel="noreferrer noopener" className="inline-flex max-w-full items-center gap-1 break-all text-nq-accent-text hover:underline">
                 <Ltr mono>{issue.page_url}</Ltr>
                 <ExternalLinkIcon className="size-3 shrink-0" aria-hidden />
               </a>
             ) : (
-              <Ltr mono className="break-all text-grid-body">{issue.page_url}</Ltr>
+              <Ltr mono className="break-all text-nq-fg-body">{issue.page_url}</Ltr>
             )}
           </div>
         ) : null}
-        <dl className="space-y-2 text-meta">
+        <dl className="space-y-2 text-caption">
           {rows.map(([label, value]) =>
             value ? (
               <div key={label}>
-                <dt className="grid-micro">{label}</dt>
+                <dt className="text-eyebrow uppercase">{label}</dt>
                 <dd className="break-all">
-                  <Ltr mono className="text-grid-body">{value}</Ltr>
+                  <Ltr mono className="text-nq-fg-body">{value}</Ltr>
                 </dd>
               </div>
             ) : null,
@@ -405,10 +406,10 @@ export function ContextPanel({ issue }: { issue: Pick<IssueDetail, "route" | "se
         </dl>
         {issue.screenshot ? (
           <div>
-            <p className="grid-micro mb-1">{t("issues.ctx.screenshot")}</p>
+            <p className="text-eyebrow uppercase mb-1">{t("issues.ctx.screenshot")}</p>
             <a href={/^(https?:\/\/|data:image\/)/i.test(issue.screenshot) ? issue.screenshot : undefined} target="_blank" rel="noreferrer noopener">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={issue.screenshot} alt={t("issues.ctx.screenshot")} className="max-w-full border border-line" />
+              <img src={issue.screenshot} alt={t("issues.ctx.screenshot")} className="max-w-full border border-border" />
             </a>
           </div>
         ) : null}
@@ -422,12 +423,12 @@ export function ContextPanel({ issue }: { issue: Pick<IssueDetail, "route" | "se
 function LogBlock({ label, value }: { label: string; value: string }) {
   const lines = value.split("\n").filter(Boolean).length
   return (
-    <details className="border border-line">
-      <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-meta hover:bg-grid-soft">
-        <span className="grid-micro">{label}</span>
-        <Ltr className="text-grid-muted tabular-nums">{lines}</Ltr>
+    <details className="border border-border">
+      <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-caption hover:bg-muted">
+        <span className="text-eyebrow uppercase">{label}</span>
+        <Ltr className="text-muted-foreground tabular-nums">{lines}</Ltr>
       </summary>
-      <pre dir="ltr" className="ltr-isolate max-h-72 overflow-auto border-t border-line bg-grid-card p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-grid-body">
+      <pre dir="ltr" className="ltr-isolate max-h-72 overflow-auto border-t border-border bg-card p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-nq-fg-body">
         {value}
       </pre>
     </details>
@@ -462,12 +463,12 @@ function CommentThread({ issue, onChanged }: { issue: IssueDetail; onChanged: ()
 
   return (
     <section>
-      <h2 className="flex items-baseline justify-between gap-3 border-b border-line px-6 py-3 grid-micro">
+      <h2 className="flex items-baseline justify-between gap-3 border-b border-border px-6 py-3 text-eyebrow uppercase">
         {t("issues.comments")}
-        <Ltr className="tabular-nums text-grid-muted">{comments.length}</Ltr>
+        <Ltr className="tabular-nums text-muted-foreground">{comments.length}</Ltr>
       </h2>
       {comments.length === 0 ? (
-        <p className="px-6 py-6 text-sm text-grid-muted">{t("issues.noComments")}</p>
+        <p className="px-6 py-6 text-sm text-muted-foreground">{t("issues.noComments")}</p>
       ) : (
         <ul className="divide-y divide-line">
           {comments.map((c) => (
@@ -475,7 +476,7 @@ function CommentThread({ issue, onChanged }: { issue: IssueDetail; onChanged: ()
           ))}
         </ul>
       )}
-      <form onSubmit={submit} className="flex flex-col gap-3 border-t border-line px-6 py-4" noValidate>
+      <form onSubmit={submit} className="flex flex-col gap-3 border-t border-border px-6 py-4" noValidate>
         <Textarea
           rows={3}
           dir="auto"
@@ -488,13 +489,13 @@ function CommentThread({ issue, onChanged }: { issue: IssueDetail; onChanged: ()
           aria-label={t("issues.commentPlaceholder")}
           disabled={posting}
         />
-        {error ? <p role="alert" className="text-sm text-grid-danger-text">{error}</p> : null}
+        {error ? <p role="alert" className="text-sm text-nq-danger-text">{error}</p> : null}
         <div className="flex items-center gap-3">
-          <Button type="submit" size="sm" disabled={posting || !body.trim()}>
+          <Button variant="primary" type="submit" size="sm" disabled={posting || !body.trim()}>
             <SendIcon className="rtl:-scale-x-100" />
             {posting ? t("common.working") : t("issues.postComment")}
           </Button>
-          <span className="text-meta text-grid-muted">{t("issues.mentionHint")}</span>
+          <span className="text-caption text-muted-foreground">{t("issues.mentionHint")}</span>
         </div>
       </form>
     </section>
@@ -505,15 +506,15 @@ function CommentItem({ comment, dir, locale }: { comment: IssueComment; dir: Ret
   const { t } = useTranslations()
   const agent = comment.author_kind === "agent"
   return (
-    <li className={cn("px-6 py-4", agent && "bg-grid-soft/60")}>
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-meta text-grid-muted">
+    <li className={cn("px-6 py-4", agent && "bg-muted/60")}>
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
         {comment.author_id ? <PersonAvatar id={comment.author_id} dir={dir} /> : <BotIcon className="size-4" aria-hidden />}
         <Ltr>{comment.author_id ? dir.name(comment.author_id) : t("issues.kind.agent")}</Ltr>
         <AuthorKindBadge kind={comment.author_kind} />
-        <span aria-hidden className="text-grid-muted/50">·</span>
+        <span aria-hidden className="text-muted-foreground/50">·</span>
         <span>{timeAgo(comment.created_at, locale)}</span>
       </div>
-      <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">{comment.body}</p>
+      <p className="text-sm whitespace-pre-wrap text-nq-fg-body" dir="auto">{comment.body}</p>
     </li>
   )
 }
@@ -554,12 +555,12 @@ export function CardIssueThread({ taskKey }: { taskKey: string }) {
   const i = issue.data
   if (!i) return null
   return (
-    <div className="border-t border-line">
+    <div className="border-t border-border">
       <ContextPanel issue={i} />
       {i.resolution ? (
-        <div className="border-b border-line px-6 py-4">
-          <p className="grid-micro mb-1">{t("issues.resolution")}</p>
-          <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">{i.resolution}</p>
+        <div className="border-b border-border px-6 py-4">
+          <p className="text-eyebrow uppercase mb-1">{t("issues.resolution")}</p>
+          <p className="text-sm whitespace-pre-wrap text-nq-fg-body" dir="auto">{i.resolution}</p>
         </div>
       ) : null}
       <CommentThread issue={i} onChanged={() => void issue.mutate()} />

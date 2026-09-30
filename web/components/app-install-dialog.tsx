@@ -6,16 +6,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { BellIcon, BellOffIcon, CheckIcon, DownloadIcon, ShareIcon, SmartphoneIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel } from "@fadymondy/nasaq/web"
+
+
+
 import { api } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { errorText } from "@/lib/work"
@@ -159,7 +153,7 @@ export function AppInstallDialog({ open, onOpenChange }: { open: boolean; onOpen
             <DialogDescription>{t("pwa.description")}</DialogDescription>
           </DialogHeader>
 
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel>
                 <SmartphoneIcon className="size-4" /> {t("pwa.installLabel")}
@@ -170,7 +164,7 @@ export function AppInstallDialog({ open, onOpenChange }: { open: boolean; onOpen
                 </p>
               ) : canInstall ? (
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button type="button" variant="outline" className="gap-2" onClick={() => void install()}>
+                  <Button type="button" variant="secondary" className="gap-2" onClick={() => void install()}>
                     <DownloadIcon /> {t("pwa.install")}
                   </Button>
                   <span className="text-sm text-muted-foreground">{t("pwa.installHint")}</span>
@@ -197,7 +191,7 @@ export function AppInstallDialog({ open, onOpenChange }: { open: boolean; onOpen
                   <span className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckIcon className="size-4 text-primary" /> {t("pwa.pushOn")}
                   </span>
-                  <Button type="button" variant="outline" size="sm" className="gap-2" disabled={busy} onClick={() => void disablePush()}>
+                  <Button type="button" variant="secondary" size="sm" className="gap-2" disabled={busy} onClick={() => void disablePush()}>
                     <BellOffIcon /> {t("pwa.pushDisable")}
                   </Button>
                 </div>
@@ -205,7 +199,7 @@ export function AppInstallDialog({ open, onOpenChange }: { open: boolean; onOpen
                 <p className="text-sm text-muted-foreground">{t("pwa.pushHint")}</p>
               )}
             </Field>
-          </FieldGroup>
+          </div>
 
           {error ? (
             <p role="alert" className="text-sm text-destructive">
@@ -215,11 +209,11 @@ export function AppInstallDialog({ open, onOpenChange }: { open: boolean; onOpen
 
           <DialogFooter>
             {pushSupported && push?.enabled && !subscribed ? (
-              <Button type="button" className="gap-2" disabled={busy} onClick={() => void enablePush()}>
+              <Button variant="primary" type="button" className="gap-2" disabled={busy} onClick={() => void enablePush()}>
                 <BellIcon /> {busy ? t("pwa.enabling") : t("pwa.pushEnable")}
               </Button>
             ) : (
-              <Button type="button" variant="outline" onClick={() => close(false)}>
+              <Button type="button" variant="secondary" onClick={() => close(false)}>
                 {t("pwa.done")}
               </Button>
             )}

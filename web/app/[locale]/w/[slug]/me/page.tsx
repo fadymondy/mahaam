@@ -2,10 +2,11 @@
 
 import { useEffect } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { AccountCard } from "@/components/account/account-card"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { LoadingRows } from "@/components/states"
@@ -61,7 +62,7 @@ export default function MyProfilePage() {
           <KpiDashboard userId={String(me.data.id)} isSelf />
         </div>
       ) : (
-        <p className="px-6 py-6 text-sm text-grid-muted">{t("kpi.clientNoKpi")}</p>
+        <p className="px-6 py-6 text-sm text-muted-foreground">{t("kpi.clientNoKpi")}</p>
       )}
     </>
   )

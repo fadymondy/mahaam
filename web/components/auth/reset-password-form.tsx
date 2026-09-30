@@ -5,10 +5,9 @@ import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useSWRConfig } from "swr"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { PublicFrame, PublicPanel } from "@/components/public-frame"
+import { Alert, Button, Field, FieldDescription, FieldLabel, Input, PasswordInput } from "@fadymondy/nasaq/web"
+
+import { PublicFrame } from "@/components/public-frame"
 import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
@@ -90,12 +89,11 @@ export function ResetPasswordForm() {
 
   return (
     <PublicFrame eyebrow={t("auth.resetEyebrow")} title={t("auth.resetTitle")} description={t("auth.resetHint")}>
-      <PublicPanel className="flex justify-center py-10">
-        <div className="w-full max-w-sm" data-reset-form>
+      <div data-reset-form>
           {step === "email" ? (
             <form onSubmit={requestCode} noValidate>
-              <FieldGroup>
-                <Field data-invalid={!!error || undefined}>
+              <div className="flex flex-col gap-4">
+                <Field>
                   <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
                   <Input
                     id="email"
@@ -108,17 +106,17 @@ export function ResetPasswordForm() {
                     placeholder="you@company.com"
                   />
                 </Field>
-                {error ? <FieldError>{error}</FieldError> : null}
-                <Button type="submit" size="lg" disabled={busy || !email.includes("@")}>
+                {error ? <Alert tone="danger">{error}</Alert> : null}
+                <Button variant="primary" type="submit" size="lg" disabled={busy || !email.includes("@")}>
                   {busy ? t("common.working") : t("auth.resetSend")}
                 </Button>
-              </FieldGroup>
+              </div>
             </form>
           ) : (
             <form onSubmit={reset} noValidate>
-              <FieldGroup>
-                {notice ? <p className="text-sm text-grid-muted" role="status">{notice}</p> : null}
-                <Field data-invalid={!!error || undefined}>
+              <div className="flex flex-col gap-4">
+                {notice ? <Alert tone="info">{notice}</Alert> : null}
+                <Field>
                   <FieldLabel htmlFor="code">{t("auth.resetCode")}</FieldLabel>
                   <Input
                     id="code"
@@ -129,16 +127,13 @@ export function ResetPasswordForm() {
                     required
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    className="font-mono tracking-[0.4em]"
                     placeholder="000000"
                   />
                 </Field>
-                <Field data-invalid={!!error || undefined}>
+                <Field>
                   <FieldLabel htmlFor="password">{t("auth.newPassword")}</FieldLabel>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
-                    dir="ltr"
                     autoComplete="new-password"
                     required
                     minLength={8}
@@ -147,23 +142,22 @@ export function ResetPasswordForm() {
                   />
                   <FieldDescription>{t("auth.resetSignsOut")}</FieldDescription>
                 </Field>
-                {error ? <FieldError>{error}</FieldError> : null}
-                <Button type="submit" size="lg" disabled={busy || code.length !== 6 || !password}>
+                {error ? <Alert tone="danger">{error}</Alert> : null}
+                <Button variant="primary" type="submit" size="lg" disabled={busy || code.length !== 6 || !password}>
                   {busy ? t("common.working") : t("auth.resetSubmit")}
                 </Button>
                 <Button type="button" variant="ghost" disabled={busy} onClick={() => void requestCode()}>
                   {t("auth.resetResend")}
                 </Button>
-              </FieldGroup>
+              </div>
             </form>
           )}
-          <p className="mt-6 text-center text-sm text-grid-muted">
-            <Link href={`/${locale}/login`} className="font-medium text-grid-fg underline underline-offset-4">
+          <p className="mt-6 text-center text-body-sm text-muted-foreground">
+            <Link href={`/${locale}/login`} className="font-medium text-foreground underline underline-offset-4">
               {t("auth.backToSignIn")}
             </Link>
           </p>
-        </div>
-      </PublicPanel>
+      </div>
     </PublicFrame>
   )
 }

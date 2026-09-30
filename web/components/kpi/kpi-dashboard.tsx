@@ -5,14 +5,15 @@
 // which copies the prompt + markdown dossier an AI writes the performance report from.
 import { useState, type FormEvent, type ReactNode } from "react"
 import { ClipboardCopyIcon, GitBranchIcon, PlusIcon, StarIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -41,10 +42,10 @@ export function RangePicker({ from, to, onChange }: { from: string; to: string; 
 
 function Tile({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="bg-grid-bg px-5 py-4">
-      <div className="grid-micro mb-1">{label}</div>
-      <div className="text-xl font-medium tabular-nums text-grid-fg">{value}</div>
-      {hint ? <div className="mt-0.5 text-meta text-grid-muted">{hint}</div> : null}
+    <div className="bg-background px-5 py-4">
+      <div className="text-eyebrow uppercase mb-1">{label}</div>
+      <div className="text-xl font-medium tabular-nums text-foreground">{value}</div>
+      {hint ? <div className="mt-0.5 text-caption text-muted-foreground">{hint}</div> : null}
     </div>
   )
 }
@@ -56,13 +57,13 @@ function Bars({ items, value, label, render }: { items: KPIKeyed[]; value: (k: K
     <ul className="space-y-2">
       {items.map((k) => (
         <li key={k.key || "none"} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm">
-          <span className="truncate text-grid-fg" dir="auto">
+          <span className="truncate text-foreground" dir="auto">
             {label(k)}
           </span>
-          <span className="h-2.5 rounded-sm bg-grid-soft">
-            <span className="block h-full rounded-sm bg-grid-action/80" style={{ width: `${Math.max(2, (value(k) / max) * 100)}%` }} />
+          <span className="h-2.5 rounded-sm bg-muted">
+            <span className="block h-full rounded-sm bg-nq-action/80" style={{ width: `${Math.max(2, (value(k) / max) * 100)}%` }} />
           </span>
-          <span className="text-end text-meta tabular-nums text-grid-muted">{render(k)}</span>
+          <span className="text-end text-caption tabular-nums text-muted-foreground">{render(k)}</span>
         </li>
       ))}
     </ul>
@@ -71,7 +72,7 @@ function Bars({ items, value, label, render }: { items: KPIKeyed[]; value: (k: K
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="space-y-3 bg-grid-bg px-6 py-5">
+    <section className="space-y-3 bg-background px-6 py-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-medium">{title}</h3>
         {action}
@@ -104,15 +105,15 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
 
   const k = kpi.data
   return (
-    <div className="border-y border-line">
+    <div className="border-y border-border">
       <div className="flex flex-wrap items-end justify-between gap-3 px-6 py-4">
         <div>
           <h2 className="text-base font-medium">{t("kpi.title")}</h2>
-          <p className="mt-1 max-w-2xl text-sm text-grid-muted">{t("kpi.hint")}</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("kpi.hint")}</p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} />
-          <Button variant="outline" onClick={() => void copyPrompt()} disabled={!k}>
+          <Button variant="secondary" onClick={() => void copyPrompt()} disabled={!k}>
             <ClipboardCopyIcon /> {t("kpi.copyPrompt")}
           </Button>
         </div>
@@ -123,7 +124,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
       ) : !k ? (
         <LoadingRows rows={4} />
       ) : (
-        <div className="grid gap-px border-t border-line bg-grid-line">
+        <div className="grid gap-px border-t border-border bg-border">
           <div className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:grid-cols-6">
             <Tile label={t("kpi.hours")} value={<Ltr mono>{hm(k.time.tracked_s, "0:00")}</Ltr>} hint={t("kpi.billableHours", { h: hm(k.time.billable_s, "0:00") })} />
             <Tile label={t("kpi.daysTracked")} value={k.time.days_tracked} />
@@ -144,7 +145,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
           <div className="grid gap-px lg:grid-cols-2">
             <Section title={t("kpi.hoursByWeek")}>
               {(k.time.by_week ?? []).length === 0 ? (
-                <p className="text-sm text-grid-muted">{t("kpi.noTime")}</p>
+                <p className="text-sm text-muted-foreground">{t("kpi.noTime")}</p>
               ) : (
                 <Bars
                   items={k.time.by_week ?? []}
@@ -156,7 +157,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
             </Section>
             <Section title={t("kpi.hoursByProject")}>
               {(k.time.by_project ?? []).length === 0 ? (
-                <p className="text-sm text-grid-muted">{t("kpi.noTime")}</p>
+                <p className="text-sm text-muted-foreground">{t("kpi.noTime")}</p>
               ) : (
                 <Bars
                   items={k.time.by_project ?? []}
@@ -170,7 +171,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
             <Section
               title={t("kpi.github")}
               action={
-                <span className="flex items-center gap-2 text-meta text-grid-muted">
+                <span className="flex items-center gap-2 text-caption text-muted-foreground">
                   <GitBranchIcon className="size-3.5" aria-hidden />
                   {k.github_account ? (
                     <>
@@ -189,9 +190,9 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
               }
             >
               {!k.github.connected ? (
-                <p className="text-sm text-grid-muted">{t("kpi.noGitHubBody")}</p>
+                <p className="text-sm text-muted-foreground">{t("kpi.noGitHubBody")}</p>
               ) : (k.github.by_project ?? []).length === 0 ? (
-                <p className="text-sm text-grid-muted">{t("kpi.noCommits")}</p>
+                <p className="text-sm text-muted-foreground">{t("kpi.noCommits")}</p>
               ) : (
                 <>
                   <Bars
@@ -200,7 +201,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                     label={(r) => r.name}
                     render={(r) => t("kpi.commitsPrs", { c: r.commits ?? 0, p: r.pull_requests ?? 0 })}
                   />
-                  <p className="text-meta text-grid-muted">
+                  <p className="text-caption text-muted-foreground">
                     {t("kpi.deploys", { n: k.github.deployments, ok: k.github.deployments_succeeded })}
                   </p>
                 </>
@@ -209,7 +210,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
 
             <Section title={t("kpi.ai")}>
               {(k.ai.by_model ?? []).length === 0 ? (
-                <p className="text-sm text-grid-muted">{t("kpi.noAI")}</p>
+                <p className="text-sm text-muted-foreground">{t("kpi.noAI")}</p>
               ) : (
                 <Bars
                   items={k.ai.by_model ?? []}
@@ -223,7 +224,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                   )}
                 />
               )}
-              <p className="text-meta text-grid-muted">
+              <p className="text-caption text-muted-foreground">
                 {t("kpi.agentLine", {
                   started: k.issues.started,
                   reviewed: k.issues.reviewed,
@@ -238,7 +239,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
             title={t("kpi.reviews")}
             action={
               canReview ? (
-                <Button size="sm" onClick={() => setReviewing(true)}>
+                <Button variant="primary" size="sm" onClick={() => setReviewing(true)}>
                   <PlusIcon /> {t("kpi.addReview")}
                 </Button>
               ) : null
@@ -249,18 +250,18 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
             ) : (
               <>
                 {k.reviews.avg_rating != null ? (
-                  <p className="flex items-center gap-1 text-sm text-grid-muted">
+                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
                     <StarIcon className="size-3.5" aria-hidden /> {t("kpi.avgRating", { r: k.reviews.avg_rating.toFixed(1) })}
                   </p>
                 ) : null}
-                <ul className="divide-y divide-line border-y border-line">
+                <ul className="divide-y divide-line border-y border-border">
                   {(k.reviews.items ?? []).map((r) => (
                     <li key={r.id} className="space-y-1 py-3">
-                      <div className="flex flex-wrap items-center gap-2 text-meta text-grid-muted">
+                      <div className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
                         <Ltr>
                           {r.period_start} → {r.period_end}
                         </Ltr>
-                        {r.rating != null ? <Badge variant="secondary">{t("kpi.ratingOf", { r: r.rating })}</Badge> : null}
+                        {r.rating != null ? <Badge variant="neutral">{t("kpi.ratingOf", { r: r.rating })}</Badge> : null}
                         <Ltr>{r.author_email}</Ltr>
                         {canReview ? (
                           <span className="ms-auto">
@@ -281,7 +282,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                           </span>
                         ) : null}
                       </div>
-                      <p className="whitespace-pre-wrap text-sm text-grid-fg" dir="auto">
+                      <p className="whitespace-pre-wrap text-sm text-foreground" dir="auto">
                         {r.body}
                       </p>
                     </li>
@@ -351,7 +352,7 @@ function ReviewDialog({ userId, from, to, onClose, onSaved }: { userId: string; 
             <DialogTitle>{t("kpi.addReview")}</DialogTitle>
             <DialogDescription>{t("kpi.reviewHint")}</DialogDescription>
           </DialogHeader>
-          <FieldGroup className="py-4">
+          <div className="flex flex-col gap-4 py-4">
             <div className="grid grid-cols-2 gap-3">
               <Field>
                 <FieldLabel htmlFor="rv-start">{t("kpi.periodStart")}</FieldLabel>
@@ -364,7 +365,7 @@ function ReviewDialog({ userId, from, to, onClose, onSaved }: { userId: string; 
             </div>
             <Field>
               <FieldLabel htmlFor="rv-rating">{t("kpi.rating")}</FieldLabel>
-              <select id="rv-rating" name="rating" className="h-8 w-full rounded-lg border border-line bg-transparent px-2 text-sm" defaultValue="">
+              <select id="rv-rating" name="rating" className="h-8 w-full rounded-lg border border-border bg-transparent px-2 text-sm" defaultValue="">
                 <option value="">{t("kpi.noRating")}</option>
                 {[5, 4, 3, 2, 1].map((n) => (
                   <option key={n} value={n}>
@@ -377,12 +378,12 @@ function ReviewDialog({ userId, from, to, onClose, onSaved }: { userId: string; 
               <FieldLabel htmlFor="rv-body">{t("kpi.reviewBody")}</FieldLabel>
               <Textarea id="rv-body" name="body" dir="auto" required rows={6} maxLength={20000} />
             </Field>
-          </FieldGroup>
+          </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {t("kpi.saveReview")}
             </Button>
           </DialogFooter>
@@ -438,7 +439,7 @@ function MapGitHubDialog({ userId, onClose, onSaved }: { userId: string; onClose
               <DialogTitle>{t("kpi.mapGitHub")}</DialogTitle>
               <DialogDescription>{t("kpi.mapHint")}</DialogDescription>
             </DialogHeader>
-            <FieldGroup className="py-4">
+            <div className="flex flex-col gap-4 py-4">
               <Field>
                 <FieldLabel htmlFor="gh-login">{t("kpi.login")}</FieldLabel>
                 <Input id="gh-login" name="login" dir="ltr" required maxLength={39} defaultValue={acc?.login ?? ""} placeholder="octocat" />
@@ -447,17 +448,17 @@ function MapGitHubDialog({ userId, onClose, onSaved }: { userId: string; onClose
                 <FieldLabel htmlFor="gh-emails">{t("kpi.emails")}</FieldLabel>
                 <Textarea id="gh-emails" name="emails" dir="ltr" rows={3} defaultValue={(acc?.emails ?? []).join("\n")} placeholder="dev@example.com" />
               </Field>
-            </FieldGroup>
+            </div>
             <DialogFooter>
               {acc ? (
-                <Button type="button" variant="ghost" className="me-auto text-grid-danger-text" disabled={busy} onClick={() => void unmap()}>
+                <Button type="button" variant="ghost" className="me-auto text-nq-danger-text" disabled={busy} onClick={() => void unmap()}>
                   {t("kpi.unmap")}
                 </Button>
               ) : null}
               <Button type="button" variant="ghost" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 {t("kpi.saveMapping")}
               </Button>
             </DialogFooter>

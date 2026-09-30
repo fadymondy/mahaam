@@ -17,12 +17,13 @@ import {
   type DragMoveEvent,
 } from "@dnd-kit/core"
 import { ClockIcon, Loader2Icon, PlusIcon, SearchIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@fadymondy/nasaq/web"
+
+
+
+
 import { ErrorState } from "@/components/states"
 import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -211,9 +212,9 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
         <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-grid-muted" />
+          <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="ps-8"
             type="search"
@@ -253,7 +254,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
         </Select>
 
         {canWrite ? (
-          <Button className="gap-2" onClick={() => setCreating(true)}>
+          <Button variant="primary" className="gap-2" onClick={() => setCreating(true)}>
             <PlusIcon />
             {t("issues.new")}
           </Button>
@@ -265,7 +266,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
       ) : !list.data ? (
         <div className="flex flex-col">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-none border-b border-line" />
+            <Skeleton key={i} className="h-16 w-full rounded-none border-b border-border" />
           ))}
         </div>
       ) : (
@@ -290,11 +291,11 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                 key={status}
                 status={status}
                 className={cn(
-                  "flex max-h-[calc(100vh-12rem)] min-w-0 flex-1 basis-0 flex-col border-e border-line transition-colors last:border-e-0",
-                  isTarget && "bg-grid-action/[0.06] inset-ring-1 inset-ring-grid-action/40",
+                  "flex max-h-[calc(100vh-12rem)] min-w-0 flex-1 basis-0 flex-col border-e border-border transition-colors last:border-e-0",
+                  isTarget && "bg-nq-action/[0.06] inset-ring-1 inset-ring-nq-action/40",
                 )}
               >
-                <h2 className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5 font-mono text-xs tracking-wider text-grid-muted uppercase">
+                <h2 className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5 font-mono text-xs tracking-wider text-muted-foreground uppercase">
                   <span className="flex min-w-0 items-center gap-1.5">
                     <ColorDot color={column.color} className="size-2" />
                     <span className="truncate" dir="auto">{column.name}</span>
@@ -308,9 +309,9 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                   {cards.map((issue, index) => (
                     <DragCard key={issue.key} id={issue.key} status={status} index={index} disabled={!canWrite}>
                       {/* The landing line, drawn on the edge it would land on. */}
-                      {isTarget && dropIndex === index ? <span aria-hidden className="absolute inset-x-0 top-0 z-10 h-0.5 bg-grid-action" /> : null}
+                      {isTarget && dropIndex === index ? <span aria-hidden className="absolute inset-x-0 top-0 z-10 h-0.5 bg-nq-action" /> : null}
                       {isTarget && dropIndex === index + 1 && index === cards.length - 1 ? (
-                        <span aria-hidden className="absolute inset-x-0 bottom-0 z-10 h-0.5 bg-grid-action" />
+                        <span aria-hidden className="absolute inset-x-0 bottom-0 z-10 h-0.5 bg-nq-action" />
                       ) : null}
 
                       <IssueCard
@@ -337,7 +338,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
         </div>
         <DragOverlay dropAnimation={null}>
           {dragging ? (
-            <div className="w-64 border border-grid-action bg-background px-3 py-2.5 text-sm font-medium shadow-lg" dir="auto">
+            <div className="w-64 border border-nq-action bg-background px-3 py-2.5 text-sm font-medium shadow-lg" dir="auto">
               {dragging.title}
             </div>
           ) : null}
@@ -418,20 +419,20 @@ function IssueCard({
         className={cn(
           "group/issue flex flex-col gap-2 px-3 py-2.5 transition-[opacity,background-color] duration-150",
           canWrite && "cursor-grab active:cursor-grabbing",
-          "hover:bg-grid-soft",
+          "hover:bg-muted",
           dragging && "opacity-40",
-          busy && "border-s-2 border-grid-action ps-[calc(0.75rem-2px)]",
+          busy && "border-s-2 border-nq-action ps-[calc(0.75rem-2px)]",
         )}
       >
         <button type="button" dir="auto" onClick={onOpen} className="text-start text-sm font-medium text-pretty hover:underline">
           {issue.title}
         </button>
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-grid-muted">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-muted-foreground">
           <span dir="ltr">{issue.key}</span>
 
           <span className="flex items-center gap-1.5">
-            <span className={cn("size-1.5 shrink-0", TYPE_DOT[issue.issue_type] ?? "bg-grid-muted")} aria-hidden />
+            <span className={cn("size-1.5 shrink-0", TYPE_DOT[issue.issue_type] ?? "bg-nq-fg-muted")} aria-hidden />
             {t(`issues.type.${issue.issue_type}`)}
           </span>
 
@@ -449,7 +450,7 @@ function IssueCard({
           ) : null}
 
           {agentTime ? (
-            <span className={cn("flex items-center gap-1", busy && "text-grid-action")} title={t("issues.agentTime")}>
+            <span className={cn("flex items-center gap-1", busy && "text-nq-accent-text")} title={t("issues.agentTime")}>
               <ClockIcon className="size-3" />
               <span dir="ltr">{agentTime}</span>
             </span>
@@ -464,13 +465,13 @@ function IssueCard({
         </div>
 
         {issue.route || issue.page_url ? (
-          <p dir="ltr" className="truncate font-mono text-xs text-grid-muted/70">
+          <p dir="ltr" className="truncate font-mono text-xs text-muted-foreground/70">
             {issue.route ?? issue.page_url}
           </p>
         ) : null}
 
         <Select value={column} disabled={!canWrite} onValueChange={(v) => onStatusChange(String(v ?? column))}>
-          <SelectTrigger size="sm" className="w-full">
+          <SelectTrigger className="w-full">
             <SelectValue>{(v) => columns.find((c) => c.id === v)?.name ?? ""}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -500,7 +501,7 @@ function LoadMore({ loading, onVisible }: { loading: boolean; onVisible: () => v
   }, [loading])
   return (
     <div ref={ref} className="flex justify-center py-3">
-      <Loader2Icon className="size-4 animate-spin text-grid-muted" aria-hidden />
+      <Loader2Icon className="size-4 animate-spin text-muted-foreground" aria-hidden />
     </div>
   )
 }

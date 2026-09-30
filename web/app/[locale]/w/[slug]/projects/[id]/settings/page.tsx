@@ -20,15 +20,16 @@ import {
   UsersIcon,
   UsersRoundIcon,
 } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { ColorDot, ColorPicker, PALETTE } from "@/components/work/palette"
@@ -52,10 +53,10 @@ function Section({ id, title, hint, children }: { id: string; title: string; hin
   const active = useContext(ActiveSection)
   if (active !== id) return null
   return (
-    <section className="border-b border-line">
+    <section className="border-b border-border">
       <div className="px-6 pt-6 pb-3">
         <h2 className="text-base font-medium">{title}</h2>
-        {hint ? <p className="mt-1 text-sm text-grid-muted">{hint}</p> : null}
+        {hint ? <p className="mt-1 text-sm text-muted-foreground">{hint}</p> : null}
       </div>
       {children}
     </section>
@@ -86,7 +87,7 @@ export default function ProjectSettingsPage() {
   }
 
   if (!p.can_manage) {
-    return <p className="px-6 py-6 text-sm text-grid-muted">{t("settings.noPermission")}</p>
+    return <p className="px-6 py-6 text-sm text-muted-foreground">{t("settings.noPermission")}</p>
   }
 
   const memberIds = new Set(p.members.map((m) => m.user_id))
@@ -112,21 +113,21 @@ export default function ProjectSettingsPage() {
 
   if (!sec || !cards.some((c) => c.id === sec && c.show)) {
     return (
-      <div className="grid gap-px bg-grid-line sm:grid-cols-2 xl:grid-cols-3" data-settings-cards>
+      <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3" data-settings-cards>
         {cards
           .filter((c) => c.show)
           .map((c) => (
             <Link
               key={c.id}
               href={`${base}/settings?s=${c.id}`}
-              className="group flex items-start gap-3 bg-grid-bg p-6 transition-colors hover:bg-grid-soft"
+              className="group flex items-start gap-3 bg-background p-6 transition-colors hover:bg-muted"
             >
-              <c.Icon className={c.danger ? "mt-0.5 size-5 shrink-0 text-grid-danger-text" : "mt-0.5 size-5 shrink-0 text-grid-action"} />
+              <c.Icon className={c.danger ? "mt-0.5 size-5 shrink-0 text-nq-danger-text" : "mt-0.5 size-5 shrink-0 text-nq-accent-text"} />
               <span className="min-w-0 flex-1">
-                <span className="block text-base font-medium text-grid-fg">{c.title}</span>
-                <span className="mt-1 line-clamp-2 block text-sm text-grid-muted">{c.hint}</span>
+                <span className="block text-base font-medium text-foreground">{c.title}</span>
+                <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">{c.hint}</span>
               </span>
-              <ChevronRightIcon className="mt-1 size-4 shrink-0 text-grid-muted transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100" />
+              <ChevronRightIcon className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100" />
             </Link>
           ))}
       </div>
@@ -135,8 +136,8 @@ export default function ProjectSettingsPage() {
 
   return (
     <ActiveSection.Provider value={sec}>
-      <div className="border-b border-line px-6 py-3">
-        <Link href={`${base}/settings`} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
+      <div className="border-b border-border px-6 py-3">
+        <Link href={`${base}/settings`} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
           <ChevronLeftIcon className="size-3.5 rtl:-scale-x-100" />
           {t("projectTab.settings")}
         </Link>
@@ -155,7 +156,7 @@ export default function ProjectSettingsPage() {
       </Section>
 
       <Section id="members" title={t("settings.members")} hint={p.visibility === "members" ? t("settings.membersHintPrivate") : t("settings.membersHint")}>
-        <ul className="divide-y divide-line border-y border-line">
+        <ul className="divide-y divide-line border-y border-border">
           {p.members.map((m) => (
             <li key={m.user_id} className="flex items-center gap-3 px-6 py-2.5 text-sm">
               <span className="min-w-0 flex-1 truncate" dir="ltr">
@@ -201,7 +202,7 @@ export default function ProjectSettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button disabled={!addUser} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/members/${addUser}`, { role: addRole }); setAddUser("") })}>
+            <Button variant="primary" disabled={!addUser} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/members/${addUser}`, { role: addRole }); setAddUser("") })}>
               <PlusIcon />
               {t("common.add")}
             </Button>
@@ -212,12 +213,12 @@ export default function ProjectSettingsPage() {
       {ws.can("teams:read") ? (
         <Section id="teams" title={t("settings.teams")} hint={t("settings.teamsHint")}>
           {p.teams.length ? (
-            <ul className="divide-y divide-line border-y border-line">
+            <ul className="divide-y divide-line border-y border-border">
               {p.teams.map((x) => (
                 <li key={x.team_id} className="flex items-center gap-3 px-6 py-2.5 text-sm">
                   <ColorDot color={x.color} />
                   <span className="min-w-0 flex-1 truncate">{x.name}</span>
-                  <span className="text-meta text-grid-muted">{t("teams.memberCount", { n: x.member_ids.length })}</span>
+                  <span className="text-caption text-muted-foreground">{t("teams.memberCount", { n: x.member_ids.length })}</span>
                   <Button variant="ghost" size="sm" onClick={() => run(() => w.del(ws.id, `/api/w/projects/${p.id}/teams/${x.team_id}`))}>
                     {t("settings.detach")}
                   </Button>
@@ -225,7 +226,7 @@ export default function ProjectSettingsPage() {
               ))}
             </ul>
           ) : (
-            <p className="px-6 pb-2 text-sm text-grid-muted">{t("settings.noTeams")}</p>
+            <p className="px-6 pb-2 text-sm text-muted-foreground">{t("settings.noTeams")}</p>
           )}
           {teamChoices.length ? (
             <div className="flex flex-wrap items-end gap-2 px-6 py-4">
@@ -241,7 +242,7 @@ export default function ProjectSettingsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" disabled={!addTeam} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/teams/${addTeam}`); setAddTeam("") })}>
+              <Button variant="secondary" disabled={!addTeam} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/teams/${addTeam}`); setAddTeam("") })}>
                 {t("settings.attachTeam")}
               </Button>
             </div>
@@ -250,12 +251,12 @@ export default function ProjectSettingsPage() {
       ) : null}
 
       <Section id="share" title={t("settings.share")} hint={t("settings.shareHint")}>
-        <div className="divide-y divide-line border-t border-line">
+        <div className="divide-y divide-line border-t border-border">
           {(["share_board", "share_team", "share_money"] as const).map((k) => (
             <label key={k} className="flex cursor-pointer items-start justify-between gap-4 px-6 py-3" data-share={k}>
               <span className="min-w-0">
                 <span className="block text-sm font-medium">{t(`settings.${k}`)}</span>
-                <span className="block text-meta text-grid-muted">{t(`settings.${k}Hint`)}</span>
+                <span className="block text-caption text-muted-foreground">{t(`settings.${k}Hint`)}</span>
               </span>
               <Switch
                 checked={p[k]}
@@ -275,7 +276,7 @@ export default function ProjectSettingsPage() {
       <Section id="archive" title={p.archived_at ? t("settings.restoreTitle") : t("settings.archiveTitle")} hint={p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}>
         <div className="px-6 pb-6">
           {p.archived_at ? (
-            <Button variant="outline" onClick={() => run(() => w.post(ws.id, `/api/w/projects/${p.id}/restore`), t("project.restored"))}>
+            <Button variant="secondary" onClick={() => run(() => w.post(ws.id, `/api/w/projects/${p.id}/restore`), t("project.restored"))}>
               {t("settings.restore")}
             </Button>
           ) : (
@@ -313,13 +314,13 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
 
   return (
     <>
-      <ul className="divide-y divide-line border-y border-line">
+      <ul className="divide-y divide-line border-y border-border">
         {statuses.map((s, i) => (
           <li key={s.id} className="flex items-center gap-3 px-6 py-2 text-sm" data-status-row={s.id}>
             <ColorDot color={s.color} />
             <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
             <Badge variant="outline">{t(`issues.status.${s.stage ?? "todo"}`)}</Badge>
-            <span className="w-16 text-end text-meta text-grid-muted">{t("settings.taskCount", { n: s.task_count })}</span>
+            <span className="w-16 text-end text-caption text-muted-foreground">{t("settings.taskCount", { n: s.task_count })}</span>
             <Button variant="ghost" size="icon-sm" aria-label={t("settings.moveUp")} disabled={i === 0} onClick={() => run(() => w.patch(ws.id, `/api/w/statuses/${s.id}`, { index: i - 1 }))}>
               <ArrowUpIcon />
             </Button>
@@ -345,7 +346,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
         ))}
       </ul>
       <div className="px-6 py-4">
-        <Button variant="outline" onClick={() => setEditing("new")}>
+        <Button variant="secondary" onClick={() => setEditing("new")}>
           <PlusIcon />
           {t("settings.addStatus")}
         </Button>
@@ -395,7 +396,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
               {t("common.cancel")}
             </Button>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={async () => {
                 if (!deleting) return
                 const qs = deleting.task_count ? `?move_to=${encodeURIComponent(moveTo)}` : ""
@@ -460,7 +461,7 @@ function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | nu
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color, stage: category })}>
+          <Button variant="primary" disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color, stage: category })}>
             {t("common.save")}
           </Button>
         </DialogFooter>

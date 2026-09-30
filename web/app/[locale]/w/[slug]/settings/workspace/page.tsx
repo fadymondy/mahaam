@@ -6,11 +6,12 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Trash2Icon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { EmptyState } from "@/components/states"
@@ -45,10 +46,10 @@ export default function WorkspaceSettingsPage() {
   return (
     <div className="space-y-6 p-6">
       <SectionHeader title={t("wsSettings.title")} description={t("wsSettings.description")} />
-      <section className="space-y-4 border border-grid-danger/40 p-5">
+      <section className="space-y-4 border border-nq-danger/40 p-5">
         <div>
-          <h2 className="text-base font-medium text-grid-danger-text">{t("wsSettings.dangerZone")}</h2>
-          <p className="mt-1 text-sm text-grid-muted">{t("wsSettings.deleteHint")}</p>
+          <h2 className="text-base font-medium text-nq-danger-text">{t("wsSettings.dangerZone")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("wsSettings.deleteHint")}</p>
         </div>
         <Field>
           <FieldLabel htmlFor="ws-confirm">
@@ -64,7 +65,7 @@ export default function WorkspaceSettingsPage() {
             className="max-w-sm"
           />
         </Field>
-        <Button variant="destructive" disabled={busy || confirm.trim() !== ws.slug} onClick={() => void destroy()}>
+        <Button variant="danger" disabled={busy || confirm.trim() !== ws.slug} onClick={() => void destroy()}>
           <Trash2Icon /> {t("wsSettings.delete")}
         </Button>
       </section>

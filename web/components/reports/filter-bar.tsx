@@ -4,10 +4,11 @@
 import { useMemo, useState, type ReactNode } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { FileCodeIcon, FileSpreadsheetIcon, FileTextIcon, FileTypeIcon, LoaderIcon, PrinterIcon, RotateCcwIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
 import { MultiSelect, type Option } from "@/components/reports/multi-select"
 import { ColorDot } from "@/components/work/palette"
 import { useDirectory } from "@/components/work/people"
@@ -49,7 +50,7 @@ export function useReportFilters() {
 function Control({ label, htmlFor, children, className }: { label: string; htmlFor?: string; children: ReactNode; className?: string }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
-      <label htmlFor={htmlFor} className="grid-micro">
+      <label htmlFor={htmlFor} className="text-eyebrow uppercase">
         {label}
       </label>
       {children}
@@ -99,7 +100,7 @@ export function FilterBar({
   return (
     <section
       aria-label={t("reports.filters")}
-      className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-line bg-grid-card px-6 py-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-border bg-card px-6 py-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
       data-print-hide
       data-filter-bar
     >
@@ -216,11 +217,11 @@ export function ExportButtons({ query, label, id }: { query: string; label?: str
   }
   return (
     <div className="flex items-center gap-1" role="group" aria-label={label ? `${t("reports.export")} · ${label}` : t("reports.export")}>
-      {label ? <span className="me-1 text-meta text-grid-muted">{label}</span> : null}
+      {label ? <span className="me-1 text-caption text-muted-foreground">{label}</span> : null}
       {EXPORT_FORMATS.map((f) => {
         const Icon = EXPORT_ICONS[f]
         return (
-          <Button key={f} variant="outline" disabled={!!busy} onClick={() => run(f)} data-export={f} data-export-id={id}>
+          <Button key={f} variant="secondary" disabled={!!busy} onClick={() => run(f)} data-export={f} data-export-id={id}>
             {busy === f ? <LoaderIcon className="animate-spin" /> : <Icon />}
             {t(EXPORT_LABELS[f])}
           </Button>
@@ -238,7 +239,7 @@ const EXPORT_LABELS = { csv: "reports.exportCsv", xlsx: "reports.exportXlsx", pd
 export function PrintButton() {
   const { t } = useTranslations()
   return (
-    <Button variant="outline" onClick={() => window.print()} data-print>
+    <Button variant="secondary" onClick={() => window.print()} data-print>
       <PrinterIcon />
       {t("reports.print")}
     </Button>
@@ -252,10 +253,10 @@ export function PrintHeader({ title, meta }: { title: string; meta: string }) {
   const now = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" }).format(new Date())
   return (
     <div className="hidden print:block" data-print-only data-print-header>
-      <p className="text-meta">{ws.summary.name}</p>
+      <p className="text-caption">{ws.summary.name}</p>
       <h1 className="text-xl font-semibold">{title}</h1>
       <p className="text-sm">{meta}</p>
-      <p className="text-meta">{t("reports.printedAt", { date: now })}</p>
+      <p className="text-caption">{t("reports.printedAt", { date: now })}</p>
     </div>
   )
 }

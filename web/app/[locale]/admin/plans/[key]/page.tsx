@@ -4,13 +4,14 @@
 import Link from "next/link"
 import { useState, type FormEvent } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Switch, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { IntegrationPicker, RuleFields, RuleHeader, fromDraft, toDraft, type RuleDraft } from "@/components/admin/limit-editor"
 import { SectionHeader } from "@/components/public-frame"
 import { ErrorState, LoadingRows } from "@/components/states"
@@ -139,7 +140,7 @@ function PlanForm({ plan, catalog, integrations, onSaved }: { plan?: Plan; catal
 
   return (
     <form onSubmit={submit} noValidate className="space-y-8 pb-10" data-plan-form>
-      <div className="grid gap-4 border-y border-line px-6 py-6 sm:grid-cols-2">
+      <div className="grid gap-4 border-y border-border px-6 py-6 sm:grid-cols-2">
         {text("key", t("admin.plans.key"), { dir: "ltr", disabled: !!plan, hint: t("admin.plans.keyHint") })}
         <Field>
           <FieldLabel htmlFor="plan-active">{t("admin.plans.active")}</FieldLabel>
@@ -164,19 +165,19 @@ function PlanForm({ plan, catalog, integrations, onSaved }: { plan?: Plan; catal
 
       <section className="space-y-3">
         <div className="space-y-1 px-6">
-          <h2 className="text-sm font-medium text-grid-fg">{t("admin.plans.limits")}</h2>
-          <p className="text-sm text-grid-muted">{t("admin.plans.limitsHint")}</p>
+          <h2 className="text-sm font-medium text-foreground">{t("admin.plans.limits")}</h2>
+          <p className="text-sm text-muted-foreground">{t("admin.plans.limitsHint")}</p>
         </div>
-        <div className="divide-y divide-line border-y border-line">
+        <div className="divide-y divide-line border-y border-border">
           <div className="hidden gap-3 px-6 py-2 md:grid md:grid-cols-[12rem_1fr]">
-            <span className="text-meta text-grid-muted">{t("plan.col.limit")}</span>
+            <span className="text-caption text-muted-foreground">{t("plan.col.limit")}</span>
             <RuleHeader currency={f.currency} />
           </div>
           {catalog.map((k) => (
             <div key={k} className="grid gap-2 px-6 py-2.5 md:grid-cols-[12rem_1fr] md:items-center md:gap-3" data-plan-limit={k}>
               <span className="text-sm">
                 {t(`plan.limit.${k}`)}
-                <span className="block text-meta text-grid-muted">{t(`plan.kind.${kindOf(k)}`)}</span>
+                <span className="block text-caption text-muted-foreground">{t(`plan.kind.${kindOf(k)}`)}</span>
               </span>
               <RuleFields id={k} draft={drafts[k]} currency={f.currency} onChange={(d) => setDrafts({ ...drafts, [k]: d })} />
             </div>
@@ -185,8 +186,8 @@ function PlanForm({ plan, catalog, integrations, onSaved }: { plan?: Plan; catal
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("admin.workspaces.features")}</h2>
-        <div className="divide-y divide-line border-y border-line">
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("admin.workspaces.features")}</h2>
+        <div className="divide-y divide-line border-y border-border">
           {BOOL_FEATURES.map((k) => (
             <label key={k} className="flex items-center justify-between gap-3 px-6 py-2.5 text-sm">
               {t(`plan.feature.${k}`)}
@@ -202,10 +203,10 @@ function PlanForm({ plan, catalog, integrations, onSaved }: { plan?: Plan; catal
 
       <div className="flex items-center justify-end gap-3 px-6">
         {error ? <FieldError>{error}</FieldError> : null}
-        <Button type="button" variant="outline" nativeButton={false} render={<Link href={`/${locale}/admin/plans`} />}>
+        <Button type="button" variant="secondary" nativeButton={false} render={<Link href={`/${locale}/admin/plans`} />}>
           {t("common.cancel")}
         </Button>
-        <Button type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? t("common.working") : t("common.save")}
         </Button>
       </div>

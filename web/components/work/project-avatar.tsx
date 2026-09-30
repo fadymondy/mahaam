@@ -3,9 +3,10 @@
 // A project's avatar: its uploaded image, or a tile in the project colour with its initials.
 import { useRef, useState } from "react"
 import { ImageUpIcon, Trash2Icon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { soft, solid } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -20,7 +21,7 @@ function initials(name: string) {
 export function ProjectAvatar({ project, className }: { project: { name: string; color: string; avatar?: string | null }; className?: string }) {
   if (project.avatar) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={project.avatar} alt="" className={cn("size-10 shrink-0 border border-line object-cover", className)} />
+    return <img src={project.avatar} alt="" className={cn("size-10 shrink-0 border border-border object-cover", className)} />
   }
   return (
     <span
@@ -71,7 +72,7 @@ export function ProjectAvatarField({ project, onChanged }: { project: { id: stri
       <ProjectAvatar project={project} className="size-16 text-lg" />
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => input.current?.click()}>
+          <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => input.current?.click()}>
             <ImageUpIcon />
             {project.avatar ? t("project.avatarChange") : t("project.avatarUpload")}
           </Button>
@@ -82,7 +83,7 @@ export function ProjectAvatarField({ project, onChanged }: { project: { id: stri
             </Button>
           ) : null}
         </div>
-        <p className="text-meta text-grid-muted">{t("project.avatarHint")}</p>
+        <p className="text-caption text-muted-foreground">{t("project.avatarHint")}</p>
       </div>
       <input
         ref={input}

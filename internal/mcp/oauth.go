@@ -24,6 +24,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	hub "github.com/fadymondy/mahaam/internal/circlexo"
 	"net/http"
 	"net/url"
 	"os"
@@ -109,9 +110,15 @@ func AuthServerMetadataHandler() http.HandlerFunc {
 func ResourceMetadataHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		base := mcpURL()
+		servers := []string{base}
+		// With the CircleXO hub connected, its authorization server can issue tokens for this
+		// resource too (hub.go); Mahaam's own stays first, so existing clients are unaffected.
+		if s := hub.Current(); s != nil {
+			servers = append(servers, s.Cfg.Issuer)
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"resource":              base + "/api/mcp",
-			"authorization_servers": []string{base},
+			"authorization_servers": servers,
 		})
 	}
 }

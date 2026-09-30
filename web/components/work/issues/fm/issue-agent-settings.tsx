@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react"
 import { BotIcon, PlusIcon, SparklesIcon } from "lucide-react"
 
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { catalogueApi, errorText, useProjectCatalogue, type Issue, type IssuePatch } from "@/lib/work"
 import { useWorkspace } from "@/components/workspace/workspace-context"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 /**
  * How an agent should pick this issue up: which model, how hard to think, and
@@ -52,7 +53,7 @@ export function IssueAgentSettings({
     <div className={cn("flex flex-col gap-4", className)}>
       {selects.map((field) => (
         <div key={field.key} className="flex flex-col gap-1.5">
-          <span className="flex items-center gap-1.5 font-mono text-xs tracking-wider text-grid-muted uppercase">{field.label}</span>
+          <span className="flex items-center gap-1.5 font-mono text-xs tracking-wider text-muted-foreground uppercase">{field.label}</span>
           <Select
             value={field.value || DEFAULT}
             disabled={disabled}
@@ -79,7 +80,7 @@ export function IssueAgentSettings({
         if (field.value && !names.includes(field.value)) names.unshift(field.value)
         return (
           <div key={field.key} className="flex flex-col gap-1.5">
-            <span className="flex items-center gap-1.5 font-mono text-xs tracking-wider text-grid-muted uppercase">
+            <span className="flex items-center gap-1.5 font-mono text-xs tracking-wider text-muted-foreground uppercase">
               <field.Icon className="size-3.5" />
               {field.label}
             </span>
@@ -138,18 +139,18 @@ function CatalogueFooter({ projectId, agents, skills, onAdded }: { projectId: st
     }
   }
   return (
-    <div className="flex flex-col gap-2 font-mono text-xs text-grid-muted">
+    <div className="flex flex-col gap-2 font-mono text-xs text-muted-foreground">
       <p className="flex flex-wrap items-center justify-between gap-2">
         <span>{t("issues.agent.counts", { agents, skills })}</span>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 hover:text-grid-fg">
+        <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 hover:text-foreground">
           <PlusIcon className="size-3.5" />
           {t("issues.agent.add")}
         </button>
       </p>
       {open ? (
-        <div className="flex flex-col gap-2 border border-line p-2">
+        <div className="flex flex-col gap-2 border border-border p-2">
           <Select value={kind} onValueChange={(v) => setKind(v === "skill" ? "skill" : "agent")}>
-            <SelectTrigger size="sm" className="w-full">
+            <SelectTrigger className="w-full">
               <SelectValue>{(v) => (v === "skill" ? t("issues.agent.skill") : t("issues.agent.agent"))}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -168,7 +169,7 @@ function CatalogueFooter({ projectId, agents, skills, onAdded }: { projectId: st
               if (e.key === "Enter") void add()
             }}
           />
-          <button type="button" disabled={busy || !name.trim()} onClick={() => void add()} className="self-end text-grid-action hover:underline disabled:opacity-50">
+          <button type="button" disabled={busy || !name.trim()} onClick={() => void add()} className="self-end text-nq-accent-text hover:underline disabled:opacity-50">
             {t("issues.agent.addSave")}
           </button>
         </div>

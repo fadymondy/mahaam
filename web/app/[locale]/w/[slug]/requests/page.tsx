@@ -13,13 +13,14 @@ import {
   UserIcon,
   XIcon,
 } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
+import { Badge, Button, Field, FieldLabel, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetDescription, SheetTitle } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { NotFoundState } from "@/components/not-found-state"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { AuthImage, PromptDialog, RequestStateBadge, ScrollTabs } from "@/components/portal/portal-bits"
@@ -69,12 +70,12 @@ export default function RequestsPage() {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-grid-action/10 text-grid-action">
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-nq-action/10 text-nq-accent-text">
           <InboxIcon className="size-5" />
         </span>
         <div>
           <h1 className="text-xl font-semibold">{t("requests.title")}</h1>
-          <p className="text-sm text-grid-muted">{t("requests.subtitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("requests.subtitle")}</p>
         </div>
       </header>
 
@@ -92,7 +93,7 @@ export default function RequestsPage() {
       ) : rows.length === 0 ? (
         <EmptyState title={t(`requests.empty.${state}`)} />
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-card" data-requests={rows.length}>
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-border bg-card" data-requests={rows.length}>
           {rows.map((r) => (
             <li key={r.key}>
               <button
@@ -104,17 +105,17 @@ export default function RequestsPage() {
                 <IssueTypeIcon type={r.issue_type} className="mt-1 shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <code className="text-xs text-grid-muted" dir="ltr">
+                    <code className="text-xs text-muted-foreground" dir="ltr">
                       {r.key}
                     </code>
                     <span className="truncate font-medium">{r.title}</span>
                     <Badge variant="outline">{t(`portal.request.kind.${r.kind}`)}</Badge>
                   </span>
-                  <span className="mt-0.5 block text-meta text-grid-muted">
+                  <span className="mt-0.5 block text-caption text-muted-foreground">
                     {t("requests.from", { project: r.project_name ?? "—", date: timeAgo(r.created_at, locale) })}
                     {r.desired_on ? ` · ${t("portal.request.wantedBy", { date: formatDay(r.desired_on, locale) })}` : ""}
                   </span>
-                  {r.reply ? <span className="mt-1 line-clamp-1 block text-meta text-grid-muted">↳ {r.reply}</span> : null}
+                  {r.reply ? <span className="mt-1 line-clamp-1 block text-caption text-muted-foreground">↳ {r.reply}</span> : null}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <IssuePriorityMark priority={r.priority} />
@@ -167,13 +168,13 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side={isRtl ? "left" : "right"} className="w-full gap-0 overflow-y-auto sm:max-w-xl" data-request-detail={requestKey}>
+      <SheetContent side="end" className="w-full gap-0 overflow-y-auto sm:max-w-xl" data-request-detail={requestKey}>
         {!r ? (
           <div className="p-5">{req.error ? <ErrorState error={req.error} /> : <LoadingRows rows={5} />}</div>
         ) : (
           <>
-            <div className="space-y-3 border-b border-line p-5 pe-12">
-              <div className="flex flex-wrap items-center gap-2 text-meta text-grid-muted">
+            <div className="space-y-3 border-b border-border p-5 pe-12">
+              <div className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
                 <IssueTypeIcon type={r.issue_type} />
                 <code dir="ltr">{r.key}</code>
                 <Badge variant="outline">{t(`portal.request.kind.${r.kind}`)}</Badge>
@@ -182,13 +183,13 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
               <SheetTitle className="text-lg leading-snug">{r.title}</SheetTitle>
               <SheetDescription className="sr-only">{t("requests.detail")}</SheetDescription>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-                <dt className="flex items-center gap-1.5 text-grid-muted">
+                <dt className="flex items-center gap-1.5 text-muted-foreground">
                   <UserIcon className="size-3.5" /> {t("requests.requester")}
                 </dt>
                 <dd className="truncate" dir="ltr">
                   {r.reporter_email ?? "—"}
                 </dd>
-                <dt className="text-grid-muted">{t("portal.request.project")}</dt>
+                <dt className="text-muted-foreground">{t("portal.request.project")}</dt>
                 <dd className="truncate">
                   {r.project_id ? (
                     <Link href={`${base}/projects/${r.project_id}`} className="hover:underline">
@@ -198,17 +199,17 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
                     "—"
                   )}
                 </dd>
-                <dt className="flex items-center gap-1.5 text-grid-muted">
+                <dt className="flex items-center gap-1.5 text-muted-foreground">
                   <CalendarIcon className="size-3.5" /> {t("requests.filed")}
                 </dt>
                 <dd>{formatDay(r.created_at, locale)}</dd>
                 {r.desired_on ? (
                   <>
-                    <dt className="text-grid-muted">{t("requests.wanted")}</dt>
+                    <dt className="text-muted-foreground">{t("requests.wanted")}</dt>
                     <dd>{formatDay(r.desired_on, locale)}</dd>
                   </>
                 ) : null}
-                <dt className="text-grid-muted">{t("portal.priority")}</dt>
+                <dt className="text-muted-foreground">{t("portal.priority")}</dt>
                 <dd>
                   <IssuePriorityMark priority={r.priority} withLabel />
                 </dd>
@@ -218,11 +219,11 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
             <Outcome r={r} base={base} />
 
             {r.state === "pending" ? (
-              <div className="flex flex-wrap gap-2 border-b border-line p-5">
-                <Button size="sm" disabled={busy} onClick={() => setActing("accept")} data-action="to-issue">
+              <div className="flex flex-wrap gap-2 border-b border-border p-5">
+                <Button variant="primary" size="sm" disabled={busy} onClick={() => setActing("accept")} data-action="to-issue">
                   <CheckIcon /> {t("requests.toIssue")}
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={convert} data-action="to-task">
+                <Button size="sm" variant="secondary" disabled={busy} onClick={convert} data-action="to-task">
                   <ListTodoIcon /> {t("requests.convert")}
                 </Button>
                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => setActing("decline")} data-action="decline">
@@ -230,22 +231,22 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-wrap items-center gap-2 border-b border-line p-5">
-                <Button size="sm" variant="outline" onClick={() => setActing("reopen")} data-action="reopen">
+              <div className="flex flex-wrap items-center gap-2 border-b border-border p-5">
+                <Button size="sm" variant="secondary" onClick={() => setActing("reopen")} data-action="reopen">
                   <RotateCcwIcon /> {t("requests.reopen")}
                 </Button>
-                <span className="text-meta text-grid-muted">{t("requests.reopenHint")}</span>
+                <span className="text-caption text-muted-foreground">{t("requests.reopenHint")}</span>
               </div>
             )}
 
-            <section className="space-y-2 border-b border-line p-5">
-              <h3 className="grid-micro">{t("portal.request.details")}</h3>
+            <section className="space-y-2 border-b border-border p-5">
+              <h3 className="text-eyebrow uppercase">{t("portal.request.details")}</h3>
               {r.body ? (
                 <p className="text-sm whitespace-pre-wrap" dir="auto">
                   {r.body}
                 </p>
               ) : (
-                <p className="text-sm text-grid-muted">{t("requests.noBody")}</p>
+                <p className="text-sm text-muted-foreground">{t("requests.noBody")}</p>
               )}
               {r.screenshot ? <AuthImage src={`/api/w/issues/${encodeURIComponent(r.key)}/screenshot`} alt={t("requests.attachment")} /> : null}
             </section>
@@ -254,11 +255,11 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
 
             {r.comments.length ? (
               <section className="space-y-2 p-5">
-                <h3 className="grid-micro">{t("portal.comments")}</h3>
+                <h3 className="text-eyebrow uppercase">{t("portal.comments")}</h3>
                 <ul className="space-y-2">
                   {r.comments.map((c) => (
-                    <li key={c.id} className="rounded-md border border-line px-3 py-2">
-                      <p className="text-meta text-grid-muted">
+                    <li key={c.id} className="rounded-md border border-border px-3 py-2">
+                      <p className="text-caption text-muted-foreground">
                         {c.author_id && c.author_id === r.reporter_id ? t("requests.customer") : t("portal.team")} · {timeAgo(c.created_at, locale)}
                       </p>
                       <p className="text-sm whitespace-pre-wrap" dir="auto">
@@ -318,11 +319,11 @@ function Outcome({ r, base }: { r: RequestDetail; base: string }) {
   const { t } = useTranslations()
   if (r.state === "pending" && !r.reply) return null
   return (
-    <div className="space-y-2 border-b border-line bg-muted/30 p-5" data-outcome={r.state}>
+    <div className="space-y-2 border-b border-border bg-muted/30 p-5" data-outcome={r.state}>
       {r.state === "accepted" ? (
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <span>{t("requests.becameIssue")}</span>
-          <Link href={`${base}/issues/${r.key}`} className="inline-flex items-center gap-1 font-medium text-grid-action hover:underline" data-link="issue">
+          <Link href={`${base}/issues/${r.key}`} className="inline-flex items-center gap-1 font-medium text-nq-accent-text hover:underline" data-link="issue">
             <code dir="ltr">{r.key}</code> · {t(`issues.status.${r.status}`)} <ExternalLinkIcon className="size-3.5" />
           </Link>
         </p>
@@ -333,7 +334,7 @@ function Outcome({ r, base }: { r: RequestDetail; base: string }) {
           {r.task_project_id ? (
             <Link
               href={`${base}/projects/${r.task_project_id}/tasks/${r.task_key}`}
-              className="inline-flex items-center gap-1 font-medium text-grid-action hover:underline"
+              className="inline-flex items-center gap-1 font-medium text-nq-accent-text hover:underline"
               data-link="task"
             >
               <code dir="ltr">{r.task_key}</code> <ExternalLinkIcon className="size-3.5" />
@@ -345,7 +346,7 @@ function Outcome({ r, base }: { r: RequestDetail; base: string }) {
       ) : null}
       {r.reply ? (
         <div className="text-sm">
-          <p className="grid-micro mb-1">{r.state === "declined" ? t("requests.reason") : t("portal.request.reply")}</p>
+          <p className="text-eyebrow uppercase mb-1">{r.state === "declined" ? t("requests.reason") : t("portal.request.reply")}</p>
           <p className="whitespace-pre-wrap" dir="auto">
             {r.reply}
           </p>
@@ -358,18 +359,18 @@ function Outcome({ r, base }: { r: RequestDetail; base: string }) {
 function History({ r }: { r: RequestDetail }) {
   const { t, locale } = useTranslations()
   return (
-    <section className="space-y-3 border-b border-line p-5">
-      <h3 className="grid-micro">{t("requests.history")}</h3>
-      <ol className="relative space-y-3 border-s border-line ps-4">
+    <section className="space-y-3 border-b border-border p-5">
+      <h3 className="text-eyebrow uppercase">{t("requests.history")}</h3>
+      <ol className="relative space-y-3 border-s border-border ps-4">
         {r.history.map((h, i) => (
           <li key={i} className="relative">
-            <span className="absolute -start-[21px] top-1.5 size-2.5 rounded-full border-2 border-background bg-grid-action" aria-hidden />
+            <span className="absolute -start-[21px] top-1.5 size-2.5 rounded-full border-2 border-background bg-nq-action" aria-hidden />
             <p className="text-sm">
               {i === 0 ? t("requests.event.filed") : h.state === "pending" ? t("requests.event.reopened") : t(`requests.event.${h.state}`)}
-              <span className="ms-2 text-meta text-grid-muted">{formatDay(h.at, locale)} · {timeAgo(h.at, locale)}</span>
+              <span className="ms-2 text-caption text-muted-foreground">{formatDay(h.at, locale)} · {timeAgo(h.at, locale)}</span>
             </p>
             {h.note ? (
-              <p className="text-meta whitespace-pre-wrap text-grid-muted" dir="auto">
+              <p className="text-caption whitespace-pre-wrap text-muted-foreground" dir="auto">
                 {h.note}
               </p>
             ) : null}

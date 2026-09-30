@@ -4,16 +4,17 @@ import { useEffect, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { PlusIcon, SearchIcon, UploadIcon } from "lucide-react"
 import { ListFilter } from "@/components/list-filter"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
 import { ClientImportDialog } from "@/components/work/client-import-dialog"
@@ -65,7 +66,7 @@ export default function ClientsPage() {
     }
   }, [])
 
-  if (ws.current && !ws.can("clients:read")) return <p className="px-6 py-6 text-sm text-grid-muted">{t("clients.noPermission")}</p>
+  if (ws.current && !ws.can("clients:read")) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("clients.noPermission")}</p>
 
   async function toggleArchive(c: Client) {
     try {
@@ -86,11 +87,11 @@ export default function ClientsPage() {
         action={
           canWrite ? (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setImporting(true)} data-client-import-open>
+              <Button variant="secondary" onClick={() => setImporting(true)} data-client-import-open>
                 <UploadIcon />
                 {t("clientImport.button")}
               </Button>
-              <Button onClick={() => setEditing("new")}>
+              <Button variant="primary" onClick={() => setEditing("new")}>
                 <PlusIcon />
                 {t("clients.new")}
               </Button>
@@ -98,14 +99,14 @@ export default function ClientsPage() {
           ) : null
         }
       />
-      <div className="flex flex-wrap items-center gap-2 border-t border-line px-6 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border px-6 py-3">
         <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-grid-muted" aria-hidden />
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("clients.search")} aria-label={t("clients.search")} className="h-9 ps-8" dir="auto" />
         </div>
         <ListFilter value={currency} onChange={setCurrency} label={t("clients.filterCurrency")} items={[{ value: "", label: t("clients.allCurrencies") }, ...currencies.map((c) => ({ value: c, label: c }))]} />
         <ListFilter value={work} onChange={setWork} label={t("clients.filterWork")} items={[{ value: "", label: t("clients.allClients") }, { value: "with", label: t("clients.withProjects") }, { value: "without", label: t("clients.withoutProjects") }]} />
-        <label className="flex items-center gap-2 text-sm text-grid-body">
+        <label className="flex items-center gap-2 text-sm text-nq-fg-body">
           <Switch checked={archived} onCheckedChange={setArchived} />
           {t("clients.showArchived")}
         </label>
@@ -120,7 +121,7 @@ export default function ClientsPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("clients.empty")} body={canWrite ? t("clients.emptyBody") : undefined} />
       ) : (
-        <div className="border-y border-line">
+        <div className="border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,13 +142,13 @@ export default function ClientsPage() {
                       {c.name}
                     </Link>
                     {c.archived_at ? (
-                      <Badge variant="secondary" className="ms-2">
+                      <Badge variant="neutral" className="ms-2">
                         {t("project.archivedBadge")}
                       </Badge>
                     ) : null}
                   </TableCell>
-                  <TableCell className="hidden text-grid-muted md:table-cell">{c.email ? <Ltr>{c.email}</Ltr> : "—"}</TableCell>
-                  <TableCell className="hidden text-grid-muted sm:table-cell">
+                  <TableCell className="hidden text-muted-foreground md:table-cell">{c.email ? <Ltr>{c.email}</Ltr> : "—"}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {c.default_rate_minor != null ? (
                       <Ltr>
                         {money(c.default_rate_minor, c.currency, locale)}/{t("clients.hourShort")}
@@ -156,7 +157,7 @@ export default function ClientsPage() {
                       <Ltr mono>{c.currency}</Ltr>
                     )}
                   </TableCell>
-                  <TableCell className="text-grid-muted">
+                  <TableCell className="text-muted-foreground">
                     <Ltr>{c.project_count}</Ltr>
                   </TableCell>
                   <TableCell className="pe-6 text-end">
@@ -261,7 +262,7 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
 
   return (
     <form onSubmit={submit} noValidate>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="c-name">{t("clients.name")}</FieldLabel>
           <Input id="c-name" autoFocus value={v.name} onChange={(e) => set("name", e.target.value)} />
@@ -298,11 +299,11 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
         </Field>
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy || !v.name.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !v.name.trim()}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

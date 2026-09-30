@@ -5,9 +5,10 @@
 // everyone else). Changing plan is a conversation with us for now — see the CTA below.
 import { useEffect, useState } from "react"
 import { CircleCheckIcon, CreditCardIcon, MailIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { EstimateStrip, FeatureList, UsageTable } from "@/components/admin/usage"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
@@ -29,7 +30,7 @@ export default function PlanSettingsPage() {
 
   let body
   if (plan.error instanceof ApiError && plan.error.status === 403 && !plan.error.code)
-    body = <p className="border-t border-line px-6 py-6 text-sm text-grid-muted" data-plan-forbidden>{t("plan.noPermission")}</p>
+    body = <p className="border-t border-border px-6 py-6 text-sm text-muted-foreground" data-plan-forbidden>{t("plan.noPermission")}</p>
   else if (plan.error) body = <ErrorState error={plan.error} />
   else if (!plan.data) body = <LoadingRows rows={5} />
   else body = <PlanBody r={plan.data} workspaceId={ws.id} />
@@ -72,23 +73,23 @@ function PlanBody({ r, workspaceId }: { r: UsageReport; workspaceId: string }) {
   return (
     <div className="space-y-8 pb-10" data-plan-page>
       {paid ? (
-        <p role="status" className="flex items-center gap-2 border-y border-line bg-grid-soft/50 px-6 py-3 text-sm text-(--grid-ok-text)" data-paid>
+        <p role="status" className="flex items-center gap-2 border-y border-border bg-muted/50 px-6 py-3 text-sm text-(--nq-ok-text)" data-paid>
           <CircleCheckIcon className="size-4 shrink-0" />
           {t("billing.paid")}
         </p>
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-y border-line bg-grid-soft/50 px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-y border-border bg-muted/50 px-6 py-4">
         <div className="space-y-1">
-          <p className="grid-micro">{t("plan.current")}</p>
-          <p className="text-lg font-semibold text-grid-fg" data-plan-name={r.plan.key}>
+          <p className="text-eyebrow uppercase">{t("plan.current")}</p>
+          <p className="text-lg font-semibold text-foreground" data-plan-name={r.plan.key}>
             {planName(r.plan, locale)}
           </p>
-          <p className="text-sm text-grid-muted">
+          <p className="text-sm text-muted-foreground">
             {t("plan.baseFee")}: <Ltr>{money(r.base_fee_minor, r.currency, locale)}</Ltr> · {t("plan.period", { month: formatDay(r.period, locale) })}
           </p>
         </div>
         {href ? (
-          <Button nativeButton={false} render={<a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />} data-upgrade>
+          <Button variant="primary" nativeButton={false} render={<a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />} data-upgrade>
             <MailIcon />
             {t("plan.contactUpgrade")}
           </Button>
@@ -98,18 +99,18 @@ function PlanBody({ r, workspaceId }: { r: UsageReport; workspaceId: string }) {
       <BillingSection workspaceId={workspaceId} current={r.plan.key} contact={href} billing={billing} />
 
       <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("plan.thisMonth")}</h2>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("plan.thisMonth")}</h2>
         <EstimateStrip report={r} />
-        <p className="px-6 text-meta text-grid-muted">{t("plan.estimateHint")}</p>
+        <p className="px-6 text-caption text-muted-foreground">{t("plan.estimateHint")}</p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("plan.usage")}</h2>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("plan.usage")}</h2>
         <UsageTable report={r} />
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("plan.features")}</h2>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("plan.features")}</h2>
         <FeatureList features={r.features} />
       </section>
     </div>
@@ -149,42 +150,61 @@ function BillingSection({
   const b = data.billing
   const plans = data.plans ?? []
 
+  if (data.hub_linked) {
+    return (
+      <section className="space-y-3" data-billing data-billing-hub>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6">
+          <div className="min-w-0">
+            <h2 className="text-sm font-medium text-foreground">{t("billing.title")}</h2>
+            <p className="text-sm text-muted-foreground">{t("plan.hubBilling")}</p>
+          </div>
+          {data.hub_billing_url ? (
+            <Button variant="secondary" size="sm" nativeButton={false} render={<a href={data.hub_billing_url} target="_blank" rel="noreferrer" />} data-manage-billing>
+              <CreditCardIcon />
+              {t("plan.hubBillingOpen")}
+            </Button>
+          ) : null}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="space-y-3" data-billing>
       <div className="flex flex-wrap items-center justify-between gap-3 px-6">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-sm font-medium text-grid-fg">{t("billing.title")}</h2>
+          <h2 className="text-sm font-medium text-foreground">{t("billing.title")}</h2>
           <BillingStatusBadge billing={b} />
         </div>
         {b?.polar_customer_id ? (
-          <Button variant="outline" size="sm" disabled={!!busy} onClick={() => go("portal", () => billingApi.portal(workspaceId))} data-manage-billing>
+          <Button variant="secondary" size="sm" disabled={!!busy} onClick={() => go("portal", () => billingApi.portal(workspaceId))} data-manage-billing>
             <CreditCardIcon />
             {busy === "portal" ? t("common.working") : t("billing.manage")}
           </Button>
         ) : null}
       </div>
-      {!data.configured ? <p className="px-6 text-sm text-grid-muted">{t("billing.notConfigured")}</p> : null}
+      {!data.configured ? <p className="px-6 text-sm text-muted-foreground">{t("billing.notConfigured")}</p> : null}
       {plans.length ? (
-        <ul className="divide-y divide-line border-y border-line" data-billing-plans>
+        <ul className="divide-y divide-line border-y border-border" data-billing-plans>
           {plans.map((p) => {
             const isCurrent = p.key === current
             return (
               <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3" data-billing-plan={p.key}>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-grid-fg">
+                  <p className="text-sm font-medium text-foreground">
                     {planName(p, locale)}
-                    {isCurrent ? <span className="ms-2 text-meta font-normal text-grid-muted">{t("billing.currentPlan")}</span> : null}
+                    {isCurrent ? <span className="ms-2 text-caption font-normal text-muted-foreground">{t("billing.currentPlan")}</span> : null}
                   </p>
-                  <p className="text-meta text-grid-muted">
+                  <p className="text-caption text-muted-foreground">
                     {(locale === "ar" ? p.price_label_ar : p.price_label_en) || <Ltr>{money(p.base_fee_minor, p.currency, locale)}</Ltr>}
                   </p>
                 </div>
                 {isCurrent ? null : p.purchasable && data.configured ? (
-                  <Button size="sm" disabled={!!busy} onClick={() => go(p.key, () => billingApi.checkout(workspaceId, p.key, locale))}>
+                  <Button variant="primary" size="sm" disabled={!!busy} onClick={() => go(p.key, () => billingApi.checkout(workspaceId, p.key, locale))}>
                     {busy === p.key ? t("common.working") : b?.status === "active" ? t("billing.switch") : t("billing.upgrade")}
                   </Button>
                 ) : contact ? (
-                  <Button size="sm" variant="outline" nativeButton={false} render={<a href={contact} target={contact.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />}>
+                  <Button size="sm" variant="secondary" nativeButton={false} render={<a href={contact} target={contact.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />}>
                     <MailIcon />
                     {t("plan.contactUs")}
                   </Button>

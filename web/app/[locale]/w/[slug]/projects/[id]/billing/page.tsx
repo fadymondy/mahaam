@@ -2,15 +2,16 @@
 
 import { useState, type FormEvent } from "react"
 import { PlusIcon, SparklesIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -58,7 +59,7 @@ type Sub = {
 
 const CATEGORIES = ["infrastructure", "ai", "marketing", "software", "domain", "support", "other"]
 const INTERVALS = ["month", "quarter", "year", "one_time"]
-const selectCls = "h-8 w-full rounded-lg border border-line bg-transparent px-2 text-sm"
+const selectCls = "h-8 w-full rounded-lg border border-border bg-transparent px-2 text-sm"
 
 const tokens = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(n))
 
@@ -100,14 +101,14 @@ export default function BillingPage() {
             <h2 className="flex items-center gap-2 text-base font-medium">
               <SparklesIcon className="size-4" aria-hidden /> {t("billing.aiTitle")}
             </h2>
-            <p className="mt-1 max-w-2xl text-sm text-grid-muted">{t("billing.aiHint")}</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("billing.aiHint")}</p>
           </div>
           <div className="flex items-end gap-2">
             <Field>
               <FieldLabel htmlFor="markup">{t("billing.markup")}</FieldLabel>
               <Input id="markup" dir="ltr" inputMode="decimal" className="w-24" placeholder="0" value={markupValue} onChange={(e) => setMarkup(e.target.value)} />
             </Field>
-            <Button variant="outline" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
+            <Button variant="secondary" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
               {t("billing.saveMarkup")}
             </Button>
           </div>
@@ -121,12 +122,12 @@ export default function BillingPage() {
         ) : (
           <>
             {days.length > 1 ? (
-              <div className="flex h-24 items-end gap-1 border-b border-line" role="img" aria-label={t("billing.dailyCost")}>
+              <div className="flex h-24 items-end gap-1 border-b border-border" role="img" aria-label={t("billing.dailyCost")}>
                 {days.map((d) => (
                   <div
                     key={d.key}
                     title={`${d.key}: ${money(d.cost_minor, d.currency, locale)}`}
-                    className="min-w-1 flex-1 bg-grid-action/70"
+                    className="min-w-1 flex-1 bg-nq-action/70"
                     style={{ height: `${Math.max(4, (d.cost_minor / maxCost) * 100)}%` }}
                   />
                 ))}
@@ -134,7 +135,7 @@ export default function BillingPage() {
             ) : null}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-start text-meta text-grid-muted">
+                <thead className="text-start text-caption text-muted-foreground">
                   <tr>
                     <th className="py-2 text-start font-medium">{t("billing.model")}</th>
                     <th className="py-2 text-end font-medium">{t("billing.input")}</th>
@@ -170,9 +171,9 @@ export default function BillingPage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-base font-medium">{t("billing.subsTitle")}</h2>
-            <p className="mt-1 max-w-2xl text-sm text-grid-muted">{t("billing.subsHint")}</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("billing.subsHint")}</p>
           </div>
-          <Button onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: "USD" })}>
+          <Button variant="primary" onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: "USD" })}>
             <PlusIcon /> {t("billing.addSub")}
           </Button>
         </div>
@@ -183,23 +184,23 @@ export default function BillingPage() {
         ) : (subs.data.subscriptions ?? []).length === 0 ? (
           <EmptyState title={t("billing.noSubs")} />
         ) : (
-          <ul className="divide-y divide-line border border-line">
+          <ul className="divide-y divide-line border border-border">
             {(subs.data.subscriptions ?? []).map((x) => (
               <li key={x.id} className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
                 <span className="font-medium" dir="auto">
                   {x.name}
                 </span>
-                <Badge variant="secondary">{t(`billing.cat.${x.category}`)}</Badge>
-                {x.vendor ? <span className="text-grid-muted">{x.vendor}</span> : null}
+                <Badge variant="neutral">{t(`billing.cat.${x.category}`)}</Badge>
+                {x.vendor ? <span className="text-muted-foreground">{x.vendor}</span> : null}
                 {!x.active ? <Badge variant="outline">{t("billing.inactive")}</Badge> : null}
                 {!x.billable ? <Badge variant="outline">{t("billing.notBillable")}</Badge> : null}
                 <span className="ms-auto tabular-nums">
                   {money(x.price_minor, x.currency, locale)} / {t(`billing.int.${x.interval}`)}
-                  <span className="ms-2 text-meta text-grid-muted">
+                  <span className="ms-2 text-caption text-muted-foreground">
                     {t("billing.costIs", { cost: money(x.cost_minor, x.currency, locale) })}
                   </span>
                 </span>
-                <span className="w-full text-meta text-grid-muted">
+                <span className="w-full text-caption text-muted-foreground">
                   {x.next_period ? t("billing.nextPeriod", { date: x.next_period }) : t("billing.fullyBilled")}
                   {x.billed_until ? ` · ${t("billing.billedUntil", { date: x.billed_until })}` : ""}
                 </span>
@@ -274,7 +275,7 @@ function SubDialog({
             <DialogTitle>{v.id ? t("billing.editSub") : t("billing.addSub")}</DialogTitle>
             <DialogDescription>{t("billing.subDialogHint")}</DialogDescription>
           </DialogHeader>
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor="s-name">{t("billing.name")}</FieldLabel>
               <Input id="s-name" name="name" dir="auto" required defaultValue={v.name ?? ""} placeholder="Hetzner server" />
@@ -333,12 +334,12 @@ function SubDialog({
                 <Switch name="active" defaultChecked={v.active ?? true} /> {t("billing.active")}
               </label>
             </div>
-          </FieldGroup>
+          </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>
               {t("billing.cancel")}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {t("billing.save")}
             </Button>
           </DialogFooter>

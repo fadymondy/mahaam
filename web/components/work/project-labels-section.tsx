@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { ColorChip } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
@@ -46,10 +47,10 @@ export function ProjectLabelsSection({ projectId }: { projectId: string }) {
   }
 
   return (
-    <section className="border-b border-line">
+    <section className="border-b border-border">
       <div className="px-6 pt-6 pb-3">
         <h2 className="text-base font-medium">{t("projectLabels.title")}</h2>
-        <p className="mt-1 text-sm text-grid-muted">{t("projectLabels.hint")}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("projectLabels.hint")}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2 px-6 pb-6">
         {(all.data?.labels ?? []).map((l) => (
@@ -59,13 +60,13 @@ export function ProjectLabelsSection({ projectId }: { projectId: string }) {
             aria-pressed={picked.has(l.id)}
             onClick={() => toggle(l.id)}
             className={
-              "rounded-full border px-1 py-0.5 transition-opacity " + (picked.has(l.id) ? "border-grid-action" : "border-transparent opacity-50 hover:opacity-100")
+              "rounded-full border px-1 py-0.5 transition-opacity " + (picked.has(l.id) ? "border-nq-action" : "border-transparent opacity-50 hover:opacity-100")
             }
           >
             <ColorChip color={l.color}>{l.name}</ColorChip>
           </button>
         ))}
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => void save()} className="ms-auto">
+        <Button size="sm" variant="secondary" disabled={busy} onClick={() => void save()} className="ms-auto">
           {t("projectLabels.save")}
         </Button>
       </div>

@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ClockIcon, ExternalLinkIcon, LinkIcon, MoreHorizontalIcon, PencilIcon, SendIcon, SparklesIcon, UserRoundIcon, XIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Markdown } from "@/components/markdown"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetClose, SheetContent, SheetTitle, Switch, Textarea } from "@fadymondy/nasaq/web"
+
+import { Markdown } from "@fadymondy/nasaq/web"
+
+
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import {
@@ -115,13 +116,13 @@ export function IssueSheet({
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
-          side={isRtl ? "left" : "right"}
-          showCloseButton={false}
+          side="end"
+          showClose={false}
           className="w-full gap-0 p-0 data-[side=left]:w-full data-[side=right]:w-full sm:max-w-3xl! data-[side=left]:sm:max-w-3xl data-[side=right]:sm:max-w-3xl"
         >
           {draft ? (
             <>
-              <header className="flex flex-col gap-2 border-b border-line p-3">
+              <header className="flex flex-col gap-2 border-b border-border p-3">
                 <div className="flex items-center gap-1">
                   <SheetClose
                     render={
@@ -160,7 +161,7 @@ export function IssueSheet({
                     }
                   />
 
-                  <span dir="ltr" className="ms-auto font-mono text-xs text-grid-muted">
+                  <span dir="ltr" className="ms-auto font-mono text-xs text-muted-foreground">
                     {draft.key}
                   </span>
                 </div>
@@ -171,10 +172,10 @@ export function IssueSheet({
               </header>
 
               <div className="grid flex-1 overflow-hidden sm:grid-cols-[16rem_1fr] rtl:sm:grid-cols-[1fr_16rem]">
-                <div className="flex flex-col gap-4 overflow-y-auto border-line p-4 max-sm:border-b sm:border-e rtl:sm:order-2 rtl:sm:border-e-0 rtl:sm:border-s">
+                <div className="flex flex-col gap-4 overflow-y-auto border-border p-4 max-sm:border-b sm:border-e rtl:sm:order-2 rtl:sm:border-e-0 rtl:sm:border-s">
                   {fields.map((field) => (
                     <div key={field.key} className="flex flex-col gap-1.5">
-                      <span className="font-mono text-xs tracking-wider text-grid-muted uppercase">{field.label}</span>
+                      <span className="font-mono text-xs tracking-wider text-muted-foreground uppercase">{field.label}</span>
                       <Select
                         value={field.value}
                         disabled={!canWrite}
@@ -194,29 +195,29 @@ export function IssueSheet({
                     </div>
                   ))}
 
-                  <label className="flex items-start gap-3 border border-line p-3">
+                  <label className="flex items-start gap-3 border border-border p-3">
                     <Switch checked={draft.human_only} disabled={!canWrite} onCheckedChange={(v) => void patch({ human_only: Boolean(v) })} />
                     <span className="flex flex-col gap-1">
                       <span className="flex items-center gap-1.5 text-sm">
                         <UserRoundIcon className="size-3.5" />
                         {t("issues.humanOnly")}
                       </span>
-                      <span className="text-meta text-grid-muted">{t("issues.humanOnlyHint")}</span>
+                      <span className="text-caption text-muted-foreground">{t("issues.humanOnlyHint")}</span>
                     </span>
                   </label>
 
                   <CardPlanning taskKey={draft.key} />
 
-                  <IssueAgentSettings issue={draft} onPatch={patch} disabled={!canWrite} className="border-t border-line pt-4" />
+                  <IssueAgentSettings issue={draft} onPatch={patch} disabled={!canWrite} className="border-t border-border pt-4" />
 
                   {agentTime ? (
-                    <p className="flex items-center gap-1.5 font-mono text-xs text-grid-muted" title={t("issues.agentTime")}>
+                    <p className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground" title={t("issues.agentTime")}>
                       <ClockIcon className="size-3.5" />
                       <span dir="ltr">{agentTime}</span>
                     </p>
                   ) : null}
                   {aiCost ? (
-                    <p className="flex items-center gap-1.5 font-mono text-xs text-grid-muted" title={t("issues.aiCost")}>
+                    <p className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground" title={t("issues.aiCost")}>
                       <SparklesIcon className="size-3.5" />
                       <span dir="ltr">{aiCost}</span>
                     </p>
@@ -227,17 +228,17 @@ export function IssueSheet({
                   {draft.body ? (
                     <Markdown>{draft.body}</Markdown>
                   ) : (
-                    <p className="text-sm text-grid-muted">{t("issues.sheet.noDescription")}</p>
+                    <p className="text-sm text-muted-foreground">{t("issues.sheet.noDescription")}</p>
                   )}
 
-                  <div className="-mx-4 mt-6 border-t border-line">
+                  <div className="-mx-4 mt-6 border-t border-border">
                     <ContextPanel issue={draft} />
                   </div>
 
                   <CardExtras taskKey={draft.key} />
 
-                  <section className="mt-8 border-t border-line pt-4">
-                    <h3 className="flex items-baseline justify-between gap-3 font-mono text-xs tracking-wider text-grid-muted uppercase">
+                  <section className="mt-8 border-t border-border pt-4">
+                    <h3 className="flex items-baseline justify-between gap-3 font-mono text-xs tracking-wider text-muted-foreground uppercase">
                       {t("issues.comments")}
                       <span dir="ltr" className="tabular-nums">
                         {comments.length}
@@ -248,7 +249,7 @@ export function IssueSheet({
                       <ul className="mt-3 flex flex-col divide-y divide-line">
                         {comments.map((comment) => (
                           <li key={comment.id} className="py-3">
-                            <p className="font-mono text-xs text-grid-muted">
+                            <p className="font-mono text-xs text-muted-foreground">
                               <span dir="ltr">{author(comment)}</span> · {new Date(comment.created_at).toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}
                             </p>
                             <Markdown className="mt-1.5">{comment.body}</Markdown>
@@ -256,7 +257,7 @@ export function IssueSheet({
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-3 text-sm text-grid-muted">{t("issues.noComments")}</p>
+                      <p className="mt-3 text-sm text-muted-foreground">{t("issues.noComments")}</p>
                     )}
 
                     {form.canWrite ? (
@@ -269,7 +270,7 @@ export function IssueSheet({
                           disabled={form.posting}
                           placeholder={t("issues.commentPlaceholder")}
                         />
-                        <p className="text-meta text-grid-muted">{t("issues.mentionHint")}</p>
+                        <p className="text-caption text-muted-foreground">{t("issues.mentionHint")}</p>
 
                         {form.error ? (
                           <p role="alert" className="text-sm text-destructive">
@@ -277,7 +278,7 @@ export function IssueSheet({
                           </p>
                         ) : null}
 
-                        <Button type="submit" size="sm" className="gap-2 self-start" disabled={form.posting || !form.value.trim()}>
+                        <Button variant="primary" type="submit" size="sm" className="gap-2 self-start" disabled={form.posting || !form.value.trim()}>
                           <SendIcon className="rtl:-scale-x-100" />
                           {form.posting ? t("issues.comments.posting") : t("issues.postComment")}
                         </Button>

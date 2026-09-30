@@ -3,16 +3,17 @@
 import { useState } from "react"
 import Link from "next/link"
 import { FolderKanbanIcon, InboxIcon, PlusIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { api } from "@/lib/api"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
 import { ErrorState, LoadingRows } from "@/components/states"
 import { Meter, NewRequestDialog, PortalEmpty, ProgressRing } from "@/components/portal/portal-bits"
 import { ConnectAiCard } from "@/components/portal/connect-ai"
@@ -46,13 +47,13 @@ export default function PortalPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">{t("portal.title")}</h1>
-          <p className="text-sm text-grid-muted">{t("portal.subtitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("portal.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setDialog("issue")} disabled={active.length === 0}>
+          <Button variant="secondary" onClick={() => setDialog("issue")} disabled={active.length === 0}>
             <PlusIcon /> {t("portal.fileIssue")}
           </Button>
-          <Button onClick={() => setDialog("request")} disabled={active.length === 0}>
+          <Button variant="primary" onClick={() => setDialog("request")} disabled={active.length === 0}>
             <InboxIcon /> {t("portal.newRequest")}
           </Button>
         </div>
@@ -78,22 +79,22 @@ export default function PortalPage() {
       <section>
         <h2 className="mb-3 text-base font-medium">{t("portal.invoices")}</h2>
         {(invoices.data?.invoices ?? []).length === 0 ? (
-          <p className="text-sm text-grid-muted">{t("portal.noInvoices")}</p>
+          <p className="text-sm text-muted-foreground">{t("portal.noInvoices")}</p>
         ) : (
-          <ul className="divide-y divide-line rounded-md border border-line">
+          <ul className="divide-y divide-line rounded-md border border-border">
             {(invoices.data?.invoices ?? []).map((iv) => (
               <li key={iv.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <span className="flex items-center gap-3">
                   <span className="font-medium" dir="ltr">
                     {iv.number}
                   </span>
-                  <span className="text-meta text-grid-muted">{formatDay(iv.issue_date, locale)}</span>
+                  <span className="text-caption text-muted-foreground">{formatDay(iv.issue_date, locale)}</span>
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="text-sm tabular-nums" dir="ltr">
                     {money(iv.total_minor, iv.currency, locale)}
                   </span>
-                  <Badge variant="secondary">{t(`invoices.status.${iv.status}`)}</Badge>
+                  <Badge variant="neutral">{t(`invoices.status.${iv.status}`)}</Badge>
                 </span>
               </li>
             ))}
@@ -135,7 +136,7 @@ function ProjectCard({ p, href }: { p: PortalProject; href: string }) {
     <li>
       <Link
         href={href}
-        className="group flex h-full flex-col gap-4 rounded-2xl border border-line bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-grid-action/50 hover:shadow-sm"
+        className="group flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-nq-action/50 hover:shadow-sm"
         data-portal-project={p.id}
       >
         <div className="flex items-start gap-3">
@@ -143,16 +144,16 @@ function ProjectCard({ p, href }: { p: PortalProject; href: string }) {
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2">
               <ColorDot color={p.color} />
-              <span className="truncate font-medium group-hover:text-grid-action">{p.name}</span>
+              <span className="truncate font-medium group-hover:text-nq-accent-text">{p.name}</span>
             </p>
-            {p.client_name ? <p className="truncate text-meta text-grid-muted">{p.client_name}</p> : null}
-            <Badge variant="secondary" className="mt-1.5">
+            {p.client_name ? <p className="truncate text-caption text-muted-foreground">{p.client_name}</p> : null}
+            <Badge variant="neutral" className="mt-1.5">
               {p.archived ? t("portal.archived") : t(`projectStatus.${p.status}`)}
             </Badge>
           </div>
         </div>
         <div className="space-y-1.5">
-          <div className="flex justify-between text-meta text-grid-muted">
+          <div className="flex justify-between text-caption text-muted-foreground">
             <span>{t("portal.budget")}</span>
             <span className="tabular-nums" dir="ltr">
               {budget > 0 ? t("portal.hoursOfBudget", { used, budget: hours(budget) }) : t("portal.hoursTracked", { used })}
@@ -160,18 +161,18 @@ function ProjectCard({ p, href }: { p: PortalProject; href: string }) {
           </div>
           {budget > 0 ? <Meter value={(p.used_minutes / budget) * 100} warn={p.used_minutes > budget} label={t("portal.budget")} /> : null}
         </div>
-        <div className="mt-auto grid grid-cols-3 gap-2 border-t border-line pt-3 text-center">
+        <div className="mt-auto grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
           <span>
             <span className="block text-base font-semibold tabular-nums">{p.tasks.done}/{p.tasks.todo + p.tasks.doing + p.tasks.done}</span>
-            <span className="block text-xs text-grid-muted">{t("portal.card.tasks")}</span>
+            <span className="block text-xs text-muted-foreground">{t("portal.card.tasks")}</span>
           </span>
           <span>
             <span className="block text-base font-semibold tabular-nums">{p.open_issues}</span>
-            <span className="block text-xs text-grid-muted">{t("portal.card.issues")}</span>
+            <span className="block text-xs text-muted-foreground">{t("portal.card.issues")}</span>
           </span>
           <span>
-            <span className={`block text-base font-semibold tabular-nums ${p.pending_requests > 0 ? "text-grid-action" : ""}`}>{p.pending_requests}</span>
-            <span className="block text-xs text-grid-muted">{t("portal.card.requests")}</span>
+            <span className={`block text-base font-semibold tabular-nums ${p.pending_requests > 0 ? "text-nq-accent-text" : ""}`}>{p.pending_requests}</span>
+            <span className="block text-xs text-muted-foreground">{t("portal.card.requests")}</span>
           </span>
         </div>
       </Link>
@@ -283,7 +284,7 @@ function FileIssueDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             {t("portal.cancel")}
           </Button>
-          <Button onClick={submit} disabled={busy || !title.trim() || !projectId}>
+          <Button variant="primary" onClick={submit} disabled={busy || !title.trim() || !projectId}>
             {busy ? t("portal.sending") : t("portal.send")}
           </Button>
         </DialogFooter>

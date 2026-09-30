@@ -2,12 +2,13 @@
 
 import { useState, type FormEvent } from "react"
 import { PlusIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
@@ -45,13 +46,13 @@ export default function LabelsPage() {
     <>
       <SectionHeader micro={ws.summary.name} title={t("nav.labels")} description={t("labels.hint")} />
       {canCreate ? (
-        <form onSubmit={create} className="flex flex-wrap items-end gap-4 border-t border-line px-6 py-4">
+        <form onSubmit={create} className="flex flex-wrap items-end gap-4 border-t border-border px-6 py-4">
           <Field className="min-w-48 flex-1">
             <FieldLabel htmlFor="l-name">{t("labels.newName")}</FieldLabel>
             <Input id="l-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder={t("labels.placeholder")} />
           </Field>
           <ColorPicker value={color} onChange={setColor} />
-          <Button type="submit" disabled={!name.trim()}>
+          <Button variant="primary" type="submit" disabled={!name.trim()}>
             <PlusIcon />
             {t("labels.create")}
           </Button>
@@ -64,11 +65,11 @@ export default function LabelsPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("labels.empty")} />
       ) : (
-        <ul className="divide-y divide-line border-y border-line">
+        <ul className="divide-y divide-line border-y border-border">
           {list.map((l) => (
             <li key={l.id} className="flex items-center gap-3 px-6 py-2.5 text-sm" data-label={l.id}>
               <ColorChip color={l.color}>{l.name}</ColorChip>
-              <span className="flex-1 text-meta text-grid-muted">
+              <span className="flex-1 text-caption text-muted-foreground">
                 {t("labels.taskCount", { n: l.task_count })}
                 <Ltr> </Ltr>
               </span>
@@ -97,7 +98,7 @@ export default function LabelsPage() {
           ))}
         </ul>
       )}
-      {!canManage ? <p className="px-6 py-4 text-meta text-grid-muted">{t("labels.manageHint")}</p> : null}
+      {!canManage ? <p className="px-6 py-4 text-caption text-muted-foreground">{t("labels.manageHint")}</p> : null}
       <EditLabel
         label={editing}
         onClose={() => setEditing(null)}
@@ -137,7 +138,7 @@ function EditLabel({ label, onClose, onSaved }: { label: Label | null; onClose: 
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button
+          <Button variant="primary"
             disabled={!name.trim()}
             onClick={async () => {
               try {

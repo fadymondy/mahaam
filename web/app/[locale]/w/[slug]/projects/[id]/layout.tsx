@@ -6,9 +6,10 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import { ArchiveIcon, ChevronLeftIcon } from "lucide-react"
 import { useSWRConfig } from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge, Skeleton, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
+
+
+
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState } from "@/components/states"
 import { ColorDot } from "@/components/work/palette"
@@ -77,37 +78,37 @@ function ProjectShell({ children }: { children: ReactNode }) {
   return (
     <ProjectContext.Provider value={{ project: p, reload, openTask: (k) => setTask(k), base }}>
       <div className="px-6 pt-5">
-        <Link href={`/${locale}/w/${ws.slug}/projects`} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
+        <Link href={`/${locale}/w/${ws.slug}/projects`} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
           <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
           {t("nav.projects")}
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <ProjectAvatar project={p} className="size-9 text-xs" />
-          <h1 className="grid-title min-w-0 truncate text-2xl">{p.name}</h1>
+          <h1 className="text-h2 min-w-0 truncate text-2xl">{p.name}</h1>
           <Badge variant="outline">{t(`projectStatus.${p.status}`)}</Badge>
           {p.archived_at ? (
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="neutral" className="gap-1">
               <ArchiveIcon />
               {t("project.archivedBadge")}
             </Badge>
           ) : null}
-          {p.client_name ? <span className="text-sm text-grid-muted">{p.client_name}</span> : null}
+          {p.client_name ? <span className="text-sm text-muted-foreground">{p.client_name}</span> : null}
         </div>
       </div>
       {!isTaskRoute ? (
-        <div className="mt-4 border-b border-line px-6">
+        <div className="mt-4 border-b border-border px-6">
           <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
-            <TabsList variant="line">
+            <TabsList variant="underline">
               {TABS.filter((x) => (x !== "vault" || ws.can("vault:read")) && (x !== "github" || ws.can("integrations:read")) && (x !== "billing" || ws.can("subscriptions:manage"))).map((x) => (
-                <TabsTrigger key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
+                <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
                   {t(`projectTab.${x}`)}
-                </TabsTrigger>
+                </TabsTab>
               ))}
             </TabsList>
           </Tabs>
         </div>
       ) : null}
-      {p.archived_at ? <p className="border-b border-line bg-grid-soft px-6 py-2 text-sm text-grid-muted">{t("project.archivedNotice")}</p> : null}
+      {p.archived_at ? <p className="border-b border-border bg-muted px-6 py-2 text-sm text-muted-foreground">{t("project.archivedNotice")}</p> : null}
       {children}
       <TaskSheet taskKey={taskKey} statuses={p.statuses} onClose={() => setTask(null)} onOpen={(k) => setTask(k)} onChanged={reload} />
     </ProjectContext.Provider>

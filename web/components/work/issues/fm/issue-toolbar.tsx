@@ -4,8 +4,9 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, CopyIcon, LinkIcon, MoreHorizontalIcon, Share2Icon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@fadymondy/nasaq/web"
+
+
 import { useTranslations } from "@/lib/i18n"
 import type { Issue } from "@/lib/work"
 import { IssueActionsMenu } from "./issue-actions"
@@ -44,7 +45,7 @@ export function IssueToolbar({
 
   return (
     <div className="flex items-center gap-1.5">
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => copy(toMarkdown(issue), "page")}>
+      <Button variant="secondary" size="sm" className="gap-1.5" onClick={() => copy(toMarkdown(issue), "page")}>
         {copied === "page" ? <CheckIcon /> : <CopyIcon />}
         {copied === "page" ? t("issues.detail.copied") : t("issues.detail.copyPage")}
       </Button>
@@ -52,7 +53,7 @@ export function IssueToolbar({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="icon-sm" aria-label={t("issues.detail.share")}>
+            <Button variant="secondary" size="icon-sm" aria-label={t("issues.detail.share")}>
               <Share2Icon />
             </Button>
           }
@@ -69,7 +70,7 @@ export function IssueToolbar({
         issue={issue}
         onChanged={onChanged}
         trigger={
-          <Button variant="outline" size="icon-sm" aria-label={t("issues.action.more")}>
+          <Button variant="secondary" size="icon-sm" aria-label={t("issues.action.more")}>
             <MoreHorizontalIcon />
           </Button>
         }
@@ -77,7 +78,7 @@ export function IssueToolbar({
 
       {/* Arrows point along the reading direction, so they mirror under RTL. */}
       <Button
-        variant="outline"
+        variant="secondary"
         size="icon-sm"
         aria-label={t("issues.detail.previous")}
         disabled={!prevHref}
@@ -88,7 +89,7 @@ export function IssueToolbar({
       </Button>
 
       <Button
-        variant="outline"
+        variant="secondary"
         size="icon-sm"
         aria-label={t("issues.detail.next")}
         disabled={!nextHref}

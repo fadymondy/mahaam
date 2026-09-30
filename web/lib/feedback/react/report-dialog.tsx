@@ -6,25 +6,13 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { CameraIcon, CrosshairIcon, ImageIcon, SendIcon, XIcon } from "lucide-react"
 
 // Peer contract: the host's shadcn-on-Base-UI kit. See packages/feedback-sdk/README.md.
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 
 import { selectorFor } from "../core/anchor"
 import { captureElement, captureViewport, HIDE_MARKER } from "../core/capture"
@@ -252,7 +240,7 @@ export function ReportDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor={id("title")}>{labels.title}</FieldLabel>
               <Input
@@ -327,7 +315,7 @@ export function ReportDialog({
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     className="gap-2"
                     disabled={busy !== null}
                     onClick={grabScreenshot}
@@ -339,7 +327,7 @@ export function ReportDialog({
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     className="gap-2"
                     disabled={busy !== null}
                     onClick={grabElement}
@@ -351,7 +339,7 @@ export function ReportDialog({
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     className="gap-2"
                     disabled={busy !== null}
                     onClick={() => fileInput.current?.click()}
@@ -396,7 +384,7 @@ export function ReportDialog({
                 <Button
                   type="button"
                   size="icon-sm"
-                  variant="outline"
+                  variant="secondary"
                   aria-label={labels.removeAttachment}
                   className="absolute top-2 end-2"
                   onClick={() => {
@@ -410,7 +398,7 @@ export function ReportDialog({
             ) : null}
 
             {extra}
-          </FieldGroup>
+          </div>
 
           {error ? (
             <p role="alert" className="text-sm text-destructive">
@@ -419,7 +407,7 @@ export function ReportDialog({
           ) : null}
 
           <DialogFooter>
-            <Button type="submit" className="gap-2" disabled={saving || !title.trim()}>
+            <Button variant="primary" type="submit" className="gap-2" disabled={saving || !title.trim()}>
               <SendIcon />
               {saving ? labels.saving : editing ? labels.submitEdit : labels.submitReport}
             </Button>

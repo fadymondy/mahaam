@@ -6,14 +6,15 @@
 import Link from "next/link"
 import { useState, type FormEvent } from "react"
 import { HistoryIcon, PencilIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
@@ -39,7 +40,7 @@ export default function RatesPage() {
   const [editing, setEditing] = useState<MemberRates | null>(null)
   const [history, setHistory] = useState<MemberRates | null>(null)
 
-  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-grid-muted">{t("rates.noPermission")}</p>
+  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("rates.noPermission")}</p>
 
   const rs = sheet.data
   const rate = (v: number | null | undefined, cur: string) =>
@@ -49,7 +50,7 @@ export default function RatesPage() {
         {t("rates.perHour")}
       </Ltr>
     ) : (
-      <span className="text-grid-muted">{t("rates.none")}</span>
+      <span className="text-muted-foreground">{t("rates.none")}</span>
     )
   const upcoming = (m: MemberRates, today: string) => m.history.find((h) => h.effective_from > today)
 
@@ -62,9 +63,9 @@ export default function RatesPage() {
         <LoadingRows />
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-grid-soft/50 px-6 py-3 text-sm" data-rate-defaults>
-            <span className="text-grid-body">
-              <span className="font-medium text-grid-fg">{t("rates.defaults")}: </span>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/50 px-6 py-3 text-sm" data-rate-defaults>
+            <span className="text-nq-fg-body">
+              <span className="font-medium text-foreground">{t("rates.defaults")}: </span>
               {t("rates.defaultsHint", {
                 bill: rs.default_bill_rate_minor != null ? money(rs.default_bill_rate_minor, rs.currency, locale) : "—",
                 cost: rs.default_cost_rate_minor != null ? money(rs.default_cost_rate_minor, rs.currency, locale) : "—",
@@ -74,11 +75,11 @@ export default function RatesPage() {
               {t("rates.defaultsLink")}
             </Link>
           </div>
-          {!rs.can_manage ? <p className="border-t border-line px-6 py-3 text-sm text-grid-muted">{t("rates.readOnly")}</p> : null}
+          {!rs.can_manage ? <p className="border-t border-border px-6 py-3 text-sm text-muted-foreground">{t("rates.readOnly")}</p> : null}
           {rs.members.length === 0 ? (
             <EmptyState title={t("team.empty")} />
           ) : (
-            <div className="border-y border-line">
+            <div className="border-y border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -101,13 +102,13 @@ export default function RatesPage() {
                             <PersonAvatar id={m.user_id} dir={dir} />
                             <span className="min-w-0">
                               <Ltr className="block truncate">{dir.name(m.user_id)}</Ltr>
-                              <span className="text-meta text-grid-muted">{t(`role.${m.role}`)}</span>
+                              <span className="text-caption text-muted-foreground">{t(`role.${m.role}`)}</span>
                             </span>
                           </span>
                         </TableCell>
                         <TableCell data-rate-bill>{rate(m.current?.bill_rate_minor, rs.currency)}</TableCell>
                         <TableCell className="hidden sm:table-cell">{rate(m.current?.cost_rate_minor, rs.currency)}</TableCell>
-                        <TableCell className="hidden text-grid-muted md:table-cell">
+                        <TableCell className="hidden text-muted-foreground md:table-cell">
                           {m.current ? <Ltr>{formatDay(m.current.effective_from, locale)}</Ltr> : "—"}
                           {next ? (
                             <Badge variant="outline" className="ms-2">
@@ -121,11 +122,11 @@ export default function RatesPage() {
                               <Button variant="ghost" size="sm" onClick={() => setHistory(m)}>
                                 <HistoryIcon />
                                 <span className="hidden md:inline">{t("rates.history")}</span>
-                                <Ltr className="text-grid-muted">{m.history.length}</Ltr>
+                                <Ltr className="text-muted-foreground">{m.history.length}</Ltr>
                               </Button>
                             ) : null}
                             {rs.can_manage ? (
-                              <Button variant="outline" size="sm" onClick={() => setEditing(m)} data-set-rate={m.user_id}>
+                              <Button variant="secondary" size="sm" onClick={() => setEditing(m)} data-set-rate={m.user_id}>
                                 <PencilIcon />
                                 <span className="hidden sm:inline">{t("rates.set")}</span>
                               </Button>
@@ -168,10 +169,10 @@ export default function RatesPage() {
             <DialogDescription>{t("rates.deleteBody")}</DialogDescription>
           </DialogHeader>
           {history && rs ? (
-            <ul className="divide-y divide-line border-y border-line" data-rate-history>
+            <ul className="divide-y divide-line border-y border-border" data-rate-history>
               {history.history.map((h) => (
                 <li key={h.id} className="flex items-center gap-3 py-2.5 text-sm">
-                  <Ltr className="w-28 shrink-0 text-grid-muted">{formatDay(h.effective_from, locale)}</Ltr>
+                  <Ltr className="w-28 shrink-0 text-muted-foreground">{formatDay(h.effective_from, locale)}</Ltr>
                   <span className="min-w-0 flex-1">
                     {t("rates.bill")}: {rate(h.bill_rate_minor, h.currency)} · {t("rates.cost")}: {rate(h.cost_rate_minor, h.currency)}
                   </span>
@@ -234,7 +235,7 @@ function RateForm({ member, sheet, onDone }: { member: MemberRates; sheet: RateS
 
   return (
     <form onSubmit={submit} noValidate data-rate-form>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="r-day">{t("rates.effective")}</FieldLabel>
           <DateField id="r-day" value={day} onChange={(v) => v && setDay(v)} />
@@ -253,11 +254,11 @@ function RateForm({ member, sheet, onDone }: { member: MemberRates; sheet: RateS
         </div>
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

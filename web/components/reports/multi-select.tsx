@@ -4,10 +4,12 @@
 import type { ReactNode } from "react"
 import { ChevronsUpDownIcon, XIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button, Checkbox, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+
+
+
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
@@ -35,7 +37,7 @@ export function MultiSelect({
 
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="grid-micro">
+      <label htmlFor={id} className="text-eyebrow uppercase">
         {label}
       </label>
       <Popover>
@@ -43,8 +45,8 @@ export function MultiSelect({
           render={
             <Button
               id={id}
-              variant="outline"
-              className={cn("w-full min-w-0 justify-between font-normal", value.length === 0 && "text-grid-muted")}
+              variant="secondary"
+              className={cn("w-full min-w-0 justify-between font-normal", value.length === 0 && "text-muted-foreground")}
               data-filter={id}
               data-count={value.length}
             />
@@ -53,7 +55,7 @@ export function MultiSelect({
           <span className="truncate" dir={chosen[0]?.ltr && value.length === 1 ? "ltr" : undefined}>
             {summary}
           </span>
-          <ChevronsUpDownIcon className="text-grid-muted" />
+          <ChevronsUpDownIcon className="text-muted-foreground" />
         </PopoverTrigger>
         <PopoverContent align="start" className="w-(--anchor-width) min-w-64 p-0">
           <Command>
@@ -74,7 +76,7 @@ export function MultiSelect({
             </CommandList>
           </Command>
           {value.length ? (
-            <div className="border-t border-line p-1">
+            <div className="border-t border-border p-1">
               <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onChange([])}>
                 <XIcon />
                 {t("reports.clearSelection")}

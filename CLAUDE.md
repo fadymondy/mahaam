@@ -14,7 +14,7 @@ make web         # Next dev on :3010, proxies /api/* and /graphql to :8110
 make generate    # togo generate: sqlc → gqlgen → atlas diff → OpenAPI export (compiles the whole program = integration gate)
 make test        # go test ./... — unit tests + CI guards
 make test-e2e    # real stack on mahaam_test: isolation sweep, TestTimeTracking, TestReports, TestMCPSession
-make grid-check  # web/app/styles grid + web/lib/feedback must match ../fadymondy.com-v2 copies
+make grid-check  # apps/mobile grid + feedback-sdk copies must match ../fadymondy.com-v2 (web moved to Nasaq)
 make embed       # bundle the feedback widget → embed/dist/v1.js
 cd web && npm run typecheck
 ```
@@ -36,7 +36,7 @@ Admin bootstrap: `go run ./cmd/mahaam-admin promote <email>`, then `go run ./cmd
 - **Realtime** is Mahaam's own `internal/live` (SSE at `/api/w/events`, one per user per workspace). togo realtime is deliberately not used. Fan-out is in-process; `internal/live/bus.go` carries events between API instances over Postgres LISTEN/NOTIFY, so more than one instance works. No replay, by design.
 - **MCP**: user tokens are `mgy_`: explicit scopes, no wildcard, narrowed to the user's current role on every call. Admin tokens are `mga_` and reserved for platform admins. Rate limiting calls togo `ratelimit`'s `Allow` directly and writes a JSON-RPC 429 response.
 - **Money/time**: rates are snapshotted on the entry at creation. Days are cut at local midnight in the workspace timezone. Rounding is applied only at report time (`internal/work/reports.go`).
-- **Web**: routes are `web/app/[locale]/w/{slug}/...`, with en/ar strings in `web/lang/*.{en,ar}.json`. The UI must work in en/ar × light/dark. `web/lib/feedback` and the grid styles are synced copies, so don't hand-edit them. **Next 16 differs from training data**: read `web/node_modules/next/dist/docs/` before writing Next code (`web/AGENTS.md`).
+- **Web**: routes are `web/app/[locale]/w/{slug}/...`, with en/ar strings in `web/lang/*.{en,ar}.json`. The UI must work in en/ar × light/dark. The web UI is Nasaq (`@fadymondy/nasaq/web`, brand `mahaam`); `web/lib/feedback` was a synced copy but its imports now point at Nasaq, so it diverges from fadymondy.com-v2. **Next 16 differs from training data**: read `web/node_modules/next/dist/docs/` before writing Next code (`web/AGENTS.md`).
 
 ## Codegen ownership
 

@@ -7,11 +7,12 @@
 import { useState, type FormEvent } from "react"
 import { CheckIcon, TriangleAlertIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { CopyField, Ltr } from "@/components/copy-field"
 import { AgentKitGuide } from "@/components/mcp/agent-kit-guide"
 import { LoadingRows } from "@/components/states"
@@ -100,52 +101,52 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
               <DialogTitle>{t("mcp.connectTitle")}</DialogTitle>
               <DialogDescription>{t("mcp.connectHint")}</DialogDescription>
             </DialogHeader>
-            <details className="border border-line bg-grid-card p-3">
-              <summary className="cursor-pointer text-sm font-medium text-grid-fg">{t("mcp.kitTitle")}</summary>
+            <details className="border border-border bg-card p-3">
+              <summary className="cursor-pointer text-sm font-medium text-foreground">{t("mcp.kitTitle")}</summary>
               <div className="pt-3">
                 <AgentKitGuide />
               </div>
             </details>
-            <FieldGroup>
+            <div className="flex flex-col gap-4">
               <Field>
                 <FieldLabel htmlFor="ca-name">{t("mcp.name")}</FieldLabel>
                 <Input id="ca-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("mcp.connectDefaultName")} />
               </Field>
 
               {advanced ? (
-                <FieldSet>
-                  <FieldLegend variant="label">{t("mcp.scopes")}</FieldLegend>
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
                   <FieldDescription>{t("mcp.scopesHint")}</FieldDescription>
-                  <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-line">
+                  <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-border">
                     {scopes.map((s) => {
                       const id = `ca-scope-${s.scope}`
                       return (
-                        <li key={s.scope} className={s.allowed ? "" : "bg-grid-soft/50"}>
+                        <li key={s.scope} className={s.allowed ? "" : "bg-muted/50"}>
                           <label htmlFor={id} className={`flex items-start gap-3 px-3 py-2.5 ${s.allowed ? "cursor-pointer" : "cursor-not-allowed"}`}>
                             <input
                               id={id}
                               type="checkbox"
-                              className="mt-0.5 size-4 shrink-0 accent-(--grid-action)"
+                              className="mt-0.5 size-4 shrink-0 accent-(--nq-action)"
                               disabled={!s.allowed}
                               checked={chosen.includes(s.scope)}
                               onChange={(e) => toggle(s.scope, e.target.checked)}
                             />
                             <span className="min-w-0">
-                              <span dir="ltr" className="ltr-isolate block font-mono text-xs text-grid-fg">
+                              <span dir="ltr" className="ltr-isolate block font-mono text-xs text-foreground">
                                 {s.scope}
                               </span>
-                              <span className="block text-sm text-grid-body">{s.description}</span>
+                              <span className="block text-sm text-nq-fg-body">{s.description}</span>
                             </span>
                           </label>
                         </li>
                       )
                     })}
                   </ul>
-                </FieldSet>
+                </fieldset>
               ) : (
-                <p className="text-sm text-grid-muted">
+                <p className="text-sm text-muted-foreground">
                   {t("mcp.connectDefaultScopeHint")}{" "}
-                  <button type="button" className="text-grid-action hover:underline" onClick={() => setAdvanced(true)}>
+                  <button type="button" className="text-nq-accent-text hover:underline" onClick={() => setAdvanced(true)}>
                     {t("mcp.connectPickScopes")}
                   </button>
                 </p>
@@ -155,11 +156,11 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
                 <Field>
                   <FieldLabel>{t("mcp.projects")}</FieldLabel>
                   <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
-                  <ul className="max-h-40 divide-y divide-line overflow-y-auto border border-line">
+                  <ul className="max-h-40 divide-y divide-line overflow-y-auto border border-border">
                     <li>
                       <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-                        <input type="checkbox" className="size-4 shrink-0 accent-(--grid-action)" checked={projectIds.length === 0} onChange={() => setProjectIds([])} />
-                        <span className="text-sm text-grid-fg">{t("mcp.allProjects")}</span>
+                        <input type="checkbox" className="size-4 shrink-0 accent-(--nq-action)" checked={projectIds.length === 0} onChange={() => setProjectIds([])} />
+                        <span className="text-sm text-foreground">{t("mcp.allProjects")}</span>
                       </label>
                     </li>
                     {(projects.data?.projects ?? []).map((p) => (
@@ -167,11 +168,11 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
                         <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
                           <input
                             type="checkbox"
-                            className="size-4 shrink-0 accent-(--grid-action)"
+                            className="size-4 shrink-0 accent-(--nq-action)"
                             checked={projectIds.includes(p.id)}
                             onChange={(e) => setProjectIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)))}
                           />
-                          <span className="truncate text-sm text-grid-body" dir="auto">
+                          <span className="truncate text-sm text-nq-fg-body" dir="auto">
                             {p.name}
                           </span>
                         </label>
@@ -197,12 +198,12 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
                 </Select>
               </Field>
               {error ? <FieldError>{error}</FieldError> : null}
-            </FieldGroup>
+            </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+              <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 {busy ? t("common.working") : t("mcp.connectGo")}
               </Button>
             </DialogFooter>
@@ -227,30 +228,30 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
         <DialogTitle>{t("mcp.createdTitle")}</DialogTitle>
         <DialogDescription>{t("mcp.createdHint")}</DialogDescription>
       </DialogHeader>
-      <p className="flex items-start gap-2 border border-line bg-grid-card p-3 text-sm text-grid-warn-text" role="alert">
+      <p className="flex items-start gap-2 border border-border bg-card p-3 text-sm text-nq-warn-text" role="alert">
         <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
         {t("mcp.shownOnce")}
       </p>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.token")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.token")}</p>
         <CopyField value={plaintext} label={t("mcp.token")} />
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.claudeCode")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.claudeCode")}</p>
         <CopyField value={`claude mcp add --transport http mahaam ${MCP_ORIGIN}/api/mcp --header "Authorization: Bearer ${plaintext}"`} label={t("mcp.claudeCode")} />
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.claudeDesktopCursor")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.claudeDesktopCursor")}</p>
         <CopyField value={desktopConfig} label={t("mcp.claudeDesktopCursor")} />
-        <p className="text-meta text-grid-muted">{t("mcp.claudeDesktopCursorHint")}</p>
+        <p className="text-caption text-muted-foreground">{t("mcp.claudeDesktopCursorHint")}</p>
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.genericClient")}</p>
-        <div className="space-y-1 text-meta text-grid-muted">
+        <p className="text-eyebrow uppercase">{t("mcp.genericClient")}</p>
+        <div className="space-y-1 text-caption text-muted-foreground">
           <p>
             {t("mcp.serverUrl")}: <Ltr mono>{MCP_ORIGIN}/api/mcp</Ltr>
           </p>
@@ -260,13 +261,13 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
         </div>
       </div>
 
-      <p className="flex items-start gap-2 text-meta text-grid-muted">
+      <p className="flex items-start gap-2 text-caption text-muted-foreground">
         <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
         {t("mcp.oauthClientsHint")}
       </p>
 
       <DialogFooter>
-        <Button onClick={onDone}>
+        <Button variant="primary" onClick={onDone}>
           <CheckIcon />
           {t("mcp.savedIt")}
         </Button>

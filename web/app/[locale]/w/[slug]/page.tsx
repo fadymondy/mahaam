@@ -5,8 +5,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { BriefcaseIcon, FolderKanbanIcon, KeyRoundIcon, UsersIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge, Button } from "@fadymondy/nasaq/web"
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
 import { ActivityFeed } from "@/components/work/activity-feed"
@@ -43,27 +44,27 @@ export default function OverviewPage() {
       <MyWork meId={me.data ? String(me.data.id) : undefined} />
 
       <div className="flex flex-wrap gap-2 px-6 py-6">
-        <Button nativeButton={false} render={<Link href={`${base}/projects`} />}>
+        <Button variant="primary" nativeButton={false} render={<Link href={`${base}/projects`} />}>
           <FolderKanbanIcon />
           {t("nav.projects")}
         </Button>
         {ws.can("clients:read") ? (
-          <Button variant="outline" nativeButton={false} render={<Link href={`${base}/clients`} />}>
+          <Button variant="secondary" nativeButton={false} render={<Link href={`${base}/clients`} />}>
             <BriefcaseIcon />
             {t("nav.clients")}
           </Button>
         ) : null}
-        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/members`} />}>
+        <Button variant="secondary" nativeButton={false} render={<Link href={`${base}/members`} />}>
           <UsersIcon />
           {t("nav.members")}
         </Button>
-        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/settings/mcp`} />}>
+        <Button variant="secondary" nativeButton={false} render={<Link href={`${base}/settings/mcp`} />}>
           <KeyRoundIcon />
           {t("nav.mcpTokens")}
         </Button>
       </div>
 
-      <dl className="grid grid-cols-1 divide-y divide-line border-y border-line text-sm sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
+      <dl className="grid grid-cols-1 divide-y divide-line border-y border-border text-sm sm:grid-cols-4 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse">
         {[
           [t("overview.slug"), <Ltr key="s" mono>/{ws.slug}</Ltr>],
           [t("overview.locale"), details?.locale ? <Ltr key="l" mono>{details.locale}</Ltr> : "—"],
@@ -71,8 +72,8 @@ export default function OverviewPage() {
           [t("overview.currency"), details?.currency ? <Ltr key="c" mono>{details.currency}</Ltr> : "—"],
         ].map(([label, value], i) => (
           <div key={i} className="px-6 py-4">
-            <dt className="grid-micro mb-1">{label}</dt>
-            <dd className="text-grid-fg">{value}</dd>
+            <dt className="text-eyebrow uppercase mb-1">{label}</dt>
+            <dd className="text-foreground">{value}</dd>
           </div>
         ))}
       </dl>

@@ -7,11 +7,12 @@
 // was about to act.
 import { useState, type FormEvent, type ReactNode } from "react"
 import useSWR from "swr"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
 import { api, ApiError } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { errorText } from "@/lib/work"
@@ -56,7 +57,7 @@ export function VerifyEmailGate({ email, children }: { email: string; children: 
 
   return (
     <form onSubmit={submit} noValidate data-verify-email>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <p className="text-sm" role="status">
           {t("verify.sent", { email })}
         </p>
@@ -77,14 +78,14 @@ export function VerifyEmailGate({ email, children }: { email: string; children: 
         </Field>
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={busy || code.length !== 6}>
+          <Button variant="primary" type="submit" disabled={busy || code.length !== 6}>
             {busy ? t("common.working") : t("verify.submit")}
           </Button>
           <Button type="button" variant="ghost" disabled={busy} onClick={() => void resend()}>
             {t("auth.resetResend")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

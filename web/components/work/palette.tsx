@@ -1,7 +1,7 @@
 "use client"
 
 // User-chosen colours are palette KEYS (the API stores "teal", never a colour). These helpers map a
-// key to the theme tokens in app/styles/mahaam-palette.css, so light/dark come for free.
+// key to the Nasaq tag tokens (--nq-tag-*), so light/dark come for free.
 import { CheckIcon } from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
 
@@ -12,8 +12,10 @@ export const PALETTE = ["violet", "blue", "teal", "green", "amber", "orange", "r
 export type PaletteKey = (typeof PALETTE)[number]
 
 const key = (k?: string | null): PaletteKey => (PALETTE.includes(k as PaletteKey) ? (k as PaletteKey) : "slate")
-export const solid = (k?: string | null) => `var(--pal-${key(k)})`
-export const soft = (k?: string | null) => `color-mix(in oklab, ${solid(k)} var(--pal-soft-mix), transparent)`
+// Nasaq calls the neutral tag "gray"; the API key stays "slate".
+const tag = (k?: string | null) => (key(k) === "slate" ? "gray" : key(k))
+export const solid = (k?: string | null) => `var(--nq-tag-${tag(k)})`
+export const soft = (k?: string | null) => `var(--nq-tag-${tag(k)}-soft)`
 
 export function ColorDot({ color, className, square = false }: { color?: string | null; className?: string; square?: boolean }) {
   return (
@@ -54,13 +56,13 @@ export function ColorPicker({ value, onChange, label }: { value: string; onChang
           title={t(`palette.${k}`)}
           onClick={() => onChange(k)}
           className={cn(
-            "flex size-7 items-center justify-center border transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-grid-action",
-            value === k ? "border-grid-fg" : "border-line",
+            "flex size-7 items-center justify-center border transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-nq-action",
+            value === k ? "border-foreground" : "border-border",
           )}
           style={{ background: soft(k) }}
         >
           <span className="flex size-4 items-center justify-center rounded-full" style={{ background: solid(k) }}>
-            {value === k ? <CheckIcon className="size-3 text-grid-bg" /> : null}
+            {value === k ? <CheckIcon className="size-3 text-background" /> : null}
           </span>
         </button>
       ))}

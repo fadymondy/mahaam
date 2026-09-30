@@ -3,8 +3,9 @@
 // Who is who: user ids from the API resolved to member emails, and the avatar stack.
 import { useMemo } from "react"
 
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from "@/components/ui/avatar"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Avatar, TooltipRoot, TooltipContent, TooltipTrigger } from "@fadymondy/nasaq/web"
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import type { Member } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -39,20 +40,16 @@ export function useDirectory(meId?: string): Directory {
   }, [res.data, t, meId])
 }
 
-export function PersonAvatar({ id, dir, size = "sm", className }: { id: string; dir: Directory; size?: "sm" | "default"; className?: string }) {
+export function PersonAvatar({ id, dir, size = "sm", className }: { id: string; dir: Directory; size?: "xs" | "sm" | "md"; className?: string }) {
   return (
-    <Tooltip>
+    <TooltipRoot>
       <TooltipTrigger render={<span className={cn("inline-flex", className)} />}>
-        <Avatar size={size} aria-label={dir.name(id)}>
-          <AvatarFallback className="text-xs font-medium" dir="ltr">
-            {dir.initials(id)}
-          </AvatarFallback>
-        </Avatar>
+        <Avatar size={size} name={dir.name(id)} />
       </TooltipTrigger>
       <TooltipContent>
         <span dir="ltr">{dir.name(id)}</span>
       </TooltipContent>
-    </Tooltip>
+    </TooltipRoot>
   )
 }
 
@@ -60,11 +57,11 @@ export function AvatarStack({ ids, dir, max = 3 }: { ids: string[]; dir: Directo
   if (ids.length === 0) return null
   const shown = ids.slice(0, max)
   return (
-    <AvatarGroup>
+    <div className="flex -space-x-1.5 rtl:space-x-reverse">
       {shown.map((id) => (
         <PersonAvatar key={id} id={id} dir={dir} />
       ))}
-      {ids.length > max ? <AvatarGroupCount className="text-xs">+{ids.length - max}</AvatarGroupCount> : null}
-    </AvatarGroup>
+      {ids.length > max ? <span className="inline-flex size-6 items-center justify-center rounded-full bg-muted text-caption">+{ids.length - max}</span> : null}
+    </div>
   )
 }

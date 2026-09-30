@@ -1,7 +1,7 @@
 "use client"
 
-import { toast } from "sonner"
-import { useTheme } from "next-themes"
+import { toast } from "@fadymondy/nasaq/web"
+import { useNasaq } from "@fadymondy/nasaq/web"
 
 // The shared "Report a problem" SDK: a GENERATED copy of fadymondy.com-v2/packages/feedback-sdk,
 // synced into lib/feedback by `npm run grid:sync`. Never edit lib/feedback; edit the package.
@@ -26,7 +26,7 @@ export function ReportProblemDialog({
   workspaceSlug?: string
 }) {
   const { t, locale } = useTranslations()
-  const { resolvedTheme } = useTheme()
+  const { resolvedTheme } = useNasaq()
 
   async function onSubmit(payload: FeedbackSubmission) {
     const form = new FormData()

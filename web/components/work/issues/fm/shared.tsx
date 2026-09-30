@@ -21,7 +21,7 @@ export const PRIORITY_MARK: Record<string, { Icon: typeof ChevronUpIcon; tone: s
   high: { Icon: ChevronUpIcon, tone: "text-orange-500" },
   medium: null,
   low: { Icon: ChevronDownIcon, tone: "text-sky-500" },
-  lowest: { Icon: ChevronDownIcon, tone: "text-grid-muted" },
+  lowest: { Icon: ChevronDownIcon, tone: "text-muted-foreground" },
 }
 
 /** Agent time is stored in seconds. */

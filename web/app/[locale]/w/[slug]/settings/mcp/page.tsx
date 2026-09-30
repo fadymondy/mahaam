@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import { PlusIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
@@ -48,7 +49,7 @@ export default function McpTokensPage() {
         title={t("nav.mcpTokens")}
         description={t("mcp.hint")}
         action={
-          <Button onClick={() => setCreating(true)} disabled={!tokens.data}>
+          <Button variant="primary" onClick={() => setCreating(true)} disabled={!tokens.data}>
             <PlusIcon />
             {t("mcp.create")}
           </Button>
@@ -62,7 +63,7 @@ export default function McpTokensPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("mcp.empty")} body={t("mcp.emptyBody")} />
       ) : (
-        <div className="border-y border-line">
+        <div className="border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -85,8 +86,8 @@ export default function McpTokensPage() {
         </div>
       )}
 
-      <section className="border-b border-line px-6 py-6">
-        <h2 className="mb-3 text-base font-medium text-grid-fg">{t("mcp.kitTitle")}</h2>
+      <section className="border-b border-border px-6 py-6">
+        <h2 className="mb-3 text-base font-medium text-foreground">{t("mcp.kitTitle")}</h2>
         <AgentKitGuide />
       </section>
 
@@ -115,15 +116,15 @@ function TokenRow({ tok, formatDate, onRevoke }: { tok: McpToken; formatDate: (v
           ))}
         </div>
       </TableCell>
-      <TableCell className="text-grid-muted">{tok.last_used_at ? <Ltr>{formatDate(tok.last_used_at)}</Ltr> : t("mcp.never")}</TableCell>
-      <TableCell className="text-grid-muted">
+      <TableCell className="text-muted-foreground">{tok.last_used_at ? <Ltr>{formatDate(tok.last_used_at)}</Ltr> : t("mcp.never")}</TableCell>
+      <TableCell className="text-muted-foreground">
         {tok.expires_at ? <Ltr>{formatDate(tok.expires_at)}</Ltr> : t("mcp.noExpiry")}
       </TableCell>
       <TableCell className="pe-6 text-end">
         {tok.revoked_at ? (
-          <Badge variant="secondary">{t("mcp.revokedBadge")}</Badge>
+          <Badge variant="neutral">{t("mcp.revokedBadge")}</Badge>
         ) : expired ? (
-          <Badge variant="secondary">{t("mcp.expiredBadge")}</Badge>
+          <Badge variant="neutral">{t("mcp.expiredBadge")}</Badge>
         ) : (
           <ConfirmButton
             label={t("common.revoke")}

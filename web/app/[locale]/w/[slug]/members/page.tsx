@@ -3,14 +3,15 @@
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
 import { MailWarningIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Field, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { CopyField, Ltr } from "@/components/copy-field"
@@ -38,7 +39,7 @@ export default function MembersPage() {
         description={t("members.hint")}
         action={
           ws.can("kpi:all") ? (
-            <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
+            <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
               {t("kpi.teamTitle")}
             </Button>
           ) : null
@@ -52,7 +53,7 @@ export default function MembersPage() {
       ) : (members.data?.members ?? []).length === 0 ? (
         <EmptyState title={t("members.empty")} />
       ) : (
-        <div className="border-y border-line">
+        <div className="border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -73,8 +74,8 @@ export default function MembersPage() {
                   <TableCell>
                     <Badge variant="outline">{t(`role.${m.role}`)}</Badge>
                   </TableCell>
-                  <TableCell className="text-grid-muted">{t(`status.${m.status}`)}</TableCell>
-                  <TableCell className="pe-6 text-grid-muted">
+                  <TableCell className="text-muted-foreground">{t(`status.${m.status}`)}</TableCell>
+                  <TableCell className="pe-6 text-muted-foreground">
                     <Ltr>{formatDate(m.joined_at)}</Ltr>
                   </TableCell>
                 </TableRow>
@@ -86,7 +87,7 @@ export default function MembersPage() {
 
       {canInvite ? (
         <>
-          <div className="grid-separator-contained hatch-band mt-8" aria-hidden />
+          <div className="border-t border-border  mt-8" aria-hidden />
           <InviteSection />
           <PendingInvitations
             loading={invitations.isLoading}
@@ -97,7 +98,7 @@ export default function MembersPage() {
           />
         </>
       ) : ws.current ? (
-        <p className="px-6 py-6 text-sm text-grid-muted">{t("members.noInvitePermission")}</p>
+        <p className="px-6 py-6 text-sm text-muted-foreground">{t("members.noInvitePermission")}</p>
       ) : null}
     </>
   )
@@ -139,12 +140,12 @@ function InviteSection() {
     <section className="px-6 py-6">
       <h2 className="text-base font-medium">{t("members.inviteTitle")}</h2>
       {/* P0 sends no email — say so plainly instead of implying it does. */}
-      <p className="mt-1 mb-5 flex items-start gap-2 text-sm text-grid-muted">
-        <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-grid-warn" />
+      <p className="mt-1 mb-5 flex items-start gap-2 text-sm text-muted-foreground">
+        <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-nq-warn-text" />
         {t("members.noEmail")}
       </p>
       <form onSubmit={onSubmit} noValidate>
-        <FieldGroup className="sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <Field className="sm:flex-1">
             <FieldLabel htmlFor="invite-email">{t("members.email")}</FieldLabel>
             <Input
@@ -172,19 +173,19 @@ function InviteSection() {
               </SelectContent>
             </Select>
           </Field>
-          <Button type="submit" disabled={busy || !email.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !email.trim()}>
             {busy ? t("common.working") : t("members.invite")}
           </Button>
-        </FieldGroup>
+        </div>
         {error ? <FieldError className="mt-3">{error}</FieldError> : null}
       </form>
 
       {link ? (
-        <div className="mt-6 space-y-2 border border-line bg-grid-card p-4" role="status">
+        <div className="mt-6 space-y-2 border border-border bg-card p-4" role="status">
           <p className="text-sm font-medium">
             {t("members.linkReady")} <Ltr>{link.email}</Ltr>
           </p>
-          <p className="text-meta text-grid-warn-text">{t("members.linkOnce")}</p>
+          <p className="text-caption text-nq-warn-text">{t("members.linkOnce")}</p>
           <CopyField value={link.url} label={t("members.acceptLink")} />
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={() => setLink(null)}>
@@ -233,7 +234,7 @@ function PendingInvitations({
       ) : items.length === 0 ? (
         <EmptyState title={t("members.noPending")} />
       ) : (
-        <div className="border-y border-line">
+        <div className="border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -254,7 +255,7 @@ function PendingInvitations({
                   <TableCell>
                     <Badge variant="outline">{t(`role.${inv.role}`)}</Badge>
                   </TableCell>
-                  <TableCell className="text-grid-muted">
+                  <TableCell className="text-muted-foreground">
                     <Ltr>{formatDate(inv.expires_at)}</Ltr>
                   </TableCell>
                   <TableCell className="pe-6 text-end">

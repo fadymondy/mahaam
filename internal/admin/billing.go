@@ -13,6 +13,7 @@ import (
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/billing/polar"
+	"github.com/fadymondy/mahaam/internal/circlexo"
 	"github.com/fadymondy/mahaam/internal/limits"
 	"github.com/fadymondy/mahaam/internal/tenant"
 	"github.com/fadymondy/mahaam/internal/work"
@@ -56,9 +57,13 @@ type BuyablePlan struct {
 
 // WorkspaceBilling is GET /api/w/billing.
 type WorkspaceBilling struct {
-	Configured bool          `json:"configured"`
-	Billing    *Billing      `json:"billing"`
-	Plans      []BuyablePlan `json:"plans"`
+	Configured bool `json:"configured"`
+	// HubLinked is true when the CircleXO hub runs this workspace's subscription: the plan and limits
+	// come from it and HubBillingURL is where it is managed. Polar is not used for it.
+	HubLinked     bool          `json:"hub_linked"`
+	HubBillingURL string        `json:"hub_billing_url,omitempty"`
+	Billing       *Billing      `json:"billing"`
+	Plans         []BuyablePlan `json:"plans"`
 }
 
 // SyncPolar runs the Polar sync (dry run or apply), audited.
@@ -128,6 +133,9 @@ func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) err
 				return nil, err
 			}
 			out := WorkspaceBilling{Plans: []BuyablePlan{}}
+			if u, ok := circlexo.BillingURL(ctx, s.WorkspaceID); ok {
+				out.HubLinked, out.HubBillingURL = true, u
+			}
 			_, cerr := client()
 			out.Configured = cerr == nil
 			if out.Billing, err = BillingOf(ctx, sv.DB, s.WorkspaceID); err != nil {
@@ -168,6 +176,9 @@ func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) err
 			if err != nil {
 				return nil, err
 			}
+			if u, ok := circlexo.BillingURL(ctx, s.WorkspaceID); ok {
+				return &work.Resp[urlOut]{Body: urlOut{URL: u}}, nil // CircleXO runs this subscription
+			}
 			c, err := client()
 			if err != nil {
 				return nil, fail(polarErr(err))
@@ -187,6 +198,9 @@ func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) err
 			s, err := owner(ctx)
 			if err != nil {
 				return nil, err
+			}
+			if u, ok := circlexo.BillingURL(ctx, s.WorkspaceID); ok {
+				return &work.Resp[urlOut]{Body: urlOut{URL: u}}, nil // CircleXO runs this subscription
 			}
 			c, err := client()
 			if err != nil {

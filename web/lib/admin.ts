@@ -350,7 +350,8 @@ export type BillablePlan = {
   purchasable: boolean
 }
 
-export type BillingResponse = { configured: boolean; billing: Billing | null; plans: BillablePlan[] | null }
+// hub_linked: the workspace is governed by a CircleXO org, so billing lives at hub_billing_url (Polar is not used).
+export type BillingResponse = { configured: boolean; billing: Billing | null; plans: BillablePlan[] | null; hub_linked?: boolean; hub_billing_url?: string }
 
 export function useWorkspaceBilling(workspaceId: string | undefined) {
   return useSWR<BillingResponse>(

@@ -5,10 +5,11 @@
 // live stream (notification.created), so the badge moves without a reload.
 import { useRouter } from "next/navigation"
 import { BellIcon, CheckCheckIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
+
+
 import { Ltr } from "@/components/copy-field"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { timeAgo } from "@/lib/format"
@@ -69,7 +70,7 @@ export function NotificationBell() {
         <BellIcon />
         {unread ? (
           <span
-            className="absolute -end-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-grid-action px-1 font-mono text-xs leading-none text-grid-on-action"
+            className="absolute -end-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-nq-action px-1 font-mono text-xs leading-none text-nq-on-action"
             data-unread={unread}
             dir="ltr"
           >
@@ -78,7 +79,7 @@ export function NotificationBell() {
         ) : null}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 gap-0 p-0" data-inbox>
-        <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
           <p className="text-sm font-medium">{t("notify.title")}</p>
           <Button variant="ghost" size="sm" disabled={!unread} onClick={readAll}>
             <CheckCheckIcon />
@@ -86,7 +87,7 @@ export function NotificationBell() {
           </Button>
         </div>
         {items.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-grid-muted">{t("notify.empty")}</p>
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("notify.empty")}</p>
         ) : (
           <ul className="max-h-96 divide-y divide-line overflow-y-auto">
             {items.map((n) => {
@@ -96,14 +97,14 @@ export function NotificationBell() {
                   <button
                     type="button"
                     onClick={() => open(n)}
-                    className={cn("flex w-full gap-3 px-4 py-3 text-start transition-colors hover:bg-grid-soft", !n.read_at && "bg-grid-soft/60")}
+                    className={cn("flex w-full gap-3 px-4 py-3 text-start transition-colors hover:bg-muted", !n.read_at && "bg-muted/60")}
                     data-notification={n.kind}
                   >
-                    <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read_at ? "bg-transparent" : "bg-grid-action")} aria-hidden />
+                    <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read_at ? "bg-transparent" : "bg-nq-action")} aria-hidden />
                     <span className="min-w-0 space-y-0.5">
-                      <span className="block text-sm font-medium text-grid-fg">{x.title}</span>
-                      {x.body ? <span className="block text-meta text-grid-muted">{x.body}</span> : null}
-                      <Ltr className="block text-xs text-grid-muted">{timeAgo(n.created_at, locale)}</Ltr>
+                      <span className="block text-sm font-medium text-foreground">{x.title}</span>
+                      {x.body ? <span className="block text-caption text-muted-foreground">{x.body}</span> : null}
+                      <Ltr className="block text-xs text-muted-foreground">{timeAgo(n.created_at, locale)}</Ltr>
                     </span>
                   </button>
                 </li>
