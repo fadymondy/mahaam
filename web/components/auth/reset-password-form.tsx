@@ -5,9 +5,10 @@ import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useSWRConfig } from "swr"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -94,7 +95,7 @@ export function ResetPasswordForm() {
         <div className="w-full max-w-sm" data-reset-form>
           {step === "email" ? (
             <form onSubmit={requestCode} noValidate>
-              <FieldGroup>
+              <div className="flex flex-col gap-4">
                 <Field data-invalid={!!error || undefined}>
                   <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
                   <Input
@@ -109,14 +110,14 @@ export function ResetPasswordForm() {
                   />
                 </Field>
                 {error ? <FieldError>{error}</FieldError> : null}
-                <Button type="submit" size="lg" disabled={busy || !email.includes("@")}>
+                <Button variant="primary" type="submit" size="lg" disabled={busy || !email.includes("@")}>
                   {busy ? t("common.working") : t("auth.resetSend")}
                 </Button>
-              </FieldGroup>
+              </div>
             </form>
           ) : (
             <form onSubmit={reset} noValidate>
-              <FieldGroup>
+              <div className="flex flex-col gap-4">
                 {notice ? <p className="text-sm text-grid-muted" role="status">{notice}</p> : null}
                 <Field data-invalid={!!error || undefined}>
                   <FieldLabel htmlFor="code">{t("auth.resetCode")}</FieldLabel>
@@ -148,13 +149,13 @@ export function ResetPasswordForm() {
                   <FieldDescription>{t("auth.resetSignsOut")}</FieldDescription>
                 </Field>
                 {error ? <FieldError>{error}</FieldError> : null}
-                <Button type="submit" size="lg" disabled={busy || code.length !== 6 || !password}>
+                <Button variant="primary" type="submit" size="lg" disabled={busy || code.length !== 6 || !password}>
                   {busy ? t("common.working") : t("auth.resetSubmit")}
                 </Button>
                 <Button type="button" variant="ghost" disabled={busy} onClick={() => void requestCode()}>
                   {t("auth.resetResend")}
                 </Button>
-              </FieldGroup>
+              </div>
             </form>
           )}
           <p className="mt-6 text-center text-sm text-grid-muted">

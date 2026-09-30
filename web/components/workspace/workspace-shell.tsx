@@ -34,25 +34,12 @@ import {
   BanIcon,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetTitle, Skeleton } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { CubeMark } from "@/components/brand/cube-mark";
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls";
 import { ReportProblemDialog } from "@/components/feedback/report-problem";
@@ -314,7 +301,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-1">
             {me.data ? (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 className="hidden sm:inline-flex"
                 onClick={() => setReporting(true)}
@@ -326,7 +313,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             ) : null}
             {ctx ? (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 className="hidden sm:inline-flex"
                 onClick={() => setConnectOpen(true)}
@@ -361,7 +348,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </div>
 
       <Sheet open={navOpen} onOpenChange={setNavOpen}>
-        <SheetContent side={isRtl ? "right" : "left"} className="w-72 gap-0 p-0" data-mobile-nav>
+        <SheetContent side="start" className="w-72 gap-0 p-0" data-mobile-nav>
           <SheetTitle className="flex h-14 items-center border-b border-line px-4">
             <Brand />
           </SheetTitle>
@@ -526,7 +513,7 @@ function SuspendedState({ code, message }: { code: "workspace_suspended" | "acco
       <h1 className="grid-title text-2xl">{t(code === "workspace_suspended" ? "suspended.workspaceTitle" : "suspended.accountTitle")}</h1>
       <p className="grid-body max-w-md text-sm">{message || t(code === "workspace_suspended" ? "suspended.workspaceBody" : "suspended.accountBody")}</p>
       {code === "workspace_suspended" ? (
-        <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/workspaces`} />}>
+        <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/workspaces`} />}>
           {t("shell.allWorkspaces")}
         </Button>
       ) : null}

@@ -4,11 +4,12 @@
 // the API's units (minutes, minor units); 0 or empty clears them.
 import { useState, type FormEvent } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { DateField } from "@/components/work/fields"
 import { ColorPicker } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -121,7 +122,7 @@ export function ProjectForm({ project, onSaved, onCancel }: { project?: ProjectD
 
   return (
     <form onSubmit={submit} noValidate>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="p-name">{t("project.name")}</FieldLabel>
           <Input id="p-name" autoFocus value={v.name} onChange={(e) => set("name", e.target.value)} placeholder={t("project.namePlaceholder")} />
@@ -178,11 +179,11 @@ export function ProjectForm({ project, onSaved, onCancel }: { project?: ProjectD
               {t("common.cancel")}
             </Button>
           ) : null}
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : project ? t("common.save") : t("project.create")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

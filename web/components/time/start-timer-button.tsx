@@ -6,7 +6,8 @@
 import type { SyntheticEvent } from "react"
 import { PlayIcon, SquareIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { useTimerActions } from "@/components/time/timer-bar"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -51,13 +52,13 @@ export function StartTimerButton({
 
   if (variant === "icon") {
     return (
-      <Button size="icon-sm" variant={here ? "default" : "outline"} className={cn("bg-grid-card", here && "bg-grid-action", className)} {...common}>
+      <Button size="icon-sm" variant={here ? "primary" : "secondary"} className={cn("bg-grid-card", here && "bg-grid-action", className)} {...common}>
         {here ? <SquareIcon /> : <PlayIcon />}
       </Button>
     )
   }
   return (
-    <Button size="sm" variant={here ? "default" : "outline"} className={className} {...common}>
+    <Button size="sm" variant={here ? "primary" : "secondary"} className={className} {...common}>
       {here ? <SquareIcon /> : <PlayIcon />}
       {here ? t("timer.stopHere") : t("timer.startHere")}
       {here && timer ? (

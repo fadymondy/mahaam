@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react"
 import { PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
@@ -51,7 +52,7 @@ export default function LabelsPage() {
             <Input id="l-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder={t("labels.placeholder")} />
           </Field>
           <ColorPicker value={color} onChange={setColor} />
-          <Button type="submit" disabled={!name.trim()}>
+          <Button variant="primary" type="submit" disabled={!name.trim()}>
             <PlusIcon />
             {t("labels.create")}
           </Button>
@@ -137,7 +138,7 @@ function EditLabel({ label, onClose, onSaved }: { label: Label | null; onClose: 
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button
+          <Button variant="primary"
             disabled={!name.trim()}
             onClick={async () => {
               try {

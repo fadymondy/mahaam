@@ -5,7 +5,8 @@
 // Colours come from theme tokens and the palette keys; nothing is hardcoded.
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts"
 
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@fadymondy/nasaq/web"
+
 import { solid } from "@/components/work/palette"
 import { useTranslations } from "@/lib/i18n"
 import { dayLabel } from "@/lib/time"
@@ -39,21 +40,9 @@ export function SeriesChart({ series }: { series: ReportPoint[] }) {
           cursor={false}
           content={
             <ChartTooltipContent
-              labelFormatter={(_, p) => {
-                const d = (p?.[0]?.payload as { day?: string } | undefined)?.day
-                return d ? dayLabel(d, locale, "long") : ""
-              }}
-              formatter={(value, name, item) => (
-                <div className="flex w-full items-center justify-between gap-3">
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <span className="size-2 shrink-0 rounded-[2px]" style={{ background: item.color }} />
-                    {config[name as keyof typeof config]?.label ?? name}
-                  </span>
-                  <span className="font-mono text-foreground tabular-nums" dir="ltr">
-                    {hmCell(Number(value) * 3600)}
-                  </span>
-                </div>
-              )}
+              labelFormatter={(label) => (label ? dayLabel(String(label), locale, "long") : "")}
+              config={config}
+              valueFormat={{ maximumFractionDigits: 2 }}
             />
           }
         />
@@ -98,12 +87,8 @@ export function BreakdownChart({ items, colored }: { items: BreakdownItem[]; col
           cursor={false}
           content={
             <ChartTooltipContent
-              hideIndicator
-              formatter={(value) => (
-                <span className="font-mono tabular-nums" dir="ltr">
-                  {hmCell(Number(value) * 3600)}
-                </span>
-              )}
+              config={config}
+              valueFormat={{ maximumFractionDigits: 2 }}
             />
           }
         />

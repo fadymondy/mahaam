@@ -4,7 +4,8 @@
 // and per client, each with its own export. Columns match internal/work/export.go ProfitabilityTable.
 import { Suspense } from "react"
 
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { ExportButtons, FilterBar, PrintButton, PrintHeader, ResetButton, useReportFilters } from "@/components/reports/filter-bar"
 import { SavedViews } from "@/components/reports/saved-views"

@@ -4,7 +4,8 @@
 // language. Every sentence is a dictionary key per action, filled from the entry's changes.
 import { BotIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { PersonAvatar, type Directory } from "@/components/work/people"

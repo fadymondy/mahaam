@@ -11,9 +11,10 @@ import { useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { BotIcon, ShieldCheckIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@fadymondy/nasaq/web"
+
+
+
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { ErrorState } from "@/components/states"
 import { api, ApiError } from "@/lib/api"
@@ -157,10 +158,10 @@ export default function OAuthAuthorizePage() {
               ) : null}
 
               <div className="flex flex-wrap gap-2">
-                <Button disabled={!selected || busy !== null} onClick={() => void decide(true)}>
+                <Button variant="primary" disabled={!selected || busy !== null} onClick={() => void decide(true)}>
                   {busy === "allow" ? t("common.working") : t("oauth.allow")}
                 </Button>
-                <Button variant="outline" disabled={busy !== null} onClick={() => void decide(false)}>
+                <Button variant="secondary" disabled={busy !== null} onClick={() => void decide(false)}>
                   {t("oauth.deny")}
                 </Button>
               </div>

@@ -6,8 +6,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { FileCodeIcon, FileSpreadsheetIcon, FileTextIcon, FileTypeIcon, LoaderIcon, PrinterIcon, RotateCcwIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
 import { MultiSelect, type Option } from "@/components/reports/multi-select"
 import { ColorDot } from "@/components/work/palette"
 import { useDirectory } from "@/components/work/people"
@@ -220,7 +221,7 @@ export function ExportButtons({ query, label, id }: { query: string; label?: str
       {EXPORT_FORMATS.map((f) => {
         const Icon = EXPORT_ICONS[f]
         return (
-          <Button key={f} variant="outline" disabled={!!busy} onClick={() => run(f)} data-export={f} data-export-id={id}>
+          <Button key={f} variant="secondary" disabled={!!busy} onClick={() => run(f)} data-export={f} data-export-id={id}>
             {busy === f ? <LoaderIcon className="animate-spin" /> : <Icon />}
             {t(EXPORT_LABELS[f])}
           </Button>
@@ -238,7 +239,7 @@ const EXPORT_LABELS = { csv: "reports.exportCsv", xlsx: "reports.exportXlsx", pd
 export function PrintButton() {
   const { t } = useTranslations()
   return (
-    <Button variant="outline" onClick={() => window.print()} data-print>
+    <Button variant="secondary" onClick={() => window.print()} data-print>
       <PrinterIcon />
       {t("reports.print")}
     </Button>

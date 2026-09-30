@@ -7,7 +7,8 @@ import { useEffect, useState } from "react"
 import { CircleCheckIcon, CreditCardIcon, MailIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { EstimateStrip, FeatureList, UsageTable } from "@/components/admin/usage"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
@@ -88,7 +89,7 @@ function PlanBody({ r, workspaceId }: { r: UsageReport; workspaceId: string }) {
           </p>
         </div>
         {href ? (
-          <Button nativeButton={false} render={<a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />} data-upgrade>
+          <Button variant="primary" nativeButton={false} render={<a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />} data-upgrade>
             <MailIcon />
             {t("plan.contactUpgrade")}
           </Button>
@@ -158,7 +159,7 @@ function BillingSection({
             <p className="text-sm text-grid-muted">{t("plan.hubBilling")}</p>
           </div>
           {data.hub_billing_url ? (
-            <Button variant="outline" size="sm" nativeButton={false} render={<a href={data.hub_billing_url} target="_blank" rel="noreferrer" />} data-manage-billing>
+            <Button variant="secondary" size="sm" nativeButton={false} render={<a href={data.hub_billing_url} target="_blank" rel="noreferrer" />} data-manage-billing>
               <CreditCardIcon />
               {t("plan.hubBillingOpen")}
             </Button>
@@ -176,7 +177,7 @@ function BillingSection({
           <BillingStatusBadge billing={b} />
         </div>
         {b?.polar_customer_id ? (
-          <Button variant="outline" size="sm" disabled={!!busy} onClick={() => go("portal", () => billingApi.portal(workspaceId))} data-manage-billing>
+          <Button variant="secondary" size="sm" disabled={!!busy} onClick={() => go("portal", () => billingApi.portal(workspaceId))} data-manage-billing>
             <CreditCardIcon />
             {busy === "portal" ? t("common.working") : t("billing.manage")}
           </Button>
@@ -199,11 +200,11 @@ function BillingSection({
                   </p>
                 </div>
                 {isCurrent ? null : p.purchasable && data.configured ? (
-                  <Button size="sm" disabled={!!busy} onClick={() => go(p.key, () => billingApi.checkout(workspaceId, p.key, locale))}>
+                  <Button variant="primary" size="sm" disabled={!!busy} onClick={() => go(p.key, () => billingApi.checkout(workspaceId, p.key, locale))}>
                     {busy === p.key ? t("common.working") : b?.status === "active" ? t("billing.switch") : t("billing.upgrade")}
                   </Button>
                 ) : contact ? (
-                  <Button size="sm" variant="outline" nativeButton={false} render={<a href={contact} target={contact.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />}>
+                  <Button size="sm" variant="secondary" nativeButton={false} render={<a href={contact} target={contact.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" />}>
                     <MailIcon />
                     {t("plan.contactUs")}
                   </Button>

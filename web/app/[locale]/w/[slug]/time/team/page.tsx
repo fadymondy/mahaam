@@ -7,9 +7,10 @@ import { Suspense } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { ChevronRightIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"

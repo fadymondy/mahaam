@@ -4,9 +4,10 @@
 import { useMemo, useState } from "react"
 import { SearchIcon } from "lucide-react"
 
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { EmptyState } from "@/components/states"
 import { LabelChips, PriorityIcon } from "@/components/work/fields"

@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { ChevronRightIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Badge, Skeleton } from "@fadymondy/nasaq/web"
+
+
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { VerifyEmailGate } from "@/components/account/verify-email-gate"
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form"

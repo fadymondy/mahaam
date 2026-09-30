@@ -6,11 +6,12 @@ import { ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
 import { toast } from "sonner"
 import useSWR from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
@@ -54,7 +55,7 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
 }
 
 function statusVariant(s: Integration["status"]) {
-  return s === "active" ? "default" : s === "error" ? "destructive" : "secondary"
+  return s === "active" ? "success" : s === "error" ? "danger" : "neutral"
 }
 
 function Header({ name, desc, it, canManage, projectId, onChanged }: { name: string; desc: string; it?: Integration; canManage: boolean; projectId: string; onChanged: () => void }) {
@@ -94,7 +95,7 @@ function Header({ name, desc, it, canManage, projectId, onChanged }: { name: str
       {it && canManage ? (
         <div className="flex items-center gap-2">
           {it.status !== "pending" && it.status !== "disabled" ? (
-            <Button variant="outline" size="sm" disabled={busy} onClick={sync}>
+            <Button variant="secondary" size="sm" disabled={busy} onClick={sync}>
               <RefreshCwIcon className={busy ? "animate-spin" : undefined} />
               {t("int.sync")}
             </Button>
@@ -165,14 +166,14 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
       ) : null}
       {canManage ? (
         <div className="flex flex-wrap items-end gap-2">
-          <Button variant={it || list.length ? "outline" : "default"} onClick={install}>
+          <Button variant={it || list.length ? "secondary" : "primary"} onClick={install}>
             {it ? t("int.github.reinstall") : t("int.github.install")}
           </Button>
           {needsRepo && repos.data ? (
             list.length ? (
               <>
                 <RepoSearch repos={list.map((r) => r.full_name)} value={repo} onChange={setRepo} />
-                <Button variant="outline" disabled={!repo} onClick={link}>
+                <Button variant="secondary" disabled={!repo} onClick={link}>
                   {t("int.github.link")}
                 </Button>
               </>
@@ -284,7 +285,7 @@ function JiraCard({ projectId, it, canManage, onChanged }: { projectId: string; 
             <Input id="jira-token" dir="ltr" type="password" autoComplete="off" placeholder={it?.has_secret ? t("int.keepSecret") : ""} value={f.api_token} onChange={set("api_token")} />
           </Field>
           <div className="sm:col-span-2">
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {it ? t("int.save") : t("int.connect")}
             </Button>
           </div>
@@ -325,7 +326,7 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
             <Input id="linear-key" dir="ltr" type="password" autoComplete="off" placeholder={it?.has_secret ? t("int.keepSecret") : "lin_api_…"} value={key} onChange={(e) => setKey(e.target.value)} />
           </Field>
           <div className="sm:col-span-2">
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {it ? t("int.save") : t("int.connect")}
             </Button>
           </div>

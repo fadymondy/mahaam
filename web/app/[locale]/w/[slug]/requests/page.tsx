@@ -15,11 +15,12 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
+import { Badge, Button, Field, FieldLabel, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetDescription, SheetTitle } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { NotFoundState } from "@/components/not-found-state"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { AuthImage, PromptDialog, RequestStateBadge, ScrollTabs } from "@/components/portal/portal-bits"
@@ -167,7 +168,7 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side={isRtl ? "left" : "right"} className="w-full gap-0 overflow-y-auto sm:max-w-xl" data-request-detail={requestKey}>
+      <SheetContent side="end" className="w-full gap-0 overflow-y-auto sm:max-w-xl" data-request-detail={requestKey}>
         {!r ? (
           <div className="p-5">{req.error ? <ErrorState error={req.error} /> : <LoadingRows rows={5} />}</div>
         ) : (
@@ -219,10 +220,10 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
 
             {r.state === "pending" ? (
               <div className="flex flex-wrap gap-2 border-b border-line p-5">
-                <Button size="sm" disabled={busy} onClick={() => setActing("accept")} data-action="to-issue">
+                <Button variant="primary" size="sm" disabled={busy} onClick={() => setActing("accept")} data-action="to-issue">
                   <CheckIcon /> {t("requests.toIssue")}
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={convert} data-action="to-task">
+                <Button size="sm" variant="secondary" disabled={busy} onClick={convert} data-action="to-task">
                   <ListTodoIcon /> {t("requests.convert")}
                 </Button>
                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => setActing("decline")} data-action="decline">
@@ -231,7 +232,7 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-2 border-b border-line p-5">
-                <Button size="sm" variant="outline" onClick={() => setActing("reopen")} data-action="reopen">
+                <Button size="sm" variant="secondary" onClick={() => setActing("reopen")} data-action="reopen">
                   <RotateCcwIcon /> {t("requests.reopen")}
                 </Button>
                 <span className="text-meta text-grid-muted">{t("requests.reopenHint")}</span>

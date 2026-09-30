@@ -22,13 +22,14 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { ColorDot, ColorPicker, PALETTE } from "@/components/work/palette"
@@ -201,7 +202,7 @@ export default function ProjectSettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button disabled={!addUser} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/members/${addUser}`, { role: addRole }); setAddUser("") })}>
+            <Button variant="primary" disabled={!addUser} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/members/${addUser}`, { role: addRole }); setAddUser("") })}>
               <PlusIcon />
               {t("common.add")}
             </Button>
@@ -241,7 +242,7 @@ export default function ProjectSettingsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" disabled={!addTeam} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/teams/${addTeam}`); setAddTeam("") })}>
+              <Button variant="secondary" disabled={!addTeam} onClick={() => run(async () => { await w.put(ws.id, `/api/w/projects/${p.id}/teams/${addTeam}`); setAddTeam("") })}>
                 {t("settings.attachTeam")}
               </Button>
             </div>
@@ -275,7 +276,7 @@ export default function ProjectSettingsPage() {
       <Section id="archive" title={p.archived_at ? t("settings.restoreTitle") : t("settings.archiveTitle")} hint={p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}>
         <div className="px-6 pb-6">
           {p.archived_at ? (
-            <Button variant="outline" onClick={() => run(() => w.post(ws.id, `/api/w/projects/${p.id}/restore`), t("project.restored"))}>
+            <Button variant="secondary" onClick={() => run(() => w.post(ws.id, `/api/w/projects/${p.id}/restore`), t("project.restored"))}>
               {t("settings.restore")}
             </Button>
           ) : (
@@ -345,7 +346,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
         ))}
       </ul>
       <div className="px-6 py-4">
-        <Button variant="outline" onClick={() => setEditing("new")}>
+        <Button variant="secondary" onClick={() => setEditing("new")}>
           <PlusIcon />
           {t("settings.addStatus")}
         </Button>
@@ -395,7 +396,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
               {t("common.cancel")}
             </Button>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={async () => {
                 if (!deleting) return
                 const qs = deleting.task_count ? `?move_to=${encodeURIComponent(moveTo)}` : ""
@@ -460,7 +461,7 @@ function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | nu
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color, stage: category })}>
+          <Button variant="primary" disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color, stage: category })}>
             {t("common.save")}
           </Button>
         </DialogFooter>

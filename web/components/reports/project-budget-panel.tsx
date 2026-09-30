@@ -5,8 +5,9 @@
 import Link from "next/link"
 import { SettingsIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, Skeleton } from "@fadymondy/nasaq/web"
+
+
 import { BudgetMeters, LevelBadge } from "@/components/reports/budget-meter"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -37,7 +38,7 @@ export function ProjectBudgetPanel({ projectId, canManage, settingsHref }: { pro
             {canManage ? <p className="text-meta text-grid-muted">{t("budget.noneManager")}</p> : null}
           </div>
           {canManage ? (
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link href={settingsHref} />} data-budget-settings>
+            <Button variant="secondary" size="sm" nativeButton={false} render={<Link href={settingsHref} />} data-budget-settings>
               <SettingsIcon />
               {t("budget.setInSettings")}
             </Button>

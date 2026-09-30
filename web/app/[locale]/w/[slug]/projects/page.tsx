@@ -5,13 +5,7 @@ import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { BriefcaseIcon, CalendarIcon, LockIcon, PlusIcon, SearchIcon, UsersIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, Progress, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -25,12 +19,12 @@ import { ISSUE_STATUSES, useProjects } from "@/lib/work"
 
 const PROJECT_STATUSES = ["planned", "active", "on_hold", "completed", "cancelled"] as const
 const STATUS_TONE: Record<string, string> = {
-  backlog: "var(--pal-slate)",
-  todo: "var(--pal-blue)",
-  in_progress: "var(--pal-violet)",
-  waiting_approval: "var(--pal-orange)",
-  in_review: "var(--pal-amber)",
-  done: "var(--pal-green)",
+  backlog: "var(--nq-tag-gray)",
+  todo: "var(--nq-tag-blue)",
+  in_progress: "var(--nq-tag-violet)",
+  waiting_approval: "var(--nq-tag-orange)",
+  in_review: "var(--nq-tag-amber)",
+  done: "var(--nq-tag-green)",
 }
 
 function FilterSelect({ value, onChange, items, label }: { value: string; onChange: (v: string) => void; items: { value: string; label: string }[]; label: string }) {
@@ -91,7 +85,7 @@ export default function ProjectsPage() {
         description={t("projects.hint")}
         action={
           canCreate ? (
-            <Button onClick={() => setCreating(true)}>
+            <Button variant="primary" onClick={() => setCreating(true)}>
               <PlusIcon />
               {t("project.new")}
             </Button>
@@ -102,8 +96,8 @@ export default function ProjectsPage() {
       <div className="flex flex-wrap items-center gap-2 border-t border-line px-6 py-3">
         <Tabs value={archived ? "archived" : "active"} onValueChange={(v) => setArchived(v === "archived")}>
           <TabsList>
-            <TabsTrigger value="active">{t("projects.active")}</TabsTrigger>
-            <TabsTrigger value="archived">{t("projects.archived")}</TabsTrigger>
+            <TabsTab value="active">{t("projects.active")}</TabsTab>
+            <TabsTab value="archived">{t("projects.archived")}</TabsTab>
           </TabsList>
         </Tabs>
         <div className="relative min-w-48 flex-1">
@@ -125,7 +119,7 @@ export default function ProjectsPage() {
           body={archived ? undefined : canCreate ? t("projects.emptyBody") : t("projects.emptyMember")}
           action={
             !archived && canCreate ? (
-              <Button onClick={() => setCreating(true)}>
+              <Button variant="primary" onClick={() => setCreating(true)}>
                 <PlusIcon />
                 {t("project.new")}
               </Button>

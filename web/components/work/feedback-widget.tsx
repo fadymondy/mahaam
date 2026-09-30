@@ -6,11 +6,12 @@ import { toast } from "sonner"
 import useSWR from "swr"
 
 import { api } from "@/lib/api"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge, Button, Field, FieldLabel, Input, Tabs, TabsList, TabsPanel, TabsTab } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -195,7 +196,7 @@ function ProductHeader({
     <div className="mb-2">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-medium">{title}</h3>
-        <Badge variant={tone === "monitor" ? "outline" : "secondary"}>{badge}</Badge>
+        <Badge variant={tone === "monitor" ? "outline" : "neutral"}>{badge}</Badge>
       </div>
       <p className="mt-1 text-meta text-grid-muted">{desc}</p>
     </div>
@@ -271,7 +272,7 @@ function ContactManager({
               placeholder={t("sdk.contacts.addPlaceholder")}
             />
           </Field>
-          <Button type="submit" disabled={busy || !email.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !email.trim()}>
             <PlusIcon /> {t("common.add")}
           </Button>
         </form>
@@ -320,7 +321,7 @@ function KeyManager({
       )}
       {canManage ? (
         <Button
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(
@@ -371,7 +372,7 @@ function KeyRow({
           <code className="truncate text-xs font-mono" dir="ltr" aria-label={t("sdk.feedback.publicKeyAria")}>
             {k.public_key}
           </code>
-          <Badge variant={k.active ? "default" : "secondary"}>
+          <Badge variant={k.active ? "success" : "neutral"}>
             {k.active ? t("sdk.feedback.statusActive") : t("sdk.feedback.statusRevoked")}
           </Badge>
         </div>
@@ -408,7 +409,7 @@ function KeyRow({
       {canManage ? (
         <Button
           size="sm"
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(
@@ -492,7 +493,7 @@ function MonitorKeyManager({
       )}
       {canManage ? (
         <Button
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(
@@ -536,7 +537,7 @@ function MonitorKeyRow({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate text-sm">{k.name}</span>
-          <Badge variant={live ? "default" : "secondary"}>
+          <Badge variant={live ? "success" : "neutral"}>
             {live ? t("sdk.monitor.statusLive") : t("sdk.monitor.statusRevoked")}
           </Badge>
         </div>
@@ -704,7 +705,7 @@ function WidgetLookEditor({
         </span>
         <Button
           size="sm"
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(() => w.patch(ws.id, `/api/w/feedback-keys/${k.id}`, { widget: look }), t("sdk.look.saved")).then(
@@ -758,7 +759,7 @@ function InstallGuides({
       <div className="flex items-center justify-between gap-2">
         <FieldLabel>{t("sdk.install.label")}</FieldLabel>
         {data.guides.agent ? (
-          <Button size="sm" variant="outline" onClick={() => copy(data.guides.agent, t("sdk.install.agentLabel"))}>
+          <Button size="sm" variant="secondary" onClick={() => copy(data.guides.agent, t("sdk.install.agentLabel"))}>
             <BotIcon /> {t("sdk.install.copyAgent")}
           </Button>
         ) : null}
@@ -766,13 +767,13 @@ function InstallGuides({
       <Tabs defaultValue={available[0]}>
         <TabsList className="flex-wrap">
           {available.map((s) => (
-            <TabsTrigger key={s} value={s}>
+            <TabsTab key={s} value={s}>
               {label(s)}
-            </TabsTrigger>
+            </TabsTab>
           ))}
         </TabsList>
         {available.map((s) => (
-          <TabsContent key={s} value={s} className="relative">
+          <TabsPanel key={s} value={s} className="relative">
             <pre
               dir="ltr"
               className="max-h-72 overflow-auto rounded-md border border-line bg-grid-muted/10 p-3 pe-20 font-mono text-xs whitespace-pre-wrap"
@@ -788,7 +789,7 @@ function InstallGuides({
             >
               <CopyIcon /> {t("common.copy")}
             </Button>
-          </TabsContent>
+          </TabsPanel>
         ))}
       </Tabs>
       {mcpHint ? (

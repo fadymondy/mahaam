@@ -7,14 +7,15 @@ import { PlusIcon, SearchIcon } from "lucide-react"
 import { ListFilter } from "@/components/list-filter"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
 import { DateField } from "@/components/work/fields"
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
@@ -34,10 +35,10 @@ import {
   type InvoiceStatus,
 } from "@/lib/work"
 
-const STATUS_VARIANT: Record<InvoiceStatus, "secondary" | "default" | "outline"> = {
-  draft: "secondary",
-  sent: "default",
-  paid: "outline",
+const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "info" | "success" | "outline"> = {
+  draft: "neutral",
+  sent: "info",
+  paid: "success",
   void: "outline",
 }
 
@@ -93,7 +94,7 @@ export default function InvoicesPage() {
         description={t("invoices.hint")}
         action={
           canWrite ? (
-            <Button onClick={() => setCreating(true)} data-new-invoice>
+            <Button variant="primary" onClick={() => setCreating(true)} data-new-invoice>
               <PlusIcon />
               {t("invoices.new")}
             </Button>
@@ -234,7 +235,7 @@ function NewInvoiceForm({ onDone }: { onDone: (iv?: Invoice) => void }) {
 
   return (
     <form onSubmit={submit} noValidate>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="ni-client">{t("newInvoice.client")}</FieldLabel>
           <Select items={clientItems} value={v.client} onValueChange={(val) => set("client", val ?? "")}>
@@ -302,11 +303,11 @@ function NewInvoiceForm({ onDone }: { onDone: (iv?: Invoice) => void }) {
         </Field>
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy || !v.client} data-create-invoice>
+          <Button variant="primary" type="submit" disabled={busy || !v.client} data-create-invoice>
             {busy ? t("common.working") : t("newInvoice.create")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

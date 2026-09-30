@@ -7,7 +7,8 @@ import Link from "next/link"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { SectionHeader } from "@/components/public-frame"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
@@ -28,7 +29,7 @@ export default function AdminIssuesPage() {
       title={t("admin.nav.issues")}
       description={t("admin.issues.redirecting")}
       action={
-        <Button nativeButton={false} render={<Link href={href} />}>
+        <Button variant="primary" nativeButton={false} render={<Link href={href} />}>
           {t("admin.issues.open")}
         </Button>
       }

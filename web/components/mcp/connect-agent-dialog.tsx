@@ -7,11 +7,12 @@
 import { useState, type FormEvent } from "react"
 import { CheckIcon, TriangleAlertIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { CopyField, Ltr } from "@/components/copy-field"
 import { AgentKitGuide } from "@/components/mcp/agent-kit-guide"
 import { LoadingRows } from "@/components/states"
@@ -106,15 +107,15 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
                 <AgentKitGuide />
               </div>
             </details>
-            <FieldGroup>
+            <div className="flex flex-col gap-4">
               <Field>
                 <FieldLabel htmlFor="ca-name">{t("mcp.name")}</FieldLabel>
                 <Input id="ca-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("mcp.connectDefaultName")} />
               </Field>
 
               {advanced ? (
-                <FieldSet>
-                  <FieldLegend variant="label">{t("mcp.scopes")}</FieldLegend>
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
                   <FieldDescription>{t("mcp.scopesHint")}</FieldDescription>
                   <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-line">
                     {scopes.map((s) => {
@@ -141,7 +142,7 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
                       )
                     })}
                   </ul>
-                </FieldSet>
+                </fieldset>
               ) : (
                 <p className="text-sm text-grid-muted">
                   {t("mcp.connectDefaultScopeHint")}{" "}
@@ -197,12 +198,12 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
                 </Select>
               </Field>
               {error ? <FieldError>{error}</FieldError> : null}
-            </FieldGroup>
+            </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+              <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 {busy ? t("common.working") : t("mcp.connectGo")}
               </Button>
             </DialogFooter>
@@ -266,7 +267,7 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
       </p>
 
       <DialogFooter>
-        <Button onClick={onDone}>
+        <Button variant="primary" onClick={onDone}>
           <CheckIcon />
           {t("mcp.savedIt")}
         </Button>

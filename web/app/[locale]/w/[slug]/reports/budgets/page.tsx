@@ -5,8 +5,9 @@
 import Link from "next/link"
 import { Suspense } from "react"
 
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { BudgetMeters, LevelBadge } from "@/components/reports/budget-meter"
 import { PrintButton, PrintHeader } from "@/components/reports/filter-bar"
 import { SavedViews } from "@/components/reports/saved-views"
@@ -81,7 +82,7 @@ function BudgetsView() {
                     <span className="mt-1 flex flex-wrap items-center gap-2 text-meta text-grid-muted">
                       {b.client_name ? <span dir="auto">{b.client_name}</span> : null}
                       <span>{t(`billing.${b.billing_mode}`)}</span>
-                      {b.archived ? <Badge variant="secondary">{t("budget.archived")}</Badge> : null}
+                      {b.archived ? <Badge variant="neutral">{t("budget.archived")}</Badge> : null}
                     </span>
                   </TableCell>
                   <TableCell className="align-top">

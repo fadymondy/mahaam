@@ -5,11 +5,12 @@ import Link from "next/link"
 import { PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -43,7 +44,7 @@ export default function TeamsPage() {
         description={t("teams.hint")}
         action={
           canWrite ? (
-            <Button onClick={() => setEditing("new")}>
+            <Button variant="primary" onClick={() => setEditing("new")}>
               <PlusIcon />
               {t("teams.new")}
             </Button>
@@ -154,7 +155,7 @@ function TeamDialog({ team, dir, onClose, onSaved }: { team: Team | "new" | null
           <DialogTitle>{existing ? t("teams.edit") : t("teams.new")}</DialogTitle>
           <DialogDescription>{t("teams.formHint")}</DialogDescription>
         </DialogHeader>
-        <FieldGroup>
+        <div className="flex flex-col gap-4">
           <Field>
             <FieldLabel htmlFor="t-name">{t("project.name")}</FieldLabel>
             <Input id="t-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
@@ -174,12 +175,12 @@ function TeamDialog({ team, dir, onClose, onSaved }: { team: Team | "new" | null
             <MemberPicker dir={dir} selected={members} onChange={setMembers} label={t("teams.members")} />
           </Field>
           {error ? <FieldError>{error}</FieldError> : null}
-        </FieldGroup>
+        </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button disabled={busy || !name.trim()} onClick={save}>
+          <Button variant="primary" disabled={busy || !name.trim()} onClick={save}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </DialogFooter>

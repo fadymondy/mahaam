@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import { BotIcon, PlusIcon, SparklesIcon } from "lucide-react"
 
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { catalogueApi, errorText, useProjectCatalogue, type Issue, type IssuePatch } from "@/lib/work"
@@ -149,7 +150,7 @@ function CatalogueFooter({ projectId, agents, skills, onAdded }: { projectId: st
       {open ? (
         <div className="flex flex-col gap-2 border border-line p-2">
           <Select value={kind} onValueChange={(v) => setKind(v === "skill" ? "skill" : "agent")}>
-            <SelectTrigger size="sm" className="w-full">
+            <SelectTrigger className="w-full">
               <SelectValue>{(v) => (v === "skill" ? t("issues.agent.skill") : t("issues.agent.agent"))}</SelectValue>
             </SelectTrigger>
             <SelectContent>

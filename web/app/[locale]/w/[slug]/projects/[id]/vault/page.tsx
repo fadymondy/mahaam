@@ -5,13 +5,14 @@ import { BrainIcon, CopyIcon, EyeIcon, EyeOffIcon, KeyRoundIcon, PencilIcon, Plu
 import { toast } from "sonner"
 import useSWR from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Tabs, TabsList, TabsTab, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useProjectCtx } from "@/components/work/project-context"
@@ -105,18 +106,18 @@ export default function VaultPage() {
         </div>
         <Tabs value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
           <TabsList>
-            <TabsTrigger value="all">{t("vault.all")}</TabsTrigger>
-            <TabsTrigger value="memory">{t("vault.memory")}</TabsTrigger>
-            <TabsTrigger value="secret">{t("vault.secrets")}</TabsTrigger>
+            <TabsTab value="all">{t("vault.all")}</TabsTab>
+            <TabsTab value="memory">{t("vault.memory")}</TabsTab>
+            <TabsTab value="secret">{t("vault.secrets")}</TabsTab>
           </TabsList>
         </Tabs>
         {canWrite ? (
-          <Button onClick={() => setDraft({ kind: "memory", title: "", body: "", tags: "", value: "" })}>
+          <Button variant="primary" onClick={() => setDraft({ kind: "memory", title: "", body: "", tags: "", value: "" })}>
             <BrainIcon /> {t("vault.newMemory")}
           </Button>
         ) : null}
         {canSecrets ? (
-          <Button variant="outline" onClick={() => setDraft({ kind: "secret", title: "", body: "", tags: "", value: "" })}>
+          <Button variant="secondary" onClick={() => setDraft({ kind: "secret", title: "", body: "", tags: "", value: "" })}>
             <KeyRoundIcon /> {t("vault.newSecret")}
           </Button>
         ) : null}
@@ -142,7 +143,7 @@ export default function VaultPage() {
                 <h3 className="font-medium" dir="auto">
                   {v.title}
                 </h3>
-                <Badge variant="secondary">{v.kind === "secret" ? t("vault.secret") : t("vault.memoryOne")}</Badge>
+                <Badge variant="neutral">{v.kind === "secret" ? t("vault.secret") : t("vault.memoryOne")}</Badge>
                 {v.tags.map((tag) => (
                   <Badge key={tag} variant="outline">
                     {tag}
@@ -161,7 +162,7 @@ export default function VaultPage() {
                     {revealed[v.id] ?? "••••••••••••"}
                   </code>
                   {canSecrets ? (
-                    <Button size="sm" variant="outline" onClick={() => void reveal(v)}>
+                    <Button size="sm" variant="secondary" onClick={() => void reveal(v)}>
                       {revealed[v.id] ? <EyeOffIcon /> : <EyeIcon />} {revealed[v.id] ? t("vault.hide") : t("vault.reveal")}
                     </Button>
                   ) : null}
@@ -268,7 +269,7 @@ function VaultDialog({
             </DialogTitle>
             <DialogDescription>{secret ? t("vault.secretHint") : t("vault.memoryHint")}</DialogDescription>
           </DialogHeader>
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor="vault-title">{t("vault.title")}</FieldLabel>
               <Input id="vault-title" dir="auto" required maxLength={200} value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} />
@@ -303,12 +304,12 @@ function VaultDialog({
               <FieldLabel htmlFor="vault-tags">{t("vault.tags")}</FieldLabel>
               <Input id="vault-tags" dir="auto" value={d.tags} placeholder="deploy, staging" onChange={(e) => setD({ ...d, tags: e.target.value })} />
             </Field>
-          </FieldGroup>
+          </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>
               {t("vault.cancel")}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               <PlusIcon /> {t("vault.save")}
             </Button>
           </DialogFooter>

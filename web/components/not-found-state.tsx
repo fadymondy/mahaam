@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { CubeMark } from "@/components/brand/cube-mark"
 import { MAHAAM_MARK } from "@/lib/brand/mark"
 import { useTranslations } from "@/lib/i18n"
@@ -29,7 +30,7 @@ export function NotFoundState({
       <p className="grid-micro">404</p>
       <h1 className="grid-title text-2xl">{title ?? t("notFound.title")}</h1>
       <p className="grid-body max-w-md text-sm">{body ?? t("notFound.body")}</p>
-      <Button variant="outline" nativeButton={false} render={<Link href={backHref ?? `/${locale}/workspaces`} />}>
+      <Button variant="secondary" nativeButton={false} render={<Link href={backHref ?? `/${locale}/workspaces`} />}>
         {backLabel ?? t("notFound.back")}
       </Button>
     </div>

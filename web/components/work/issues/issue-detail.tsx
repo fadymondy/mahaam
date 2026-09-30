@@ -13,11 +13,12 @@ import Link from "next/link"
 import { BotIcon, ChevronLeftIcon, ExternalLinkIcon, PencilIcon, SendIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState, LoadingRows } from "@/components/states"
@@ -189,7 +190,7 @@ function BodyEditor({ issue, canWrite, onSave }: { issue: IssueDetail; canWrite:
         {canWrite && !editing ? (
           <Button
             variant="ghost"
-            size="xs"
+            size="sm"
             onClick={() => {
               setValue(issue.body ?? "")
               setEditing(true)
@@ -204,10 +205,10 @@ function BodyEditor({ issue, canWrite, onSave }: { issue: IssueDetail; canWrite:
         <div className="flex flex-col gap-2">
           <Textarea autoFocus rows={8} dir="auto" value={value} onChange={(e) => setValue(e.target.value)} placeholder={t("issues.bodyPlaceholder")} disabled={busy} />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditing(false)} disabled={busy}>
+            <Button variant="secondary" size="sm" onClick={() => setEditing(false)} disabled={busy}>
               {t("common.cancel")}
             </Button>
-            <Button
+            <Button variant="primary"
               size="sm"
               disabled={busy}
               onClick={async () => {
@@ -490,7 +491,7 @@ function CommentThread({ issue, onChanged }: { issue: IssueDetail; onChanged: ()
         />
         {error ? <p role="alert" className="text-sm text-grid-danger-text">{error}</p> : null}
         <div className="flex items-center gap-3">
-          <Button type="submit" size="sm" disabled={posting || !body.trim()}>
+          <Button variant="primary" type="submit" size="sm" disabled={posting || !body.trim()}>
             <SendIcon className="rtl:-scale-x-100" />
             {posting ? t("common.working") : t("issues.postComment")}
           </Button>

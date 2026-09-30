@@ -6,14 +6,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { formatDay } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
@@ -40,7 +41,7 @@ export function Meter({ value, label, warn }: { value: number; label?: string; w
 
 export function RequestStateBadge({ state }: { state: RequestState }) {
   const { t } = useTranslations()
-  const variant = state === "declined" ? "destructive" : state === "pending" ? "outline" : "secondary"
+  const variant = state === "declined" ? "danger" : state === "pending" ? "outline" : "success"
   return (
     <Badge variant={variant} data-request-state={state}>
       {t(`portal.request.state.${state}`)}
@@ -70,10 +71,7 @@ export function WeeksChart({ weeks }: { weeks: PortalWeek[] }) {
           cursor={false}
           content={
             <ChartTooltipContent
-              labelFormatter={(_, p) => {
-                const d = (p?.[0]?.payload as { week?: string } | undefined)?.week
-                return d ? formatDay(d, locale) : ""
-              }}
+              labelFormatter={(label) => (label ? formatDay(String(label), locale) : "")}
             />
           }
         />
@@ -188,7 +186,7 @@ export function NewRequestDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             {t("portal.cancel")}
           </Button>
-          <Button onClick={submit} disabled={busy || !title.trim() || !projectId}>
+          <Button variant="primary" onClick={submit} disabled={busy || !title.trim() || !projectId}>
             {busy ? t("portal.sending") : t("portal.send")}
           </Button>
         </DialogFooter>
@@ -241,7 +239,7 @@ export function PromptDialog({
             {t("portal.cancel")}
           </Button>
           <Button
-            variant={destructive ? "destructive" : "default"}
+            variant={destructive ? "danger" : "primary"}
             disabled={busy || (required && !text.trim())}
             onClick={async () => {
               setBusy(true)

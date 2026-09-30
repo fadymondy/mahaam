@@ -7,10 +7,11 @@
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
+
+
+
+
 import { TargetPicker, targetBody, type Target } from "@/components/time/targets"
 import { DateField } from "@/components/work/fields"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -96,7 +97,7 @@ export function EntryForm({
 
   return (
     <form onSubmit={submit} noValidate data-entry-form={entry ? "edit" : "add"}>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="te-desc">{t("time.description")}</FieldLabel>
           <Input id="te-desc" dir="auto" autoFocus value={desc} placeholder={t("time.descriptionPlaceholder")} onChange={(e) => setDesc(e.target.value)} />
@@ -127,11 +128,11 @@ export function EntryForm({
         </label>
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("time.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

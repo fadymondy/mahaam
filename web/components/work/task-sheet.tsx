@@ -25,20 +25,15 @@ import Link from "next/link";
 import { IssueSourceChip } from "@/components/work/issues/issue-bits";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge, Button, Checkbox, Input, Progress, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, Skeleton, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button";
 import { Ltr } from "@/components/copy-field";
 import { ErrorState } from "@/components/states";
@@ -95,7 +90,7 @@ export function TaskSheet({
   return (
     <Sheet open={!!taskKey} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
-        side={isRtl ? "left" : "right"}
+        side="end"
         className="w-full gap-0 overflow-y-auto p-0 data-[side=left]:sm:max-w-2xl data-[side=right]:sm:max-w-2xl"
         data-task-sheet={taskKey ?? ""}
       >
@@ -519,7 +514,7 @@ function Checklist({
             {can ? (
               <Button
                 variant="ghost"
-                size="icon-xs"
+                size="icon-sm"
                 className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                 aria-label={t("task.removeItem", { item: c.title })}
                 onClick={() => void call(() => w.del(ws.id, `/api/w/checklist/${c.id}`))}
@@ -548,7 +543,7 @@ function Checklist({
             aria-label={t("task.addItem")}
             className="h-8"
           />
-          <Button type="submit" size="sm" variant="outline" disabled={!text.trim()}>
+          <Button type="submit" size="sm" variant="secondary" disabled={!text.trim()}>
             <PlusIcon />
             {t("common.add")}
           </Button>
@@ -631,7 +626,7 @@ function Subtasks({
             aria-label={t("task.addSubtask")}
             className="h-8"
           />
-          <Button type="submit" size="sm" variant="outline" disabled={!text.trim()}>
+          <Button type="submit" size="sm" variant="secondary" disabled={!text.trim()}>
             <PlusIcon />
             {t("common.add")}
           </Button>
@@ -936,14 +931,14 @@ function Comments({
                     <span className="ms-auto flex gap-1">
                       <Button
                         variant="ghost"
-                        size="xs"
+                        size="sm"
                         onClick={() => setEditing({ id: c.id, body: c.body })}
                       >
                         {t("common.edit")}
                       </Button>
                       <Button
                         variant="ghost"
-                        size="xs"
+                        size="sm"
                         onClick={async () => {
                           try {
                             await w.del(ws.id, `/api/w/comments/${c.id}`);
@@ -971,7 +966,7 @@ function Comments({
                       <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
                         {t("common.cancel")}
                       </Button>
-                      <Button
+                      <Button variant="primary"
                         size="sm"
                         disabled={!editing.body.trim()}
                         onClick={async () => {
@@ -1043,7 +1038,7 @@ function Comments({
           ) : null}
           <div className="mt-2 flex items-center justify-between gap-2">
             <p className="text-meta text-grid-muted">{t("task.commentHint")}</p>
-            <Button size="sm" disabled={busy || !body.trim()} onClick={() => void send()}>
+            <Button variant="primary" size="sm" disabled={busy || !body.trim()} onClick={() => void send()}>
               {busy ? t("common.working") : t("task.addComment")}
             </Button>
           </div>

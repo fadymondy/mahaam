@@ -6,8 +6,9 @@ import { useParams } from "next/navigation"
 import { InfoIcon, LogOutIcon, ShieldIcon, ShieldOffIcon, UserCheckIcon, UserXIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { ReasonDialog, StatusBadge } from "@/components/admin/reason-dialog"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
@@ -94,23 +95,23 @@ export default function AdminUserPage() {
         <h2 className="px-6 text-sm font-medium text-grid-fg">{t("admin.users.actions")}</h2>
         <div className="flex flex-wrap gap-2 px-6">
           {u.status === "suspended" ? (
-            <Button variant="outline" disabled={busy} onClick={() => run(() => adminApi.reactivateUser(u.id), t("admin.users.reactivated"))}>
+            <Button variant="secondary" disabled={busy} onClick={() => run(() => adminApi.reactivateUser(u.id), t("admin.users.reactivated"))}>
               <UserCheckIcon />
               {t("admin.reactivate")}
             </Button>
           ) : (
-            <Button variant="outline" disabled={busy || !!self} onClick={() => setSuspending(true)} data-suspend-user>
+            <Button variant="secondary" disabled={busy || !!self} onClick={() => setSuspending(true)} data-suspend-user>
               <UserXIcon />
               {t("admin.suspend")}
             </Button>
           )}
           {u.is_admin ? (
-            <Button variant="outline" disabled={busy || !!self} onClick={() => run(() => adminApi.setAdmin(u.id, false), t("admin.users.adminRevoked"))}>
+            <Button variant="secondary" disabled={busy || !!self} onClick={() => run(() => adminApi.setAdmin(u.id, false), t("admin.users.adminRevoked"))}>
               <ShieldOffIcon />
               {t("admin.users.revokeAdmin")}
             </Button>
           ) : (
-            <Button variant="outline" disabled={busy} onClick={() => run(() => adminApi.setAdmin(u.id, true), t("admin.users.adminGranted"))}>
+            <Button variant="secondary" disabled={busy} onClick={() => run(() => adminApi.setAdmin(u.id, true), t("admin.users.adminGranted"))}>
               <ShieldIcon />
               {t("admin.users.grantAdmin")}
             </Button>

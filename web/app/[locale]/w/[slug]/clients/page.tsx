@@ -6,14 +6,15 @@ import { PlusIcon, SearchIcon, UploadIcon } from "lucide-react"
 import { ListFilter } from "@/components/list-filter"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
 import { ClientImportDialog } from "@/components/work/client-import-dialog"
@@ -86,11 +87,11 @@ export default function ClientsPage() {
         action={
           canWrite ? (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setImporting(true)} data-client-import-open>
+              <Button variant="secondary" onClick={() => setImporting(true)} data-client-import-open>
                 <UploadIcon />
                 {t("clientImport.button")}
               </Button>
-              <Button onClick={() => setEditing("new")}>
+              <Button variant="primary" onClick={() => setEditing("new")}>
                 <PlusIcon />
                 {t("clients.new")}
               </Button>
@@ -141,7 +142,7 @@ export default function ClientsPage() {
                       {c.name}
                     </Link>
                     {c.archived_at ? (
-                      <Badge variant="secondary" className="ms-2">
+                      <Badge variant="neutral" className="ms-2">
                         {t("project.archivedBadge")}
                       </Badge>
                     ) : null}
@@ -261,7 +262,7 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
 
   return (
     <form onSubmit={submit} noValidate>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="c-name">{t("clients.name")}</FieldLabel>
           <Input id="c-name" autoFocus value={v.name} onChange={(e) => set("name", e.target.value)} />
@@ -298,11 +299,11 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
         </Field>
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy || !v.name.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !v.name.trim()}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

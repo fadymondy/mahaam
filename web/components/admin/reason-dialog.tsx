@@ -2,10 +2,11 @@
 
 import { useState, type FormEvent } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
 import { useTranslations } from "@/lib/i18n"
 import { errorText } from "@/lib/work"
 
@@ -60,10 +61,10 @@ export function ReasonDialog({
             {error ? <FieldError>{error}</FieldError> : null}
           </Field>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" variant="destructive" disabled={busy}>
+            <Button type="submit" variant="danger" disabled={busy}>
               {busy ? t("common.working") : confirmLabel}
             </Button>
           </DialogFooter>

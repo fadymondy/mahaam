@@ -6,9 +6,10 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import { ArchiveIcon, ChevronLeftIcon } from "lucide-react"
 import { useSWRConfig } from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge, Skeleton, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
+
+
+
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState } from "@/components/states"
 import { ColorDot } from "@/components/work/palette"
@@ -86,7 +87,7 @@ function ProjectShell({ children }: { children: ReactNode }) {
           <h1 className="grid-title min-w-0 truncate text-2xl">{p.name}</h1>
           <Badge variant="outline">{t(`projectStatus.${p.status}`)}</Badge>
           {p.archived_at ? (
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="neutral" className="gap-1">
               <ArchiveIcon />
               {t("project.archivedBadge")}
             </Badge>
@@ -97,11 +98,11 @@ function ProjectShell({ children }: { children: ReactNode }) {
       {!isTaskRoute ? (
         <div className="mt-4 border-b border-line px-6">
           <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
-            <TabsList variant="line">
+            <TabsList variant="underline">
               {TABS.filter((x) => (x !== "vault" || ws.can("vault:read")) && (x !== "github" || ws.can("integrations:read")) && (x !== "billing" || ws.can("subscriptions:manage"))).map((x) => (
-                <TabsTrigger key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
+                <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
                   {t(`projectTab.${x}`)}
-                </TabsTrigger>
+                </TabsTab>
               ))}
             </TabsList>
           </Tabs>

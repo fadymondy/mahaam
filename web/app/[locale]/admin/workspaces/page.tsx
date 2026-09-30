@@ -3,7 +3,8 @@
 import Link from "next/link"
 import { useState } from "react"
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
 import { FilterSelect, Pager, SearchBox } from "@/components/admin/pager"
 import { StatusBadge } from "@/components/admin/reason-dialog"
 import { UsageBar } from "@/components/admin/usage"

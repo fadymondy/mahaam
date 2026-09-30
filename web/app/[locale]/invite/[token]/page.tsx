@@ -5,9 +5,10 @@ import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Badge, Button, Skeleton } from "@fadymondy/nasaq/web"
+
+
+
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { ErrorState } from "@/components/states"
 import { Ltr } from "@/components/copy-field"
@@ -55,7 +56,7 @@ export default function InvitePage() {
     return (
       <PublicFrame eyebrow="404" title={t("invite.notFoundTitle")} description={t("invite.notFoundBody")}>
         <PublicPanel className="flex justify-center py-10">
-          <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}`} />}>
+          <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}`} />}>
             {t("invite.goHome")}
           </Button>
         </PublicPanel>
@@ -110,10 +111,10 @@ export default function InvitePage() {
               <>
                 <p className="text-sm text-grid-body">{t("invite.signInFirst")}</p>
                 <div className="flex flex-wrap gap-2">
-                  <Button nativeButton={false} render={<Link href={`/${locale}/login?next=${encodeURIComponent(here)}`} />}>
+                  <Button variant="primary" nativeButton={false} render={<Link href={`/${locale}/login?next=${encodeURIComponent(here)}`} />}>
                     {t("auth.signIn")}
                   </Button>
-                  <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/register?next=${encodeURIComponent(here)}`} />}>
+                  <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/register?next=${encodeURIComponent(here)}`} />}>
                     {t("auth.createAccount")}
                   </Button>
                 </div>
@@ -124,13 +125,13 @@ export default function InvitePage() {
                   {t("invite.signedInAs")} <Ltr className="font-medium text-grid-fg">{signedInEmail}</Ltr>
                 </p>
                 {emailMismatch ? <p className="text-sm text-grid-warn-text">{t("invite.mismatchHint")}</p> : null}
-                <Button onClick={accept} disabled={busy}>
+                <Button variant="primary" onClick={accept} disabled={busy}>
                   {busy ? t("common.working") : t("invite.accept")}
                 </Button>
               </>
             )}
             {inv.accepted ? (
-              <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/workspaces`} />}>
+              <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/workspaces`} />}>
                 {t("invite.toWorkspaces")}
               </Button>
             ) : null}

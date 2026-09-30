@@ -5,15 +5,16 @@ import { useState } from "react"
 import { ExternalLinkIcon, RocketIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Tabs, TabsList, TabsPanel, TabsTab, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
+
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -43,7 +44,7 @@ export default function ProjectGitHubPage() {
       <div className="px-6 py-8 text-sm">
         <p className="text-grid-muted">{t("gh.notLinked")}</p>
         {p.can_manage ? (
-          <Button variant="outline" className="mt-3" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/projects/${p.id}/settings?s=integrations`} />}>
+          <Button variant="secondary" className="mt-3" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/projects/${p.id}/settings?s=integrations`} />}>
             {t("gh.goSettings")}
           </Button>
         ) : null}
@@ -63,25 +64,25 @@ export default function ProjectGitHubPage() {
         {ws.can("github:deploy") ? <DeployButton projectId={p.id} defaultRef={gh!.config.default_branch ?? "main"} /> : null}
       </div>
       <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
-        <TabsList variant="line">
-          <TabsTrigger value="commits">{t("gh.commits")}</TabsTrigger>
-          <TabsTrigger value="pulls">{t("gh.pulls")}</TabsTrigger>
-          <TabsTrigger value="runs">{t("gh.runs")}</TabsTrigger>
-          <TabsTrigger value="deployments">{t("gh.deployments")}</TabsTrigger>
+        <TabsList variant="underline">
+          <TabsTab value="commits">{t("gh.commits")}</TabsTab>
+          <TabsTab value="pulls">{t("gh.pulls")}</TabsTab>
+          <TabsTab value="runs">{t("gh.runs")}</TabsTab>
+          <TabsTab value="deployments">{t("gh.deployments")}</TabsTab>
         </TabsList>
-        <TabsContent value="commits" className="pt-4">
+        <TabsPanel value="commits" className="pt-4">
           <Input dir="ltr" className="mb-3 max-w-60" placeholder={`${t("gh.branch")} (${gh!.config.default_branch ?? "main"})`} value={branch} onChange={(e) => setBranch(e.target.value)} />
           <Commits projectId={p.id} branch={branch.trim()} active={tab === "commits"} />
-        </TabsContent>
-        <TabsContent value="pulls" className="pt-4">
+        </TabsPanel>
+        <TabsPanel value="pulls" className="pt-4">
           <Pulls projectId={p.id} active={tab === "pulls"} />
-        </TabsContent>
-        <TabsContent value="runs" className="pt-4">
+        </TabsPanel>
+        <TabsPanel value="runs" className="pt-4">
           <Runs projectId={p.id} active={tab === "runs"} />
-        </TabsContent>
-        <TabsContent value="deployments" className="pt-4">
+        </TabsPanel>
+        <TabsPanel value="deployments" className="pt-4">
           <Deployments projectId={p.id} active={tab === "deployments"} />
-        </TabsContent>
+        </TabsPanel>
       </Tabs>
     </div>
   )
@@ -139,7 +140,7 @@ function Pulls({ projectId, active }: { projectId: string; active: boolean }) {
           <li key={x.number} className="flex items-center gap-3 py-2 text-sm">
             <span className="text-meta text-grid-muted" dir="ltr">#{x.number}</span>
             <Ext href={x.url}>{x.title}</Ext>
-            {x.merged_at ? <Badge>{t("gh.merged")}</Badge> : x.draft ? <Badge variant="secondary">{t("gh.draft")}</Badge> : <Badge variant="outline">{x.state}</Badge>}
+            {x.merged_at ? <Badge variant="brand">{t("gh.merged")}</Badge> : x.draft ? <Badge variant="neutral">{t("gh.draft")}</Badge> : <Badge variant="outline">{x.state}</Badge>}
             <span className="hidden text-meta text-grid-muted sm:inline" dir="ltr">{x.head} → {x.base}</span>
             <span className="w-28 text-end text-meta text-grid-muted">{formatDate(x.updated_at)}</span>
           </li>
@@ -150,9 +151,9 @@ function Pulls({ projectId, active }: { projectId: string; active: boolean }) {
 }
 
 function runVariant(r: { status: string; conclusion: string }) {
-  if (r.conclusion === "success") return "default"
-  if (r.conclusion === "failure" || r.conclusion === "cancelled" || r.conclusion === "timed_out") return "destructive"
-  return "secondary"
+  if (r.conclusion === "success") return "success"
+  if (r.conclusion === "failure" || r.conclusion === "cancelled" || r.conclusion === "timed_out") return "danger"
+  return "neutral"
 }
 
 function Runs({ projectId, active }: { projectId: string; active: boolean }) {
@@ -227,7 +228,7 @@ function DeployButton({ projectId, defaultRef }: { projectId: string; defaultRef
   }
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button variant="primary" onClick={() => setOpen(true)}>
         <RocketIcon />
         {t("gh.deploy")}
       </Button>
@@ -264,7 +265,7 @@ function DeployButton({ projectId, defaultRef }: { projectId: string; defaultRef
             <Button variant="ghost" onClick={() => setOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button disabled={!workflow || busy} onClick={submit}>
+            <Button variant="primary" disabled={!workflow || busy} onClick={submit}>
               {t("gh.deploy")}
             </Button>
           </DialogFooter>

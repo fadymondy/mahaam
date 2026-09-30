@@ -9,7 +9,8 @@ import Link from "next/link"
 import { BotIcon, KeyRoundIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { CopyField } from "@/components/copy-field"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError } from "@/lib/api"
@@ -65,7 +66,7 @@ export function ConnectAiCard() {
           <p className="text-sm text-grid-muted">{t("connectAi.body")}</p>
         </div>
         {!token ? (
-          <Button onClick={mint} disabled={busy} data-action="mint-token">
+          <Button variant="primary" onClick={mint} disabled={busy} data-action="mint-token">
             <KeyRoundIcon /> {t("connectAi.create")}
           </Button>
         ) : null}
@@ -95,7 +96,7 @@ export function ConnectAiCard() {
           </pre>
           <Button
             size="sm"
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               void navigator.clipboard.writeText(desktop)
               toast.success(t("connectAi.copied"))

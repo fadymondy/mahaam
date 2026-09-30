@@ -7,8 +7,9 @@ import { useRouter } from "next/navigation"
 import { BellIcon, CheckCheckIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
+
+
 import { Ltr } from "@/components/copy-field"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { timeAgo } from "@/lib/format"

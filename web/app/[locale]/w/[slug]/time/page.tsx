@@ -9,10 +9,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { BotIcon, LockIcon, PencilIcon, PlusIcon, SquareIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
@@ -287,7 +288,7 @@ function TimeView() {
           <section data-day-list={selected}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-3">
               <h2 className="text-sm font-medium">{dayLabel(selected, locale, "long")}</h2>
-              <Button size="sm" onClick={() => setEditing("new")} data-add-time>
+              <Button variant="primary" size="sm" onClick={() => setEditing("new")} data-add-time>
                 <PlusIcon />
                 {t("time.add")}
               </Button>
@@ -319,7 +320,7 @@ function TimeView() {
                           {e.task_key && e.project_name ? <span className="truncate">· {e.project_name}</span> : null}
                           {fromPrev ? <Badge variant="outline">{t("time.fromPrev")}</Badge> : null}
                           {continues ? <Badge variant="outline">{t("time.continues")}</Badge> : null}
-                          {e.billable ? <Badge variant="secondary">{t("time.billable")}</Badge> : null}
+                          {e.billable ? <Badge variant="neutral">{t("time.billable")}</Badge> : null}
                         </div>
                       </div>
                       <span className="hidden w-24 shrink-0 text-meta text-grid-muted md:block">

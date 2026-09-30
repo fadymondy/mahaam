@@ -5,15 +5,10 @@ import Link from "next/link";
 import { ArrowLeftIcon, ClockIcon, SendIcon, SparklesIcon, UserRoundIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+
+
+
 import { NotFoundState } from "@/components/not-found-state";
 import { ErrorState, LoadingRows } from "@/components/states";
 import { Markdown } from "@/components/markdown";
@@ -291,7 +286,7 @@ export function IssueDetailView({
                   </p>
                 ) : null}
 
-                <Button
+                <Button variant="primary"
                   type="submit"
                   size="sm"
                   className="gap-2 self-start"

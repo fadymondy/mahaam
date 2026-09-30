@@ -6,22 +6,14 @@ import { useParams } from "next/navigation"
 import { ChevronLeftIcon, DownloadIcon, PrinterIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Field, FieldError, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
 import { DateField } from "@/components/work/fields"
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
@@ -114,7 +106,7 @@ export default function InvoiceDetailPage() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="outline" size="sm">
+                  <Button variant="secondary" size="sm">
                     <DownloadIcon />
                     {t("invoiceDetail.export")}
                   </Button>
@@ -125,22 +117,22 @@ export default function InvoiceDetailPage() {
                 <DropdownMenuItem onClick={() => void downloadInvoice(ws.id, iv.number, "xlsx", locale)}>XLSX</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => void openInvoicePrint(ws.id, iv.number, locale)} data-print-invoice>
+            <Button variant="secondary" size="sm" onClick={() => void openInvoicePrint(ws.id, iv.number, locale)} data-print-invoice>
               <PrinterIcon />
               {t("invoiceDetail.print")}
             </Button>
             {canWrite && iv.status === "draft" ? (
-              <Button size="sm" disabled={busy} onClick={() => void transition("sent")} data-mark-sent>
+              <Button variant="primary" size="sm" disabled={busy} onClick={() => void transition("sent")} data-mark-sent>
                 {t("invoiceDetail.markSent")}
               </Button>
             ) : null}
             {canWrite && iv.status === "sent" ? (
-              <Button size="sm" disabled={busy} onClick={() => setPaying(true)} data-record-payment>
+              <Button variant="primary" size="sm" disabled={busy} onClick={() => setPaying(true)} data-record-payment>
                 {t("invoiceDetail.recordPayment")}
               </Button>
             ) : null}
             {canWrite && (iv.status === "draft" || iv.status === "sent") ? (
-              <Button variant="outline" size="sm" disabled={busy} onClick={() => setConfirm("void")} data-void-invoice>
+              <Button variant="secondary" size="sm" disabled={busy} onClick={() => setConfirm("void")} data-void-invoice>
                 {t("invoiceDetail.void")}
               </Button>
             ) : null}
@@ -312,7 +304,7 @@ function PaymentDialog({
           <DialogDescription>{t("payment.amountHint")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} noValidate>
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor="pay-amount">{t("payment.amount")}</FieldLabel>
               <Input
@@ -337,11 +329,11 @@ function PaymentDialog({
             </div>
             {error ? <FieldError>{error}</FieldError> : null}
             <div className="flex justify-end">
-              <Button type="submit" disabled={busy} data-submit-payment>
+              <Button variant="primary" type="submit" disabled={busy} data-submit-payment>
                 {busy ? t("common.working") : t("payment.submit")}
               </Button>
             </div>
-          </FieldGroup>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

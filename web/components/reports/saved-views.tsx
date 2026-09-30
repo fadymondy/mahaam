@@ -7,24 +7,16 @@ import { useRouter } from "next/navigation"
 import { BookmarkIcon, BookmarkPlusIcon, PencilIcon, Share2Icon, Trash2Icon, UsersIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Switch } from "@/components/ui/switch"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Popover, PopoverContent, PopoverTrigger, Switch, TooltipRoot, TooltipContent, TooltipTrigger } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { cleanFilters, reportsApi, useSavedReports, type Filters, type ReportKind, type SavedReport } from "@/lib/reports"
@@ -95,7 +87,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
       {v.mine ? (
         <span className="flex shrink-0 items-center">
           {canShare ? (
-            <Tooltip>
+            <TooltipRoot>
               <TooltipTrigger
                 render={
                   <Button
@@ -111,7 +103,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
                 <Share2Icon />
               </TooltipTrigger>
               <TooltipContent>{v.shared ? t("saved.unshare") : t("saved.makeShared")}</TooltipContent>
-            </Tooltip>
+            </TooltipRoot>
           ) : null}
           <Button variant="ghost" size="icon-sm" aria-label={t("saved.rename")} onClick={() => setDialog({ mode: "rename", view: v })} data-rename-view={v.id}>
             <PencilIcon />
@@ -127,7 +119,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger render={<Button variant="outline" data-saved-views />}>
+        <PopoverTrigger render={<Button variant="secondary" data-saved-views />}>
           <BookmarkIcon />
           {t("saved.open")}
           {views.length ? <span className="text-grid-muted tabular-nums">({views.length})</span> : null}
@@ -135,7 +127,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
         <PopoverContent align="end" className="w-96 max-w-[calc(100vw-2rem)] gap-0 p-0" data-saved-list>
           <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
             <p className="text-sm font-medium">{t("saved.title")}</p>
-            <Button
+            <Button variant="primary"
               size="sm"
               onClick={() => {
                 setOpen(false)
@@ -203,7 +195,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={remove} data-confirm-delete-view>
+            <AlertDialogAction variant="danger" onClick={remove} data-confirm-delete-view>
               {t("saved.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -244,7 +236,7 @@ function ViewForm({
 
   return (
     <form onSubmit={submit} noValidate data-view-form>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="sv-name">{t("saved.name")}</FieldLabel>
           <Input id="sv-name" dir="auto" autoFocus maxLength={120} value={name} placeholder={t("saved.namePlaceholder")} onChange={(e) => setName(e.target.value)} />
@@ -260,11 +252,11 @@ function ViewForm({
         ) : null}
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

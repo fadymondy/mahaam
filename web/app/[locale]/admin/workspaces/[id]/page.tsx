@@ -8,12 +8,13 @@ import { useParams, useRouter } from "next/navigation"
 import { Building2Icon, TrashIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { IntegrationPicker, RuleFields, RuleHeader, fromDraft, toDraft, type RuleDraft } from "@/components/admin/limit-editor"
 import { BillingCard } from "@/components/admin/billing"
 import { ReasonDialog, StatusBadge } from "@/components/admin/reason-dialog"
@@ -81,7 +82,7 @@ export default function AdminWorkspacePage() {
           <div className="flex flex-wrap gap-2">
             {ws.status === "suspended" ? (
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={async () => {
                   try {
                     await adminApi.reactivateWorkspace(ws.id)
@@ -95,11 +96,11 @@ export default function AdminWorkspacePage() {
                 {t("admin.reactivate")}
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => setSuspending(true)}>
+              <Button variant="secondary" onClick={() => setSuspending(true)}>
                 {t("admin.suspend")}
               </Button>
             )}
-            <Button variant="destructive" onClick={() => setDeleting(true)}>
+            <Button variant="danger" onClick={() => setDeleting(true)}>
               <TrashIcon />
               {t("common.delete")}
             </Button>
@@ -213,7 +214,7 @@ function PlanPicker({ detail, plans, onSaved }: { detail: WorkspaceDetail; plans
           ))}
         </SelectContent>
       </Select>
-      <Button
+      <Button variant="primary"
         size="sm"
         disabled={busy || plan === detail.workspace.plan}
         onClick={async () => {
@@ -365,7 +366,7 @@ function OverridesEditor({ detail, onSaved }: { detail: WorkspaceDetail; onSaved
       </div>
       <div className="flex items-center justify-end gap-3 px-6">
         {error ? <FieldError>{error}</FieldError> : null}
-        <Button type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? t("common.working") : t("admin.overrides.save")}
         </Button>
       </div>
@@ -412,10 +413,10 @@ function DeleteDialog({ open, onOpenChange, id, slug }: { open: boolean; onOpenC
             {error ? <FieldError>{error}</FieldError> : null}
           </Field>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" variant="destructive" disabled={busy || confirm !== slug}>
+            <Button type="submit" variant="danger" disabled={busy || confirm !== slug}>
               {busy ? t("common.working") : t("common.delete")}
             </Button>
           </DialogFooter>

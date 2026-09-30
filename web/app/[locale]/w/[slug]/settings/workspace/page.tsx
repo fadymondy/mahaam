@@ -8,9 +8,10 @@ import { useRouter } from "next/navigation"
 import { Trash2Icon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { EmptyState } from "@/components/states"
@@ -64,7 +65,7 @@ export default function WorkspaceSettingsPage() {
             className="max-w-sm"
           />
         </Field>
-        <Button variant="destructive" disabled={busy || confirm.trim() !== ws.slug} onClick={() => void destroy()}>
+        <Button variant="danger" disabled={busy || confirm.trim() !== ws.slug} onClick={() => void destroy()}>
           <Trash2Icon /> {t("wsSettings.delete")}
         </Button>
       </section>

@@ -4,7 +4,8 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ChevronLeftIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { NotFoundState } from "@/components/not-found-state"
@@ -71,7 +72,7 @@ export default function ClientDetailPage() {
         title={
           <span className="flex flex-wrap items-center gap-2">
             {c.name}
-            {c.archived_at ? <Badge variant="secondary">{t("project.archivedBadge")}</Badge> : null}
+            {c.archived_at ? <Badge variant="neutral">{t("project.archivedBadge")}</Badge> : null}
           </span>
         }
         description={t("clients.hint")}

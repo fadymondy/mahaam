@@ -5,8 +5,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { BriefcaseIcon, FolderKanbanIcon, KeyRoundIcon, UsersIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge, Button } from "@fadymondy/nasaq/web"
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { Ltr } from "@/components/copy-field"
 import { ActivityFeed } from "@/components/work/activity-feed"
@@ -43,21 +44,21 @@ export default function OverviewPage() {
       <MyWork meId={me.data ? String(me.data.id) : undefined} />
 
       <div className="flex flex-wrap gap-2 px-6 py-6">
-        <Button nativeButton={false} render={<Link href={`${base}/projects`} />}>
+        <Button variant="primary" nativeButton={false} render={<Link href={`${base}/projects`} />}>
           <FolderKanbanIcon />
           {t("nav.projects")}
         </Button>
         {ws.can("clients:read") ? (
-          <Button variant="outline" nativeButton={false} render={<Link href={`${base}/clients`} />}>
+          <Button variant="secondary" nativeButton={false} render={<Link href={`${base}/clients`} />}>
             <BriefcaseIcon />
             {t("nav.clients")}
           </Button>
         ) : null}
-        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/members`} />}>
+        <Button variant="secondary" nativeButton={false} render={<Link href={`${base}/members`} />}>
           <UsersIcon />
           {t("nav.members")}
         </Button>
-        <Button variant="outline" nativeButton={false} render={<Link href={`${base}/settings/mcp`} />}>
+        <Button variant="secondary" nativeButton={false} render={<Link href={`${base}/settings/mcp`} />}>
           <KeyRoundIcon />
           {t("nav.mcpTokens")}
         </Button>

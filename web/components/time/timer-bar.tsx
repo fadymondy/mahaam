@@ -7,11 +7,13 @@ import { useEffect, useState, type FormEvent } from "react"
 import { CornerDownLeftIcon, PlayIcon, SquareIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { TargetPicker, projectTarget, targetBody, taskTarget, useTargets, type Target } from "@/components/time/targets"
 import { ColorDot } from "@/components/work/palette"
@@ -107,7 +109,7 @@ export function TimerBar() {
         </div>
       ) : (
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger render={<Button variant="outline" size="sm" aria-label={t("timer.start")} title={t("timer.shortcut")} data-timer-start />}>
+          <PopoverTrigger render={<Button variant="secondary" size="sm" aria-label={t("timer.start")} title={t("timer.shortcut")} data-timer-start />}>
             <PlayIcon />
             <span className="hidden sm:inline">{t("timer.start")}</span>
             <kbd className="hidden font-mono text-xs text-grid-muted lg:inline" dir="ltr">
@@ -147,7 +149,7 @@ function StartForm({ onStart, busy }: { onStart: (b: StartBody) => void; busy: b
     <form onSubmit={submit} className="space-y-3 p-3" data-timer-form>
       <Input autoFocus dir="auto" placeholder={t("timer.whatAreYouDoing")} value={desc} onChange={(e) => setDesc(e.target.value)} data-timer-description />
       <TargetPicker value={target} onChange={setTarget} />
-      <Button type="submit" className="w-full" disabled={busy}>
+      <Button variant="primary" type="submit" className="w-full" disabled={busy}>
         <PlayIcon />
         {t("timer.start")}
       </Button>

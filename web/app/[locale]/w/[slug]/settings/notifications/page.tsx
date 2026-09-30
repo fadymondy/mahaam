@@ -7,9 +7,10 @@ import { useState, type ReactNode } from "react"
 import { MailWarningIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+import { Checkbox, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { ErrorState, LoadingRows } from "@/components/states"

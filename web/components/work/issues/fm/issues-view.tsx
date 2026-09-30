@@ -19,10 +19,11 @@ import {
 import { ClockIcon, Loader2Icon, PlusIcon, SearchIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@fadymondy/nasaq/web"
+
+
+
+
 import { ErrorState } from "@/components/states"
 import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -253,7 +254,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
         </Select>
 
         {canWrite ? (
-          <Button className="gap-2" onClick={() => setCreating(true)}>
+          <Button variant="primary" className="gap-2" onClick={() => setCreating(true)}>
             <PlusIcon />
             {t("issues.new")}
           </Button>
@@ -470,7 +471,7 @@ function IssueCard({
         ) : null}
 
         <Select value={column} disabled={!canWrite} onValueChange={(v) => onStatusChange(String(v ?? column))}>
-          <SelectTrigger size="sm" className="w-full">
+          <SelectTrigger className="w-full">
             <SelectValue>{(v) => columns.find((c) => c.id === v)?.name ?? ""}</SelectValue>
           </SelectTrigger>
           <SelectContent>

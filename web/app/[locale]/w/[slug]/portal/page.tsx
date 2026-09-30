@@ -6,13 +6,14 @@ import { FolderKanbanIcon, InboxIcon, PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { api } from "@/lib/api"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
 import { ErrorState, LoadingRows } from "@/components/states"
 import { Meter, NewRequestDialog, PortalEmpty, ProgressRing } from "@/components/portal/portal-bits"
 import { ConnectAiCard } from "@/components/portal/connect-ai"
@@ -49,10 +50,10 @@ export default function PortalPage() {
           <p className="text-sm text-grid-muted">{t("portal.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setDialog("issue")} disabled={active.length === 0}>
+          <Button variant="secondary" onClick={() => setDialog("issue")} disabled={active.length === 0}>
             <PlusIcon /> {t("portal.fileIssue")}
           </Button>
-          <Button onClick={() => setDialog("request")} disabled={active.length === 0}>
+          <Button variant="primary" onClick={() => setDialog("request")} disabled={active.length === 0}>
             <InboxIcon /> {t("portal.newRequest")}
           </Button>
         </div>
@@ -93,7 +94,7 @@ export default function PortalPage() {
                   <span className="text-sm tabular-nums" dir="ltr">
                     {money(iv.total_minor, iv.currency, locale)}
                   </span>
-                  <Badge variant="secondary">{t(`invoices.status.${iv.status}`)}</Badge>
+                  <Badge variant="neutral">{t(`invoices.status.${iv.status}`)}</Badge>
                 </span>
               </li>
             ))}
@@ -146,7 +147,7 @@ function ProjectCard({ p, href }: { p: PortalProject; href: string }) {
               <span className="truncate font-medium group-hover:text-grid-action">{p.name}</span>
             </p>
             {p.client_name ? <p className="truncate text-meta text-grid-muted">{p.client_name}</p> : null}
-            <Badge variant="secondary" className="mt-1.5">
+            <Badge variant="neutral" className="mt-1.5">
               {p.archived ? t("portal.archived") : t(`projectStatus.${p.status}`)}
             </Badge>
           </div>
@@ -283,7 +284,7 @@ function FileIssueDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             {t("portal.cancel")}
           </Button>
-          <Button onClick={submit} disabled={busy || !title.trim() || !projectId}>
+          <Button variant="primary" onClick={submit} disabled={busy || !title.trim() || !projectId}>
             {busy ? t("portal.sending") : t("portal.send")}
           </Button>
         </DialogFooter>

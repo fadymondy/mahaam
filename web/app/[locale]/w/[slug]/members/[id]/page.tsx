@@ -4,8 +4,9 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ChevronLeftIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { NotFoundState } from "@/components/not-found-state"
@@ -62,7 +63,7 @@ export default function MemberDetailPage() {
         micro={ws.summary.name}
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <PersonAvatar id={id} dir={dir} size="default" />
+            <PersonAvatar id={id} dir={dir} size="md" />
             <Ltr>{member.email}</Ltr>
             <Badge variant="outline">{t(`role.${member.role}`)}</Badge>
           </span>

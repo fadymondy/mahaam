@@ -5,19 +5,11 @@ import { useState } from "react"
 import { PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
@@ -42,7 +34,7 @@ export default function AdminPlansPage() {
         title={t("admin.nav.plans")}
         description={t("admin.plans.hint")}
         action={
-          <Button nativeButton={false} render={<Link href={`/${locale}/admin/plans/new`} />}>
+          <Button variant="primary" nativeButton={false} render={<Link href={`/${locale}/admin/plans/new`} />}>
             <PlusIcon />
             {t("admin.plans.create")}
           </Button>
@@ -111,7 +103,7 @@ export default function AdminPlansPage() {
                   </TableCell>
                   <TableCell className="pe-6 text-end">
                     <div className="flex justify-end gap-1">
-                      <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/${locale}/admin/plans/${encodeURIComponent(p.key)}`} />}>
+                      <Button variant="secondary" size="sm" nativeButton={false} render={<Link href={`/${locale}/admin/plans/${encodeURIComponent(p.key)}`} />}>
                         {t("admin.edit")}
                       </Button>
                       {p.active ? (
@@ -177,10 +169,10 @@ function PolarSync({ onApplied }: { onApplied: () => void }) {
           <p className="text-sm text-grid-muted">{t("billing.sync.hint")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" disabled={busy} onClick={() => run(true)}>
+          <Button variant="secondary" disabled={busy} onClick={() => run(true)}>
             {t("billing.sync.preview")}
           </Button>
-          <Button disabled={busy || actions === null} onClick={() => setConfirming(true)}>
+          <Button variant="primary" disabled={busy || actions === null} onClick={() => setConfirming(true)}>
             {t("billing.sync.apply")}
           </Button>
         </div>

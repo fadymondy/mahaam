@@ -2,8 +2,9 @@
 
 // Budget burn: a level badge and progress bars for hours (and money, finance only). Shared by the
 // Budgets report and the project overview panel. Colours are the grid's status tokens.
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { Badge, Progress } from "@fadymondy/nasaq/web"
+
+
 import { Ltr } from "@/components/copy-field"
 import { useTranslations } from "@/lib/i18n"
 import { hmCell, moneyCell, type Budget, type BudgetLevel } from "@/lib/reports"

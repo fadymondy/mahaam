@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -20,10 +21,10 @@ export function Pager({ page, perPage, total, onPage }: { page: number; perPage:
         {t("admin.pager", { page: "⁨" + page + "⁩", pages: "⁨" + pages + "⁩" })} · <Ltr>{total}</Ltr> {t("admin.total")}
       </span>
       <div className="flex gap-1">
-        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={t("admin.prev")}>
+        <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={t("admin.prev")}>
           <ChevronLeftIcon className="rtl:rotate-180" />
         </Button>
-        <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label={t("admin.next")}>
+        <Button variant="secondary" size="sm" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label={t("admin.next")}>
           <ChevronRightIcon className="rtl:rotate-180" />
         </Button>
       </div>

@@ -6,7 +6,8 @@
 import { Suspense, type ReactNode } from "react"
 import { InfoIcon } from "lucide-react"
 
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { BreakdownChart, SeriesChart } from "@/components/reports/report-charts"
 import { ExportButtons, FilterBar, PrintButton, PrintHeader, ResetButton, useReportFilters } from "@/components/reports/filter-bar"

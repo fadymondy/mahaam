@@ -5,10 +5,11 @@ import { useState, type FormEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Separator } from "@fadymondy/nasaq/web"
+
+
+
+
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -165,7 +166,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       <div className="w-full max-w-sm" data-auth-form>
         {challenge ? (
           <form onSubmit={onSecondFactor} noValidate data-mfa-form>
-            <FieldGroup>
+            <div className="flex flex-col gap-4">
               <p className="text-sm text-grid-muted" role="status">
                 {useRecovery ? t("auth.mfaRecoveryHint") : t("auth.mfaHint")}
               </p>
@@ -185,7 +186,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                 />
               </Field>
               {error ? <FieldError>{error}</FieldError> : null}
-              <Button type="submit" size="lg" disabled={busy || (useRecovery ? code.trim().length < 10 : code.length !== 6)}>
+              <Button variant="primary" type="submit" size="lg" disabled={busy || (useRecovery ? code.trim().length < 10 : code.length !== 6)}>
                 {busy ? t("common.working") : t("auth.mfaSubmit")}
               </Button>
               <Button
@@ -199,11 +200,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               >
                 {useRecovery ? t("auth.mfaUseApp") : t("auth.mfaUseRecovery")}
               </Button>
-            </FieldGroup>
+            </div>
           </form>
         ) : (
         <form onSubmit={onSubmit} noValidate>
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             {mode === "login" && params.get("deleted") ? (
               // Arrived from deleting the account: say when, and that signing in is the undo.
               <p className="rounded-md border border-line p-3 text-sm" role="status" data-deleted-notice>
@@ -246,10 +247,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               ) : null}
             </Field>
             {error ? <FieldError>{error}</FieldError> : null}
-            <Button type="submit" size="lg" disabled={busy || !email || !password}>
+            <Button variant="primary" type="submit" size="lg" disabled={busy || !email || !password}>
               {busy ? t("common.working") : mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
             </Button>
-          </FieldGroup>
+          </div>
         </form>
         )}
 
@@ -263,7 +264,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             {providers.map((p) => (
               <Button
                 key={p.id}
-                variant="outline"
+                variant="secondary"
                 size="lg"
                 className="w-full"
                 nativeButton={false} render={<a href={`${p.href}${p.href.includes("?") ? "&" : "?"}next=${encodeURIComponent(next)}`} />}
@@ -273,7 +274,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             ))}
             {hubLogin ? (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="lg"
                 className="w-full"
                 nativeButton={false}

@@ -7,9 +7,11 @@ import { useMemo, useState } from "react"
 import useSWR from "swr"
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -89,7 +91,7 @@ export function TargetPicker({ value, onChange, id, disabled }: { value: Target;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={<Button id={id} variant="outline" disabled={disabled} className="w-full justify-between font-normal" data-target-picker />}
+        render={<Button id={id} variant="secondary" disabled={disabled} className="w-full justify-between font-normal" data-target-picker />}
       >
         <TargetLabel target={value} />
         <ChevronsUpDownIcon className="text-grid-muted" />

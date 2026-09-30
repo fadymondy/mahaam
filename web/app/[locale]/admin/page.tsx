@@ -3,7 +3,8 @@
 // Platform dashboard: headline counts, signups per day (last 30 days) and workspaces per plan.
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { ErrorState, LoadingRows } from "@/components/states"
@@ -99,10 +100,7 @@ function SignupsChart({ data }: { data: { day: string; users: number; workspaces
           cursor={false}
           content={
             <ChartTooltipContent
-              labelFormatter={(_, p) => {
-                const d = (p?.[0]?.payload as { day?: string } | undefined)?.day
-                return d ? formatDay(d, locale) : ""
-              }}
+              labelFormatter={(label) => (label ? formatDay(String(label), locale) : "")}
             />
           }
         />

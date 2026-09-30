@@ -4,8 +4,9 @@
 // workspace detail and the workspace's own Settings → Plan page) and the feature list.
 import { CheckIcon, MinusIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { Ltr } from "@/components/copy-field"
 import { money } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"

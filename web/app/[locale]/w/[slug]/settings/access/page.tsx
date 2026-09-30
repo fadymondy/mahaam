@@ -5,10 +5,11 @@ import { PlusIcon, Trash2Icon } from "lucide-react"
 import { toast } from "sonner"
 import useSWR from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Badge, Button, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -145,7 +146,7 @@ export default function AccessPage() {
             <Input id="g-scope" dir="ltr" placeholder="MH-12" value={scope} onChange={(e) => setScope(e.target.value)} required />
           )}
         </Field>
-        <Button type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           <PlusIcon /> {t("access.grant")}
         </Button>
       </form>
@@ -160,7 +161,7 @@ export default function AccessPage() {
         <ul className="divide-y divide-line border border-line">
           {list.map((g) => (
             <li key={g.id} className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
-              <Badge variant="secondary">{g.subject_type === "team" ? t("access.team") : t("access.employee")}</Badge>
+              <Badge variant="neutral">{g.subject_type === "team" ? t("access.team") : t("access.employee")}</Badge>
               <span className="font-medium" dir="auto">
                 {g.subject_type === "user" ? dir.name(g.subject_id) : g.subject_name}
               </span>

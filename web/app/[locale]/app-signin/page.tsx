@@ -10,8 +10,9 @@ import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { LaptopIcon, LogOutIcon, SmartphoneIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, Skeleton } from "@fadymondy/nasaq/web"
+
+
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { ErrorState } from "@/components/states"
 import { api, ApiError } from "@/lib/api"
@@ -123,10 +124,10 @@ export default function AppSigninPage() {
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                <Button disabled={busy !== null} onClick={() => void proceed()} data-app-signin-continue>
+                <Button variant="primary" disabled={busy !== null} onClick={() => void proceed()} data-app-signin-continue>
                   {busy === "continue" ? t("common.working") : t("appSignin.continue")}
                 </Button>
-                <Button variant="outline" disabled={busy !== null} onClick={() => void switchAccount()}>
+                <Button variant="secondary" disabled={busy !== null} onClick={() => void switchAccount()}>
                   <LogOutIcon />
                   {t("appSignin.switch")}
                 </Button>

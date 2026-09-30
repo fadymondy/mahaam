@@ -5,12 +5,13 @@ import Link from "next/link"
 import { ClockIcon, ExternalLinkIcon, LinkIcon, MoreHorizontalIcon, PencilIcon, SendIcon, SparklesIcon, UserRoundIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetClose, SheetContent, SheetTitle, Switch, Textarea } from "@fadymondy/nasaq/web"
+
 import { Markdown } from "@/components/markdown"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+
+
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import {
@@ -115,8 +116,8 @@ export function IssueSheet({
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
-          side={isRtl ? "left" : "right"}
-          showCloseButton={false}
+          side="end"
+          showClose={false}
           className="w-full gap-0 p-0 data-[side=left]:w-full data-[side=right]:w-full sm:max-w-3xl! data-[side=left]:sm:max-w-3xl data-[side=right]:sm:max-w-3xl"
         >
           {draft ? (
@@ -277,7 +278,7 @@ export function IssueSheet({
                           </p>
                         ) : null}
 
-                        <Button type="submit" size="sm" className="gap-2 self-start" disabled={form.posting || !form.value.trim()}>
+                        <Button variant="primary" type="submit" size="sm" className="gap-2 self-start" disabled={form.posting || !form.value.trim()}>
                           <SendIcon className="rtl:-scale-x-100" />
                           {form.posting ? t("issues.comments.posting") : t("issues.postComment")}
                         </Button>

@@ -7,13 +7,14 @@ import { useEffect, useMemo, useState } from "react"
 import { FileUpIcon, LoaderIcon, RefreshCwIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
@@ -188,15 +189,15 @@ export function ClientImportDialog({
           }}
         >
           <TabsList>
-            <TabsTrigger value="file" data-import-tab="file">
+            <TabsTab value="file" data-import-tab="file">
               {t("clientImport.tabFile")}
-            </TabsTrigger>
-            <TabsTrigger value="google" data-import-tab="google">
+            </TabsTab>
+            <TabsTab value="google" data-import-tab="google">
               {t("clientImport.tabGoogle")}
-            </TabsTrigger>
-            <TabsTrigger value="whatsapp" data-import-tab="whatsapp">
+            </TabsTab>
+            <TabsTab value="whatsapp" data-import-tab="whatsapp">
               {t("clientImport.tabWhatsApp")}
-            </TabsTrigger>
+            </TabsTab>
           </TabsList>
         </Tabs>
 
@@ -210,7 +211,7 @@ export function ClientImportDialog({
             <>
               <p className="text-grid-muted">{t("clientImport.googleHelp")}</p>
               {sources?.google ? (
-                <Button onClick={connectGoogle} disabled={!!busy} data-google-connect>
+                <Button variant="primary" onClick={connectGoogle} disabled={!!busy} data-google-connect>
                   {busy === "google" ? <LoaderIcon className="animate-spin" /> : null}
                   {t("clientImport.googleConnect")}
                 </Button>
@@ -226,7 +227,7 @@ export function ClientImportDialog({
               <FilePick accept=".vcf,text/vcard,text/x-vcard" label={t("clientImport.waVcf")} name={fileName} onFile={onFile} />
               <p className="text-grid-muted">{t("clientImport.waHelp")}</p>
               {sources?.whatsapp_api ? (
-                <Button variant="outline" disabled={!!busy} onClick={() => runPreview({ source: "whatsapp_api" })} data-whatsapp-api>
+                <Button variant="secondary" disabled={!!busy} onClick={() => runPreview({ source: "whatsapp_api" })} data-whatsapp-api>
                   <RefreshCwIcon />
                   {t("clientImport.waApi")}
                 </Button>
@@ -314,7 +315,7 @@ export function ClientImportDialog({
                         <Ltr>{r.row}</Ltr>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={r.action === "invalid" ? "destructive" : r.action === "create" ? "default" : r.action === "update" ? "secondary" : "outline"}>
+                        <Badge variant={r.action === "invalid" ? "danger" : r.action === "create" ? "success" : r.action === "update" ? "info" : "outline"}>
                           {t(`clientImport.action.${r.action}`)}
                         </Badge>
                       </TableCell>
@@ -346,7 +347,7 @@ export function ClientImportDialog({
               <Button variant="ghost" onClick={reset}>
                 {t("clientImport.back")}
               </Button>
-              <Button onClick={commit} disabled={!!busy || writes === 0} data-import-commit>
+              <Button variant="primary" onClick={commit} disabled={!!busy || writes === 0} data-import-commit>
                 {busy === "commit" ? <LoaderIcon className="animate-spin" /> : null}
                 {t("clientImport.commit", { n: writes })}
               </Button>

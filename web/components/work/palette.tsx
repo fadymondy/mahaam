@@ -1,7 +1,7 @@
 "use client"
 
 // User-chosen colours are palette KEYS (the API stores "teal", never a colour). These helpers map a
-// key to the theme tokens in app/styles/mahaam-palette.css, so light/dark come for free.
+// key to the Nasaq tag tokens (--nq-tag-*), so light/dark come for free.
 import { CheckIcon } from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
 
@@ -12,8 +12,10 @@ export const PALETTE = ["violet", "blue", "teal", "green", "amber", "orange", "r
 export type PaletteKey = (typeof PALETTE)[number]
 
 const key = (k?: string | null): PaletteKey => (PALETTE.includes(k as PaletteKey) ? (k as PaletteKey) : "slate")
-export const solid = (k?: string | null) => `var(--pal-${key(k)})`
-export const soft = (k?: string | null) => `color-mix(in oklab, ${solid(k)} var(--pal-soft-mix), transparent)`
+// Nasaq calls the neutral tag "gray"; the API key stays "slate".
+const tag = (k?: string | null) => (key(k) === "slate" ? "gray" : key(k))
+export const solid = (k?: string | null) => `var(--nq-tag-${tag(k)})`
+export const soft = (k?: string | null) => `var(--nq-tag-${tag(k)}-soft)`
 
 export function ColorDot({ color, className, square = false }: { color?: string | null; className?: string; square?: boolean }) {
   return (

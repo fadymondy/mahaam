@@ -3,8 +3,9 @@
 import { Fragment, useState } from "react"
 import { ChevronDownIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { Pager, SearchBox } from "@/components/admin/pager"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"

@@ -6,8 +6,9 @@ import { useState } from "react"
 import { DownloadIcon, FileCodeIcon, FileTypeIcon, LoaderIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@fadymondy/nasaq/web"
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { downloadFile } from "@/lib/reports"
@@ -32,7 +33,7 @@ export function ProjectReportMenu({ projectId, className }: { projectId: string;
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="sm" className={className} disabled={busy} data-project-report />}>
+      <DropdownMenuTrigger render={<Button variant="secondary" size="sm" className={className} disabled={busy} data-project-report />}>
         {busy ? <LoaderIcon className="animate-spin" /> : <DownloadIcon />}
         {t("project.downloadReport")}
       </DropdownMenuTrigger>

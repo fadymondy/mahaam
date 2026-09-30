@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import useSWR from "swr"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { ColorChip } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
@@ -65,7 +66,7 @@ export function ProjectLabelsSection({ projectId }: { projectId: string }) {
             <ColorChip color={l.color}>{l.name}</ColorChip>
           </button>
         ))}
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => void save()} className="ms-auto">
+        <Button size="sm" variant="secondary" disabled={busy} onClick={() => void save()} className="ms-auto">
           {t("projectLabels.save")}
         </Button>
       </div>

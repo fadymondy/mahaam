@@ -26,11 +26,12 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetDescription, SheetTitle, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState, LoadingRows } from "@/components/states"
@@ -147,7 +148,7 @@ export default function PortalProjectPage() {
           <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold">
             <ColorDot color={p.color} />
             <span className="min-w-0 break-words">{p.name}</span>
-            <Badge variant="secondary">{p.archived ? t("portal.archived") : t(`projectStatus.${p.status}`)}</Badge>
+            <Badge variant="neutral">{p.archived ? t("portal.archived") : t(`projectStatus.${p.status}`)}</Badge>
           </h1>
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-grid-muted">
             {p.client_name ? (
@@ -163,7 +164,7 @@ export default function PortalProjectPage() {
           </p>
         </div>
         {!p.archived ? (
-          <Button onClick={() => setRequesting(true)} className="w-full sm:w-auto" data-action="new-request">
+          <Button variant="primary" onClick={() => setRequesting(true)} className="w-full sm:w-auto" data-action="new-request">
             <InboxIcon /> {t("portal.newRequest")}
           </Button>
         ) : null}
@@ -314,7 +315,7 @@ function Overview({ p, onTab }: { p: PortalProjectPage; onTab: (t: string) => vo
                     <li key={i} className="flex items-center gap-3">
                       <PersonBadge name={m.name} initials={m.initials} />
                       <span className="min-w-0 flex-1 truncate text-sm">{m.name}</span>
-                      {m.role === "lead" ? <Badge variant="secondary">{t("portal.lead")}</Badge> : null}
+                      {m.role === "lead" ? <Badge variant="neutral">{t("portal.lead")}</Badge> : null}
                     </li>
                   ))}
                 </ul>
@@ -434,7 +435,7 @@ function TaskSheet({ projectId, taskKey, onClose }: { projectId: string; taskKey
   const d = task.data
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side={isRtl ? "left" : "right"} className="w-full overflow-y-auto sm:max-w-lg" data-portal-task={taskKey}>
+      <SheetContent side="end" className="w-full overflow-y-auto sm:max-w-lg" data-portal-task={taskKey}>
         {!d ? (
           <div className="p-5">
             {task.error ? (
@@ -460,7 +461,7 @@ function TaskSheet({ projectId, taskKey, onClose }: { projectId: string; taskKey
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               <dt className="text-grid-muted">{t("portal.task.column")}</dt>
               <dd>
-                <Badge variant="secondary">{d.status_name}</Badge>
+                <Badge variant="neutral">{d.status_name}</Badge>
               </dd>
               <dt className="text-grid-muted">{t("portal.priority")}</dt>
               <dd className="flex items-center gap-1.5">
@@ -584,7 +585,7 @@ function IssueRow({ i, onOpen }: { i: PortalIssue; onOpen: () => void }) {
           </span>
         </span>
         <IssuePriorityMark priority={i.priority} />
-        <Badge variant={i.can_accept ? "default" : "secondary"}>{t(`issues.status.${i.status}`)}</Badge>
+        <Badge variant={i.can_accept ? "brand" : "neutral"}>{t(`issues.status.${i.status}`)}</Badge>
       </button>
     </li>
   )
@@ -610,7 +611,7 @@ function Requests({
         body={t("portal.noRequests")}
         action={
           !p.archived ? (
-            <Button size="sm" className="mt-2" onClick={onNew}>
+            <Button variant="primary" size="sm" className="mt-2" onClick={onNew}>
               <InboxIcon /> {t("portal.newRequest")}
             </Button>
           ) : null
@@ -645,7 +646,7 @@ function RequestCard({ r, onOpenIssue, onOpenTask }: { r: CustomerRequest; onOpe
           </p>
         </div>
         <span className="flex items-center gap-2">
-          {r.state === "accepted" ? <Badge variant="secondary">{t(`issues.status.${r.status}`)}</Badge> : null}
+          {r.state === "accepted" ? <Badge variant="neutral">{t(`issues.status.${r.status}`)}</Badge> : null}
           <RequestStateBadge state={r.state} />
         </span>
       </div>
@@ -756,7 +757,7 @@ function Invoices({ p }: { p: PortalProjectPage }) {
             <span className="text-sm tabular-nums" dir="ltr">
               {money(iv.total_minor, iv.currency, locale)}
             </span>
-            <Badge variant="secondary">{t(`invoices.status.${iv.status}`)}</Badge>
+            <Badge variant="neutral">{t(`invoices.status.${iv.status}`)}</Badge>
           </span>
         </li>
       ))}
@@ -847,7 +848,7 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side={isRtl ? "left" : "right"} className="w-full overflow-y-auto sm:max-w-lg" data-portal-issue-sheet={issueKey}>
+      <SheetContent side="end" className="w-full overflow-y-auto sm:max-w-lg" data-portal-issue-sheet={issueKey}>
         {!i ? (
           <div className="p-5">{issue.error ? <ErrorState error={issue.error} /> : <LoadingRows rows={4} />}</div>
         ) : (
@@ -860,7 +861,7 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
               <SheetTitle className="mt-1 text-lg leading-snug">{i.title}</SheetTitle>
               <SheetDescription className="sr-only">{t(`issues.type.${i.issue_type}`)}</SheetDescription>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{t(`issues.status.${i.status}`)}</Badge>
+                <Badge variant="neutral">{t(`issues.status.${i.status}`)}</Badge>
                 <span className="text-meta text-grid-muted">{t(`issues.type.${i.issue_type}`)}</span>
                 <span className="text-meta text-grid-muted">· {timeAgo(i.created_at, locale)}</span>
               </div>
@@ -874,19 +875,19 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
 
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-muted/30 p-3">
               {i.can_accept ? (
-                <Button size="sm" disabled={busy} onClick={() => change({ status: "done" }, t("portal.accepted"))}>
+                <Button variant="primary" size="sm" disabled={busy} onClick={() => change({ status: "done" }, t("portal.accepted"))}>
                   <CheckIcon /> {t("portal.accept")}
                 </Button>
               ) : null}
               {i.can_reopen ? (
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => change({ status: "todo" }, t("portal.reopened"))}>
+                <Button size="sm" variant="secondary" disabled={busy} onClick={() => change({ status: "todo" }, t("portal.reopened"))}>
                   <RotateCcwIcon /> {t("portal.reopen")}
                 </Button>
               ) : null}
               <span className="ms-auto flex items-center gap-2 text-meta text-grid-muted">
                 {t("portal.priority")}
                 <Select value={i.priority} onValueChange={(v) => v && v !== i.priority && change({ priority: v })}>
-                  <SelectTrigger size="sm" className="w-32">
+                  <SelectTrigger className="w-32">
                     <SelectValue>
                       <IssuePriorityMark priority={i.priority} withLabel />
                     </SelectValue>
@@ -920,7 +921,7 @@ function IssueSheet({ issueKey, onClose, onChanged }: { issueKey: string; onClos
               <form onSubmit={send} className="space-y-2">
                 <Textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t("portal.writeComment")} className="min-h-20" />
                 <div className="flex justify-end">
-                  <Button type="submit" size="sm" disabled={busy || !reply.trim()}>
+                  <Button variant="primary" type="submit" size="sm" disabled={busy || !reply.trim()}>
                     <SendIcon className={isRtl ? "rotate-180" : undefined} /> {t("portal.send")}
                   </Button>
                 </div>

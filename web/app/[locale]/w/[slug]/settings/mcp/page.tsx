@@ -4,10 +4,11 @@ import { useState } from "react"
 import { PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
@@ -48,7 +49,7 @@ export default function McpTokensPage() {
         title={t("nav.mcpTokens")}
         description={t("mcp.hint")}
         action={
-          <Button onClick={() => setCreating(true)} disabled={!tokens.data}>
+          <Button variant="primary" onClick={() => setCreating(true)} disabled={!tokens.data}>
             <PlusIcon />
             {t("mcp.create")}
           </Button>
@@ -121,9 +122,9 @@ function TokenRow({ tok, formatDate, onRevoke }: { tok: McpToken; formatDate: (v
       </TableCell>
       <TableCell className="pe-6 text-end">
         {tok.revoked_at ? (
-          <Badge variant="secondary">{t("mcp.revokedBadge")}</Badge>
+          <Badge variant="neutral">{t("mcp.revokedBadge")}</Badge>
         ) : expired ? (
-          <Badge variant="secondary">{t("mcp.expiredBadge")}</Badge>
+          <Badge variant="neutral">{t("mcp.expiredBadge")}</Badge>
         ) : (
           <ConfirmButton
             label={t("common.revoke")}

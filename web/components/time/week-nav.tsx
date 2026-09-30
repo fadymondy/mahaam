@@ -4,7 +4,8 @@
 // timezone): the server returns the 7 days, this only moves the reference day.
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { useTranslations } from "@/lib/i18n"
 import { addDays, dayLabel } from "@/lib/time"
@@ -21,13 +22,13 @@ export function WeekNav({ days, onWeek, isCurrent }: { days: string[] | undefine
         </Ltr>
       ) : null}
       <div className="flex items-center">
-        <Button variant="outline" size="icon-sm" aria-label={t("time.prevWeek")} title={t("time.prevWeek")} disabled={!first} onClick={() => first && onWeek(addDays(first, -7))}>
+        <Button variant="secondary" size="icon-sm" aria-label={t("time.prevWeek")} title={t("time.prevWeek")} disabled={!first} onClick={() => first && onWeek(addDays(first, -7))}>
           {isRtl ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         </Button>
-        <Button variant="outline" size="sm" className="-ms-px" disabled={isCurrent} onClick={() => onWeek(null)}>
+        <Button variant="secondary" size="sm" className="-ms-px" disabled={isCurrent} onClick={() => onWeek(null)}>
           {t("time.thisWeek")}
         </Button>
-        <Button variant="outline" size="icon-sm" className="-ms-px" aria-label={t("time.nextWeek")} title={t("time.nextWeek")} disabled={!first} onClick={() => first && onWeek(addDays(first, 7))}>
+        <Button variant="secondary" size="icon-sm" className="-ms-px" aria-label={t("time.nextWeek")} title={t("time.nextWeek")} disabled={!first} onClick={() => first && onWeek(addDays(first, 7))}>
           {isRtl ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </Button>
       </div>

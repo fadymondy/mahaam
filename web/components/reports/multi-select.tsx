@@ -4,10 +4,12 @@
 import type { ReactNode } from "react"
 import { ChevronsUpDownIcon, XIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button, Checkbox, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+
+
+
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
@@ -43,7 +45,7 @@ export function MultiSelect({
           render={
             <Button
               id={id}
-              variant="outline"
+              variant="secondary"
               className={cn("w-full min-w-0 justify-between font-normal", value.length === 0 && "text-grid-muted")}
               data-filter={id}
               data-count={value.length}

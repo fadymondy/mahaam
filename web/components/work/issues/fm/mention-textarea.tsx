@@ -7,7 +7,8 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { BotIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
 
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@fadymondy/nasaq/web"
+
 import { useDirectory } from "@/components/work/people"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"

@@ -7,7 +7,8 @@ import { useCallback, useState } from "react"
 import { useDropzone, type FileRejection } from "react-dropzone"
 import { CheckCircle2, CloudUpload, FileIcon, Loader2, TriangleAlert, X } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { ApiError } from "@/lib/api"
 import { fileSize } from "@/lib/format"
@@ -74,7 +75,7 @@ export function AttachmentDropzone({
         <CloudUpload className="size-5 text-grid-muted" />
         <p className="text-sm text-grid-body">{isDragActive ? t("upload.drop") : t("upload.hint")}</p>
         <p className="text-xs text-grid-muted">{t("upload.limit")}</p>
-        <Button type="button" variant="outline" size="sm" onClick={open} disabled={disabled}>
+        <Button type="button" variant="secondary" size="sm" onClick={open} disabled={disabled}>
           {t("upload.browse")}
         </Button>
       </div>
@@ -97,7 +98,7 @@ export function AttachmentDropzone({
                 </p>
               </div>
               {i.status !== "uploading" ? (
-                <Button type="button" variant="ghost" size="icon-xs" aria-label={t("upload.dismiss")} onClick={() => setItems((prev) => prev.filter((x) => x.id !== i.id))}>
+                <Button type="button" variant="ghost" size="icon-sm" aria-label={t("upload.dismiss")} onClick={() => setItems((prev) => prev.filter((x) => x.id !== i.id))}>
                   <X />
                 </Button>
               ) : null}

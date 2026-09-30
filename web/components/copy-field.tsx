@@ -4,7 +4,8 @@ import { useState } from "react"
 import { CheckIcon, CopyIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { useTranslations } from "@/lib/i18n"
 
 /** A one-time secret or link: mono, always LTR, with a copy button. */

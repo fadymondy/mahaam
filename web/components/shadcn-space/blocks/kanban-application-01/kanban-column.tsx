@@ -6,8 +6,9 @@ import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { PlusIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button, Input } from "@fadymondy/nasaq/web"
+
+
 import TaskCard from "@/components/shadcn-space/blocks/kanban-application-01/task-card"
 import type { Column } from "@/components/shadcn-space/blocks/kanban-application-01"
 import { Ltr } from "@/components/copy-field"
@@ -59,7 +60,7 @@ export default function KanbanColumn({ column, canWrite, dir, labels, onOpen, on
           <Ltr>{column.tasks.length}</Ltr>
         </span>
         {canWrite ? (
-          <Button variant="ghost" size="icon-xs" aria-label={t("board.addTo", { status: column.status.name })} onClick={() => setAdding(true)}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("board.addTo", { status: column.status.name })} onClick={() => setAdding(true)}>
             <PlusIcon />
           </Button>
         ) : null}

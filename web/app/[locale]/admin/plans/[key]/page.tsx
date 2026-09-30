@@ -6,11 +6,12 @@ import { useState, type FormEvent } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Switch, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { IntegrationPicker, RuleFields, RuleHeader, fromDraft, toDraft, type RuleDraft } from "@/components/admin/limit-editor"
 import { SectionHeader } from "@/components/public-frame"
 import { ErrorState, LoadingRows } from "@/components/states"
@@ -202,10 +203,10 @@ function PlanForm({ plan, catalog, integrations, onSaved }: { plan?: Plan; catal
 
       <div className="flex items-center justify-end gap-3 px-6">
         {error ? <FieldError>{error}</FieldError> : null}
-        <Button type="button" variant="outline" nativeButton={false} render={<Link href={`/${locale}/admin/plans`} />}>
+        <Button type="button" variant="secondary" nativeButton={false} render={<Link href={`/${locale}/admin/plans`} />}>
           {t("common.cancel")}
         </Button>
-        <Button type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? t("common.working") : t("common.save")}
         </Button>
       </div>

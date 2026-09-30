@@ -5,12 +5,13 @@ import Link from "next/link"
 import { MailWarningIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Field, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { CopyField, Ltr } from "@/components/copy-field"
@@ -38,7 +39,7 @@ export default function MembersPage() {
         description={t("members.hint")}
         action={
           ws.can("kpi:all") ? (
-            <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
+            <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
               {t("kpi.teamTitle")}
             </Button>
           ) : null
@@ -144,7 +145,7 @@ function InviteSection() {
         {t("members.noEmail")}
       </p>
       <form onSubmit={onSubmit} noValidate>
-        <FieldGroup className="sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <Field className="sm:flex-1">
             <FieldLabel htmlFor="invite-email">{t("members.email")}</FieldLabel>
             <Input
@@ -172,10 +173,10 @@ function InviteSection() {
               </SelectContent>
             </Select>
           </Field>
-          <Button type="submit" disabled={busy || !email.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !email.trim()}>
             {busy ? t("common.working") : t("members.invite")}
           </Button>
-        </FieldGroup>
+        </div>
         {error ? <FieldError className="mt-3">{error}</FieldError> : null}
       </form>
 

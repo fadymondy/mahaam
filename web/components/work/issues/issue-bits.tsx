@@ -18,17 +18,17 @@ import {
   ZapIcon,
   type LucideIcon, ImageIcon, TerminalIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@fadymondy/nasaq/web"
 import { Ltr } from "@/components/copy-field"
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 const TYPE_ICON: Record<string, { Icon: LucideIcon; tone: string }> = {
   bug: { Icon: BugIcon, tone: "text-grid-danger" },
-  feature: { Icon: SparklesIcon, tone: "text-(--pal-amber)" },
+  feature: { Icon: SparklesIcon, tone: "text-(--nq-tag-amber)" },
   task: { Icon: CheckSquareIcon, tone: "text-grid-action" },
-  story: { Icon: BookmarkIcon, tone: "text-(--pal-green)" },
-  epic: { Icon: ZapIcon, tone: "text-(--pal-violet)" },
+  story: { Icon: BookmarkIcon, tone: "text-(--nq-tag-green)" },
+  epic: { Icon: ZapIcon, tone: "text-(--nq-tag-violet)" },
 }
 
 export function IssueTypeIcon({ type, className }: { type: string; className?: string }) {
@@ -40,8 +40,8 @@ export function IssueTypeIcon({ type, className }: { type: string; className?: s
 const PRIORITY_MARK: Record<string, { Icon: LucideIcon; tone: string }> = {
   highest: { Icon: ChevronsUpIcon, tone: "text-grid-danger" },
   urgent: { Icon: ChevronsUpIcon, tone: "text-grid-danger" },
-  high: { Icon: ChevronUpIcon, tone: "text-(--pal-orange)" },
-  medium: { Icon: EqualIcon, tone: "text-(--pal-amber)" },
+  high: { Icon: ChevronUpIcon, tone: "text-(--nq-tag-orange)" },
+  medium: { Icon: EqualIcon, tone: "text-(--nq-tag-amber)" },
   low: { Icon: ChevronDownIcon, tone: "text-grid-action" },
   lowest: { Icon: ChevronsDownIcon, tone: "text-grid-muted" },
 }
@@ -83,7 +83,7 @@ export function AgentTime({ seconds, className }: { seconds: number | null | und
 export function HumanOnlyMark({ className }: { className?: string }) {
   const { t } = useTranslations()
   return (
-    <span className={cn("inline-flex items-center gap-1 text-(--pal-orange)", className)} title={t("issues.humanOnlyHint")}>
+    <span className={cn("inline-flex items-center gap-1 text-(--nq-tag-orange)", className)} title={t("issues.humanOnlyHint")}>
       <HandIcon className="size-3" aria-hidden />
       <span className="text-xs font-medium uppercase">{t("issues.humanOnly")}</span>
     </span>
@@ -101,7 +101,7 @@ export function AuthorKindBadge({ kind }: { kind: string }) {
       className={cn(
         "gap-1 text-xs",
         kind === "agent" && "border-grid-action/40 text-grid-action",
-        kind === "admin" && "border-(--pal-orange)/40 text-(--pal-orange)",
+        kind === "admin" && "border-(--nq-tag-orange)/40 text-(--nq-tag-orange)",
       )}
     >
       <Icon className="size-3" aria-hidden />

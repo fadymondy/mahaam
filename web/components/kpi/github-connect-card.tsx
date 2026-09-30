@@ -7,8 +7,9 @@ import { useState } from "react"
 import { GitBranchIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge, Button } from "@fadymondy/nasaq/web"
+
+
 import { Ltr } from "@/components/copy-field"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -56,11 +57,11 @@ export function GitHubConnectCard() {
         </div>
         {status.data ? (
           acc ? (
-            <Button variant="outline" disabled={busy} onClick={() => void disconnect()}>
+            <Button variant="secondary" disabled={busy} onClick={() => void disconnect()}>
               {t("kpi.disconnect")}
             </Button>
           ) : status.data.oauth_available ? (
-            <Button disabled={busy} onClick={() => void connect()}>
+            <Button variant="primary" disabled={busy} onClick={() => void connect()}>
               <GitBranchIcon /> {t("kpi.connect")}
             </Button>
           ) : null

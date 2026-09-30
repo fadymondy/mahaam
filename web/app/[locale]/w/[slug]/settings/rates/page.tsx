@@ -8,12 +8,13 @@ import { useState, type FormEvent } from "react"
 import { HistoryIcon, PencilIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
@@ -125,7 +126,7 @@ export default function RatesPage() {
                               </Button>
                             ) : null}
                             {rs.can_manage ? (
-                              <Button variant="outline" size="sm" onClick={() => setEditing(m)} data-set-rate={m.user_id}>
+                              <Button variant="secondary" size="sm" onClick={() => setEditing(m)} data-set-rate={m.user_id}>
                                 <PencilIcon />
                                 <span className="hidden sm:inline">{t("rates.set")}</span>
                               </Button>
@@ -234,7 +235,7 @@ function RateForm({ member, sheet, onDone }: { member: MemberRates; sheet: RateS
 
   return (
     <form onSubmit={submit} noValidate data-rate-form>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="r-day">{t("rates.effective")}</FieldLabel>
           <DateField id="r-day" value={day} onChange={(v) => v && setDay(v)} />
@@ -253,11 +254,11 @@ function RateForm({ member, sheet, onDone }: { member: MemberRates; sheet: RateS
         </div>
         {error ? <FieldError>{error}</FieldError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

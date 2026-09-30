@@ -6,7 +6,8 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { usePathname } from "next/navigation"
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
+
 import { SectionHeader } from "@/components/public-frame"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -33,11 +34,11 @@ export default function ReportsLayout({ children }: { children: ReactNode }) {
         <SectionHeader micro={ws.summary.name} title={t("reports.title")} description={t("reports.hint")} />
         <div className="border-b border-line px-6">
           <Tabs value={tab}>
-            <TabsList variant="line">
+            <TabsList variant="underline">
               {tabs.map((x) => (
-                <TabsTrigger key={x.value} value={x.value} nativeButton={false} render={<Link href={x.href} />} data-report-tab={x.value}>
+                <TabsTab key={x.value} value={x.value} nativeButton={false} render={<Link href={x.href} />} data-report-tab={x.value}>
                   {t(`reports.tab.${x.value}`)}
-                </TabsTrigger>
+                </TabsTab>
               ))}
             </TabsList>
           </Tabs>

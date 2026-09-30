@@ -4,8 +4,9 @@ import Link from "next/link"
 import { useState } from "react"
 import { ShieldIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
 import { FilterSelect, Pager, SearchBox } from "@/components/admin/pager"
 import { StatusBadge } from "@/components/admin/reason-dialog"
 import { Ltr } from "@/components/copy-field"

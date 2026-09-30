@@ -5,7 +5,8 @@ import { useRef, useState } from "react"
 import { ImageUpIcon, Trash2Icon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 import { soft, solid } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -71,7 +72,7 @@ export function ProjectAvatarField({ project, onChanged }: { project: { id: stri
       <ProjectAvatar project={project} className="size-16 text-lg" />
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => input.current?.click()}>
+          <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => input.current?.click()}>
             <ImageUpIcon />
             {project.avatar ? t("project.avatarChange") : t("project.avatarUpload")}
           </Button>

@@ -5,12 +5,13 @@ import { PlusIcon, SparklesIcon } from "lucide-react"
 import { toast } from "sonner"
 import useSWR from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -107,7 +108,7 @@ export default function BillingPage() {
               <FieldLabel htmlFor="markup">{t("billing.markup")}</FieldLabel>
               <Input id="markup" dir="ltr" inputMode="decimal" className="w-24" placeholder="0" value={markupValue} onChange={(e) => setMarkup(e.target.value)} />
             </Field>
-            <Button variant="outline" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
+            <Button variant="secondary" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
               {t("billing.saveMarkup")}
             </Button>
           </div>
@@ -172,7 +173,7 @@ export default function BillingPage() {
             <h2 className="text-base font-medium">{t("billing.subsTitle")}</h2>
             <p className="mt-1 max-w-2xl text-sm text-grid-muted">{t("billing.subsHint")}</p>
           </div>
-          <Button onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: "USD" })}>
+          <Button variant="primary" onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: "USD" })}>
             <PlusIcon /> {t("billing.addSub")}
           </Button>
         </div>
@@ -189,7 +190,7 @@ export default function BillingPage() {
                 <span className="font-medium" dir="auto">
                   {x.name}
                 </span>
-                <Badge variant="secondary">{t(`billing.cat.${x.category}`)}</Badge>
+                <Badge variant="neutral">{t(`billing.cat.${x.category}`)}</Badge>
                 {x.vendor ? <span className="text-grid-muted">{x.vendor}</span> : null}
                 {!x.active ? <Badge variant="outline">{t("billing.inactive")}</Badge> : null}
                 {!x.billable ? <Badge variant="outline">{t("billing.notBillable")}</Badge> : null}
@@ -274,7 +275,7 @@ function SubDialog({
             <DialogTitle>{v.id ? t("billing.editSub") : t("billing.addSub")}</DialogTitle>
             <DialogDescription>{t("billing.subDialogHint")}</DialogDescription>
           </DialogHeader>
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor="s-name">{t("billing.name")}</FieldLabel>
               <Input id="s-name" name="name" dir="auto" required defaultValue={v.name ?? ""} placeholder="Hetzner server" />
@@ -333,12 +334,12 @@ function SubDialog({
                 <Switch name="active" defaultChecked={v.active ?? true} /> {t("billing.active")}
               </label>
             </div>
-          </FieldGroup>
+          </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>
               {t("billing.cancel")}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {t("billing.save")}
             </Button>
           </DialogFooter>

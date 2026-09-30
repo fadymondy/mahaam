@@ -1,6 +1,7 @@
 "use client"
 
-import { Progress } from "@/components/ui/progress"
+import { Progress } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { ProjectBudgetPanel } from "@/components/reports/project-budget-panel"
 import { ProjectReportMenu } from "@/components/reports/project-report-menu"

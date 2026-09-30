@@ -17,9 +17,10 @@ import {
   UsersIcon,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
+import { Button, Sheet, SheetContent, SheetTitle, Skeleton } from "@fadymondy/nasaq/web"
+
+
+
 import { CubeMark } from "@/components/brand/cube-mark"
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls"
 import { NotFoundState } from "@/components/not-found-state"
@@ -144,7 +145,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </div>
 
       <Sheet open={navOpen} onOpenChange={setNavOpen}>
-        <SheetContent side={isRtl ? "right" : "left"} className="w-72 gap-0 p-0">
+        <SheetContent side="start" className="w-72 gap-0 p-0">
           <SheetTitle className="flex h-14 items-center border-b border-line px-4">
             <Brand />
           </SheetTitle>

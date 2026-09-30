@@ -8,13 +8,15 @@ import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
 import { toast } from "sonner"
 import { useSWRConfig } from "swr"
 
-import { Button } from "@/components/ui/button"
+import { Button, FieldError, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { FieldError } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+
+
+
+
+
+
+
 import { SectionHeader } from "@/components/public-frame"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -141,7 +143,7 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
       <fieldset disabled={!canEdit || busy} className="contents">
         <Row label={t("timeSettings.timezone")} hint={t("timeSettings.timezoneHint")} htmlFor="ts-tz">
           <Popover open={tzOpen} onOpenChange={setTzOpen}>
-            <PopoverTrigger render={<Button id="ts-tz" variant="outline" disabled={!canEdit} className="w-full justify-between font-normal" data-timezone={v.timezone} />}>
+            <PopoverTrigger render={<Button id="ts-tz" variant="secondary" disabled={!canEdit} className="w-full justify-between font-normal" data-timezone={v.timezone} />}>
               <span dir="ltr">{v.timezone}</span>
               <ChevronsUpDownIcon className="text-grid-muted" />
             </PopoverTrigger>
@@ -249,7 +251,7 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
       {canEdit ? (
         <div className="flex items-center justify-end gap-3 px-6 py-4">
           {error ? <FieldError className="me-auto">{error}</FieldError> : null}
-          <Button type="submit" disabled={busy} data-save-settings>
+          <Button variant="primary" type="submit" disabled={busy} data-save-settings>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>

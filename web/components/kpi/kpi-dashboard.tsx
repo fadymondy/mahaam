@@ -7,12 +7,13 @@ import { useState, type FormEvent, type ReactNode } from "react"
 import { ClipboardCopyIcon, GitBranchIcon, PlusIcon, StarIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -112,7 +113,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} />
-          <Button variant="outline" onClick={() => void copyPrompt()} disabled={!k}>
+          <Button variant="secondary" onClick={() => void copyPrompt()} disabled={!k}>
             <ClipboardCopyIcon /> {t("kpi.copyPrompt")}
           </Button>
         </div>
@@ -238,7 +239,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
             title={t("kpi.reviews")}
             action={
               canReview ? (
-                <Button size="sm" onClick={() => setReviewing(true)}>
+                <Button variant="primary" size="sm" onClick={() => setReviewing(true)}>
                   <PlusIcon /> {t("kpi.addReview")}
                 </Button>
               ) : null
@@ -260,7 +261,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                         <Ltr>
                           {r.period_start} → {r.period_end}
                         </Ltr>
-                        {r.rating != null ? <Badge variant="secondary">{t("kpi.ratingOf", { r: r.rating })}</Badge> : null}
+                        {r.rating != null ? <Badge variant="neutral">{t("kpi.ratingOf", { r: r.rating })}</Badge> : null}
                         <Ltr>{r.author_email}</Ltr>
                         {canReview ? (
                           <span className="ms-auto">
@@ -351,7 +352,7 @@ function ReviewDialog({ userId, from, to, onClose, onSaved }: { userId: string; 
             <DialogTitle>{t("kpi.addReview")}</DialogTitle>
             <DialogDescription>{t("kpi.reviewHint")}</DialogDescription>
           </DialogHeader>
-          <FieldGroup className="py-4">
+          <div className="flex flex-col gap-4 py-4">
             <div className="grid grid-cols-2 gap-3">
               <Field>
                 <FieldLabel htmlFor="rv-start">{t("kpi.periodStart")}</FieldLabel>
@@ -377,12 +378,12 @@ function ReviewDialog({ userId, from, to, onClose, onSaved }: { userId: string; 
               <FieldLabel htmlFor="rv-body">{t("kpi.reviewBody")}</FieldLabel>
               <Textarea id="rv-body" name="body" dir="auto" required rows={6} maxLength={20000} />
             </Field>
-          </FieldGroup>
+          </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {t("kpi.saveReview")}
             </Button>
           </DialogFooter>
@@ -438,7 +439,7 @@ function MapGitHubDialog({ userId, onClose, onSaved }: { userId: string; onClose
               <DialogTitle>{t("kpi.mapGitHub")}</DialogTitle>
               <DialogDescription>{t("kpi.mapHint")}</DialogDescription>
             </DialogHeader>
-            <FieldGroup className="py-4">
+            <div className="flex flex-col gap-4 py-4">
               <Field>
                 <FieldLabel htmlFor="gh-login">{t("kpi.login")}</FieldLabel>
                 <Input id="gh-login" name="login" dir="ltr" required maxLength={39} defaultValue={acc?.login ?? ""} placeholder="octocat" />
@@ -447,7 +448,7 @@ function MapGitHubDialog({ userId, onClose, onSaved }: { userId: string; onClose
                 <FieldLabel htmlFor="gh-emails">{t("kpi.emails")}</FieldLabel>
                 <Textarea id="gh-emails" name="emails" dir="ltr" rows={3} defaultValue={(acc?.emails ?? []).join("\n")} placeholder="dev@example.com" />
               </Field>
-            </FieldGroup>
+            </div>
             <DialogFooter>
               {acc ? (
                 <Button type="button" variant="ghost" className="me-auto text-grid-danger-text" disabled={busy} onClick={() => void unmap()}>
@@ -457,7 +458,7 @@ function MapGitHubDialog({ userId, onClose, onSaved }: { userId: string; onClose
               <Button type="button" variant="ghost" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 {t("kpi.saveMapping")}
               </Button>
             </DialogFooter>

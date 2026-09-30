@@ -9,10 +9,11 @@ import { useRouter } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { api, ApiError, resetCsrf } from "@/lib/api"
@@ -138,7 +139,7 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
 
   return (
     <form onSubmit={save} noValidate>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           {profile.avatar ? (
             // A data: URL the API produced (256px JPEG); next/image adds nothing for one.
@@ -165,7 +166,7 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
                 if (f) void upload(f)
               }}
             />
-            <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => file.current?.click()}>
+            <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => file.current?.click()}>
               {profile.avatar ? t("account.avatarChange") : t("account.avatarUpload")}
             </Button>
             {profile.avatar ? (
@@ -212,10 +213,10 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
           <FieldDescription>{t("account.timezoneHint")}</FieldDescription>
         </Field>
         {error ? <FieldError>{error}</FieldError> : null}
-        <Button type="submit" disabled={busy}>
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? t("common.working") : t("account.save")}
         </Button>
-      </FieldGroup>
+      </div>
     </form>
   )
 }
@@ -277,12 +278,12 @@ function EmailForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profil
         {profile.email}
       </Ltr>
       {step === "idle" ? (
-        <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setStep("ask")}>
+        <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => setStep("ask")}>
           {t("account.emailChange")}
         </Button>
       ) : step === "ask" ? (
         <form onSubmit={request} noValidate className="mt-4">
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor="acc-new-email">{t("account.newEmail")}</FieldLabel>
               <Input id="acc-new-email" type="email" dir="ltr" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -300,18 +301,18 @@ function EmailForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profil
             </Field>
             {error ? <FieldError>{error}</FieldError> : null}
             <div className="flex gap-2">
-              <Button type="submit" disabled={busy || !email.includes("@") || !password}>
+              <Button variant="primary" type="submit" disabled={busy || !email.includes("@") || !password}>
                 {busy ? t("common.working") : t("account.emailSend")}
               </Button>
               <Button type="button" variant="ghost" disabled={busy} onClick={() => setStep("idle")}>
                 {t("common.cancel")}
               </Button>
             </div>
-          </FieldGroup>
+          </div>
         </form>
       ) : (
         <form onSubmit={confirm} noValidate className="mt-4">
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <p className="text-sm text-grid-muted" role="status">
               {t("account.emailSent", { email: email.trim() })}
             </p>
@@ -331,14 +332,14 @@ function EmailForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profil
             </Field>
             {error ? <FieldError>{error}</FieldError> : null}
             <div className="flex gap-2">
-              <Button type="submit" disabled={busy || code.length !== 6}>
+              <Button variant="primary" type="submit" disabled={busy || code.length !== 6}>
                 {busy ? t("common.working") : t("account.emailConfirm")}
               </Button>
               <Button type="button" variant="ghost" disabled={busy} onClick={() => setStep("idle")}>
                 {t("common.cancel")}
               </Button>
             </div>
-          </FieldGroup>
+          </div>
         </form>
       )}
     </div>
@@ -375,7 +376,7 @@ function PasswordForm() {
   return (
     <form onSubmit={save} noValidate>
       <h3 className="grid-micro mb-2">{t("account.password")}</h3>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="acc-pw-current">{t("account.currentPassword")}</FieldLabel>
           <Input
@@ -393,10 +394,10 @@ function PasswordForm() {
           <FieldDescription>{t("auth.passwordHint")}</FieldDescription>
         </Field>
         {error ? <FieldError>{error}</FieldError> : null}
-        <Button type="submit" variant="outline" disabled={busy || !current || !next}>
+        <Button type="submit" variant="secondary" disabled={busy || !current || !next}>
           {busy ? t("common.working") : t("account.passwordSave")}
         </Button>
-      </FieldGroup>
+      </div>
     </form>
   )
 }
@@ -452,12 +453,12 @@ function DeleteAccount() {
       <h3 className="grid-micro mb-2 text-grid-danger">{t("account.deleteTitle")}</h3>
       <p className="max-w-2xl text-sm text-grid-muted">{t("account.deleteHint")}</p>
       {!open ? (
-        <Button type="button" variant="destructive" size="sm" className="mt-3" onClick={() => setOpen(true)}>
+        <Button type="button" variant="danger" size="sm" className="mt-3" onClick={() => setOpen(true)}>
           {t("account.deleteOpen")}
         </Button>
       ) : (
         <form onSubmit={submit} noValidate className="mt-4 max-w-sm">
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field data-invalid={!!error || undefined}>
               <FieldLabel htmlFor="acc-delete-pw">{t("account.currentPassword")}</FieldLabel>
               <Input
@@ -502,14 +503,14 @@ function DeleteAccount() {
               </div>
             ) : null}
             <div className="flex gap-2">
-              <Button type="submit" variant="destructive" disabled={busy || !password || (!!twofa.data?.enabled && code.length !== 6)}>
+              <Button type="submit" variant="danger" disabled={busy || !password || (!!twofa.data?.enabled && code.length !== 6)}>
                 {busy ? t("common.working") : t("account.deleteSubmit")}
               </Button>
               <Button type="button" variant="ghost" disabled={busy} onClick={() => setOpen(false)}>
                 {t("common.cancel")}
               </Button>
             </div>
-          </FieldGroup>
+          </div>
         </form>
       )}
     </div>

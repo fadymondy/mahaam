@@ -4,7 +4,8 @@
 // admin's read-only Billing card.
 import { ExternalLinkIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { POLAR_CUSTOMER_URL, type Billing } from "@/lib/admin"
 import { formatDay, timeAgo } from "@/lib/format"
