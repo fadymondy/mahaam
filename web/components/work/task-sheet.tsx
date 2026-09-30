@@ -37,7 +37,7 @@ import { Badge, Button, Checkbox, Input, Progress, Sheet, SheetContent, SheetDes
 import { ConfirmButton } from "@/components/confirm-button";
 import { Ltr } from "@/components/copy-field";
 import { ErrorState } from "@/components/states";
-import { AttachmentDropzone } from "@/components/shadcn-space/file-upload/file-upload-02";
+import { AttachmentDropzone } from "@/components/work/attachment-dropzone";
 import { ActivityFeed } from "@/components/work/activity-feed";
 import { StartTimerButton } from "@/components/time/start-timer-button";
 import {

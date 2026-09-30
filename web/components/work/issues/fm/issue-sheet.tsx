@@ -7,7 +7,7 @@ import { toast } from "@fadymondy/nasaq/web"
 
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetClose, SheetContent, SheetTitle, Switch, Textarea } from "@fadymondy/nasaq/web"
 
-import { Markdown } from "@/components/markdown"
+import { Markdown } from "@fadymondy/nasaq/web"
 
 
 

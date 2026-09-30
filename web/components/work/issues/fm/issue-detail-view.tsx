@@ -11,7 +11,7 @@ import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, 
 
 import { NotFoundState } from "@/components/not-found-state";
 import { ErrorState, LoadingRows } from "@/components/states";
-import { Markdown } from "@/components/markdown";
+import { Markdown } from "@fadymondy/nasaq/web"
 import { useWorkspace } from "@/components/workspace/workspace-context";
 import { ContextPanel } from "@/components/work/issues/issue-detail";
 import { ApiError } from "@/lib/api";

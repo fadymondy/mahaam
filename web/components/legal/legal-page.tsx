@@ -5,7 +5,7 @@
 
 import Link from "next/link"
 
-import { Markdown } from "@/components/markdown"
+import { Markdown } from "@fadymondy/nasaq/web"
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { LEGAL_DOCS, LEGAL_REVIEWED, LEGAL_UPDATED, legalText, type LegalDoc } from "@/content/legal"
 import { useTranslations } from "@/lib/i18n"

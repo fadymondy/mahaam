@@ -1,5 +1,5 @@
 "use client"
-// Adapted from @shadcnspace/kanban-application-01: a status column with its tasks and a
+// Local dnd-kit: a status column with its tasks and a
 // quick-add input (Enter adds, Escape cancels) — on the grid (hairlines, no rounded cards).
 import { useState } from "react"
 import { useDroppable } from "@dnd-kit/core"
@@ -9,8 +9,8 @@ import { PlusIcon } from "lucide-react"
 import { Button, Input } from "@fadymondy/nasaq/web"
 
 
-import TaskCard from "@/components/shadcn-space/blocks/kanban-application-01/task-card"
-import type { Column } from "@/components/shadcn-space/blocks/kanban-application-01"
+import TaskCard from "@/components/work/kanban/task-card"
+import type { Column } from "@/components/work/kanban"
 import { Ltr } from "@/components/copy-field"
 import { ColorDot } from "@/components/work/palette"
 import type { Directory } from "@/components/work/people"

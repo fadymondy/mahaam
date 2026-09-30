@@ -1,5 +1,5 @@
 "use client";
-// Adapted from @shadcnspace/kanban-application-01: a sortable task card. A short press opens the
+// Local dnd-kit: a sortable task card. A short press opens the
 // task (the pointer sensor only starts a drag after 6px), Enter/Space picks it up by keyboard.
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";

@@ -1,5 +1,5 @@
 "use client"
-// Adapted from @shadcnspace/kanban-application-01 (dnd-kit): columns are a project's statuses,
+// Local dnd-kit board (Nasaq KanbanBoard has no per-column add slot): columns are a project's statuses,
 // cards are its tasks, and a drop persists through POST /api/w/tasks/{key}/move with the task's
 // final column and 0-based index. The server gives it a fractional position between its new
 // neighbours, so the order survives a reload. A failed move rolls the board back.
@@ -19,8 +19,8 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { toast } from "@fadymondy/nasaq/web"
 
-import KanbanColumn from "@/components/shadcn-space/blocks/kanban-application-01/kanban-column"
-import { TaskCardBody } from "@/components/shadcn-space/blocks/kanban-application-01/task-card"
+import KanbanColumn from "@/components/work/kanban/kanban-column"
+import { TaskCardBody } from "@/components/work/kanban/task-card"
 import type { Directory } from "@/components/work/people"
 import { useTranslations } from "@/lib/i18n"
 import { errorText, w, type Board, type Label, type Status, type Task } from "@/lib/work"

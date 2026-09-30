@@ -1,6 +1,6 @@
 "use client"
 // The issues board: one column per status, dnd-kit drag within and between columns (the pattern of
-// components/shadcn-space/blocks/kanban-application-01). A drop persists through
+// components/work/kanban). A drop persists through
 // POST /api/w/issues/{key}/move — after the card above it, before the card below it, or into an
 // empty column by status — and a failed move rolls the board back.
 import { useEffect, useMemo, useRef, useState } from "react"
