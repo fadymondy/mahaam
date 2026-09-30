@@ -34,8 +34,8 @@ export default function WorkspacesPage() {
   const workspaces = list.data ?? []
 
   return (
-    <PublicFrame eyebrow={<Ltr>{me.data.email}</Ltr>} title={t("workspaces.title")} description={t("workspaces.pickHint")}>
-      <section className="border-t border-border border-b border-border border-x border-border">
+    <PublicFrame wide eyebrow={<Ltr>{me.data.email}</Ltr>} title={t("workspaces.title")} description={t("workspaces.pickHint")}>
+      <section className="overflow-hidden rounded-floating border border-border">
       <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-2">
         <span className="text-eyebrow uppercase">{t("workspaces.title")}</span>
         <UserMenu email={me.data.email} />
@@ -48,7 +48,7 @@ export default function WorkspacesPage() {
       ) : workspaces.length === 0 ? (
         <EmptyState title={t("workspaces.emptyTitle")} body={t("workspaces.emptyBody")} />
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-border">
           {workspaces.map((w) => (
             <li key={w.id}>
               <Link
@@ -73,13 +73,12 @@ export default function WorkspacesPage() {
       )}
 
       </section>
-      <div className="border-t border-border" aria-hidden />
-      <section className="border-t border-border border-b border-border grid border-x border-border md:grid-cols-2">
-        <div className="border-border p-4 max-md:border-b md:border-e">
-          <h2 className="mb-1 text-xl font-medium">{t("workspaces.createTitle")}</h2>
+      <section className="grid gap-4 md:grid-cols-2">
+        <div>
+          <h2 className="text-h2 mb-1">{t("workspaces.createTitle")}</h2>
           <p className="text-sm text-muted-foreground">{t("workspaces.createHint")}</p>
         </div>
-        <div className="p-4">
+        <div>
           <VerifyEmailGate email={me.data.email}>
             <CreateWorkspaceForm autoFocus={!list.isLoading && workspaces.length === 0} />
           </VerifyEmailGate>

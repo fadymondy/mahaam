@@ -21,8 +21,8 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
   useDocumentTitle(text.title)
 
   return (
-    <PublicFrame eyebrow={t("legal.eyebrow")} title={text.title} description={text.summary}>
-      <PublicPanel className="px-4 py-8 sm:px-8">
+    <PublicFrame wide eyebrow={t("legal.eyebrow")} title={text.title} description={text.summary}>
+      <PublicPanel>
         <nav className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" aria-label={t("legal.eyebrow")}>
           {LEGAL_DOCS.map((d) => (
             <Link
@@ -44,7 +44,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
             {t("legal.draft")}
           </p>
         ) : null}
-        <article className="max-w-[68ch] text-[15px] leading-relaxed" data-legal-doc={doc}>
+        <article className="max-w-[68ch] text-body" data-legal-doc={doc}>
           {text.sections.map((s) => (
             <section key={s.id} id={s.id} aria-labelledby={`${s.id}-heading`} className="mt-8 scroll-mt-20 first:mt-0">
               <h2 id={`${s.id}-heading`} className="mb-2 text-base font-semibold text-foreground">
@@ -52,7 +52,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
                   {s.heading}
                 </a>
               </h2>
-              <Markdown className="text-[15px]">{s.body}</Markdown>
+              <Markdown>{s.body}</Markdown>
             </section>
           ))}
         </article>

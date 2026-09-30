@@ -102,7 +102,7 @@ make test       # unit + CI guards: every MCP tool has a scope; every sqlc query
                 # tenant table carries workspace_id = $n; authz matrix; slugs
 make test-e2e   # boots the real stack on mahaam_test: the route sweep, TestTimeTracking, TestReports, TestMCPSession; sweeps EVERY route as
                 # anonymous / non-member / other-workspace member (+ MCP checks)
-make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
+make grid-check # apps/mobile grid + feedback-sdk copies match fadymondy.com-v2
 ```
 
 ## P1 — projects and tasks
