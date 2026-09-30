@@ -3,22 +3,7 @@
 FROM golang:1.26 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
-# github.com/circlexo/circlexo-go is a private module. The token is an OPTIONAL BuildKit secret,
-# read only for this one step and handed to git through per-process environment config, so it is
-# never an ARG or ENV and is written to no file, layer or history:
-#   docker build --secret id=CIRCLEXO_GO_TOKEN,env=CIRCLEXO_GO_TOKEN -f Dockerfile.api .
-# Without the secret the step is the plain `go mod download` it always was; it fails only if the
-# module cannot be reached anonymously.
-ENV GOPRIVATE=github.com/circlexo/*
-RUN --mount=type=secret,id=CIRCLEXO_GO_TOKEN,required=false \
-    if [ -s /run/secrets/CIRCLEXO_GO_TOKEN ]; then \
-      GIT_CONFIG_COUNT=1 \
-      GIT_CONFIG_KEY_0="url.https://x-access-token:$(cat /run/secrets/CIRCLEXO_GO_TOKEN)@github.com/circlexo/.insteadOf" \
-      GIT_CONFIG_VALUE_0="https://github.com/circlexo/" \
-      go mod download; \
-    else \
-      go mod download; \
-    fi
+RUN go mod download
 COPY . .
 # internal/db/gen and internal/graph/gen are gitignored: generate them, so a clean
 # git checkout (Hosbah builds straight from the repository) compiles.

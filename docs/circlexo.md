@@ -45,9 +45,9 @@ disabled; Mahaam still starts.
 | `POST /api/mcp` | token | Existing; also accepts hub-issued access tokens. |
 
 The provision and deprovision request/response shape (`{org_id, slug, name, locale}` in,
-`{product_tenant_id, slug}` out, signed like a webhook) was designed by Mahaam: no hub code calls
-those URLs yet (the hub does not call them; webhooks do the work). Confirm the shape with the hub before relying on it; the webhooks below are the
-contractual path and do the same work.
+`{product_tenant_id, slug}` out, signed like a webhook) was designed by Mahaam: the hub never calls
+those URLs (webhooks do the work); they exist for manual or future use. Confirm the shape with the hub
+before relying on it; the webhooks below are the contractual path.
 
 Webhooks handled: `org.app_installed`, `org.app_removed`, `member.added`, `member.role_changed`,
 `member.removed`, `session.revoked`, `entitlement.changed`, and any `subscription.*` (invalidate the
@@ -128,25 +128,15 @@ entries as `changes.hub_actors`.
 
 ## SDK dependency
 
-`github.com/circlexo/circlexo-go` is a private module, pinned at `v0.1.0` in `go.mod` (no
-`replace`). To fetch it locally you need git credentials that reach the repo and
-`GOPRIVATE=github.com/circlexo/*`. The token is only needed for **Docker and CI builds**:
-
-- `Dockerfile.api` sets `GOPRIVATE` and reads an optional BuildKit secret `CIRCLEXO_GO_TOKEN` for the
-  `go mod download` step only, through per-process git config (nothing lands in a layer or in
-  history): `docker build --secret id=CIRCLEXO_GO_TOKEN,env=CIRCLEXO_GO_TOKEN -f Dockerfile.api .`
-  Without the secret the step is unchanged.
-- `.github/workflows/ci.yml` sets `GOPRIVATE` and, when the repository secret `CIRCLEXO_GO_TOKEN`
-  exists, a `url.insteadOf` rewrite. Owner action: create a read-only token for the private repo and
-  store it as that secret (and as the build secret wherever the image is built).
+`github.com/circlexo/circlexo-go` is a public module, pinned at `v0.1.0` in `go.mod` (no `replace`).
+No credentials or `GOPRIVATE` setting are needed locally, in Docker or in CI.
 
 ## Owner cut-over checklist
 
-1. Create the read-only `CIRCLEXO_GO_TOKEN` (repository secret for CI, BuildKit secret for the image build); see SDK dependency.
-2. Register Mahaam at the hub; note the app id, client credentials, app key and webhook secret.
-3. Register the redirect URI (`<WEB_URL>/auth/circlexo/callback`), the post-logout URI (`<WEB_URL>/login`), the launch URL (`<WEB_URL>/sso/circlexo`), the webhook URL (`<API>/api/circlexo/events`) and the provision/deprovision URLs.
-4. Set the `CIRCLEXO_*` variables from `.env.example` in the environment (not the repo).
-5. Run the migration (`make migrate` / `cmd/migrate`): creates the four tables and the FK.
-6. Make sure `web` proxies `/auth/circlexo/*` and `/sso/circlexo` to the API (already in `web/next.config.mjs`).
-7. Set `CIRCLEXO_ISSUER` last and restart: the login button appears and the routes mount. Check the boot log for "circlexo: hub integration enabled".
-8. Install the app on a test org and confirm: a workspace appears, members sync, the hub shows the tenant active, limits and the billing link follow the hub plan.
+1. Register Mahaam at the hub; note the app id, client credentials, app key and webhook secret.
+2. Register the redirect URI (`<WEB_URL>/auth/circlexo/callback`), the post-logout URI (`<WEB_URL>/login`), the launch URL (`<WEB_URL>/sso/circlexo`), the webhook URL (`<API>/api/circlexo/events`) and the provision/deprovision URLs.
+3. Set the `CIRCLEXO_*` variables from `.env.example` in the environment (not the repo).
+4. Run the migration (`make migrate` / `cmd/migrate`): creates the four tables and the FK.
+5. Make sure `web` proxies `/auth/circlexo/*` and `/sso/circlexo` to the API (already in `web/next.config.mjs`).
+6. Set `CIRCLEXO_ISSUER` last and restart: the login button appears and the routes mount. Check the boot log for "circlexo: hub integration enabled".
+7. Install the app on a test org and confirm: a workspace appears, members sync, the hub shows the tenant active, limits and the billing link follow the hub plan.

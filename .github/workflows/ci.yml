@@ -23,16 +23,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      # github.com/circlexo/circlexo-go is private. The secret CIRCLEXO_GO_TOKEN (a read-only token
-      # for that repo) is optional here: without it this step does nothing.
-      - name: Private module access (circlexo-go)
-        env:
-          CIRCLEXO_GO_TOKEN: ${{ secrets.CIRCLEXO_GO_TOKEN }}
-        run: |
-          echo "GOPRIVATE=github.com/circlexo/*" >> "$GITHUB_ENV"
-          if [ -n "$CIRCLEXO_GO_TOKEN" ]; then
-            git config --global url."https://x-access-token:${CIRCLEXO_GO_TOKEN}@github.com/circlexo/".insteadOf "https://github.com/circlexo/"
-          fi
       - name: Codegen (sqlc + gqlgen)
         run: |
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
