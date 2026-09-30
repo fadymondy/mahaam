@@ -128,7 +128,7 @@ entries as `changes.hub_actors`.
 
 ## SDK dependency
 
-`github.com/circlexo/circlexo-go` is a public module, pinned at `v0.1.0` in `go.mod` (no `replace`).
+`github.com/circlexo/circlexo-go` is a public module, pinned at `v0.1.1` in `go.mod` (no `replace`).
 No credentials or `GOPRIVATE` setting are needed locally, in Docker or in CI.
 
 ## Owner cut-over checklist
