@@ -96,7 +96,7 @@ func mintToken(ctx context.Context, db *sql.DB, workspaceID, userID, name string
 // and the same RLS. The token's stored scopes are narrowed by the role.
 func authUser(r *http.Request, a *app.App, token string) (context.Context, []string, bool) {
 	if !isUserToken(token) {
-		return nil, nil, false
+		return authHub(r, a, token) // a CircleXO-issued token, when that integration is on
 	}
 	ctx := r.Context()
 	var id, workspaceID, userID, rawScopes, rawProjects string
@@ -110,23 +110,12 @@ func authUser(r *http.Request, a *app.App, token string) (context.Context, []str
 	}
 	// Membership is re-checked on every call: a removed member's token dies with
 	// the membership, a demoted one's scopes shrink.
-	s, err := tenant.Resolve(ctx, a.SysDB, userID, workspaceID)
-	var susp *tenant.SuspendedError
-	if errors.As(err, &susp) {
-		return withDeny(ctx, http.StatusForbidden, susp.Error()), nil, true
+	s, dctx, err := admit(ctx, a, userID, workspaceID)
+	if dctx != nil {
+		return dctx, nil, true
 	}
 	if err != nil {
 		return nil, nil, false
-	}
-	// A suspended account's tokens stop with it.
-	if u, err := platform.Load(ctx, a.SysDB, userID); err != nil {
-		return nil, nil, false
-	} else if u.Suspended() {
-		return withDeny(ctx, http.StatusForbidden, u.SuspendedMessage()), nil, true
-	}
-	// The plan's API quotas (internal/limits): per-minute rate and a block-policy monthly quota.
-	if x, refused := limits.As(limits.CountCall(ctx, workspaceID)); refused {
-		return withDeny(ctx, x.Status, x.Msg), nil, true
 	}
 	s.Via = "mcp"
 	s.TokenID = id
@@ -136,6 +125,32 @@ func authUser(r *http.Request, a *app.App, token string) (context.Context, []str
 
 	_, _ = a.SysDB.ExecContext(ctx, `UPDATE mcp_tokens SET last_used_at = now() WHERE id = $1`, id)
 	return tenant.With(ctx, s), s.Scopes, true
+}
+
+// admit is what every MCP caller passes, whatever kind of token it presented: the user is a
+// current member of the workspace (else err), neither is suspended, and the workspace's plan
+// allows another API call. It returns the tenant.Scope to fill in (Via, scopes, ...), or a
+// denied context (dctx) to hand back as the refusal.
+func admit(ctx context.Context, a *app.App, userID, workspaceID string) (s *tenant.Scope, dctx context.Context, err error) {
+	s, err = tenant.Resolve(ctx, a.SysDB, userID, workspaceID)
+	var susp *tenant.SuspendedError
+	if errors.As(err, &susp) {
+		return nil, withDeny(ctx, http.StatusForbidden, susp.Error()), nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	// A suspended account's tokens stop with it.
+	if u, err := platform.Load(ctx, a.SysDB, userID); err != nil {
+		return nil, nil, err
+	} else if u.Suspended() {
+		return nil, withDeny(ctx, http.StatusForbidden, u.SuspendedMessage()), nil
+	}
+	// The plan's API quotas (internal/limits): per-minute rate and a block-policy monthly quota.
+	if x, refused := limits.As(limits.CountCall(ctx, workspaceID)); refused {
+		return nil, withDeny(ctx, x.Status, x.Msg), nil
+	}
+	return s, nil, nil
 }
 
 // ---- token management endpoints (Settings → Developer → MCP tokens) -----

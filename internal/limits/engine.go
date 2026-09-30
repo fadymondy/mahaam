@@ -248,6 +248,9 @@ func For(ctx context.Context, ws string) (*Effective, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := applyOverlay(ctx, ws, e); err != nil {
+		return nil, err
+	}
 	mu.Lock()
 	cache[ws] = cached{e: e, at: now()}
 	mu.Unlock()
@@ -262,6 +265,9 @@ func Check(ctx context.Context, ws, key string, n int64) error {
 	e, err := For(ctx, ws)
 	if err != nil || e == nil {
 		return err
+	}
+	if e.ReadOnly && n > 0 && HubGoverned(key) {
+		return readOnlyError(e, key)
 	}
 	r := e.Rule(key)
 	if r.Limit == nil {

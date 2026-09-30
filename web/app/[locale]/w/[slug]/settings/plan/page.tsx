@@ -149,6 +149,25 @@ function BillingSection({
   const b = data.billing
   const plans = data.plans ?? []
 
+  if (data.hub_linked) {
+    return (
+      <section className="space-y-3" data-billing data-billing-hub>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6">
+          <div className="min-w-0">
+            <h2 className="text-sm font-medium text-grid-fg">{t("billing.title")}</h2>
+            <p className="text-sm text-grid-muted">{t("plan.hubBilling")}</p>
+          </div>
+          {data.hub_billing_url ? (
+            <Button variant="outline" size="sm" nativeButton={false} render={<a href={data.hub_billing_url} target="_blank" rel="noreferrer" />} data-manage-billing>
+              <CreditCardIcon />
+              {t("plan.hubBillingOpen")}
+            </Button>
+          ) : null}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="space-y-3" data-billing>
       <div className="flex flex-wrap items-center justify-between gap-3 px-6">

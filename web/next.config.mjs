@@ -18,6 +18,10 @@ const nextConfig = {
     return [
       { source: "/api/:path*", destination: `${API_ORIGIN}/api/:path*` },
       { source: "/graphql", destination: `${API_ORIGIN}/graphql` },
+      // Sign in with CircleXO (only live when the API has CIRCLEXO_ISSUER set): the OIDC redirect
+      // round trip and the hub launch URL are served by the Go API.
+      { source: "/auth/circlexo/:path*", destination: `${API_ORIGIN}/auth/circlexo/:path*` },
+      { source: "/sso/circlexo", destination: `${API_ORIGIN}/sso/circlexo` },
       // The embeddable feedback loader/bundle is served by the Go API; proxy it so
       // the snippet's {app-origin}/embed/v1.js works on the public host too.
       { source: "/embed/:path*", destination: `${API_ORIGIN}/embed/:path*` },

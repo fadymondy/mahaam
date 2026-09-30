@@ -16,6 +16,7 @@ import (
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/billing/ghmarketplace"
+	"github.com/fadymondy/mahaam/internal/circlexo"
 	"github.com/fadymondy/mahaam/internal/mcp"
 	"github.com/fadymondy/mahaam/internal/limits"
 	"github.com/fadymondy/mahaam/internal/mailer"
@@ -134,6 +135,14 @@ func classify(r *http.Request) tier {
 		mcp.RegisterPath,
 		mcp.TokenPath,
 		mcp.RevokePath,
+		// CircleXO hub integration (internal/circlexo, all off unless CIRCLEXO_ISSUER is set): the
+		// sign-in switch (no secrets), and the hub's event / provision / deprovision calls, which
+		// authenticate by Standard Webhooks signature (CIRCLEXO_WEBHOOK_SECRET) and nothing else.
+		// The /auth/circlexo/* and /sso/circlexo routes are outside /api and public already. Exact.
+		circlexo.ConfigPath,
+		circlexo.EventsPath,
+		circlexo.ProvisionPath,
+		circlexo.DeprovisionPath,
 		"/api/integrations/github/user-callback":
 		return tierPublic
 	}
@@ -275,6 +284,11 @@ func accountGate(a *app.App, acct *account.Service) func(http.Handler) http.Hand
 				return
 			}
 			if platform.SessionRevoked(r.Context(), a.SysDB, u, r) {
+				writeCoded(w, http.StatusUnauthorized, "your session was ended — sign in again", "session_revoked")
+				return
+			}
+			// A hub sign-in the hub has since revoked (session.revoked): internal/circlexo.
+			if hub := circlexo.Current(); hub != nil && circlexo.SessionEnded(r.Context(), hub, u.ID, r) {
 				writeCoded(w, http.StatusUnauthorized, "your session was ended — sign in again", "session_revoked")
 				return
 			}

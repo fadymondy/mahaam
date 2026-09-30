@@ -32,6 +32,9 @@ func record(ctx context.Context, q querier, s *tenant.Scope, e entry) error {
 	if s.Via == "mcp" && s.TokenID != "" {
 		e.Changes["mcp_token_id"] = s.TokenID
 	}
+	if len(s.Actors) > 0 {
+		e.Changes["hub_actors"] = s.Actors // a CircleXO-issued token: who acted for the user
+	}
 	body, err := json.Marshal(e.Changes)
 	if err != nil {
 		return err

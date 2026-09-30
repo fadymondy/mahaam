@@ -91,6 +91,12 @@ type Effective struct {
 	Overridden         map[string]bool
 	Features           Features
 	FeaturesOverridden []string
+	// Hub is set when a CircleXO overlay governs this workspace (overlay.go): the projects and
+	// members limits and the customer portal come from the hub, not from Plan.
+	Hub bool
+	// ReadOnly is set while the hub's entitlements are stale (its API is down, inside the grace
+	// window) or unavailable: reads work, but adding a hub-governed thing is refused.
+	ReadOnly bool
 }
 
 // Normalize fills a rule's defaults: policy block, unit size from the catalog, a rate is always a

@@ -321,5 +321,15 @@
   "appSignin.switch": "Use another account",
   "appSignin.notYou": "Only continue if you just started signing in from the Mahaam app on this computer or phone.",
   "appSignin.done": "Done — you can go back to the Mahaam app. This tab can be closed.",
-  "appSignin.badRequest": "This sign-in link is incomplete or has expired. Start signing in again from the Mahaam app."
+  "appSignin.badRequest": "This sign-in link is incomplete or has expired. Start signing in again from the Mahaam app.",
+  "auth.circlexoError.account_conflict": "An account with that email already exists here and hasn't confirmed it, or is linked to a different CircleXO user. Sign in with your password.",
+  "auth.circlexoError.email_unverified": "CircleXO hasn't verified your email address yet. Verify it there and try again.",
+  "auth.circlexoError.failed": "Sign in with CircleXO didn't complete. Please try again.",
+  "auth.circlexoError.no_email": "CircleXO didn't share an email address, so we can't match you to an account.",
+  "auth.circlexoError.not_member": "You're not a member of that workspace.",
+  "auth.circlexoError.suspended": "This account is suspended.",
+  "auth.circlexoError.unavailable": "Sign in with CircleXO is unavailable right now. Please try again shortly.",
+  "auth.signInCircleXO": "Sign in with CircleXO",
+  "plan.hubBilling": "Billing for this workspace is managed in CircleXO.",
+  "plan.hubBillingOpen": "Manage billing in CircleXO"
 }

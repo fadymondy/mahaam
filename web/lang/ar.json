@@ -322,5 +322,15 @@
   "appSignin.switch": "استخدام حساب آخر",
   "appSignin.notYou": "تابع فقط إذا بدأت للتوّ تسجيل الدخول من تطبيق مهام على هذا الحاسوب أو الهاتف.",
   "appSignin.done": "تمّ — يمكنك العودة إلى تطبيق مهام. يمكن إغلاق هذه الصفحة.",
-  "appSignin.badRequest": "رابط تسجيل الدخول هذا ناقص أو منتهي الصلاحية. ابدأ تسجيل الدخول من جديد من تطبيق مهام."
+  "appSignin.badRequest": "رابط تسجيل الدخول هذا ناقص أو منتهي الصلاحية. ابدأ تسجيل الدخول من جديد من تطبيق مهام.",
+  "auth.circlexoError.account_conflict": "يوجد حساب بهذا البريد هنا لم يتم تأكيده، أو أنه مرتبط بمستخدم آخر في CircleXO. سجّل الدخول بكلمة المرور.",
+  "auth.circlexoError.email_unverified": "لم يتحقق CircleXO من بريدك الإلكتروني بعد. تحقق منه هناك ثم أعد المحاولة.",
+  "auth.circlexoError.failed": "لم يكتمل تسجيل الدخول عبر CircleXO. حاول مرة أخرى.",
+  "auth.circlexoError.no_email": "لم يشارك CircleXO بريدًا إلكترونيًا، لذلك لا يمكننا مطابقتك بحساب.",
+  "auth.circlexoError.not_member": "لست عضوًا في مساحة العمل هذه.",
+  "auth.circlexoError.suspended": "هذا الحساب موقوف.",
+  "auth.circlexoError.unavailable": "تسجيل الدخول عبر CircleXO غير متاح حاليًا. حاول مجددًا بعد قليل.",
+  "auth.signInCircleXO": "تسجيل الدخول عبر CircleXO",
+  "plan.hubBilling": "تُدار فوترة مساحة العمل هذه في CircleXO.",
+  "plan.hubBillingOpen": "إدارة الفوترة في CircleXO"
 }

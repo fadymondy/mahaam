@@ -56,6 +56,12 @@ function oauthProviders(data: unknown): OAuthProvider[] {
   return out
 }
 
+const HUB_ERRORS = ["failed", "email_unverified", "account_conflict", "suspended", "no_email", "not_member", "unavailable"]
+
+function hubErrorMessage(t: (key: string) => string, code: string): string {
+  return t(`auth.circlexoError.${HUB_ERRORS.includes(code) ? code : "failed"}`)
+}
+
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const { t, locale, formatDate } = useTranslations()
   const router = useRouter()
@@ -67,7 +73,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  // A refused CircleXO sign-in comes back as /login?circlexo_error=<code>.
+  const hubError = params.get("circlexo_error")
+  const [error, setError] = useState<string | null>(hubError ? hubErrorMessage(t, hubError) : null)
   const [busy, setBusy] = useState(false)
   // Two-factor sign-in (MH-341): the password was right and the account has a second factor, so
   // the API answered with a challenge instead of a session.
@@ -80,6 +88,12 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     shouldRetryOnError: false,
   })
   const providers = oauthProviders(methods.data)
+  // Sign in with CircleXO: shown only when the API reports the integration on.
+  const hubConfig = useSWR("/api/circlexo/config", (p: string) => api<{ enabled?: boolean; login_url?: string }>(p), {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  })
+  const hubLogin = hubConfig.data?.enabled ? hubConfig.data.login_url || "/auth/circlexo/login" : ""
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -239,7 +253,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         </form>
         )}
 
-        {providers.length > 0 ? (
+        {providers.length > 0 || hubLogin ? (
           <div className="mt-6 space-y-3">
             <div className="flex items-center gap-3">
               <Separator className="flex-1" />
@@ -257,6 +271,17 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                 {t("auth.continueWith", { provider: p.label })}
               </Button>
             ))}
+            {hubLogin ? (
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full"
+                nativeButton={false}
+                render={<a href={`${hubLogin}?return_to=${encodeURIComponent(next)}`} />}
+              >
+                {t("auth.signInCircleXO")}
+              </Button>
+            ) : null}
           </div>
         ) : null}
         {mode === "register" ? (
