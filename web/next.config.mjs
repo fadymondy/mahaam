@@ -14,6 +14,15 @@ const nextConfig = {
 
   // The Go API and this app feel like one origin: /api and /graphql are proxied to the API, so
   // the togo_session cookie and the CSRF cookie are first-party. Realtime (/events) is not in P0.
+  // The togo auth-oauth plugin sends every Google/GitHub sign-in to a hard-coded /dashboard.
+  // Mahaam has no such page; home picks the user's workspace.
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/", permanent: false },
+      { source: "/:locale(en|ar)/dashboard", destination: "/:locale", permanent: false },
+    ]
+  },
+
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${API_ORIGIN}/api/:path*` },
