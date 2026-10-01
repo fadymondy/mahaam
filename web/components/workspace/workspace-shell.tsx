@@ -109,7 +109,7 @@ function ShellSidebar({
         </Link>
         {summary && all ? (
           <WorkspaceSwitcher
-            workspaces={all.map((w) => ({ id: w.id, name: w.name, description: t(`role.${w.role}`) }))}
+            workspaces={all.map((w) => ({ id: w.id, name: w.name, description: t(`role.${w.role}`), logoSrc: w.logo ?? undefined }))}
             value={summary.id}
             onValueChange={switchTo}
             onCreate={() => setCreating(true)}
@@ -119,7 +119,7 @@ function ShellSidebar({
           <Skeleton className="h-9 w-full" />
         )}
       </SidebarHeader>
-      <SidebarContent>{summary ? <ShellNav base={base} can={can} isOwner={summary.role === "owner"} /> : null}</SidebarContent>
+      <SidebarContent>{summary ? <ShellNav base={base} can={can} isOwner={summary.role === "owner" || summary.role === "admin"} /> : null}</SidebarContent>
       <SidebarFooter>
         {email ? <UserMenu email={email} onReport={onReport} profileHref={summary ? `${base}/me` : undefined} /> : null}
       </SidebarFooter>

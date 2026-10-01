@@ -3,7 +3,8 @@
 // Settings → Workspace: the danger zone. Only the OWNER deletes a workspace, by typing its slug;
 // the API refuses while a paid subscription is still running (cancel it in Settings → Plan).
 // Deleting removes every project, task, issue, time entry, invoice and file — there is no undo.
-import { useState } from "react"
+import { useRef, useState } from "react"
+import { mutate } from "swr"
 import { useRouter } from "next/navigation"
 import { Trash2Icon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
@@ -16,7 +17,7 @@ import { Ltr } from "@/components/copy-field"
 import { SectionHeader } from "@/components/public-frame"
 import { EmptyState } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
-import { api } from "@/lib/api"
+import { ApiError, api, type WorkspaceSummary } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
 import { errorText } from "@/lib/work"
@@ -28,8 +29,71 @@ export default function WorkspaceSettingsPage() {
   useDocumentTitle(`${t("wsSettings.title")} · ${ws.summary.name}`)
   const [confirm, setConfirm] = useState("")
   const [busy, setBusy] = useState(false)
+  const [name, setName] = useState(ws.summary.name)
+  const [slug, setSlug] = useState(ws.slug)
+  const [saving, setSaving] = useState(false)
+  const [slugError, setSlugError] = useState<string | null>(null)
+  const file = useRef<HTMLInputElement>(null)
+  const isOwner = ws.summary.role === "owner"
 
-  if (ws.summary.role !== "owner") return <EmptyState title={t("wsSettings.ownerOnly")} />
+  if (!isOwner && ws.summary.role !== "admin") return <EmptyState title={t("wsSettings.adminOnly")} />
+
+  const slugOk = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(slug)
+  const dirty = name.trim() !== ws.summary.name || slug !== ws.slug
+  const logo = ws.summary.logo ?? null
+
+  async function saveGeneral(e: React.FormEvent) {
+    e.preventDefault()
+    setSlugError(null)
+    setSaving(true)
+    try {
+      const body: { name?: string; slug?: string } = {}
+      if (name.trim() !== ws.summary.name) body.name = name.trim()
+      if (slug !== ws.slug) body.slug = slug
+      const out = await api<WorkspaceSummary>("/api/w/workspace", { method: "PATCH", json: body, workspaceId: ws.id })
+      await mutate("/api/me/workspaces")
+      toast.success(t("wsSettings.saved"))
+      if (out.slug !== ws.slug) router.replace(`/${locale}/w/${out.slug}/settings/workspace`)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) setSlugError(t("wsSettings.slugTaken"))
+      else toast.error(errorText(err, t("common.networkError")))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function uploadLogo(f: File) {
+    setSaving(true)
+    const form = new FormData()
+    form.append("file", f)
+    try {
+      await api<WorkspaceSummary>("/api/w/workspace/logo", { form, workspaceId: ws.id })
+      await mutate("/api/me/workspaces")
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError && err.status === 415
+          ? t("wsSettings.logoFormat")
+          : err instanceof ApiError && err.status === 413
+            ? t("wsSettings.logoTooBig")
+            : errorText(err, t("common.networkError")),
+      )
+    } finally {
+      setSaving(false)
+      if (file.current) file.current.value = ""
+    }
+  }
+
+  async function removeLogo() {
+    setSaving(true)
+    try {
+      await api<WorkspaceSummary>("/api/w/workspace/logo", { method: "DELETE", workspaceId: ws.id })
+      await mutate("/api/me/workspaces")
+    } catch (err) {
+      toast.error(errorText(err, t("common.networkError")))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function destroy() {
     setBusy(true)
@@ -46,6 +110,76 @@ export default function WorkspaceSettingsPage() {
   return (
     <div className="space-y-6 p-6">
       <SectionHeader title={t("wsSettings.title")} description={t("wsSettings.description")} />
+      <form onSubmit={saveGeneral} noValidate className="space-y-4 border border-border p-5">
+        <div>
+          <h2 className="text-base font-medium">{t("wsSettings.general")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("wsSettings.generalHint")}</p>
+        </div>
+        <div className="flex items-center gap-4">
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt="" className="size-16 rounded-lg border border-border object-cover" data-ws-logo />
+          ) : (
+            <span
+              className="grid size-16 place-items-center rounded-lg border border-border bg-muted text-lg font-medium text-muted-foreground"
+              aria-hidden
+            >
+              {ws.summary.name.trim().slice(0, 2).toUpperCase()}
+            </span>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={file}
+              type="file"
+              accept="image/jpeg,image/png,image/gif"
+              className="sr-only"
+              id="ws-logo-file"
+              aria-label={t("wsSettings.logo")}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void uploadLogo(f)
+              }}
+            />
+            <Button type="button" variant="secondary" size="sm" disabled={saving} onClick={() => file.current?.click()}>
+              {logo ? t("wsSettings.logoChange") : t("wsSettings.logoUpload")}
+            </Button>
+            {logo ? (
+              <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => void removeLogo()}>
+                {t("wsSettings.logoRemove")}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <Field>
+          <FieldLabel htmlFor="ws-name">{t("wsSettings.name")}</FieldLabel>
+          <Input id="ws-name" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} className="max-w-sm" />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="ws-slug">{t("wsSettings.slug")}</FieldLabel>
+          <Input
+            id="ws-slug"
+            dir="ltr"
+            autoComplete="off"
+            maxLength={40}
+            value={slug}
+            onChange={(e) => {
+              setSlug(e.target.value.toLowerCase())
+              setSlugError(null)
+            }}
+            className="max-w-sm"
+          />
+          {slug !== ws.slug ? <p className="text-sm text-muted-foreground">{t("wsSettings.slugWarn")}</p> : null}
+          {slugError || !slugOk ? (
+            <p className="text-sm text-nq-danger-text" role="alert">
+              {slugError ?? t("wsSettings.slugInvalid")}
+            </p>
+          ) : null}
+        </Field>
+        <Button type="submit" disabled={saving || !dirty || !slugOk || name.trim() === ""}>
+          {t("wsSettings.save")}
+        </Button>
+      </form>
+      {isOwner ? (
       <section className="space-y-4 border border-nq-danger/40 p-5">
         <div>
           <h2 className="text-base font-medium text-nq-danger-text">{t("wsSettings.dangerZone")}</h2>
@@ -69,6 +203,7 @@ export default function WorkspaceSettingsPage() {
           <Trash2Icon /> {t("wsSettings.delete")}
         </Button>
       </section>
+      ) : null}
     </div>
   )
 }

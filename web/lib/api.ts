@@ -123,7 +123,7 @@ export type User = { id: string | number; email: string; roles?: string[] | null
 export type Role = "owner" | "admin" | "manager" | "member" | "client"
 export const INVITABLE_ROLES = ["admin", "manager", "member", "client"] as const
 
-export type WorkspaceSummary = { id: string; slug: string; name: string; role: Role; locale?: string }
+export type WorkspaceSummary = { id: string; slug: string; name: string; role: Role; locale?: string; logo?: string | null }
 
 export type CurrentWorkspace = {
   workspace: { id: string; slug: string; name: string; locale?: string; timezone?: string; currency?: string }
