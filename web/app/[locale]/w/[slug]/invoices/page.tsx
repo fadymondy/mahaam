@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation"
 import { PlusIcon, SearchIcon } from "lucide-react"
 import { ListFilter } from "@/components/list-filter"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
 
 
 
@@ -301,7 +302,7 @@ function NewInvoiceForm({ onDone }: { onDone: (iv?: Invoice) => void }) {
           <FieldLabel htmlFor="ni-notes">{t("newInvoice.notes")}</FieldLabel>
           <Textarea id="ni-notes" rows={2} value={v.notes} onChange={(e) => set("notes", e.target.value)} />
         </Field>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
           <Button variant="primary" type="submit" disabled={busy || !v.client} data-create-invoice>
             {busy ? t("common.working") : t("newInvoice.create")}

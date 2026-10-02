@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from "react"
 
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Textarea } from "@fadymondy/nasaq/web"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Textarea } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
 
 
@@ -58,7 +59,7 @@ export function ReasonDialog({
           <Field>
             <FieldLabel htmlFor="admin-reason">{t("admin.reason")}</FieldLabel>
             <Textarea id="admin-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} autoFocus />
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
           </Field>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>

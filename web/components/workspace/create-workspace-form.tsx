@@ -4,7 +4,8 @@ import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useSWRConfig } from "swr"
 
-import { Button, Field, FieldDescription, FieldError, FieldLabel, Input } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldDescription, FieldLabel, Input } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
 
 
@@ -76,7 +77,7 @@ export function CreateWorkspaceForm({ onCreated, autoFocus }: { onCreated?: () =
             pattern="[a-z0-9-]{3,40}"
           />
           <FieldDescription>{t("workspaces.slugHint")}</FieldDescription>
-          {error ? <FieldError>{error}</FieldError> : null}
+          {error ? <FormError>{error}</FormError> : null}
         </Field>
         <div>
           <Button variant="primary" type="submit" disabled={busy || !name.trim()}>

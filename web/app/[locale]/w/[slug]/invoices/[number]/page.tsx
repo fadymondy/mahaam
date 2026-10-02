@@ -5,8 +5,9 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ChevronLeftIcon, DownloadIcon, PrinterIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Field, FieldError, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Field, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 
 
@@ -327,7 +328,7 @@ function PaymentDialog({
                 <Input id="pay-ref" value={ref} onChange={(e) => setRef(e.target.value)} />
               </Field>
             </div>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex justify-end">
               <Button variant="primary" type="submit" disabled={busy} data-submit-payment>
                 {busy ? t("common.working") : t("payment.submit")}

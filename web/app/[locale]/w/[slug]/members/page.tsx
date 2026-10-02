@@ -4,8 +4,9 @@ import { useState, type FormEvent } from "react"
 import Link from "next/link"
 import { MailWarningIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Badge, Button, Field, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 
 
@@ -177,7 +178,7 @@ function InviteSection() {
             {busy ? t("common.working") : t("members.invite")}
           </Button>
         </div>
-        {error ? <FieldError className="mt-3">{error}</FieldError> : null}
+        {error ? <FormError className="mt-3">{error}</FormError> : null}
       </form>
 
       {link ? (

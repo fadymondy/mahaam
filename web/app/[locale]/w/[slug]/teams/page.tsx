@@ -4,8 +4,9 @@ import { useState } from "react"
 import Link from "next/link"
 import { PlusIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
 
 
 
@@ -174,7 +175,7 @@ function TeamDialog({ team, dir, onClose, onSaved }: { team: Team | "new" | null
             <FieldLabel>{t("teams.members")}</FieldLabel>
             <MemberPicker dir={dir} selected={members} onChange={setMembers} label={t("teams.members")} />
           </Field>
-          {error ? <FieldError>{error}</FieldError> : null}
+          {error ? <FormError>{error}</FormError> : null}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>

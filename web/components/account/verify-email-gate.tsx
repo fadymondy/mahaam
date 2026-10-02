@@ -8,8 +8,9 @@
 import { useState, type FormEvent, type ReactNode } from "react"
 import useSWR from "swr"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button, Field, FieldDescription, FieldError, FieldLabel, Input } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldDescription, FieldLabel, Input } from "@fadymondy/nasaq/web"
 
 
 
@@ -76,7 +77,7 @@ export function VerifyEmailGate({ email, children }: { email: string; children: 
           />
           <FieldDescription>{t("verify.why")}</FieldDescription>
         </Field>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex flex-wrap gap-2">
           <Button variant="primary" type="submit" disabled={busy || code.length !== 6}>
             {busy ? t("common.working") : t("verify.submit")}

@@ -5,8 +5,9 @@ import Link from "next/link"
 import { PlusIcon, SearchIcon, UploadIcon } from "lucide-react"
 import { ListFilter } from "@/components/list-filter"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldError, FieldLabel, Input, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
 
 
 
@@ -297,7 +298,7 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
           <FieldLabel htmlFor="c-notes">{t("clients.notes")}</FieldLabel>
           <Textarea id="c-notes" rows={3} value={v.notes} onChange={(e) => set("notes", e.target.value)} />
         </Field>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
           <Button variant="primary" type="submit" disabled={busy || !v.name.trim()}>
             {busy ? t("common.working") : t("common.save")}

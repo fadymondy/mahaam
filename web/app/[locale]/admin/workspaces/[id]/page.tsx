@@ -7,8 +7,9 @@ import { useEffect, useState, type FormEvent } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Building2Icon, TrashIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 
 
@@ -365,7 +366,7 @@ function OverridesEditor({ detail, onSaved }: { detail: WorkspaceDetail; onSaved
         </div>
       </div>
       <div className="flex items-center justify-end gap-3 px-6">
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <Button variant="primary" type="submit" disabled={busy}>
           {busy ? t("common.working") : t("admin.overrides.save")}
         </Button>
@@ -410,7 +411,7 @@ function DeleteDialog({ open, onOpenChange, id, slug }: { open: boolean; onOpenC
             <FieldDescription>
               <Ltr mono>{slug}</Ltr>
             </FieldDescription>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
           </Field>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>

@@ -8,8 +8,9 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
 
 
 
@@ -212,7 +213,7 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
           </datalist>
           <FieldDescription>{t("account.timezoneHint")}</FieldDescription>
         </Field>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <Button variant="primary" type="submit" disabled={busy}>
           {busy ? t("common.working") : t("account.save")}
         </Button>
@@ -299,7 +300,7 @@ function EmailForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profil
                 onChange={(e) => setPassword(e.target.value)}
               />
             </Field>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
               <Button variant="primary" type="submit" disabled={busy || !email.includes("@") || !password}>
                 {busy ? t("common.working") : t("account.emailSend")}
@@ -330,7 +331,7 @@ function EmailForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Profil
                 placeholder="000000"
               />
             </Field>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
               <Button variant="primary" type="submit" disabled={busy || code.length !== 6}>
                 {busy ? t("common.working") : t("account.emailConfirm")}
@@ -393,7 +394,7 @@ function PasswordForm() {
           <Input id="acc-pw-new" type="password" dir="ltr" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
           <FieldDescription>{t("auth.passwordHint")}</FieldDescription>
         </Field>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <Button type="submit" variant="secondary" disabled={busy || !current || !next}>
           {busy ? t("common.working") : t("account.passwordSave")}
         </Button>
@@ -487,7 +488,7 @@ function DeleteAccount() {
                 />
               </Field>
             ) : null}
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             {owned ? (
               <div className="rounded-md border border-border p-3 text-sm" role="alert" data-sole-owner>
                 <p>{t("account.deleteSoleOwner")}</p>

@@ -6,9 +6,10 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react"
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 import { useSWRConfig } from "swr"
 
-import { Button, FieldError, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
+import { Button, Input, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 
 
@@ -250,7 +251,7 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
       </fieldset>
       {canEdit ? (
         <div className="flex items-center justify-end gap-3 px-6 py-4">
-          {error ? <FieldError className="me-auto">{error}</FieldError> : null}
+          {error ? <FormError className="me-auto">{error}</FormError> : null}
           <Button variant="primary" type="submit" disabled={busy} data-save-settings>
             {busy ? t("common.working") : t("common.save")}
           </Button>

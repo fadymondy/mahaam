@@ -5,8 +5,9 @@ import Link from "next/link"
 import { useState, type FormEvent } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Switch, Textarea } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldDescription, FieldLabel, Input, Switch, Textarea } from "@fadymondy/nasaq/web"
 
 
 
@@ -202,7 +203,7 @@ function PlanForm({ plan, catalog, integrations, onSaved }: { plan?: Plan; catal
       </section>
 
       <div className="flex items-center justify-end gap-3 px-6">
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <Button type="button" variant="secondary" nativeButton={false} render={<Link href={`/${locale}/admin/plans`} />}>
           {t("common.cancel")}
         </Button>

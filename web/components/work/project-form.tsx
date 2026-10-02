@@ -4,7 +4,8 @@
 // the API's units (minutes, minor units); 0 or empty clears them.
 import { useState, type FormEvent } from "react"
 
-import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+import { FormError, FormHint } from "@/components/form-text"
 
 
 
@@ -171,8 +172,8 @@ export function ProjectForm({ project, onSaved, onCancel }: { project?: ProjectD
             <DateField id="p-end" value={v.ends_on} onChange={(x) => set("ends_on", x)} />
           </Field>
         </div>
-        <FieldDescription>{t("project.visibilityHint")}</FieldDescription>
-        {error ? <FieldError>{error}</FieldError> : null}
+        <FormHint>{t("project.visibilityHint")}</FormHint>
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end gap-2">
           {onCancel ? (
             <Button type="button" variant="ghost" onClick={onCancel}>

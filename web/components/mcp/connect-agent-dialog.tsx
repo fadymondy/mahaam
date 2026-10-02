@@ -7,7 +7,8 @@
 import { useState, type FormEvent } from "react"
 import { CheckIcon, TriangleAlertIcon } from "lucide-react"
 
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+import { FormError, FormHint } from "@/components/form-text"
 
 
 
@@ -116,7 +117,7 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
               {advanced ? (
                 <fieldset className="flex flex-col gap-2">
                   <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
-                  <FieldDescription>{t("mcp.scopesHint")}</FieldDescription>
+                  <FormHint>{t("mcp.scopesHint")}</FormHint>
                   <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-border">
                     {scopes.map((s) => {
                       const id = `ca-scope-${s.scope}`
@@ -197,7 +198,7 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
                   </SelectContent>
                 </Select>
               </Field>
-              {error ? <FieldError>{error}</FieldError> : null}
+              {error ? <FormError>{error}</FormError> : null}
             </div>
             <DialogFooter>
               <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>

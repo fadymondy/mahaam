@@ -7,8 +7,9 @@ import Link from "next/link"
 import { useState, type FormEvent } from "react"
 import { HistoryIcon, PencilIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 
 
@@ -252,7 +253,7 @@ function RateForm({ member, sheet, onDone }: { member: MemberRates; sheet: RateS
             <FieldDescription>{t("rates.costHint", { currency: sheet.currency })}</FieldDescription>
           </Field>
         </div>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
           <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("common.save")}

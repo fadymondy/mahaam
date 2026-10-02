@@ -7,8 +7,9 @@ import { useEffect, useState, type FormEvent } from "react"
 import useSWR from "swr"
 import QRCode from "qrcode"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button, Field, FieldDescription, FieldError, FieldLabel, Input } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldDescription, FieldLabel, Input } from "@fadymondy/nasaq/web"
 
 
 
@@ -181,7 +182,7 @@ export function TwoFactor() {
               <FieldLabel htmlFor="twofa-pw">{t("account.currentPassword")}</FieldLabel>
               <Input id="twofa-pw" type="password" dir="ltr" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </Field>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
               <Button variant="primary" type="submit" disabled={busy || !password}>
                 {t("twofa.continue")}
@@ -225,7 +226,7 @@ export function TwoFactor() {
               <CodeInput id="twofa-code" value={code} onChange={setCode} />
               <FieldDescription>{t("twofa.confirmHint")}</FieldDescription>
             </Field>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
               <Button variant="primary" type="submit" disabled={busy || code.length !== 6}>
                 {t("twofa.turnOn")}
@@ -271,7 +272,7 @@ export function TwoFactor() {
                 <Input id="twofa-recovery" dir="ltr" className="font-mono" value={recovery} onChange={(e) => setRecovery(e.target.value)} placeholder="xxxxx-xxxxx" />
               </Field>
             ) : null}
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
               <Button
                 type="submit"

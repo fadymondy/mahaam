@@ -6,8 +6,9 @@ import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { BookmarkIcon, BookmarkPlusIcon, PencilIcon, Share2Icon, Trash2Icon, UsersIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldError, FieldLabel, Input, Popover, PopoverContent, PopoverTrigger, Switch, TooltipRoot, TooltipContent, TooltipTrigger } from "@fadymondy/nasaq/web"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Popover, PopoverContent, PopoverTrigger, Switch, TooltipRoot, TooltipContent, TooltipTrigger } from "@fadymondy/nasaq/web"
 
 
 
@@ -250,7 +251,7 @@ function ViewForm({
             <FieldDescription>{t("saved.shareHint")}</FieldDescription>
           </Field>
         ) : null}
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
           <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("common.save")}

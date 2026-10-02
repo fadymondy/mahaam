@@ -6,8 +6,9 @@
 // next day); edits send exact instants computed here in the workspace timezone (DST-safe).
 import { useState, type FormEvent } from "react"
 import { toast } from "@fadymondy/nasaq/web"
+import { FormError, FormHint } from "@/components/form-text"
 
-import { Button, Field, FieldDescription, FieldError, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldDescription, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
 
 
 
@@ -121,12 +122,12 @@ export function EntryForm({
             {running ? <FieldDescription>{t("time.stopFirst")}</FieldDescription> : null}
           </Field>
         </div>
-        <FieldDescription>{t(entry ? "time.editHint" : "time.addHint", { tz })}</FieldDescription>
+        <FormHint>{t(entry ? "time.editHint" : "time.addHint", { tz })}</FormHint>
         <label className="flex items-center gap-2 text-sm text-nq-fg-body">
           <Switch checked={billable ?? false} onCheckedChange={(v) => setBillable(v)} />
           {t("time.billable")}
         </label>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
           <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("time.save")}
