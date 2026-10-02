@@ -99,6 +99,9 @@ func AsError(err error) (*Error, bool) {
 		case "23P01": // no_overlap
 			return &Error{http.StatusConflict, "that overlaps another of your time entries (a running timer counts until it is stopped)"}, true
 		case "23505":
+			if pg.ConstraintName == "one_running_agent_timer_per_task" {
+				return &Error{http.StatusConflict, "an agent timer is already running on that task"}, true
+			}
 			if pg.ConstraintName == "one_running_timer" {
 				return &Error{http.StatusConflict, "a timer is already running"}, true
 			}

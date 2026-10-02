@@ -8,6 +8,7 @@
   "timer.start": "ابدأ المؤقّت",
   "timer.stopTimer": "أوقف المؤقّت",
   "timer.running": "المؤقّت يعمل",
+  "timer.agentsRunning": "{n} مؤقّتات وكلاء تعمل",
   "timer.whatAreYouDoing": "على ماذا تعمل؟",
   "timer.pick": "المشروع أو المهمة (اختياري)",
   "timer.search": "ابحث في المشاريع والمهام…",

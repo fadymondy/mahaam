@@ -28,7 +28,7 @@ func TimeTools() []Tool {
 	return []Tool{
 		{
 			Name:        "get_running_timer",
-			Description: "The running timer: what it is on, since when, for how long. Yours by default.",
+			Description: "Every running timer: the human timer (first) and agent timers, one per task, each with what it is on, since when and its entry id. Yours by default.",
 			Scope:       "time:read",
 			InputSchema: schema(nil, map[string]any{"user": prop("string", "Email, user id or \"me\" (someone else needs time:manage)")}),
 			Run: func(ctx context.Context, a *app.App, raw json.RawMessage) (string, error) {
@@ -38,14 +38,14 @@ func TimeTools() []Tool {
 					return "", err
 				}
 				sv := work.New(a)
-				e, err := sv.RunningTimer(ctx, who)
+				all, err := sv.RunningTimers(ctx, who)
 				if err != nil {
 					return "", toolErr(err)
 				}
-				if e == nil {
+				if len(all) == 0 {
 					return "No timer is running.", nil
 				}
-				return "Running: " + entryLine(e, zone(ctx, sv), true), nil
+				return runningLines(all, zone(ctx, sv)), nil
 			},
 		},
 		{
@@ -97,7 +97,7 @@ func TimeTools() []Tool {
 		},
 		{
 			Name:        "start_timer",
-			Description: "Start a timer on a task, a project, or just a description. A running timer is stopped first, in the same transaction.",
+			Description: "Start a timer. Called with an agent (MCP) token it REQUIRES a task, runs in parallel with your other timers (one per task, so agents on different tasks do not fight), starts nothing twice (a task whose timer already runs returns that timer) and never stops your own human timer.",
 			Scope:       "time:write",
 			InputSchema: schema(nil, map[string]any{
 				"task":        prop("string", "MG-12, 12 or the task id (implies its project)"),
@@ -119,24 +119,28 @@ func TimeTools() []Tool {
 				}
 				loc := zone(ctx, sv)
 				out := "Started: " + entryLine(ch.Started, loc, true)
+				if ch.AlreadyRunning {
+					out = "Already running (unchanged): " + entryLine(ch.Started, loc, true)
+				}
 				if ch.Stopped != nil {
-					out += "\nStopped the previous timer: " + entryLine(ch.Stopped, loc, false)
+					out += "\nStopped your previous human timer: " + entryLine(ch.Stopped, loc, false)
 				}
 				return out, nil
 			},
 		},
 		{
 			Name:        "stop_timer",
-			Description: "Stop the running timer. Yours by default; another member's needs time:manage.",
+			Description: "Stop a running timer. Pass task (MG-12) or entry (id) to pick one; with neither, your only running agent timer stops (several: an error lists them). Another member's timer needs time:manage.",
 			Scope:       "time:write",
-			InputSchema: schema(nil, map[string]any{"user": prop("string", "Email, user id or \"me\"")}),
+			InputSchema: schema(nil, map[string]any{"user": prop("string", "Email, user id or \"me\""), "task": prop("string", "MG-12, 12 or the task id whose timer to stop"), "entry": prop("string", "The running entry id to stop")}),
 			Run: func(ctx context.Context, a *app.App, raw json.RawMessage) (string, error) {
-				who, err := timeSubject(ctx, a, str(decodeArgs(raw), "user"))
+				args := decodeArgs(raw)
+				who, err := timeSubject(ctx, a, str(args, "user"))
 				if err != nil {
 					return "", err
 				}
 				sv := work.New(a)
-				e, err := sv.StopTimer(ctx, who)
+				e, err := sv.StopTimer(ctx, work.StopInput{User: who, Task: str(args, "task"), Entry: str(args, "entry")})
 				if err != nil {
 					return "", toolErr(err)
 				}
@@ -343,4 +347,17 @@ func entryLine(e *work.TimeEntry, loc *time.Location, running bool) string {
 	fmt.Fprintf(&b, "  id=%s", e.ID)
 	_ = running
 	return b.String()
+}
+
+// runningLines lists running timers, the human one first, agent timers marked.
+func runningLines(all []work.TimeEntry, loc *time.Location) string {
+	var b strings.Builder
+	for i := range all {
+		kind := "Running"
+		if all[i].Source == "mcp" {
+			kind = "Running (agent)"
+		}
+		b.WriteString(kind + ": " + entryLine(&all[i], loc, true) + "\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
 }

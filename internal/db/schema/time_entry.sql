@@ -3,8 +3,8 @@
 -- 22_rls_p2.sql). The domain code is internal/work/time.go.
 --
 -- The time-tracking invariants (plan, "Time tracking, rebuilt around invariants"):
---   one_running_timer  unique partial index: one entry with ended_at IS NULL per (workspace, user)
---   no_overlap         gist exclusion (btree_gist): a person's entries never overlap in a workspace
+--   one_running_timer  unique partial index: one HUMAN (source <> mcp) running entry per (workspace, user); agent timers: one per task
+--   no_overlap         gist exclusion (btree_gist): a person's non-agent entries never overlap in a workspace
 --   duration_s         GENERATED from started_at/ended_at — never written, never wrong
 -- Rates are SNAPSHOTS taken when the entry is started or logged (bill: task -> project -> member ->
 -- workspace default; cost: member -> workspace default), in the workspace currency of that moment,

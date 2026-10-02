@@ -8,6 +8,7 @@
   "timer.start": "Start timer",
   "timer.stopTimer": "Stop timer",
   "timer.running": "Timer running",
+  "timer.agentsRunning": "{n} agent timers running",
   "timer.whatAreYouDoing": "What are you working on?",
   "timer.pick": "Project or task (optional)",
   "timer.search": "Search projects and tasks…",

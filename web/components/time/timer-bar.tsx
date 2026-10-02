@@ -33,7 +33,7 @@ export function useTimerActions() {
     setBusy(true)
     try {
       const res = await timeApi.start(ws.id, body)
-      await running.mutate({ timer: res.started }, { revalidate: false })
+      await running.mutate((cur) => ({ timer: res.started, agents: cur?.agents ?? [] }), { revalidate: false })
       void refresh(ws.id)
       toast.success(t("timer.started"))
       return true
@@ -49,7 +49,7 @@ export function useTimerActions() {
     setBusy(true)
     try {
       await timeApi.stop(ws.id)
-      await running.mutate({ timer: null }, { revalidate: false })
+      await running.mutate((cur) => ({ timer: null, agents: cur?.agents ?? [] }), { revalidate: false })
       void refresh(ws.id)
       toast.success(t("timer.stopped"))
     } catch (err) {
@@ -59,14 +59,14 @@ export function useTimerActions() {
       setBusy(false)
     }
   }
-  return { timer: running.data?.timer ?? null, loading: running.isLoading, busy, start, stop }
+  return { timer: running.data?.timer ?? null, agents: running.data?.agents ?? [], loading: running.isLoading, busy, start, stop }
 }
 
 export function TimerBar() {
   const { t } = useTranslations()
   const ws = useWorkspace()
   const canTrack = ws.can("time:track")
-  const { timer, busy, start, stop } = useTimerActions()
+  const { timer, agents, busy, start, stop } = useTimerActions()
   const now = useNow(1000, !!timer)
   const [open, setOpen] = useState(false)
   const [palette, setPalette] = useState(false)
@@ -126,6 +126,16 @@ export function TimerBar() {
           </PopoverContent>
         </Popover>
       )}
+      {agents.length > 0 ? (
+        <span
+          className="ms-2 inline-flex h-8 shrink-0 items-center gap-1.5 border border-border px-2 text-caption text-muted-foreground"
+          title={agents.map((a) => [a.task_key, a.task_title ?? a.description].filter(Boolean).join(" ")).join("\n")}
+          data-agent-timers={agents.length}
+        >
+          <span className="size-1.5 rounded-full" style={{ background: "var(--nq-action)" }} aria-hidden />
+          {t("timer.agentsRunning", { n: agents.length })}
+        </span>
+      ) : null}
       <StartPalette
         open={palette}
         onOpenChange={setPalette}

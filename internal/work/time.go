@@ -2,6 +2,7 @@ package work
 
 import (
 	"context"
+	"sort"
 	"database/sql"
 	"errors"
 	"github.com/fadymondy/mahaam/internal/push"
@@ -19,8 +20,11 @@ time tools call these functions.
 
 The invariants are split between the database and this file:
 
-	database  one running timer per person per workspace (one_running_timer), no overlapping
-	          entries (no_overlap), duration_s generated, every reference workspace-scoped
+	database  one running HUMAN timer per person per workspace (one_running_timer), no overlapping
+	          human entries (no_overlap), duration_s generated, every reference workspace-scoped.
+	          Agent timers (source = 'mcp', started through a user's MCP token) are exempt: they run in
+	          parallel, one per task (one_running_agent_timer_per_task), and starting or stopping one
+	          never touches the human timer, nor the other way round.
 	here      START STOPS THE RUNNING TIMER IN THE SAME TRANSACTION — serialised per person by an
 	          advisory lock, so concurrent starts queue instead of racing (the database index is the
 	          backstop, not the mechanism); you change only your own time unless your role holds
@@ -106,13 +110,13 @@ func (sv *Service) publish(workspace, user, event string, data any) {
 		sv.Live.Publish(workspace, user, event, data)
 	}
 	// MH-355: the lock-screen timer follows the timer wherever it was started or stopped.
-	if e, _ := data.(*TimeEntry); event == "timer.started" && e != nil {
+	if e, _ := data.(*TimeEntry); event == "timer.started" && e != nil && e.Source != "mcp" {
 		st := &push.TimerState{StartedAt: e.StartedAt, Label: e.Description, Project: sval(e.ProjectName), Key: sval(e.TaskKey)}
 		if st.Label == "" {
 			st.Label = sval(e.TaskTitle)
 		}
 		sv.Push.TimerActivity(user, st)
-	} else if event == "timer.stopped" {
+	} else if e, _ := data.(*TimeEntry); event == "timer.stopped" && (e == nil || e.Source != "mcp") {
 		sv.Push.TimerActivity(user, nil)
 	}
 	// Every inbox notification also goes to the user's installed apps and browsers (internal/push).
@@ -264,27 +268,57 @@ func lockPerson(ctx context.Context, tx *sql.Tx, ws, user string) (time.Time, er
 	return now.UTC(), err
 }
 
-// stopRunning ends userID's running entry at `at` (inside tx, under lockPerson) and records it.
+// stopWhere ends userID's running entries matching cond (SQL over time_entries, args from $4 on) at
+// `at` (inside tx, under lockPerson) and records each. It returns the stopped ids, oldest first.
+func stopWhere(ctx context.Context, tx *sql.Tx, s *tenant.Scope, userID string, at time.Time, cond string, args ...any) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, `UPDATE time_entries SET ended_at = $3, updated_at = now()
+		WHERE workspace_id = $1 AND user_id = $2 AND ended_at IS NULL AND (` + cond + `)
+		RETURNING id, project_id, task_id, started_at`, append([]any{s.WorkspaceID, userID, at}, args...)...)
+	if err != nil {
+		return nil, err
+	}
+	type stopped struct {
+		id            string
+		project, task *string
+		started       time.Time
+	}
+	var got []stopped
+	for rows.Next() {
+		var r stopped
+		if err := rows.Scan(&r.id, &r.project, &r.task, &r.started); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		got = append(got, r)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	sort.Slice(got, func(i, j int) bool { return got[i].started.Before(got[j].started) })
+	var ids []string
+	for _, r := range got {
+		ch := map[string]any{"duration_s": int64(at.Sub(r.started) / time.Second)}
+		if userID != s.UserID {
+			ch["user_id"] = userID
+		}
+		if err := record(ctx, tx, s, entry{ProjectID: sval(r.project), TaskID: sval(r.task), Action: "time.stopped",
+			SubjectType: "time_entry", SubjectID: r.id, Changes: ch}); err != nil {
+			return nil, err
+		}
+		ids = append(ids, r.id)
+	}
+	return ids, nil
+}
+
+// stopRunning ends userID's running HUMAN timer (source <> 'mcp'); agent timers are never touched.
 // It returns "" when nothing was running.
 func stopRunning(ctx context.Context, tx *sql.Tx, s *tenant.Scope, userID string, at time.Time) (string, error) {
-	var id string
-	var project, task *string
-	var started time.Time
-	err := tx.QueryRowContext(ctx, `UPDATE time_entries SET ended_at = $3, updated_at = now()
-		WHERE workspace_id = $1 AND user_id = $2 AND ended_at IS NULL
-		RETURNING id, project_id, task_id, started_at`, s.WorkspaceID, userID, at).Scan(&id, &project, &task, &started)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
-	}
-	if err != nil {
+	ids, err := stopWhere(ctx, tx, s, userID, at, `source <> 'mcp'`)
+	if err != nil || len(ids) == 0 {
 		return "", err
 	}
-	ch := map[string]any{"duration_s": int64(at.Sub(started) / time.Second)}
-	if userID != s.UserID {
-		ch["user_id"] = userID
-	}
-	return id, record(ctx, tx, s, entry{ProjectID: sval(project), TaskID: sval(task), Action: "time.stopped",
-		SubjectType: "time_entry", SubjectID: id, Changes: ch})
+	return ids[0], nil
 }
 
 // personFor resolves whose time an action is about: "", "me" or yourself -> you; anyone else needs
@@ -346,7 +380,8 @@ type StartInput struct {
 // TimerChange is the result of a start: the new timer, and the one it stopped (if any).
 type TimerChange struct {
 	Started *TimeEntry `json:"started"`
-	Stopped *TimeEntry `json:"stopped" doc:"The timer this start stopped, if one was running"`
+	Stopped *TimeEntry `json:"stopped" doc:"The human timer this start stopped, if one was running (agent starts stop nothing)"`
+	AlreadyRunning bool `json:"already_running" doc:"An agent start on a task whose agent timer was already running: nothing changed, started is the existing timer"`
 }
 
 // StartTimer starts the caller's timer, stopping the running one in the same transaction.
@@ -374,13 +409,29 @@ func (sv *Service) StartTimer(ctx context.Context, in StartInput) (*TimerChange,
 	if s.Via == "mcp" {
 		source = "mcp"
 	}
+	// Agent timers (source mcp) need a task: one runs per (person, task), and a project-only timer
+	// would have nothing to be idempotent on. They never stop, and are never stopped by, the human timer.
+	if source == "mcp" && tg.TaskID == nil {
+		return nil, invalid("an agent timer needs a task: pass task (MG-12, 12 or the task id)")
+	}
 	var startedID, stoppedID string
+	var existing bool
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
 		now, err := lockPerson(ctx, tx, s.WorkspaceID, s.UserID)
 		if err != nil {
 			return err
 		}
-		if stoppedID, err = stopRunning(ctx, tx, s, s.UserID, now); err != nil {
+		if source == "mcp" {
+			err := tx.QueryRowContext(ctx, `SELECT id FROM time_entries WHERE workspace_id = $1 AND user_id = $2
+				AND task_id = $3 AND source = 'mcp' AND ended_at IS NULL`, s.WorkspaceID, s.UserID, *tg.TaskID).Scan(&startedID)
+			if err == nil {
+				existing = true
+				return nil
+			}
+			if !errors.Is(err, sql.ErrNoRows) {
+				return err
+			}
+		} else if stoppedID, err = stopRunning(ctx, tx, s, s.UserID, now); err != nil {
 			return err
 		}
 		bill, cost, err := resolveRates(ctx, tx, s.WorkspaceID, conf, s.UserID, tg, now)
@@ -404,7 +455,14 @@ func (sv *Service) StartTimer(ctx context.Context, in StartInput) (*TimerChange,
 	if err != nil {
 		return nil, err
 	}
-	out := &TimerChange{}
+	out := &TimerChange{AlreadyRunning: existing}
+	if existing {
+		if out.Started, err = sv.entry(ctx, s, startedID); err != nil {
+			return nil, err
+		}
+		out.Started = view(s, out.Started)
+		return out, nil
+	}
 	if stoppedID != "" {
 		if out.Stopped, err = sv.entry(ctx, s, stoppedID); err != nil {
 			return nil, err
@@ -420,8 +478,16 @@ func (sv *Service) StartTimer(ctx context.Context, in StartInput) (*TimerChange,
 	return out, nil
 }
 
+// StopInput says which timer to stop. With nothing but User it is the person's human timer; an
+// agent (MCP) caller with exactly one agent timer running stops that one.
+type StopInput struct {
+	User  string `json:"user,omitempty" doc:"A member's user id (time:manage); default you"`
+	Entry string `json:"entry,omitempty" doc:"The id of the running entry to stop (needed when several run)"`
+	Task  string `json:"task,omitempty" doc:"Stop the timer running on this task (MG-12, 12 or the task id)"`
+}
+
 // StopTimer stops a running timer: your own, or (time:manage) a member's.
-func (sv *Service) StopTimer(ctx context.Context, userRef string) (*TimeEntry, error) {
+func (sv *Service) StopTimer(ctx context.Context, in StopInput) (*TimeEntry, error) {
 	s, err := caller(ctx)
 	if err != nil {
 		return nil, err
@@ -429,22 +495,42 @@ func (sv *Service) StopTimer(ctx context.Context, userRef string) (*TimeEntry, e
 	if err := require(s, authz.TimeTrack); err != nil {
 		return nil, err
 	}
-	who, err := sv.personFor(ctx, s, userRef)
+	who, err := sv.personFor(ctx, s, in.User)
 	if err != nil {
 		return nil, err
 	}
+	var taskID *string
+	if strings.TrimSpace(in.Task) != "" {
+		tk := in.Task
+		tg, err := sv.resolveTarget(ctx, s, nil, &tk)
+		if err != nil {
+			return nil, err
+		}
+		taskID = tg.TaskID
+	}
+	entryID := strings.TrimSpace(in.Entry)
 	var id string
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
 		now, err := lockPerson(ctx, tx, s.WorkspaceID, who)
 		if err != nil {
 			return err
 		}
-		if id, err = stopRunning(ctx, tx, s, who, now); err != nil {
+		var ids []string
+		switch {
+		case entryID != "":
+			ids, err = stopWhere(ctx, tx, s, who, now, `id = $4`, entryID)
+		case taskID != nil:
+			ids, err = stopWhere(ctx, tx, s, who, now, `task_id = $4`, *taskID)
+		default:
+			ids, err = sv.stopDefault(ctx, tx, s, who, now)
+		}
+		if err != nil {
 			return err
 		}
-		if id == "" {
+		if len(ids) == 0 {
 			return conflict("no timer is running")
 		}
+		id = ids[0]
 		return nil
 	})
 	if err != nil {
@@ -459,8 +545,63 @@ func (sv *Service) StopTimer(ctx context.Context, userRef string) (*TimeEntry, e
 	return view(s, e), nil
 }
 
-// RunningTimer is the running entry of you (or, with time:manage, a member), or nil.
+// stopDefault is a stop with no target. An agent caller stops its only agent timer (several: an
+// error listing them); with none it falls back to the human timer, as before. A human caller stops
+// the human timer, and is told about agent timers if that is all there is.
+func (sv *Service) stopDefault(ctx context.Context, tx *sql.Tx, s *tenant.Scope, who string, now time.Time) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT e.id, coalesce(t.key, ''), e.description
+		FROM time_entries e LEFT JOIN tasks t ON t.workspace_id = e.workspace_id AND t.id = e.task_id
+		WHERE e.workspace_id = $1 AND e.user_id = $2 AND e.ended_at IS NULL AND e.source = 'mcp' ORDER BY e.started_at`, s.WorkspaceID, who)
+	if err != nil {
+		return nil, err
+	}
+	var agents []string
+	for rows.Next() {
+		var id, key, desc string
+		if err := rows.Scan(&id, &key, &desc); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		agents = append(agents, id+" ("+strings.TrimSpace(key+" "+desc)+")")
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if s.Via == "mcp" && len(agents) == 1 {
+		return stopWhere(ctx, tx, s, who, now, `source = 'mcp'`)
+	}
+	if s.Via == "mcp" && len(agents) > 1 {
+		return nil, conflict("several agent timers are running, pass task or entry to choose: " + strings.Join(agents, "; "))
+	}
+	id, err := stopRunning(ctx, tx, s, who, now)
+	if err != nil {
+		return nil, err
+	}
+	if id == "" {
+		if len(agents) > 0 {
+			return nil, conflict("no human timer is running; agent timers are: " + strings.Join(agents, "; ") + " (pass task or entry to stop one)")
+		}
+		return nil, nil
+	}
+	return []string{id}, nil
+}
+
+// RunningTimer is the running HUMAN timer of you (or, with time:manage, a member), or nil. Agent
+// timers are listed by RunningTimers.
 func (sv *Service) RunningTimer(ctx context.Context, userRef string) (*TimeEntry, error) {
+	all, err := sv.RunningTimers(ctx, userRef)
+	for i := range all {
+		if all[i].Source != "mcp" {
+			return &all[i], err
+		}
+	}
+	return nil, err
+}
+
+// RunningTimers is every running timer of you (or a member): the human one, then agent timers,
+// oldest first.
+func (sv *Service) RunningTimers(ctx context.Context, userRef string) ([]TimeEntry, error) {
 	s, err := caller(ctx)
 	if err != nil {
 		return nil, err
@@ -472,12 +613,21 @@ func (sv *Service) RunningTimer(ctx context.Context, userRef string) (*TimeEntry
 	if err != nil {
 		return nil, err
 	}
-	e, err := scanEntry(sv.DB.QueryRowContext(ctx, entrySelect+`WHERE e.workspace_id = $1 AND e.user_id = $2 AND e.ended_at IS NULL`,
-		s.WorkspaceID, who))
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+	rows, err := sv.DB.QueryContext(ctx, entrySelect+`WHERE e.workspace_id = $1 AND e.user_id = $2 AND e.ended_at IS NULL ORDER BY (e.source = 'mcp'), e.started_at`,
+		s.WorkspaceID, who)
+	if err != nil {
+		return nil, err
 	}
-	return view(s, e), err
+	defer rows.Close()
+	out := []TimeEntry{}
+	for rows.Next() {
+		e, err := scanEntry(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *view(s, e))
+	}
+	return out, rows.Err()
 }
 
 // ---- manual entries -------------------------------------------------------------------------------

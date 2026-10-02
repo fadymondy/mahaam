@@ -205,19 +205,20 @@ func (sv *Service) RemindLongRunning(ctx context.Context, now time.Time) (int, e
 	created := 0
 	for _, w := range list {
 		wctx := tenant.WithWorkspace(ctx, w.ID)
-		rows, err := sv.DB.QueryContext(wctx, `SELECT id, user_id, started_at FROM time_entries
-			WHERE workspace_id = $1 AND ended_at IS NULL AND started_at <= $2`, w.ID, now.Add(-time.Duration(w.Hours)*time.Hour))
+		rows, err := sv.DB.QueryContext(wctx, `SELECT id, user_id, started_at, source = 'mcp' FROM time_entries
+			WHERE workspace_id = $1 AND ended_at IS NULL AND started_at <= $2 ORDER BY started_at`, w.ID, now.Add(-time.Duration(w.Hours)*time.Hour))
 		if err != nil {
 			return created, err
 		}
 		type running struct {
 			id, user string
+			agent    bool
 			started  time.Time
 		}
 		var due []running
 		for rows.Next() {
 			var r running
-			if err := rows.Scan(&r.id, &r.user, &r.started); err != nil {
+			if err := rows.Scan(&r.id, &r.user, &r.started, &r.agent); err != nil {
 				rows.Close()
 				return created, err
 			}
@@ -225,10 +226,21 @@ func (sv *Service) RemindLongRunning(ctx context.Context, now time.Time) (int, e
 		}
 		rows.Close()
 		txt := textFor(w.Locale)
+		// Agent timers run in parallel: one reminder per person per day for all of them (the oldest
+		// speaks), not one per timer.
+		agentSeen := map[string]bool{}
 		for _, r := range due {
+			dedupe := "entry:" + r.id
+			if r.agent {
+				if agentSeen[r.user] {
+					continue
+				}
+				agentSeen[r.user] = true
+				dedupe = "agent:" + r.user + ":" + now.UTC().Format("2006-01-02")
+			}
 			hours := int(now.Sub(r.started) / time.Hour)
 			nt, err := notify(wctx, sv.DB, w.ID, r.user, newNote{Kind: "timer.long_running", Title: fmt.Sprintf(txt[0], hours),
-				Body: txt[1], URL: "/w/" + w.Slug + "/time", Dedupe: "entry:" + r.id,
+				Body: txt[1], URL: "/w/" + w.Slug + "/time", Dedupe: dedupe,
 				Data: map[string]any{"entry_id": r.id, "hours": hours, "started_at": r.started.UTC().Format(time.RFC3339)}})
 			if err != nil {
 				return created, err

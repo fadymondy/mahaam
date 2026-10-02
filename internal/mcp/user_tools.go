@@ -50,12 +50,24 @@ func contextTools() []Tool {
 					b.WriteString("running timer: (this token has no time:read scope)\n")
 				default:
 					sv := work.New(a)
-					if e, err := sv.RunningTimer(ctx, ""); err != nil {
+					all, err := sv.RunningTimers(ctx, "")
+					if err != nil {
 						fmt.Fprintf(&b, "running timer: unavailable (%s)\n", toolErr(err))
-					} else if e == nil {
-						b.WriteString("running timer: none\n")
-					} else {
-						b.WriteString("running timer: " + entryLine(e, zone(ctx, sv), true) + "\n")
+						break
+					}
+					human, loc := "none", zone(ctx, sv)
+					var agents []string
+					for i := range all {
+						if all[i].Source == "mcp" {
+							agents = append(agents, "  "+entryLine(&all[i], loc, true))
+						} else {
+							human = entryLine(&all[i], loc, true)
+						}
+					}
+					b.WriteString("running timer: " + human + "\n")
+					fmt.Fprintf(&b, "agent timers running: %d\n%s", len(agents), strings.Join(agents, "\n"))
+					if len(agents) > 0 {
+						b.WriteString("\n")
 					}
 				}
 				return b.String(), nil
