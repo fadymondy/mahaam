@@ -26,6 +26,7 @@ export function ActivityFeed({
   dir,
   showTask = true,
   emptyTitle,
+  compact = false,
 }: {
   items: Activity[] | undefined
   loading: boolean
@@ -33,6 +34,8 @@ export function ActivityFeed({
   dir: Directory
   showTask?: boolean
   emptyTitle?: string
+  /** Inside a card: tighter padding, no outer borders. */
+  compact?: boolean
 }) {
   const { t, locale } = useTranslations()
   if (error) return <ErrorState error={error} />
@@ -68,9 +71,9 @@ export function ActivityFeed({
   }
 
   return (
-    <ol className="divide-y divide-line border-y border-border" aria-label={t("activity.title")}>
+    <ol className={compact ? "divide-y divide-line" : "divide-y divide-line border-y border-border"} aria-label={t("activity.title")}>
       {items.map((a) => (
-        <li key={a.id} className="flex items-start gap-3 px-6 py-3 text-sm" data-action={a.action}>
+        <li key={a.id} className={compact ? "flex items-start gap-3 px-4 py-2.5 text-sm" : "flex items-start gap-3 px-6 py-3 text-sm"} data-action={a.action}>
           <PersonAvatar id={a.actor_id} dir={dir} className="mt-0.5" />
           <div className="min-w-0 flex-1">
             <p className="text-nq-fg-body">
