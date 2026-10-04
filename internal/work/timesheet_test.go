@@ -136,3 +136,28 @@ func TestWorkday(t *testing.T) {
 		t.Error("workdays are the five days from the week start")
 	}
 }
+
+// A week starts on the workspace's day and a month on the 1st; both come with the period before.
+func TestPeriodBounds(t *testing.T) {
+	cairo := mustLoc(t, "Africa/Cairo")
+	now := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	day := func(x time.Time) string { return x.Format("2006-01-02") }
+	for _, tc := range []struct {
+		kind, ref, wantPrev, wantCur, wantEnd string
+		weekStart                             int
+	}{
+		{"week", "2026-09-30", "2026-09-21", "2026-09-28", "2026-10-05", 1}, // Wednesday -> Monday week
+		{"week", "2026-09-30", "2026-09-20", "2026-09-27", "2026-10-04", 0}, // Sunday week
+		{"", "", "2026-09-28", "2026-10-05", "2026-10-12", 1},               // default: this week
+		{"month", "2026-03-15", "2026-02-01", "2026-03-01", "2026-04-01", 1},
+		{"month", "2026-01-31", "2025-12-01", "2026-01-01", "2026-02-01", 1}, // across the year
+	} {
+		p, c, e, err := periodBounds(tc.kind, tc.ref, &timeConf{Loc: cairo, WeekStart: tc.weekStart}, now)
+		if err != nil || day(p) != tc.wantPrev || day(c) != tc.wantCur || day(e) != tc.wantEnd {
+			t.Errorf("%s %q start %d: got %s %s %s (%v), want %s %s %s", tc.kind, tc.ref, tc.weekStart, day(p), day(c), day(e), err, tc.wantPrev, tc.wantCur, tc.wantEnd)
+		}
+	}
+	if _, _, _, err := periodBounds("year", "", &timeConf{Loc: cairo}, now); err == nil {
+		t.Error("an unknown kind is refused")
+	}
+}

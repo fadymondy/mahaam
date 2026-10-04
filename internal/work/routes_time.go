@@ -110,6 +110,14 @@ func (r routes) time() {
 	}) (*Timesheet, error) {
 		return r.sv.Timesheet(ctx, in.User, in.Week)
 	})
+	do(r, http.MethodGet, "/api/w/time/range", "w-time-range", "A person's week or month and the period before it, entries cut at local midnight", tag, 0, func(ctx context.Context, in *struct {
+		WS
+		User string `query:"user" doc:"A member's user id (time:manage); default you"`
+		Kind string `query:"kind" doc:"week (default) or month"`
+		Ref  string `query:"ref" doc:"Any YYYY-MM-DD in the period (default: now)"`
+	}) (*TimeRange, error) {
+		return r.sv.TimeRange(ctx, in.User, in.Kind, in.Ref)
+	})
 	do(r, http.MethodGet, "/api/w/time/team", "w-team-timesheet", "Everyone's week (time:manage)", tag, 0, func(ctx context.Context, in *struct {
 		WS
 		Week string `query:"week" doc:"Any YYYY-MM-DD in the week (default: this week)"`
