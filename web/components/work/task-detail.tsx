@@ -652,7 +652,6 @@ function Header({
             {t("task.subtaskOf")} <Ltr mono>{d.parent.key}</Ltr> {d.parent.title}
           </button>
         ) : null}
-        {canIssue ? null : null}
       </div>
     </header>
   )
