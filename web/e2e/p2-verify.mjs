@@ -122,7 +122,7 @@ await A.locator("[data-timer-bar][data-running=false]").waitFor({ timeout: 5000 
 assert(true, "stopped in tab B -> tab A's bar is idle without a reload")
 
 // ── 2. ⌘K, side-over and board card ─────────────────────────────────────────────
-await A.keyboard.press("Control+k")
+await A.keyboard.press("Control+Shift+k")
 await A.locator("[data-timer-palette]").waitFor()
 await A.keyboard.type("Wireframe")
 await A.locator(`[data-palette-task="${s.task}"]`).click()

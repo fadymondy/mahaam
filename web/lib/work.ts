@@ -478,3 +478,28 @@ export const w = {
 export function errorText(err: unknown, fallback: string) {
   return err instanceof ApiError ? err.message : fallback
 }
+
+// ── home dashboard ─────────────────────────────────────────────────────────
+
+export type AttentionTask = {
+  id: string
+  key: string
+  title: string
+  project_id: string
+  project_name: string
+  project_color: string
+  priority: Priority
+  due_at: string | null
+  overdue: boolean
+}
+
+/** GET /api/w/overview: the aggregates no list endpoint gives cheaply. */
+export type Overview = {
+  completed_total: number
+  completed_week: number
+  overdue: number
+  attention: AttentionTask[] | null
+  project_members: Record<string, string[]> | null
+}
+
+export const useOverview = (ws: string, enabled = true) => useW<Overview>(enabled ? "/api/w/overview" : null, ws)

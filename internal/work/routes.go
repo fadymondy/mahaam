@@ -370,6 +370,9 @@ func (r routes) tasks() {
 			AssigneeID: in.Assignee, LabelID: in.Label, Q: in.Q, Limit: in.Limit})
 		return TaskList{Tasks: list}, err
 	})
+	do(r, http.MethodGet, "/api/w/overview", "w-overview", "Home dashboard aggregates: overdue, completed, tasks needing attention, project members", tag, 0, func(ctx context.Context, _ *WS) (*Overview, error) {
+		return r.sv.Overview(ctx)
+	})
 	do(r, http.MethodGet, "/api/w/tasks/{task}", "w-get-task", "One task in full", tag, 0, func(ctx context.Context, in *struct {
 		WS
 		TaskRef

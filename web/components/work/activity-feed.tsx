@@ -19,30 +19,10 @@ function str(v: unknown): string {
   return typeof v === "string" ? v : typeof v === "number" ? String(v) : ""
 }
 
-export function ActivityFeed({
-  items,
-  loading,
-  error,
-  dir,
-  showTask = true,
-  emptyTitle,
-  compact = false,
-}: {
-  items: Activity[] | undefined
-  loading: boolean
-  error: unknown
-  dir: Directory
-  showTask?: boolean
-  emptyTitle?: string
-  /** Inside a card: tighter padding, no outer borders. */
-  compact?: boolean
-}) {
+/** Turns an activity entry into its sentence in the UI language. */
+export function useActivitySentence(dir: Directory, showTask = true) {
   const { t, locale } = useTranslations()
-  if (error) return <ErrorState error={error} />
-  if (loading) return <LoadingRows rows={3} />
-  if (!items?.length) return <EmptyState title={emptyTitle ?? t("activity.empty")} />
-
-  function sentence(a: Activity) {
+  const sentence = (a: Activity) => {
     const c = a.changes
     const vars: Record<string, string> = {
       key: str(c.key),
@@ -69,6 +49,29 @@ export function ActivityFeed({
     const text = t(k, vars)
     return text === k ? t("activity.generic", { action: a.action }) : text
   }
+  return sentence
+}
+
+export function ActivityFeed({
+  items,
+  loading,
+  error,
+  dir,
+  showTask = true,
+  emptyTitle,
+}: {
+  items: Activity[] | undefined
+  loading: boolean
+  error: unknown
+  dir: Directory
+  showTask?: boolean
+  emptyTitle?: string
+}) {
+  const { t, locale } = useTranslations()
+  const sentence = useActivitySentence(dir, showTask)
+  if (error) return <ErrorState error={error} />
+  if (loading) return <LoadingRows rows={3} />
+  if (!items?.length) return <EmptyState title={emptyTitle ?? t("activity.empty")} />
 
   return (
     <ol className={compact ? "divide-y divide-line" : "divide-y divide-line border-y border-border"} aria-label={t("activity.title")}>
