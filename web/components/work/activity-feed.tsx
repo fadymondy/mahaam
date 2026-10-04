@@ -59,6 +59,7 @@ export function ActivityFeed({
   dir,
   showTask = true,
   emptyTitle,
+  compact = false,
 }: {
   items: Activity[] | undefined
   loading: boolean
@@ -66,6 +67,8 @@ export function ActivityFeed({
   dir: Directory
   showTask?: boolean
   emptyTitle?: string
+  /** Inside a card: tighter padding, no outer borders. */
+  compact?: boolean
 }) {
   const { t, locale } = useTranslations()
   const sentence = useActivitySentence(dir, showTask)
