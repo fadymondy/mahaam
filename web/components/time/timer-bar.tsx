@@ -74,7 +74,7 @@ export function TimerBar() {
   useEffect(() => {
     if (!canTrack) return
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault()
         setPalette((p) => !p)
       }
@@ -113,7 +113,7 @@ export function TimerBar() {
             <PlayIcon />
             <span className="hidden sm:inline">{t("timer.start")}</span>
             <kbd className="hidden font-mono text-xs text-muted-foreground lg:inline" dir="ltr">
-              ⌘K
+              ⇧⌘K
             </kbd>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-80 p-0">

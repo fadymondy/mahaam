@@ -25,7 +25,7 @@
   "timer.stopHere": "أوقف المؤقّت",
   "timer.started": "بدأ المؤقّت",
   "timer.stopped": "توقّف المؤقّت",
-  "timer.shortcut": "اضغط ⌘K أو Ctrl+K لتبدأ مؤقّتًا من أي مكان",
+  "timer.shortcut": "اضغط ⇧⌘K أو Ctrl+Shift+K لتبدأ مؤقّتًا من أي مكان",
   "timer.live.open": "مباشر",
   "timer.live.connecting": "جارٍ إعادة الاتصال…",
   "timer.archived": "هذا المشروع مؤرشف — استعده لتسجّل وقتًا عليه.",

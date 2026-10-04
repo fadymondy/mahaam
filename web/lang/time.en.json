@@ -25,7 +25,7 @@
   "timer.stopHere": "Stop timer",
   "timer.started": "Timer started",
   "timer.stopped": "Timer stopped",
-  "timer.shortcut": "Press ⌘K or Ctrl+K to start a timer from anywhere",
+  "timer.shortcut": "Press ⇧⌘K or Ctrl+Shift+K to start a timer from anywhere",
   "timer.live.open": "Live",
   "timer.live.connecting": "Reconnecting…",
   "timer.archived": "This project is archived — restore it to track time on it.",

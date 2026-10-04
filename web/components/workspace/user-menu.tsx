@@ -11,7 +11,7 @@ import { useTranslations } from "@/lib/i18n"
 
 // The account menu (identity, profile, admin panel, report a problem, theme, language, sign out).
 // Nasaq's UserMenu owns the frame and the preferences; this supplies the product items and sign-out.
-export function UserMenu({ email, onReport, profileHref }: { email: string; onReport?: () => void; profileHref?: string }) {
+export function UserMenu({ email, onReport, profileHref, variant }: { email: string; onReport?: () => void; profileHref?: string; variant?: "sidebar" | "avatar" }) {
   const { t, locale } = useTranslations()
   const router = useRouter()
   const { mutate } = useSWRConfig()
@@ -35,6 +35,7 @@ export function UserMenu({ email, onReport, profileHref }: { email: string; onRe
     <NasaqUserMenu
       user={{ name: email.split("@")[0], email }}
       onSignOut={signOut}
+      variant={variant}
       labels={{ signOut: t("header.signOut") }}
     >
       {profileHref ? (
