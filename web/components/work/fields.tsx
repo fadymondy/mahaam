@@ -276,6 +276,7 @@ export function LabelPicker({
   onChange,
   onCreate,
   disabled,
+  compact,
 }: {
   labels: Label[]
   selected: string[]
@@ -283,6 +284,8 @@ export function LabelPicker({
   /** Present when the caller may create labels; resolves to the new label. */
   onCreate?: (name: string) => Promise<Label>
   disabled?: boolean
+  /** Just a square "+" button (the chips are shown elsewhere). */
+  compact?: boolean
 }) {
   const { t } = useTranslations()
   const [open, setOpen] = useState(false)
@@ -292,8 +295,18 @@ export function LabelPicker({
   const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="secondary" size="sm" disabled={disabled} className="h-auto min-h-7 min-w-0 flex-1 justify-start py-1 font-normal" aria-label={t("task.labels")} />}>
-        {selected.length ? (
+      <PopoverTrigger
+        render={
+          compact ? (
+            <Button variant="secondary" size="icon-sm" disabled={disabled} aria-label={t("td.addLabel")} />
+          ) : (
+            <Button variant="secondary" size="sm" disabled={disabled} className="h-auto min-h-7 min-w-0 flex-1 justify-start py-1 font-normal" aria-label={t("task.labels")} />
+          )
+        }
+      >
+        {compact ? (
+          <PlusIcon />
+        ) : selected.length ? (
           <LabelChips ids={selected} labels={labels} />
         ) : (
           <>
