@@ -1,31 +1,44 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { PlusIcon, SparklesIcon } from "lucide-react"
-import { toast } from "@fadymondy/nasaq/web"
+import { PencilIcon, PlusIcon, ServerIcon } from "lucide-react"
 import useSWR from "swr"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
+import {
+  AiUsageCost,
+  Badge,
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Field,
+  FieldLabel,
+  Input,
+  NativeSelect,
+  SectionHeader,
+  Switch,
+  toast,
+} from "@fadymondy/nasaq/web"
 
-
-
-
-
-
+import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
-import { money } from "@/lib/format"
+import { formatDay, money } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
 import { errorText, w } from "@/lib/work"
 
 /*
 A project's billing sources besides time (internal/work/billing_sources.go): its AI usage
-(pushed daily by agents over MCP record_ai_usage) with the markup it is invoiced at, and its
-subscriptions (infrastructure, AI, marketing tools, …). Drafting an invoice for the client
-bills unbilled AI usage and every due subscription period next to the time. Manager+.
+(pushed daily by agents over MCP record_ai_usage) with the markup it is invoiced at, in Nasaq's
+AiUsageCost, and its subscriptions (infrastructure, AI, marketing tools, …). Drafting an invoice
+for the client bills unbilled AI usage and every due subscription period next to the time. Manager+.
 */
 
 type UsageRow = {
@@ -59,9 +72,6 @@ type Sub = {
 
 const CATEGORIES = ["infrastructure", "ai", "marketing", "software", "domain", "support", "other"]
 const INTERVALS = ["month", "quarter", "year", "one_time"]
-const selectCls = "h-8 w-full rounded-lg border border-border bg-transparent px-2 text-sm"
-
-const tokens = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(n))
 
 export default function BillingPage() {
   const { t, locale } = useTranslations()
@@ -75,7 +85,7 @@ export default function BillingPage() {
   const markupNow = useSWR<{ ai_markup_bp: number }>([`/api/w/projects/${project.id}/ai-markup`, ws.id], fetcher<any>)
   const [markup, setMarkup] = useState<string | null>(null)
   const markupValue = markup ?? (markupNow.data ? String(markupNow.data.ai_markup_bp / 100) : "")
-  const [editing, setEditing] = useState<Partial<Sub> & { price?: string; cost?: string } | null>(null)
+  const [editing, setEditing] = useState<(Partial<Sub> & { price?: string; cost?: string }) | null>(null)
 
   const saveMarkup = async () => {
     try {
@@ -90,130 +100,115 @@ export default function BillingPage() {
   }
 
   const rows = usage.data?.rows ?? []
-  const days = (daily.data?.rows ?? []).slice(-30)
-  const maxCost = Math.max(1, ...days.map((d) => d.cost_minor))
+  // AiUsageCost works in major units of one currency: the usage's own, else the project's.
+  const currency = rows[0]?.currency || project.currency || "USD"
+  const major = (minor: number) => minor / 100
+  const days = (daily.data?.rows ?? [])
+    .filter((d) => d.currency === currency)
+    .slice(-30)
+    .map((d) => ({ date: d.key.slice(0, 10), billed: major(d.cost_minor - d.unbilled_cost_minor), unbilled: major(d.unbilled_cost_minor) }))
+  const byModel = rows
+    .filter((r) => r.currency === currency)
+    .map((r) => ({ id: r.key, label: r.key, tokensIn: r.input_tokens + r.cache_tokens, tokensOut: r.output_tokens, cost: major(r.cost_minor) }))
+  const list = subs.data?.subscriptions ?? []
 
   return (
-    <div className="space-y-8 p-6">
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-base font-medium">
-              <SparklesIcon className="size-4" aria-hidden /> {t("billing.aiTitle")}
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("billing.aiHint")}</p>
-          </div>
-          <div className="flex items-end gap-2">
-            <Field>
-              <FieldLabel htmlFor="markup">{t("billing.markup")}</FieldLabel>
-              <Input id="markup" dir="ltr" inputMode="decimal" className="w-24" placeholder="0" value={markupValue} onChange={(e) => setMarkup(e.target.value)} />
-            </Field>
-            <Button variant="secondary" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
-              {t("billing.saveMarkup")}
-            </Button>
-          </div>
-        </div>
+    <div className="mx-auto w-full max-w-6xl space-y-10 p-4 sm:p-6" data-billing-page>
+      <section className="space-y-4" aria-labelledby="billing-ai">
+        <SectionHeader
+          headingId="billing-ai"
+          title={t("billing.aiTitle")}
+          description={t("billing.aiHint")}
+          action={
+            <div className="flex items-end gap-2">
+              <Field>
+                <FieldLabel htmlFor="markup">{t("billing.markup")}</FieldLabel>
+                <Input id="markup" dir="ltr" inputMode="decimal" className="w-24" placeholder="0" value={markupValue} onChange={(e) => setMarkup(e.target.value)} />
+              </Field>
+              <Button variant="secondary" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
+                {t("billing.saveMarkup")}
+              </Button>
+            </div>
+          }
+        />
         {usage.error ? (
           <ErrorState error={usage.error} />
-        ) : !usage.data ? (
-          <LoadingRows rows={2} />
-        ) : rows.length === 0 ? (
+        ) : usage.data && rows.length === 0 ? (
           <EmptyState title={t("billing.noUsage")} body={t("billing.noUsageBody")} />
         ) : (
-          <>
-            {days.length > 1 ? (
-              <div className="flex h-24 items-end gap-1 border-b border-border" role="img" aria-label={t("billing.dailyCost")}>
-                {days.map((d) => (
-                  <div
-                    key={d.key}
-                    title={`${d.key}: ${money(d.cost_minor, d.currency, locale)}`}
-                    className="min-w-1 flex-1 bg-nq-action/70"
-                    style={{ height: `${Math.max(4, (d.cost_minor / maxCost) * 100)}%` }}
-                  />
-                ))}
-              </div>
-            ) : null}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-start text-caption text-muted-foreground">
-                  <tr>
-                    <th className="py-2 text-start font-medium">{t("billing.model")}</th>
-                    <th className="py-2 text-end font-medium">{t("billing.input")}</th>
-                    <th className="py-2 text-end font-medium">{t("billing.output")}</th>
-                    <th className="py-2 text-end font-medium">{t("billing.cache")}</th>
-                    <th className="py-2 text-end font-medium">{t("billing.cost")}</th>
-                    <th className="py-2 text-end font-medium">{t("billing.billed")}</th>
-                    <th className="py-2 text-end font-medium">{t("billing.unbilled")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {rows.map((r) => (
-                    <tr key={r.key + r.currency}>
-                      <td className="py-2" dir="ltr">
-                        {r.key}
-                      </td>
-                      <td className="py-2 text-end tabular-nums">{tokens(r.input_tokens)}</td>
-                      <td className="py-2 text-end tabular-nums">{tokens(r.output_tokens)}</td>
-                      <td className="py-2 text-end tabular-nums">{tokens(r.cache_tokens)}</td>
-                      <td className="py-2 text-end tabular-nums">{money(r.cost_minor, r.currency, locale)}</td>
-                      <td className="py-2 text-end tabular-nums">{money(r.billed_minor, r.currency, locale)}</td>
-                      <td className="py-2 text-end tabular-nums">{money(r.unbilled_cost_minor, r.currency, locale)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+          <AiUsageCost
+            days={days}
+            byModel={byModel}
+            markup={markupNow.data ? markupNow.data.ai_markup_bp / 10000 : undefined}
+            currency={currency}
+            loading={!usage.data || !daily.data}
+            data-ai-usage
+          />
         )}
       </section>
 
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-base font-medium">{t("billing.subsTitle")}</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("billing.subsHint")}</p>
-          </div>
-          <Button variant="primary" onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: "USD" })}>
-            <PlusIcon /> {t("billing.addSub")}
-          </Button>
-        </div>
+      <section className="space-y-4" aria-labelledby="billing-subs">
+        <SectionHeader
+          headingId="billing-subs"
+          title={t("billing.subsTitle")}
+          description={t("billing.subsHint")}
+          action={
+            <Button
+              variant="primary"
+              onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: project.currency || "USD" })}
+            >
+              <PlusIcon /> {t("billing.addSub")}
+            </Button>
+          }
+        />
         {subs.error ? (
           <ErrorState error={subs.error} />
         ) : !subs.data ? (
           <LoadingRows rows={2} />
-        ) : (subs.data.subscriptions ?? []).length === 0 ? (
+        ) : list.length === 0 ? (
           <EmptyState title={t("billing.noSubs")} />
         ) : (
-          <ul className="divide-y divide-line border border-border">
-            {(subs.data.subscriptions ?? []).map((x) => (
-              <li key={x.id} className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
-                <span className="font-medium" dir="auto">
-                  {x.name}
-                </span>
-                <Badge variant="neutral">{t(`billing.cat.${x.category}`)}</Badge>
-                {x.vendor ? <span className="text-muted-foreground">{x.vendor}</span> : null}
-                {!x.active ? <Badge variant="outline">{t("billing.inactive")}</Badge> : null}
-                {!x.billable ? <Badge variant="outline">{t("billing.notBillable")}</Badge> : null}
-                <span className="ms-auto tabular-nums">
-                  {money(x.price_minor, x.currency, locale)} / {t(`billing.int.${x.interval}`)}
-                  <span className="ms-2 text-caption text-muted-foreground">
-                    {t("billing.costIs", { cost: money(x.cost_minor, x.currency, locale) })}
+          <Card className="gap-0 py-0" data-subscriptions>
+            <ul className="divide-y divide-border">
+              {list.map((x) => (
+                <li key={x.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3" data-subscription={x.id}>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground" aria-hidden>
+                    <ServerIcon className="size-4" />
                   </span>
-                </span>
-                <span className="w-full text-caption text-muted-foreground">
-                  {x.next_period ? t("billing.nextPeriod", { date: x.next_period }) : t("billing.fullyBilled")}
-                  {x.billed_until ? ` · ${t("billing.billedUntil", { date: x.billed_until })}` : ""}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setEditing({ ...x, price: (x.price_minor / 100).toFixed(2), cost: (x.cost_minor / 100).toFixed(2) })}
-                >
-                  {t("billing.edit")}
-                </Button>
-              </li>
-            ))}
-          </ul>
+                  <div className="min-w-0 flex-1 basis-56">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium" dir="auto">
+                        {x.name}
+                      </span>
+                      <Badge variant="neutral">{t(`billing.cat.${x.category}`)}</Badge>
+                      {!x.active ? <Badge variant="outline">{t("billing.inactive")}</Badge> : null}
+                      {!x.billable ? <Badge variant="outline">{t("billing.notBillable")}</Badge> : null}
+                    </div>
+                    <p className="mt-0.5 text-caption text-muted-foreground">
+                      {x.vendor ? <span dir="auto">{x.vendor} · </span> : null}
+                      {x.next_period ? t("billing.nextPeriod", { date: formatDay(x.next_period, locale) }) : t("billing.fullyBilled")}
+                      {x.billed_until ? ` · ${t("billing.billedUntil", { date: formatDay(x.billed_until, locale) })}` : ""}
+                    </p>
+                  </div>
+                  <div className="text-end">
+                    <div className="font-medium tabular-nums">
+                      <Ltr>{money(x.price_minor, x.currency, locale)}</Ltr>
+                      <span className="text-caption font-normal text-muted-foreground"> / {t(`billing.int.${x.interval}`)}</span>
+                    </div>
+                    <div className="text-caption text-muted-foreground">{t("billing.costIs", { cost: money(x.cost_minor, x.currency, locale) })}</div>
+                  </div>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={t("billing.edit")}
+                    onClick={() => setEditing({ ...x, price: (x.price_minor / 100).toFixed(2), cost: (x.cost_minor / 100).toFixed(2) })}
+                  >
+                    <PencilIcon />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </Card>
         )}
       </section>
 
@@ -283,13 +278,7 @@ function SubDialog({
             <div className="grid grid-cols-2 gap-3">
               <Field>
                 <FieldLabel htmlFor="s-cat">{t("billing.category")}</FieldLabel>
-                <select id="s-cat" name="category" className={selectCls} defaultValue={v.category}>
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {t(`billing.cat.${c}`)}
-                    </option>
-                  ))}
-                </select>
+                <NativeSelect id="s-cat" name="category" defaultValue={v.category} options={CATEGORIES.map((c) => ({ value: c, label: t(`billing.cat.${c}`) }))} />
               </Field>
               <Field>
                 <FieldLabel htmlFor="s-vendor">{t("billing.vendor")}</FieldLabel>
@@ -309,13 +298,7 @@ function SubDialog({
               </Field>
               <Field>
                 <FieldLabel htmlFor="s-int">{t("billing.interval")}</FieldLabel>
-                <select id="s-int" name="interval" className={selectCls} defaultValue={v.interval}>
-                  {INTERVALS.map((c) => (
-                    <option key={c} value={c}>
-                      {t(`billing.int.${c}`)}
-                    </option>
-                  ))}
-                </select>
+                <NativeSelect id="s-int" name="interval" defaultValue={v.interval} options={INTERVALS.map((c) => ({ value: c, label: t(`billing.int.${c}`) }))} />
               </Field>
               <Field>
                 <FieldLabel htmlFor="s-start">{t("billing.starts")}</FieldLabel>
@@ -326,7 +309,7 @@ function SubDialog({
                 <Input id="s-end" name="ends_on" type="date" dir="ltr" defaultValue={v.ends_on ?? ""} />
               </Field>
             </div>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap gap-6">
               <label className="flex items-center gap-2 text-sm">
                 <Switch name="billable" defaultChecked={v.billable ?? true} /> {t("billing.billable")}
               </label>
