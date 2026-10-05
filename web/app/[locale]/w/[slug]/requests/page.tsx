@@ -6,9 +6,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   CalendarIcon,
   CheckIcon,
-  ExternalLinkIcon,
   InboxIcon,
   ListTodoIcon,
+  PanelRightOpenIcon,
   RotateCcwIcon,
   UserIcon,
   XIcon,
@@ -25,6 +25,7 @@ import { NotFoundState } from "@/components/not-found-state"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { AuthImage, PromptDialog, RequestStateBadge, ScrollTabs } from "@/components/portal/portal-bits"
 import { IssuePriorityMark, IssueTypeIcon } from "@/components/work/issues/issue-bits"
+import { TaskSheet } from "@/components/work/task-sheet"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { formatDay, timeAgo } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
@@ -145,6 +146,8 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
   const r = req.data
   const [acting, setActing] = useState<"accept" | "decline" | "reopen" | null>(null)
   const [busy, setBusy] = useState(false)
+  // The issue (or task) this request became opens in the shared side-over, over the request.
+  const [issueKey, setIssueKey] = useState<string | null>(null)
   const base = `/${locale}/w/${ws.slug}`
 
   const done = async (msg: string) => {
@@ -167,6 +170,7 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
   }
 
   return (
+    <>
     <Sheet open onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="end" className="w-full gap-0 overflow-y-auto sm:max-w-xl" data-request-detail={requestKey}>
         {!r ? (
@@ -216,7 +220,7 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
               </dl>
             </div>
 
-            <Outcome r={r} base={base} />
+            <Outcome r={r} onOpen={setIssueKey} />
 
             {r.state === "pending" ? (
               <div className="flex flex-wrap gap-2 border-b border-border p-5">
@@ -312,10 +316,12 @@ function RequestSheet({ requestKey, onClose, onChanged }: { requestKey: string; 
         />
       ) : null}
     </Sheet>
+    <TaskSheet taskKey={issueKey} onClose={() => setIssueKey(null)} onOpen={setIssueKey} onChanged={() => void req.mutate()} />
+    </>
   )
 }
 
-function Outcome({ r, base }: { r: RequestDetail; base: string }) {
+function Outcome({ r, onOpen }: { r: RequestDetail; onOpen: (key: string) => void }) {
   const { t } = useTranslations()
   if (r.state === "pending" && !r.reply) return null
   return (
@@ -323,22 +329,23 @@ function Outcome({ r, base }: { r: RequestDetail; base: string }) {
       {r.state === "accepted" ? (
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <span>{t("requests.becameIssue")}</span>
-          <Link href={`${base}/issues/${r.key}`} className="inline-flex items-center gap-1 font-medium text-nq-accent-text hover:underline" data-link="issue">
-            <code dir="ltr">{r.key}</code> · {t(`issues.status.${r.status}`)} <ExternalLinkIcon className="size-3.5" />
-          </Link>
+          <button type="button" onClick={() => onOpen(r.key)} className="inline-flex items-center gap-1 font-medium text-nq-accent-text hover:underline" data-link="issue">
+            <code dir="ltr">{r.key}</code> · {t(`issues.status.${r.status}`)} <PanelRightOpenIcon className="size-3.5 rtl:-scale-x-100" />
+          </button>
         </p>
       ) : null}
       {r.state === "converted" && r.task_key ? (
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <span>{t("requests.becameTask")}</span>
           {r.task_project_id ? (
-            <Link
-              href={`${base}/projects/${r.task_project_id}/tasks/${r.task_key}`}
+            <button
+              type="button"
+              onClick={() => onOpen(r.task_key!)}
               className="inline-flex items-center gap-1 font-medium text-nq-accent-text hover:underline"
               data-link="task"
             >
-              <code dir="ltr">{r.task_key}</code> <ExternalLinkIcon className="size-3.5" />
-            </Link>
+              <code dir="ltr">{r.task_key}</code> <PanelRightOpenIcon className="size-3.5 rtl:-scale-x-100" />
+            </button>
           ) : (
             <code dir="ltr">{r.task_key}</code>
           )}

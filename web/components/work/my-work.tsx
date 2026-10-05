@@ -1,8 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import useSWR from "swr"
 
+import { TaskSheet } from "@/components/work/task-sheet"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -22,6 +24,7 @@ export function MyWork({ meId }: { meId: string | undefined }) {
   const projects = useProjects(ws.id)
   const tasks = useSWR<{ tasks: Task[] | null }>(meId ? [`/api/w/tasks?assignee=${encodeURIComponent(meId)}&limit=200`, ws.id] : null, fetcher)
   const week = useSWR<{ total_s: number }>(ws.can("time:track") ? ["/api/w/time/timesheet", ws.id] : null, fetcher)
+  const [taskKey, setTaskKey] = useState<string | null>(null)
   const issues = useIssues(ws.id, { state: "open" }, ws.can("feedback:read"))
 
   const open = (tasks.data?.tasks ?? []).filter((x) => !x.completed_at)
@@ -51,9 +54,10 @@ export function MyWork({ meId }: { meId: string | undefined }) {
           <ul className="divide-y divide-line border border-border">
             {open.slice(0, 8).map((x) => (
               <li key={x.id}>
-                <Link
-                  href={`${base}/projects/${x.project_id}?task=${encodeURIComponent(x.key)}`}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted"
+                <button
+                  type="button"
+                  onClick={() => setTaskKey(x.key)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-start text-sm hover:bg-muted"
                 >
                   <span dir="ltr" className="font-mono text-xs text-muted-foreground">
                     {x.key}
@@ -62,12 +66,13 @@ export function MyWork({ meId }: { meId: string | undefined }) {
                     {x.title}
                   </span>
                   {x.due_at ? <span className="text-caption text-muted-foreground">{x.due_at.slice(0, 10)}</span> : null}
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
         )}
       </div>
+      <TaskSheet taskKey={taskKey} onClose={() => setTaskKey(null)} onOpen={setTaskKey} onChanged={() => void tasks.mutate()} />
     </section>
   )
 }

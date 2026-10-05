@@ -214,13 +214,13 @@ export default function ProjectOverviewPage() {
           <ul className="divide-y divide-line">
             {recentIssues.map((i) => (
               <li key={i.key}>
-                <Link href={`${base}/issues/${i.key}`} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted">
+                <button type="button" onClick={() => openTask(i.key)} className="flex w-full items-center gap-3 px-4 py-2.5 text-start text-sm hover:bg-muted">
                   <Ltr mono className="shrink-0 text-caption text-muted-foreground">
                     {i.key}
                   </Ltr>
                   <span className="min-w-0 flex-1 truncate">{i.title}</span>
                   <span className="hidden shrink-0 text-caption text-muted-foreground sm:inline">{t(`issues.status.${i.status}`)}</span>
-                </Link>
+                </button>
               </li>
             ))}
           </ul>

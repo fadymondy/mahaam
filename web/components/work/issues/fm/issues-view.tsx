@@ -44,8 +44,8 @@ import {
   type IssueStatus,
 } from "@/lib/work"
 import { IssueContextMenu } from "./issue-actions"
+import { TaskSheet } from "@/components/work/task-sheet"
 import { IssueFormDialog } from "./issue-form-dialog"
-import { IssueSheet } from "./issue-sheet"
 import { PRIORITY_MARK, TYPE_DOT, formatAICost, formatAgentTime, issueSeconds } from "./shared"
 
 // Items per board column per page.
@@ -87,11 +87,6 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
   const [creating, setCreating] = useState(false)
   // Clicking a card opens it here; the sheet's arrow is the way to the page.
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const selected = useMemo(() => issues.find((i) => i.key === selectedKey) ?? null, [issues, selectedKey])
-  const [lastSelected, setLastSelected] = useState<Issue | null>(null)
-  useEffect(() => {
-    if (selected) setLastSelected(selected)
-  }, [selected])
 
   const [dragging, setDragging] = useState<Issue | null>(null)
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null)
@@ -348,12 +343,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
       <IssueFormDialog open={creating} onOpenChange={setCreating} projectId={projectId} onSaved={refresh} />
 
-      <IssueSheet
-        issue={selected ?? lastSelected}
-        open={selectedKey !== null}
-        onOpenChange={(next) => !next && setSelectedKey(null)}
-        onChanged={refresh}
-      />
+      <TaskSheet taskKey={selectedKey} onClose={() => setSelectedKey(null)} onOpen={setSelectedKey} onChanged={() => void refresh()} />
     </>
   )
 }
