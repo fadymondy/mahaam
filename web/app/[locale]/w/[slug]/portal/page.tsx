@@ -35,6 +35,8 @@ export default function PortalDashboard() {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const base = `/${locale}/w/${ws.slug}/portal`
+  // Projects open in the app's own list and project pages (MH-1176), not portal copies.
+  const app = `/${locale}/w/${ws.slug}`
   useDocumentTitle(`${t("portal.nav.dashboard")} · ${ws.summary.name}`)
   const me = useMe()
   const ov = usePortalOverview(ws.id)
@@ -61,7 +63,7 @@ export default function PortalDashboard() {
           label={t("home.stat.activeProjects")}
           value={o.active_projects}
           sub={t("portal.home.completedProjects", { n: o.completed_projects })}
-          href={`${base}/projects`}
+          href={`${app}/projects`}
           data-stat="projects"
         />
         <StatTile
@@ -101,7 +103,7 @@ export default function PortalDashboard() {
       <section className="flex min-w-0 flex-col" aria-label={t("nav.projects")} data-panel="projects">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-label font-semibold">{t("nav.projects")}</h2>
-          <PanelLink href={`${base}/projects`}>{t("home.projects.viewAll")}</PanelLink>
+          <PanelLink href={`${app}/projects`}>{t("home.projects.viewAll")}</PanelLink>
         </div>
         {open.length === 0 ? (
           <PortalEmpty icon={<FolderKanbanIcon />} title={t("portal.noProjects")} />
@@ -109,7 +111,7 @@ export default function PortalDashboard() {
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" data-portal-projects={open.length}>
             {open.slice(0, 8).map((p) => (
               <li key={p.id} className="min-w-0">
-                <ProjectCard p={p} href={`${base}/projects/${p.id}`} />
+                <ProjectCard p={p} href={`${app}/projects/${p.id}`} />
               </li>
             ))}
           </ul>
@@ -117,8 +119,8 @@ export default function PortalDashboard() {
       </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <DuePanel o={o} base={base} />
-        <ActivityPanel items={o.activity} base={base} />
+        <DuePanel o={o} base={app} />
+        <ActivityPanel items={o.activity} base={app} portal={base} />
         <Panel title={t("portal.hoursByWeek")} action={<PanelLink href={`${base}/time`}>{t("portal.home.allTime")}</PanelLink>} data-panel="time">
           <WeeksChart weeks={o.weeks} />
         </Panel>
@@ -176,7 +178,7 @@ function DuePanel({ o, base }: { o: { due_tasks: { key: string; title: string; p
     icon: x.overdue ? AlertTriangleIcon : CalendarClockIcon,
     time: x.overdue ? t("home.attention.overdue") : t("home.attention.due", { date: formatDay(x.due_at, locale, "short") }),
     dateTime: x.due_at,
-    href: `${base}/projects/${x.project_id}?tab=board&task=${encodeURIComponent(x.key)}`,
+    href: `${base}/projects/${x.project_id}?task=${encodeURIComponent(x.key)}`,
   }))
   return (
     <div className="flex min-w-0 flex-col rounded-lg border border-border bg-card p-4" data-panel="due">
@@ -191,7 +193,7 @@ function DuePanel({ o, base }: { o: { due_tasks: { key: string; title: string; p
   )
 }
 
-function ActivityPanel({ items, base }: { items: PortalActivityItem[]; base: string }) {
+function ActivityPanel({ items, base, portal }: { items: PortalActivityItem[]; base: string; portal: string }) {
   const { t, locale } = useTranslations()
   return (
     <Panel title={t("home.activity.title")} data-panel="activity">
@@ -200,12 +202,16 @@ function ActivityPanel({ items, base }: { items: PortalActivityItem[]; base: str
       ) : (
         <ol className="-my-2 divide-y divide-line">
           {items.slice(0, 6).map((it, i) => {
-            const tab = it.kind.startsWith("task.") ? `board&task=${encodeURIComponent(it.key)}` : it.kind === "request.filed" ? "requests" : `issues&issue=${encodeURIComponent(it.key)}`
+            const href = it.kind.startsWith("task.")
+              ? `${base}/projects/${it.project_id}?task=${encodeURIComponent(it.key)}`
+              : it.kind === "request.filed"
+                ? `${portal}/requests`
+                : `${base}/projects/${it.project_id}/issues/${encodeURIComponent(it.key)}`
             return (
               <li key={i} className="flex items-start gap-3 py-2.5 text-sm">
                 <p className="min-w-0 flex-1 text-nq-fg-body [overflow-wrap:anywhere]">
                   {t(`portal.act.${it.kind}`, { from: it.from ?? "", to: it.to ?? "" })}{" "}
-                  <Link href={`${base}/projects/${it.project_id}?tab=${tab}`} className="font-medium text-foreground hover:underline">
+                  <Link href={href} className="font-medium text-foreground hover:underline">
                     <Ltr mono>{it.key}</Ltr> {it.title}
                   </Link>
                   {it.project ? <span className="block truncate text-caption text-muted-foreground">{it.project}</span> : null}

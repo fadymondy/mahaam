@@ -24,8 +24,8 @@ var UserScopes = []ScopeDef{
 	// Manager: creating and changing projects is a manager action in authz.Matrix
 	// (project leads manage their own project in the UI; a token needs the role).
 	{"projects:write", "Create, change and archive projects", authz.Manager},
-	{"tasks:read", "Read tasks", authz.Member},
-	{"tasks:write", "Create, move, assign and comment on tasks", authz.Member},
+	{"tasks:read", "Read tasks", authz.Client},
+	{"tasks:write", "Create, move, assign and comment on tasks", authz.Client},
 	{"teams:write", "Create teams and change their members", authz.Manager},
 	{"time:read", "Read your own time entries and running timer", authz.Member},
 	{"time:write", "Start/stop timers and log your own time", authz.Member},
@@ -38,8 +38,8 @@ var UserScopes = []ScopeDef{
 	{"invoices:write", "Draft invoices from time", authz.Manager},
 	{"feedback:read", "Read the workspace's feedback issues", authz.Member},
 	{"feedback:write", "Comment on and update feedback issues", authz.Member},
-	{"issues:read", "Read the workspace's own issues (its \"Report a problem\" intake)", authz.Member},
-	{"issues:write", "Comment on and triage the workspace's own issues", authz.Member},
+	{"issues:read", "Read the workspace's own issues (its \"Report a problem\" intake)", authz.Client},
+	{"issues:write", "Comment on and triage the workspace's own issues", authz.Client},
 	{"vault:read", "Recall a project's memory and list its vault (never secret values)", authz.Member},
 	{"vault:write", "Write a project's memory notes", authz.Member},
 	{"vault:secrets", "Store and reveal a project's secrets (every reveal is recorded)", authz.Manager},

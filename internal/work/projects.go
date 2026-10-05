@@ -41,6 +41,10 @@ func visibleClause(s *tenant.Scope, args *[]any) string {
 	return roleVisibleClause(s, args)
 }
 
+// VisibleProjectsSQL is visibleClause for packages outside work (the issue tracker in
+// internal/reports): a predicate over `projects p`, its parameters appended to args.
+func VisibleProjectsSQL(s *tenant.Scope, args *[]any) string { return visibleClause(s, args) }
+
 func roleVisibleClause(s *tenant.Scope, args *[]any) string {
 	if atLeast(s, authz.Manager) {
 		return "TRUE"
@@ -51,8 +55,8 @@ func roleVisibleClause(s *tenant.Scope, args *[]any) string {
 	// account is a contact of — nothing wider, and project_members/teams never apply.
 	// A customer (client role) sees the projects of the client record they are a portal
 	// contact of, plus any project they were added to directly or through a team — the
-	// way a manager naturally "gives the customer access to the project". Tasks stay
-	// hidden either way (authz.TasksRead is member+); the portal shows aggregates only.
+	// way a manager naturally "gives the customer access to the project". On those
+	// projects they work tasks and issues like a member (MH-1176).
 	if !atLeast(s, authz.Member) {
 		return fmt.Sprintf(`((p.client_id IS NOT NULL AND EXISTS (
 			SELECT 1 FROM client_contacts cc
@@ -105,7 +109,7 @@ func taskClause(s *tenant.Scope, args *[]any) string {
 		return "TRUE"
 	}
 	if !atLeast(s, authz.Member) {
-		return visibleClause(s, args) // clients never read tasks (authz.TasksRead); kept for completeness
+		return visibleClause(s, args) // a customer: every task of the projects they can see (MH-1176)
 	}
 	*args = append(*args, s.UserID)
 	u := len(*args)

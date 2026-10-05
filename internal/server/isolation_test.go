@@ -428,21 +428,23 @@ func TestCrossWorkspaceIsolation(t *testing.T) {
 	// Guarded routes without path parameters, by segment. Anything else is unknown.
 	unparameterised := map[string]bool{
 		"workspace": true, // DELETE /api/w/workspace — the owner deletes their own workspace (slug-confirmed)
-		"ai-usage": true, // the workspace AI usage summary (manager+)
-		"current":  true, "members": true, "activity": true, "me": true, "graphql": true,
-		"sync": true, // GET /api/w/sync: the delta for offline clients, scoped to the caller
-		"widgets": true, // GET /api/w/widgets/projects: the caller's own visible projects and timer
+		"ai-usage":  true, // the workspace AI usage summary (manager+)
+		"current":   true, "members": true, "activity": true, "me": true, "graphql": true,
+		"sync":     true, // GET /api/w/sync: the delta for offline clients, scoped to the caller
+		"widgets":  true, // GET /api/w/widgets/projects: the caller's own visible projects and timer
 		"feedback": true, // the signed-in "Report a problem" intake (reports land in the platform workspace)
 		"events":   true, // P2: the per-user realtime stream (read with a timeout, see send)
 		// P5: /api/w/report/{time,export,budgets,profitability}, /api/w/notification-settings
 		"report": true, "notification-settings": true,
 		// P7: the client's own portal reads/writes (GET issues|invoices, POST issues) —
 		// collection routes scoped to the caller, no path parameter.
-		"portal":  true,
-		"kpi":     true, // GET /api/w/kpi/team (manager+, the caller's workspace)
-		"plan":    true, // GET /api/w/plan: the workspace's plan and usage (admin+)
-		"billing": true, // GET /api/w/billing, POST /api/w/billing/{checkout,portal} (admin+)
-		"oauth":   true, // GET/POST /api/oauth/consent — the MCP OAuth consent screen (account-level, no workspace)
+		"portal":   true,
+		"kpi":      true, // GET /api/w/kpi/team (manager+, the caller's workspace)
+		"plan":     true, // GET /api/w/plan: the workspace's plan and usage (admin+)
+		"billing":  true, // GET /api/w/billing, POST /api/w/billing/{checkout,portal} (admin+)
+		"oauth":    true, // GET/POST /api/oauth/consent — the MCP OAuth consent screen (account-level, no workspace)
+		"people":   true, // GET /api/w/people: names on the caller's visible projects (MH-1176)
+		"overview": true, // GET /api/w/overview: the caller's own home overview
 	}
 
 	leaks := func(b []byte) string {

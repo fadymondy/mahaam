@@ -31,7 +31,7 @@ export default function PortalRequestsPage() {
   const [filter, setFilter] = useState<Filter>("all")
   const requests = usePortalRequests(ws.id)
   const projects = usePortalProjects(ws.id)
-  const base = `/${locale}/w/${ws.slug}/portal/projects`
+  const base = `/${locale}/w/${ws.slug}/projects`
 
   const all = useMemo(() => requests.data?.requests ?? [], [requests.data])
   const counts = useMemo(() => {
@@ -40,8 +40,8 @@ export default function PortalRequestsPage() {
     return c
   }, [all])
   const rows = filter === "all" ? all : all.filter((r) => r.state === filter)
-  const open = (projectId: string | null, q: string) => {
-    if (projectId) router.push(`${base}/${projectId}?${q}`)
+  const open = (projectId: string | null, path: string) => {
+    if (projectId) router.push(`${base}/${projectId}${path}`)
   }
 
   return (
@@ -84,8 +84,8 @@ export default function PortalRequestsPage() {
                 key={r.key}
                 r={r}
                 project={r.project_name}
-                onOpenIssue={(key) => open(r.project_id, `tab=issues&issue=${encodeURIComponent(key)}`)}
-                onOpenTask={(key) => open(r.project_id, `tab=board&task=${encodeURIComponent(key)}`)}
+                onOpenIssue={(key) => open(r.project_id, `/issues/${encodeURIComponent(key)}`)}
+                onOpenTask={(key) => open(r.project_id, `?task=${encodeURIComponent(key)}`)}
               />
             ))}
           </ul>

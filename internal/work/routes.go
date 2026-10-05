@@ -259,6 +259,9 @@ func (r routes) projects() {
 	}) (*ProjectDetail, error) {
 		return r.sv.SetProjectArchived(ctx, in.Project, false)
 	})
+	do(r, http.MethodGet, "/api/w/people", "w-people", "People on the projects you can see (the directory of a customer, who cannot list members)", tag, 0, func(ctx context.Context, _ *WS) (*PeopleList, error) {
+		return r.sv.People(ctx)
+	})
 	do(r, http.MethodPut, "/api/w/projects/{project}/members/{user}", "w-put-project-member", "Add a member to a project (or change their role)", tag, 0, func(ctx context.Context, in *struct {
 		WS
 		ProjectRef

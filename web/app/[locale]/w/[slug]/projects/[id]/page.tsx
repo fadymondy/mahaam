@@ -8,6 +8,7 @@ import { CheckCircle2Icon, CircleAlertIcon, CircleDotIcon, ClockAlertIcon, GitCo
 import { Button, MetricTiles, Progress, Skeleton } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
+import { PortalHostingCard } from "@/components/portal/portal-hosting"
 import { Ltr } from "@/components/copy-field"
 import { BudgetMeters, LevelBadge } from "@/components/reports/budget-meter"
 import { ProjectReportMenu } from "@/components/reports/project-report-menu"
@@ -181,6 +182,8 @@ export default function ProjectOverviewPage() {
           <InfoRow label={t("project.billing")}>{t(`billing.${p.billing_mode}`)}</InfoRow>
         </Card>
       )}
+
+      {isClient ? <PortalHostingCard projectId={p.id} /> : null}
 
       <Card title={t("po.recentTasks")} flush action={{ href: `${base}/board`, label: t("po.viewAll") }} data-card="tasks">
         {board.isLoading ? (

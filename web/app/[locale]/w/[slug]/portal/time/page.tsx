@@ -24,7 +24,7 @@ export default function PortalTimePage() {
   const ws = useWorkspace()
   useDocumentTitle(`${t("portal.nav.time")} · ${ws.summary.name}`)
   const time = usePortalTimeAll(ws.id)
-  const base = `/${locale}/w/${ws.slug}/portal/projects`
+  const base = `/${locale}/w/${ws.slug}/projects`
 
   const d = time.data
   const budget = d?.projects.reduce((n, p) => n + (p.budget_minutes ?? 0), 0) ?? 0
@@ -66,7 +66,7 @@ export default function PortalTimePage() {
                       <li key={p.id} className="space-y-1.5" data-time-project={p.id}>
                         <div className="flex items-center gap-2 text-sm">
                           <ColorDot color={p.color} className="shrink-0" />
-                          <Link href={`${base}/${p.id}?tab=time`} className="min-w-0 flex-1 truncate font-medium hover:underline">
+                          <Link href={`${base}/${p.id}`} className="min-w-0 flex-1 truncate font-medium hover:underline">
                             {p.name}
                           </Link>
                           <span className="text-caption tabular-nums text-muted-foreground" dir="ltr">

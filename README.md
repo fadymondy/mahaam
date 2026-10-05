@@ -386,6 +386,13 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   readers. The customer sees ALL issues of their projects (slim: no logs, agent fields or author ids).
   `internal/work/portal_panel.go`, `internal/reports/portal_panel.go`. Actions `portal:read` / `portal:write` (Client+)
   on top of project visibility (404 otherwise).
+- **Customer full project (MH-1176)**: a customer opens the app's own Projects list (`/w/{slug}/projects`) and project
+  pages (overview, board, list, issues, task sheet) and works them like a member — create, edit, move, assign, comment —
+  on the projects `visibleClause` gives them, and nothing wider. Matrix: `tasks:read|write`, `feedback:read|write`,
+  `labels:create` are Client+. The issue tracker (`internal/reports` `customer()`) limits `List`/`Find` to visible
+  projects and refuses a project-less `Create`. `GET /api/w/people` is their directory (names on their projects; never the
+  member list). Still member+: members, teams, clients, reports, time tracking, rates, vault, integrations. The
+  `/portal/projects` pages redirect to the app's; the portal panel endpoints above stay for the dashboard, MCP and mobile.
 - **Customer issue control**: `PATCH /api/w/portal/issues/{key}` allows exactly accept (in_review → done), reopen
   (done | in_review → todo) and priority; `POST …/comments` replies. The general `PATCH /api/w/issues/{key}` is unchanged.
 - **Requests**: a reports row with `request_state` (`pending | accepted | declined | converted`), `request_kind`

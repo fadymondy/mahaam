@@ -55,6 +55,10 @@ export const useCurrentWorkspace = (id?: string | null) => useScoped<CurrentWork
 
 export const useMembers = (id?: string | null) => useScoped<{ members: Member[] | null }>("/api/w/members", id)
 
+// The people on the caller's visible projects (MH-1176): the directory of a customer, who cannot list members.
+export type Person = { user_id: string; name: string; initials: string }
+export const usePeople = (id?: string | null) => useScoped<{ people: Person[] | null }>("/api/w/people", id)
+
 export const useInvitations = (id?: string | null, enabled = true) =>
   useScoped<{ invitations: Invitation[] | null }>("/api/w/invitations", id, enabled)
 

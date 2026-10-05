@@ -252,7 +252,7 @@ function ShellNav({ base, can }: { base: string; can: string[]; isOwner?: boolea
         <NavItem href={`${base}/portal`} exact icon={<HomeIcon />}>
           {t("portal.nav.dashboard")}
         </NavItem>
-        <NavItem href={`${base}/portal/projects`} icon={<FolderKanbanIcon />}>
+        <NavItem href={`${base}/projects`} icon={<FolderKanbanIcon />}>
           {t("nav.projects")}
         </NavItem>
         <NavItem href={`${base}/portal/time`} icon={<ClockIcon />}>
