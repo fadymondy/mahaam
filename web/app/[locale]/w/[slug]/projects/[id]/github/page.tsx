@@ -2,10 +2,10 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { ExternalLinkIcon, RocketIcon } from "lucide-react"
+import { ChevronDownIcon, ExternalLinkIcon, RocketIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Tabs, TabsList, TabsPanel, TabsTab, Textarea } from "@fadymondy/nasaq/web"
+import { Badge, Button, Collapsible, CollapsiblePanel, CollapsibleTrigger, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, RadioCard, RadioGroup, Skeleton, Tabs, TabsList, TabsPanel, TabsTab, Textarea } from "@fadymondy/nasaq/web"
 
 
 
@@ -15,6 +15,7 @@ import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, 
 
 
 
+import { Ltr } from "@/components/copy-field"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -203,12 +204,15 @@ function DeployButton({ projectId, defaultRef }: { projectId: string; defaultRef
   const { t } = useTranslations()
   const ws = useWorkspace()
   const [open, setOpen] = useState(false)
-  const [workflow, setWorkflow] = useState("")
+  const [picked, setPicked] = useState("")
   const [ref, setRef] = useState(defaultRef)
   const [inputs, setInputs] = useState("")
   const [busy, setBusy] = useState(false)
   const flows = useGitHub<{ workflows: Workflow[] | null }>(ws.id, projectId, open ? "workflows" : null)
+  // Every active workflow with a workflow_dispatch trigger is an app you can ship; one is picked for you.
   const list = (flows.data?.workflows ?? []).filter((f) => f.state === "active")
+  const workflow = picked || (list.length === 1 ? String(list[0].id) : "")
+  const app = list.find((f) => String(f.id) === workflow)
   const submit = async () => {
     const parsed: Record<string, string> = {}
     for (const line of inputs.split("\n")) {
@@ -217,9 +221,14 @@ function DeployButton({ projectId, defaultRef }: { projectId: string; defaultRef
     }
     setBusy(true)
     try {
-      await w.post(ws.id, `/api/w/projects/${projectId}/github/deploy`, { workflow, ref, inputs: parsed })
+      await w.post(ws.id, `/api/w/projects/${projectId}/github/deploy`, {
+        workflow,
+        ref,
+        inputs: parsed,
+      })
       toast.success(t("gh.deployed"))
       setOpen(false)
+      setPicked("")
     } catch (err) {
       toast.error(errorText(err, t("common.networkError")))
     } finally {
@@ -228,45 +237,71 @@ function DeployButton({ projectId, defaultRef }: { projectId: string; defaultRef
   }
   return (
     <>
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button variant="primary" onClick={() => setOpen(true)} data-deploy-now>
         <RocketIcon />
-        {t("gh.deploy")}
+        {t("gh.deployNow")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{t("gh.deployTitle")}</DialogTitle>
-            <DialogDescription>{t("gh.deployHint")}</DialogDescription>
+            <DialogTitle>{t("gh.deployNow")}</DialogTitle>
+            <DialogDescription>{t("gh.pickApp")}</DialogDescription>
           </DialogHeader>
-          <Field>
-            <FieldLabel htmlFor="gh-wf">{t("gh.workflow")}</FieldLabel>
-            <Select items={list.map((f) => ({ value: String(f.id), label: f.name }))} value={workflow} onValueChange={(v) => setWorkflow(String(v ?? ""))}>
-              <SelectTrigger id="gh-wf" className="w-full">
-                <SelectValue placeholder={t("gh.workflow")} />
-              </SelectTrigger>
-              <SelectContent>
-                {list.map((f) => (
-                  <SelectItem key={f.id} value={String(f.id)}>
-                    <span dir="ltr">{f.name} · {f.path.split("/").pop()}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          {flows.isLoading ? (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+            </div>
+          ) : flows.error ? (
+            <p className="text-sm text-nq-danger-text">{errorText(flows.error, t("common.networkError"))}</p>
+          ) : list.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{t("gh.noApps")}</p>
+          ) : (
+            <RadioGroup
+              value={workflow}
+              onValueChange={(v) => setPicked(String(v ?? ""))}
+              aria-label={t("gh.app")}
+              className="flex flex-col gap-2"
+              data-deploy-apps
+            >
+              {list.map((f) => (
+                <RadioCard
+                  key={f.id}
+                  value={String(f.id)}
+                  title={<span dir="auto">{f.name}</span>}
+                  description={
+                    <Ltr mono className="text-caption">
+                      {f.path.split("/").pop()}
+                    </Ltr>
+                  }
+                  meta={<RocketIcon className="size-4 text-muted-foreground" />}
+                />
+              ))}
+            </RadioGroup>
+          )}
           <Field>
             <FieldLabel htmlFor="gh-ref">{t("gh.ref")}</FieldLabel>
             <Input id="gh-ref" dir="ltr" value={ref} onChange={(e) => setRef(e.target.value)} />
           </Field>
-          <Field>
-            <FieldLabel htmlFor="gh-inputs">{t("gh.inputs")}</FieldLabel>
-            <Textarea id="gh-inputs" dir="ltr" rows={3} placeholder="environment=production" value={inputs} onChange={(e) => setInputs(e.target.value)} />
-          </Field>
+          <Collapsible>
+            <CollapsibleTrigger render={<Button variant="ghost" size="sm" className="-ms-2" />}>
+              <ChevronDownIcon className="transition-transform in-data-panel-open:rotate-180" />
+              {t("gh.advanced")}
+            </CollapsibleTrigger>
+            <CollapsiblePanel>
+              <Field className="pt-2">
+                <FieldLabel htmlFor="gh-inputs">{t("gh.inputs")}</FieldLabel>
+                <Textarea id="gh-inputs" dir="ltr" rows={3} placeholder="environment=production" value={inputs} onChange={(e) => setInputs(e.target.value)} />
+              </Field>
+            </CollapsiblePanel>
+          </Collapsible>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button variant="primary" disabled={!workflow || busy} onClick={submit}>
-              {t("gh.deploy")}
+            <Button variant="primary" disabled={!workflow || !ref.trim() || busy} onClick={submit} data-deploy-start>
+              <RocketIcon />
+              {app ? t("gh.deployApp", { app: app.name }) : t("gh.deployNow")}
             </Button>
           </DialogFooter>
         </DialogContent>
