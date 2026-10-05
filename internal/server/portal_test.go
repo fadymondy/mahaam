@@ -72,6 +72,28 @@ func TestCustomerPortal(t *testing.T) {
 	if panel["invoices_visible"] != true {
 		t.Errorf("the client's own contact should see the client's invoices section")
 	}
+
+	// ---- MH-1167: the portal dashboard and time page span only the customer's projects ------
+	code, raw = cust.do("GET", "/api/w/portal/overview", nil)
+	if code != 200 {
+		t.Fatalf("portal overview: %d %s", code, raw)
+	}
+	for _, leak := range []string{otherPr, "999900", "bill_rate", "cost_rate"} {
+		if strings.Contains(string(raw), leak) {
+			t.Errorf("portal overview leaks %q: %s", leak, raw)
+		}
+	}
+	ov := cust.must("GET", "/api/w/portal/overview", nil, 200)
+	if len(ov["projects"].([]any)) != 1 || num(ov["active_projects"]) != 1 || num(ov["open_tasks"]) != 1 || len(ov["weeks"].([]any)) != 12 {
+		t.Errorf("portal overview: %v", ov)
+	}
+	tm := cust.must("GET", "/api/w/portal/time", nil, 200)
+	if num(tm["total_minutes"]) != 90 || len(tm["projects"].([]any)) != 1 {
+		t.Errorf("portal time: %v", tm)
+	}
+	if people := tm["people"].([]any); len(people) != 1 || num(people[0].(map[string]any)["minutes"]) != 90 {
+		t.Errorf("portal time by person (team shared by default): %v", tm["people"])
+	}
 	// Still no tasks for a client.
 	for _, p := range []string{"/api/w/tasks", "/api/w/projects/" + prID + "/board", "/api/w/projects/" + prID + "/tasks"} {
 		if code, _ := cust.do("GET", p, nil); code == 200 {

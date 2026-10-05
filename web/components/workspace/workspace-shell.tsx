@@ -10,8 +10,6 @@ import {
   HomeIcon,
   ClockIcon,
   FolderKanbanIcon,
-  KeyRoundIcon,
-  LayoutGridIcon,
   ReceiptTextIcon,
   UsersIcon,
   UsersRoundIcon,
@@ -251,11 +249,20 @@ function ShellNav({ base, can }: { base: string; can: string[]; isOwner?: boolea
   if (isClient) {
     return (
       <SidebarGroup>
-        <NavItem href={`${base}/portal`} icon={<LayoutGridIcon />}>
-          {t("nav.portal")}
+        <NavItem href={`${base}/portal`} exact icon={<HomeIcon />}>
+          {t("portal.nav.dashboard")}
         </NavItem>
-        <NavItem href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
-          {t("nav.connectAi")}
+        <NavItem href={`${base}/portal/projects`} icon={<FolderKanbanIcon />}>
+          {t("nav.projects")}
+        </NavItem>
+        <NavItem href={`${base}/portal/time`} icon={<ClockIcon />}>
+          {t("portal.nav.time")}
+        </NavItem>
+        <NavItem href={`${base}/portal/requests`} icon={<InboxIcon />}>
+          {t("nav.requests")}
+        </NavItem>
+        <NavItem href={`${base}/portal/invoices`} icon={<ReceiptTextIcon />}>
+          {t("portal.nav.billing")}
         </NavItem>
       </SidebarGroup>
     );

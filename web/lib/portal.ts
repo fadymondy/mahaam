@@ -34,6 +34,7 @@ export type PortalInvoice = {
   status: string
   currency: string
   total_minor: number
+  paid_minor: number
   issue_date: string
   due_date: string | null
 }
@@ -131,7 +132,41 @@ export type PortalTimeReport = {
   weeks: PortalWeek[]
   by_task: { key: string | null; title: string | null; minutes: number }[]
 }
-export type PortalActivityItem = { kind: string; key: string; title: string; from?: string; to?: string; at: string }
+export type PortalActivityItem = { kind: string; key: string; title: string; from?: string; to?: string; at: string; project?: string; project_id?: string }
+
+// The portal dashboard and time page across all the customer's projects (MH-1167, internal/work/portal_home.go).
+export type PortalDueTask = { key: string; title: string; project_id: string; project: string; due_at: string; overdue: boolean }
+export type PortalOverview = {
+  projects: PortalProject[]
+  active_projects: number
+  completed_projects: number
+  open_tasks: number
+  overdue_tasks: number
+  completed_7d: number
+  open_issues: number
+  pending_requests: number
+  month_minutes: number
+  weeks: PortalWeek[]
+  due_tasks: PortalDueTask[]
+  activity: PortalActivityItem[]
+  unpaid_invoices: number
+}
+export type PortalProjectTime = {
+  id: string
+  name: string
+  color: string
+  status: string
+  used_minutes: number
+  month_minutes: number
+  budget_minutes: number | null
+}
+export type PortalTimeOverview = {
+  total_minutes: number
+  month_minutes: number
+  weeks: PortalWeek[]
+  projects: PortalProjectTime[]
+  people: { name: string; initials: string; minutes: number }[]
+}
 
 export type PortalProjectPage = PortalProject & {
   weeks: PortalWeek[]
@@ -164,6 +199,9 @@ export const usePortalProject = (ws: string, id: string | null) =>
   useW<PortalProjectPage>(id ? `/api/w/portal/projects/${enc(id)}` : null, ws)
 export const usePortalIssue = (ws: string, key: string | null) =>
   useW<PortalIssueDetail>(key ? `/api/w/portal/issues/${enc(key)}` : null, ws)
+export const usePortalOverview = (ws: string) => useW<PortalOverview>("/api/w/portal/overview", ws)
+export const usePortalTimeAll = (ws: string) => useW<PortalTimeOverview>("/api/w/portal/time", ws)
+export const usePortalRequests = (ws: string) => useW<{ requests: CustomerRequest[] }>("/api/w/portal/requests", ws)
 export const usePortalInvoices = (ws: string) => useW<{ invoices: PortalInvoice[] }>("/api/w/portal/invoices", ws)
 export const usePortalBoard = (ws: string, id: string | null) =>
   useW<PortalBoard>(id ? `/api/w/portal/projects/${enc(id)}/tasks` : null, ws)

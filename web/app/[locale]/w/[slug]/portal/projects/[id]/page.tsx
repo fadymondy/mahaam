@@ -45,6 +45,7 @@ import {
   PersonBadge,
   PortalEmpty,
   ProgressRing,
+  RequestCard,
   RequestStateBadge,
   ScrollTabs,
   StatTile,
@@ -97,7 +98,7 @@ export default function PortalProjectPage() {
   const page = usePortalProject(ws.id, id)
   const p = page.data
   const [requesting, setRequesting] = useState(false)
-  const back = `/${locale}/w/${ws.slug}/portal`
+  const back = `/${locale}/w/${ws.slug}/portal/projects`
   useDocumentTitle(`${p?.name ?? t("portal.title")} · ${ws.summary.name}`)
 
   const setParam = (k: string, v: string | null) => {
@@ -687,55 +688,6 @@ function Requests({
         <RequestCard key={r.key} r={r} onOpenIssue={onOpenIssue} onOpenTask={onOpenTask} />
       ))}
     </ul>
-  )
-}
-
-function RequestCard({ r, onOpenIssue, onOpenTask }: { r: CustomerRequest; onOpenIssue: (key: string) => void; onOpenTask?: (key: string) => void }) {
-  const { t, locale } = useTranslations()
-  return (
-    <li className="rounded-xl border border-border bg-card p-4" data-request={r.key}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-2">
-            <code className="text-xs text-muted-foreground" dir="ltr">
-              {r.key}
-            </code>
-            <span className="font-medium">{r.title}</span>
-          </p>
-          <p className="text-caption text-muted-foreground">
-            {t(`portal.request.kind.${r.kind}`)} · {formatDay(r.created_at, locale)}
-            {r.desired_on ? ` · ${t("portal.request.wantedBy", { date: formatDay(r.desired_on, locale) })}` : ""}
-          </p>
-        </div>
-        <span className="flex items-center gap-2">
-          {r.state === "accepted" ? <Badge variant="neutral">{t(`issues.status.${r.status}`)}</Badge> : null}
-          <RequestStateBadge state={r.state} />
-        </span>
-      </div>
-      {r.body ? (
-        <p className="mt-2 text-sm whitespace-pre-wrap text-muted-foreground" dir="auto">
-          {r.body}
-        </p>
-      ) : null}
-      {r.reply ? (
-        <div className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
-          <p className="text-caption font-medium text-muted-foreground">{r.state === "declined" ? t("portal.request.reason") : t("portal.request.reply")}</p>
-          <p className="whitespace-pre-wrap" dir="auto">
-            {r.reply}
-          </p>
-        </div>
-      ) : null}
-      {r.state === "accepted" ? (
-        <Button size="sm" variant="ghost" className="mt-2 -ms-2" onClick={() => onOpenIssue(r.key)}>
-          {t("portal.request.openIssue")}
-        </Button>
-      ) : null}
-      {r.state === "converted" && r.task_key && onOpenTask ? (
-        <Button size="sm" variant="ghost" className="mt-2 -ms-2" onClick={() => onOpenTask(r.task_key!)}>
-          {t("portal.request.openTask", { task: r.task_key })}
-        </Button>
-      ) : null}
-    </li>
   )
 }
 

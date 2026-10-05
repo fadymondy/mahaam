@@ -123,6 +123,9 @@ type PortalActivityItem struct {
 	From  string    `json:"from,omitempty"`
 	To    string    `json:"to,omitempty"`
 	At    time.Time `json:"at"`
+	// Project is set on the portal dashboard's feed, which spans projects.
+	Project   string `json:"project,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 // portalProject loads a visible project for a portal read (authz.PortalRead), or 404.
