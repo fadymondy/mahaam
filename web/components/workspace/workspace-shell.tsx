@@ -112,12 +112,7 @@ function ShellSidebar({
         <Link href={summary ? base : `/${locale}/workspaces`} className="flex items-center gap-2.5 px-1" aria-label={brandName(locale)}>
           <ProductMark brand="mahaam" size={28} title="" />
           <SidebarExpandedOnly>
-            <span className="flex min-w-0 flex-col leading-tight">
-              <span className="text-label font-semibold">{brandName(locale)}</span>
-              <span className="truncate text-caption text-muted-foreground" data-tagline>
-                {t("shell.tagline")}
-              </span>
-            </span>
+            <span className="text-label font-semibold">{brandName(locale)}</span>
           </SidebarExpandedOnly>
         </Link>
         {summary && all ? (
