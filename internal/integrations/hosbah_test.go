@@ -7,6 +7,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
 // fakeHosbah serves the /api/integrations contract with one user token and one app.
@@ -18,6 +21,19 @@ func fakeHosbah(t *testing.T) *httptest.Server {
 		w.Header().Set("Content-Type", "application/json")
 		user, appTok := auth == "Bearer hbu_good", auth == "Bearer hba_minted"
 		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/oauth/token":
+			_ = r.ParseForm()
+			f := r.PostForm
+			if f.Get("client_id") != "mahaam" || f.Get("client_secret") != "s3cret" || f.Get("code_verifier") == "" ||
+				f.Get("redirect_uri") != "https://mahaam.test"+HosbahCallbackPath || f.Get("grant_type") != "authorization_code" {
+				t.Errorf("token form: %v", f)
+			}
+			if f.Get("code") != "good" {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"access_token":"hba_minted","token_type":"Bearer","app":` + app + `}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/api/integrations/apps" && user:
 			_, _ = w.Write([]byte(`{"apps":[` + app + `,{"id":"a2","name":"bare","status":"new","server_id":"s1"}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/api/integrations/apps/a1/tokens" && user:
@@ -76,8 +92,8 @@ func TestHosbahClient(t *testing.T) {
 	if _, _, err := sv.hosbah(srv.URL, "hbu_good").mint(ctx, "nope", "x"); err == nil || !strings.Contains(err.Error(), "app not found") {
 		t.Fatalf("an unknown app surfaces Hosbah's detail, got %v", err)
 	}
-	if _, err := sv.hosbah(srv.URL, "hbu_bad").apps(ctx); err == nil || !strings.Contains(err.Error(), "reconnect") {
-		t.Fatalf("a refused token says to reconnect, got %v", err)
+	if _, err := sv.hosbah(srv.URL, "hbu_bad").apps(ctx); err == nil || !strings.Contains(err.Error(), "connect Hosbah again") {
+		t.Fatalf("a refused token says to connect again, got %v", err)
 	}
 	if e := upstream(&UpstreamError{Status: 401, Msg: "Hosbah: x"}); !strings.Contains(e.Error(), "Hosbah") {
 		t.Fatalf("upstream keeps the message: %v", e)
@@ -98,35 +114,79 @@ func TestHosbahClient(t *testing.T) {
 	}
 }
 
-func TestHosbahBase(t *testing.T) {
-	t.Setenv("HOSBAH_URL", "https://dev.hosbah.com/")
-	t.Setenv("HOSBAH_ALLOWED_HOSTS", "hosting.partner.io")
-	for raw, want := range map[string]string{
-		"":                             "https://dev.hosbah.com",
-		"https://dev.hosbah.com":       "https://dev.hosbah.com",
-		"https://DEV.hosbah.com/en/x":  "https://dev.hosbah.com",
-		"https://hosting.partner.io/":  "https://hosting.partner.io",
-		"http://hosting.partner.io":    "", // https only
-		"https://evil.example.com":     "",
-		"https://169.254.169.254":      "",
-		"http://dev.hosbah.com":        "", // scheme differs from HOSBAH_URL
-		"not a url":                    "",
-		"https://localhost:8080/admin": "",
+func TestHosbahState(t *testing.T) {
+	now := time.Now()
+	st := hosbahState{W: "w1", P: "p1", U: "u1", Slug: "acme", L: "ar", Via: "hosbah", Nonce: "n1", Exp: now.Add(time.Minute).Unix()}
+	raw := signHosbahState(st)
+	got, err := verifyHosbahState(raw, now)
+	if err != nil || *got != st {
+		t.Fatalf("round trip = %+v, %v", got, err)
+	}
+	if _, err := verifyHosbahState(raw, now.Add(2*time.Minute)); err == nil {
+		t.Error("an expired state must be refused")
+	}
+	enc, sig, _ := strings.Cut(raw, ".")
+	if _, err := verifyHosbahState(enc+"x."+sig, now); err == nil {
+		t.Error("a tampered state must be refused")
+	}
+	// The import state's signature must not validate a connect state (domain separation).
+	if _, err := verifyHosbahState(signState(installState{W: "w1", P: "p1", U: "u1", Exp: now.Add(time.Minute).Unix()}), now); err == nil {
+		t.Error("a GitHub install state must not pass as a Hosbah state")
+	}
+	v1, c1 := hosbahPKCE("n1")
+	v2, _ := hosbahPKCE("n2")
+	if len(v1) < 43 || v1 == v2 || c1 == "" || c1 == v1 {
+		t.Errorf("pkce: %q %q %q", v1, v2, c1)
+	}
+}
+
+func TestOpenPending(t *testing.T) {
+	now := time.Now()
+	raw, err := sealPending(hosbahPending{W: "w1", P: "p1", U: "u1", Token: "hub", Exp: now.Add(time.Minute).Unix()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	me := &tenant.Scope{WorkspaceID: "w1", UserID: "u1"}
+	if pd, err := openPending(raw, me, "p1", now); err != nil || pd.Token != "hub" {
+		t.Fatalf("open = %+v, %v", pd, err)
+	}
+	for name, c := range map[string]struct {
+		s   *tenant.Scope
+		p   string
+		now time.Time
+		raw string
+	}{
+		"other user":      {&tenant.Scope{WorkspaceID: "w1", UserID: "u2"}, "p1", now, raw},
+		"other workspace": {&tenant.Scope{WorkspaceID: "w2", UserID: "u1"}, "p1", now, raw},
+		"other project":   {me, "p2", now, raw},
+		"expired":         {me, "p1", now.Add(2 * time.Minute), raw},
+		"empty":           {me, "p1", now, ""},
+		"garbage":         {me, "p1", now, "v1:abc"},
 	} {
-		got, err := hosbahBase(raw)
-		if want == "" {
-			if err == nil {
-				t.Errorf("%q: want a refusal, got %q", raw, got)
-			}
-			continue
-		}
-		if err != nil || got != want {
-			t.Errorf("%q = %q, %v; want %q", raw, got, err, want)
+		if _, err := openPending(c.raw, c.s, c.p, c.now); err == nil {
+			t.Errorf("%s: want a refusal", name)
 		}
 	}
-	t.Setenv("HOSBAH_URL", "")
-	if _, err := hosbahBase(""); err == nil {
-		t.Error("no HOSBAH_URL and no base_url must refuse")
+}
+
+func TestHosbahCodeToken(t *testing.T) {
+	srv := fakeHosbah(t)
+	defer srv.Close()
+	t.Setenv("HOSBAH_URL", srv.URL)
+	t.Setenv("HOSBAH_CLIENT_ID", "mahaam")
+	t.Setenv("HOSBAH_CLIENT_SECRET", "s3cret")
+	t.Setenv("WEB_URL", "https://mahaam.test")
+	sv := &Service{HTTP: srv.Client()}
+	tok, app, err := sv.hosbahCodeToken(context.Background(), "good", "verifier")
+	if err != nil || tok != "hba_minted" || app.ID != "a1" || len(app.Domains) != 1 {
+		t.Fatalf("code token = %q %+v %v", tok, app, err)
+	}
+	if _, _, err := sv.hosbahCodeToken(context.Background(), "bad", "verifier"); err == nil || !strings.Contains(err.Error(), "invalid_grant") {
+		t.Errorf("a refused code: %v", err)
+	}
+	t.Setenv("HOSBAH_CLIENT_SECRET", "")
+	if _, _, err := sv.hosbahCodeToken(context.Background(), "good", "verifier"); err == nil {
+		t.Error("no client credentials must refuse")
 	}
 }
 

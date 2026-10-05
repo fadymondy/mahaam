@@ -28,7 +28,9 @@ guard resolves session + membership first and the project must be visible (404 o
 	GET    …/github/{commits,pulls,runs,deployments,workflows}
 	POST   …/github/deploy                     workflow_dispatch (github:deploy)
 	POST   …/github/issues                     file a GitHub issue from an MG issue (github:issues)
-	POST   …/integrations/hosbah/apps          the apps a Hosbah user token can see (not stored)
+	GET    …/integrations/hosbah/methods       which ways to connect (CircleXO, Hosbah OAuth) the caller has
+	POST   …/integrations/hosbah/authorize     the OAuth authorization URL (+ a nonce cookie)
+	POST   …/integrations/hosbah/apps          the apps the pending CircleXO sign-in can see
 	PUT    …/integrations/hosbah               link one app (Hosbah mints an app token)
 	GET    …/hosting                           the linked app + recent deployments (integrations:read)
 	POST   …/hosting/deploy                    deploy it (integrations:manage)
@@ -107,7 +109,7 @@ func Register(api huma.API, a *app.App) {
 			return sv.LinkRepo(ctx, in.Project, in.Body.Repo)
 		})
 
-	reg(api, sv, http.MethodPost, "/api/w/projects/{project}/integrations/hosbah/apps", "w-hosbah-apps", "Hosbah apps a token can see", tag, 0,
+	reg(api, sv, http.MethodPost, "/api/w/projects/{project}/integrations/hosbah/apps", "w-hosbah-apps", "Hosbah apps the CircleXO sign-in can see", tag, 0,
 		func(ctx context.Context, in *struct {
 			P
 			Body HosbahAppsInput
@@ -122,6 +124,29 @@ func Register(api huma.API, a *app.App) {
 		}) (*Integration, error) {
 			return sv.ConnectHosbah(ctx, in.Project, in.Body)
 		})
+
+	reg(api, sv, http.MethodGet, "/api/w/projects/{project}/integrations/hosbah/methods", "w-hosbah-methods", "Ways to connect Hosbah", tag, 0,
+		func(ctx context.Context, in *P) (*HosbahMethods, error) {
+			return sv.HosbahConnectMethods(ctx, in.Project)
+		})
+	huma.Register(api, huma.Operation{
+		OperationID: "w-hosbah-authorize", Method: http.MethodPost, Path: "/api/w/projects/{project}/integrations/hosbah/authorize",
+		Summary: "Start connecting Hosbah (OAuth)", Tags: []string{tag},
+	}, func(ctx context.Context, in *struct {
+		P
+		Body struct {
+			Via    string `json:"via" enum:"circlexo,hosbah" doc:"Through the CircleXO account or Hosbah's own OAuth"`
+			Locale string `json:"locale,omitempty" enum:"en,ar," doc:"Where the callback returns to (default en)"`
+		}
+	}) (*hosbahStartOut, error) {
+		st, err := sv.StartHosbahConnect(ctx, in.Project, in.Body.Via, in.Body.Locale)
+		if err != nil {
+			return nil, sv.fail(err)
+		}
+		out := &hosbahStartOut{SetCookie: *st.Cookie}
+		out.Body.URL = st.URL
+		return out, nil
+	})
 
 	const htag = "Hosting"
 	reg(api, sv, http.MethodGet, "/api/w/projects/{project}/hosting", "w-hosting", "The project's Hosbah app", htag, 0,
@@ -231,6 +256,12 @@ type (
 	WorkflowList struct {
 		Workflows []Workflow `json:"workflows"`
 	}
+	hosbahStartOut struct {
+		SetCookie http.Cookie `header:"Set-Cookie"`
+		Body      struct {
+			URL string `json:"url"`
+		}
+	}
 	HosbahAppList struct {
 		Apps []HosbahApp `json:"apps"`
 	}
@@ -259,9 +290,11 @@ func (sv *Service) fail(err error) error {
 	return huma.Error500InternalServerError("something went wrong")
 }
 
-// Mount adds the public GitHub endpoints (allowlisted in internal/server/guard.go).
+// Mount adds the public GitHub endpoints (allowlisted in internal/server/guard.go) and the Hosbah
+// OAuth callback (outside /api, so public by the guard's first rule; the web app proxies it).
 func Mount(k *togo.Kernel, a *app.App) {
 	sv := New(a)
+	k.Router.Get(HosbahCallbackPath, sv.HosbahCallback())
 	k.Router.Post("/api/integrations/github/webhook", sv.WebhookHandler().ServeHTTP)
 	k.Router.Get("/api/integrations/github/callback", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()

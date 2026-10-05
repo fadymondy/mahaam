@@ -42,6 +42,9 @@ export type HosbahApp = {
   logo_url?: string | null
   panel_url?: string
 }
+/** The ways the caller can connect Hosbah (both are OAuth). */
+export type HosbahMethods = { circlexo: boolean; hosbah: boolean }
+
 export type HosbahDeployment = {
   id: string
   number: number

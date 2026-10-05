@@ -6,20 +6,20 @@ import { ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, ProductMark } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { LogoTile, type TileBrand } from "@/components/work/brand-logos"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
-import { hostingStatus, hostingVariant, useIntegrations, type HosbahApp, type Integration, type Provider, type Repo, type SyncResult } from "@/lib/integrations"
+import { hostingStatus, hostingVariant, useIntegrations, type HosbahApp, type HosbahMethods, type Integration, type Provider, type Repo, type SyncResult } from "@/lib/integrations"
 import { errorText, w } from "@/lib/work"
 
 /*
 Project settings → Integrations: install the GitHub App and pick the repository, connect Jira or
 Linear import (the credential is write-only: sealed server-side, never shown again), link a Hosbah
-app (a Hosbah user token lists the apps; Hosbah mints a token for the picked one), and see each
+app (OAuth through CircleXO or Hosbah; Hosbah mints a token for the picked app), and see each
 integration's status, last sync and last error with a Sync button. The four sit in one row as
 compact cards with one button each; the setup opens in a dialog (GitHub with no installation to
 reuse goes straight to the App install). Reading is member+; every
@@ -35,6 +35,9 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     if (search.get("integration") === "github") toast.success(t("int.github.connected"))
+    if (search.get("integration") === "hosbah") toast.success(t("int.hosbah.linked"))
+    const err = search.get("hosbah_error")
+    if (err) toast.error(t("int.hosbah.failed", { error: err }))
   }, [search, t])
 
   const reload = () => void list.mutate()
@@ -73,6 +76,7 @@ function IntegrationCard({
   onChanged,
   summary,
   connect,
+  autoOpen,
   children,
 }: {
   brand: TileBrand
@@ -84,12 +88,17 @@ function IntegrationCard({
   onChanged: () => void
   summary?: React.ReactNode
   connect?: () => void
+  /** Opens the dialog when it turns true (e.g. back from an OAuth round trip with something to pick). */
+  autoOpen?: boolean
   children: (close: () => void) => React.ReactNode
 }) {
   const { t, formatDate } = useTranslations()
   const ws = useWorkspace()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (autoOpen) setOpen(true)
+  }, [autoOpen])
   const sync = async () => {
     if (!it) return
     setBusy(true)
@@ -412,37 +421,57 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
   )
 }
 
-// Hosbah: paste a Hosbah user token, find the apps it can see and link one. Hosbah mints a token
-// for that app alone and Mahaam keeps only that; the user token is used for these two calls.
-// Linking another app replaces the first (and revokes its token).
+// Hosbah connects over OAuth: through the manager's CircleXO account (back here with a sealed
+// sign-in in the URL fragment, the apps they can see on Hosbah are listed and they pick one; Hosbah
+// mints a token for that app alone) or through Hosbah's own consent screen, where the app is picked
+// on Hosbah and the project comes back linked. Linking another app replaces the first.
 function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string; it?: Integration; canManage: boolean; onChanged: () => void }) {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const ws = useWorkspace()
-  const [baseUrl, setBaseUrl] = useState("")
-  const [token, setToken] = useState("")
+  const methods = useSWR<HosbahMethods>(
+    canManage ? [`/api/w/projects/${projectId}/integrations/hosbah/methods`, ws.id] : null,
+    ([p, id]: [string, string]) => api(p, { workspaceId: id }),
+    { shouldRetryOnError: false, revalidateOnFocus: false },
+  )
+  const [pending, setPending] = useState("")
   const [apps, setApps] = useState<HosbahApp[] | null>(null)
   const [pick, setPick] = useState("")
   const [q, setQ] = useState("")
   const [busy, setBusy] = useState(false)
-  const body = () => ({ token: token.trim(), ...(baseUrl.trim() ? { base_url: baseUrl.trim() } : {}) })
-  const find = async () => {
+
+  // Back from CircleXO: take the sealed sign-in out of the address bar and list the apps.
+  useEffect(() => {
+    const m = /(?:^#|&)hosbah=([^&]+)/.exec(window.location.hash)
+    if (!m || !canManage) return
+    const sealed = decodeURIComponent(m[1])
+    window.history.replaceState(null, "", window.location.pathname + window.location.search)
+    setPending(sealed)
+    setBusy(true)
+    w.post<{ apps: HosbahApp[] | null }>(ws.id, `/api/w/projects/${projectId}/integrations/hosbah/apps`, { pending: sealed })
+      .then((r) => setApps(r.apps ?? []))
+      .catch((err) => {
+        setPending("")
+        toast.error(errorText(err, t("common.networkError")))
+      })
+      .finally(() => setBusy(false))
+  }, [canManage, projectId, ws.id, t])
+
+  const start = async (via: "circlexo" | "hosbah") => {
     setBusy(true)
     try {
-      const r = await w.post<{ apps: HosbahApp[] | null }>(ws.id, `/api/w/projects/${projectId}/integrations/hosbah/apps`, body())
-      setApps(r.apps ?? [])
-      setPick("")
+      const r = await w.post<{ url: string }>(ws.id, `/api/w/projects/${projectId}/integrations/hosbah/authorize`, { via, locale })
+      window.location.assign(r.url)
     } catch (err) {
       toast.error(errorText(err, t("common.networkError")))
-    } finally {
       setBusy(false)
     }
   }
   const link = async (close: () => void) => {
     setBusy(true)
     try {
-      await w.put(ws.id, `/api/w/projects/${projectId}/integrations/hosbah`, { ...body(), app: pick })
+      await w.put(ws.id, `/api/w/projects/${projectId}/integrations/hosbah`, { pending, app: pick })
       toast.success(t("int.hosbah.linked"))
-      setToken("")
+      setPending("")
       setApps(null)
       onChanged()
       close()
@@ -456,6 +485,7 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
   const needle = q.trim().toLowerCase()
   const shown = (apps ?? []).filter((a) => !needle || `${a.name} ${a.title ?? ""} ${a.server_name ?? ""}`.toLowerCase().includes(needle))
   const current = it?.config.app_title || it?.config.app_name
+  const m = methods.data
   return (
     <IntegrationCard
       brand="hosbah"
@@ -465,6 +495,7 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
       canManage={canManage}
       projectId={projectId}
       onChanged={onChanged}
+      autoOpen={apps !== null}
       summary={
         current ? (
           <p className="flex min-w-0 items-center gap-1.5">
@@ -499,24 +530,10 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
               </span>
             </p>
           ) : null}
-          <Field>
-            <FieldLabel htmlFor="hosbah-url">{t("int.hosbah.baseUrl")}</FieldLabel>
-            <Input id="hosbah-url" dir="ltr" placeholder={it?.config.base_url || "https://hosbah.example.com"} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
-            <p className="text-caption text-muted-foreground">{t("int.hosbah.baseUrlHint")}</p>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="hosbah-token">{t("int.hosbah.token")}</FieldLabel>
-            <Input id="hosbah-token" dir="ltr" type="password" autoComplete="off" placeholder="hbu_…" value={token} onChange={(e) => setToken(e.target.value)} />
-            <p className="text-caption text-muted-foreground">{t("int.hosbah.tokenHint")}</p>
-          </Field>
-          <div>
-            <Button variant="secondary" disabled={busy || !token.trim()} onClick={() => void find()}>
-              {t("int.hosbah.findApps")}
-            </Button>
-          </div>
           {apps ? (
             apps.length ? (
               <div className="space-y-2" data-hosbah-apps={apps.length}>
+                <p className="text-sm text-muted-foreground">{t("int.hosbah.pickApp")}</p>
                 <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("int.hosbah.searchApp")} aria-label={t("int.hosbah.searchApp")} />
                 <ul role="listbox" aria-label={t("int.hosbah.app")} className="max-h-60 overflow-y-auto rounded-md border border-border">
                   {shown.length ? (
@@ -550,7 +567,29 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
             ) : (
               <p className="text-sm text-muted-foreground">{t("int.hosbah.noApps")}</p>
             )
-          ) : null}
+          ) : !m && !methods.error ? (
+            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : m && (m.circlexo || m.hosbah) ? (
+            <div className="grid gap-2" data-hosbah-connect>
+              <p className="text-sm text-muted-foreground">{it ? t("int.hosbah.relinkHint") : t("int.hosbah.connectHint")}</p>
+              {m.circlexo ? (
+                <Button variant="primary" disabled={busy} onClick={() => void start("circlexo")}>
+                  <ProductMark brand="circlexo" size={18} title="" />
+                  {t("int.hosbah.viaCircleXO")}
+                </Button>
+              ) : null}
+              {m.hosbah ? (
+                <Button variant={m.circlexo ? "secondary" : "primary"} disabled={busy} onClick={() => void start("hosbah")}>
+                  <ProductMark brand="hosbah" size={18} title="" />
+                  {t("int.hosbah.viaHosbah")}
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground" data-hosbah-unavailable>
+              {t("int.hosbah.unavailable")}
+            </p>
+          )}
         </div>
       )}
     </IntegrationCard>

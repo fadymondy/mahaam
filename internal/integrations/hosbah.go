@@ -7,10 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -24,25 +22,26 @@ import (
 Hosbah hosting. A project is linked to ONE Hosbah app; its customers open that app's hosting panel
 from the portal.
 
-Connecting is two calls. A manager pastes a Hosbah user token (hbu_…) and Mahaam lists the apps it
-can see; they pick one and Mahaam asks Hosbah to mint a token scoped to that app (hba_…). Only the
-app token is stored (sealed); the user token is used for those two calls and dropped.
+Connecting is OAuth (hosbah_oauth.go): through the manager's CircleXO account (the hub issues a
+token for Hosbah with Mahaam as the actor; it lists their apps, they pick one and Hosbah mints a token
+scoped to that app, hba_…) or through Hosbah's own OAuth (the app is picked on Hosbah's consent
+screen and the token endpoint returns the app token). Only the app token is stored (sealed).
 
 The Hosbah side of the contract (Hosbah's /api/integrations/*):
 
-	GET    /api/integrations/apps                 Bearer hbu_  → {apps: [App]}
-	POST   /api/integrations/apps/{app}/tokens    Bearer hbu_  {label} → {token: "hba_…", app: App}
+	GET    /api/integrations/apps                 Bearer hub token → {apps: [App]}
+	POST   /api/integrations/apps/{app}/tokens    Bearer hub token  {label} → {token: "hba_…", app: App}
 	GET    /api/integrations/app                  Bearer hba_  → {app: App, deployments: [Deployment]}
 	POST   /api/integrations/app/deployments      Bearer hba_  → {deployment: Deployment}
 	POST   /api/integrations/app/panel-sessions   Bearer hba_  {email, name, locale} → {url, expires_at}
 	DELETE /api/integrations/app/token            Bearer hba_  → 204
+	GET    /oauth/authorize, POST /oauth/token    authorization code + PKCE → {access_token: "hba_…", app}
 
 panel-sessions returns a single-use, short-lived link that signs the person into the app's page of
 the server's customer panel (/{locale}/panel/{server}/apps/{app}) and nothing else. Errors are
 Huma problem documents ({detail}).
 
-The base URL is HOSBAH_URL; a connect form may name another Hosbah only when its host is listed in
-HOSBAH_ALLOWED_HOSTS (the server calls it, so an arbitrary URL would be an SSRF hole).
+The base URL is HOSBAH_URL (the server calls it; it is never taken from a request).
 */
 
 // HosbahApp is a Hosbah app as Hosbah describes it.
@@ -71,10 +70,9 @@ type HosbahDeployment struct {
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 }
 
-// HosbahAppsInput lists the apps a Hosbah user token can see.
+// HosbahAppsInput lists the apps the caller's CircleXO sign-in can see on Hosbah.
 type HosbahAppsInput struct {
-	BaseURL string `json:"base_url,omitempty" doc:"The Hosbah to connect to; default HOSBAH_URL"`
-	Token   string `json:"token" doc:"A Hosbah user token (hbu_…); used for this call only, never stored"`
+	Pending string `json:"pending" doc:"The sealed CircleXO sign-in from the connect redirect (#hosbah=…); never a raw token"`
 }
 
 // HosbahInput links the project to one app.
@@ -148,7 +146,7 @@ func (c *hosbahClient) do(ctx context.Context, method, path string, in, out any)
 		}
 		switch {
 		case res.StatusCode == http.StatusUnauthorized:
-			msg = "Hosbah refused the token (revoked or expired) — reconnect with a new one"
+			msg = "Hosbah refused the token (revoked or expired) — connect Hosbah again"
 		case res.StatusCode == http.StatusNotFound && msg == "":
 			msg = "Hosbah does not know that app, or this Hosbah has no integrations API yet"
 		case msg == "":
@@ -214,44 +212,6 @@ func normApps(l []HosbahApp) []HosbahApp {
 	return l
 }
 
-// hosbahBase picks the Hosbah to call: HOSBAH_URL, or raw when its host is allowed.
-func hosbahBase(raw string) (string, error) {
-	env := strings.TrimRight(strings.TrimSpace(os.Getenv("HOSBAH_URL")), "/")
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		if env == "" {
-			return "", invalid("Hosbah is not configured on this server (HOSBAH_URL) — give base_url")
-		}
-		return env, nil
-	}
-	u, err := url.Parse(raw)
-	if err != nil || u.Host == "" {
-		return "", invalid("base_url must be your Hosbah, e.g. https://hosbah.example.com")
-	}
-	host := strings.ToLower(u.Host)
-	allowed := false
-	if e, err := url.Parse(env); env != "" && err == nil && strings.ToLower(e.Host) == host {
-		if u.Scheme == e.Scheme {
-			return env, nil
-		}
-	}
-	for _, h := range strings.Split(os.Getenv("HOSBAH_ALLOWED_HOSTS"), ",") {
-		if h = strings.ToLower(strings.TrimSpace(h)); h != "" && (h == host || h == strings.ToLower(u.Hostname())) {
-			allowed = true
-		}
-	}
-	if !allowed {
-		return "", invalid("base_url must be this server's Hosbah (HOSBAH_URL) or a host listed in HOSBAH_ALLOWED_HOSTS")
-	}
-	if u.Scheme != "https" {
-		return "", invalid("base_url must use https")
-	}
-	if ip := net.ParseIP(u.Hostname()); ip != nil {
-		return "", invalid("base_url must be a host name")
-	}
-	return "https://" + u.Host, nil
-}
-
 func (sv *Service) hosbah(base, token string) *hosbahClient {
 	return &hosbahClient{base: base, token: token, http: sv.HTTP}
 }
@@ -281,65 +241,71 @@ func hosbahConfig(base string, a *HosbahApp) map[string]any {
 
 // ---- connect -------------------------------------------------------------------------
 
-// HosbahApps lists the apps a Hosbah user token can see (manager+). The token is not stored.
-func (sv *Service) HosbahApps(ctx context.Context, projectRef string, in HosbahAppsInput) ([]HosbahApp, error) {
-	s, _, err := sv.project(ctx, projectRef, authz.IntegrationsManage)
+// pendingClient opens the caller's pending CircleXO sign-in as a Hosbah client (manager+).
+func (sv *Service) pendingClient(ctx context.Context, projectRef, pending string) (*tenant.Scope, *work.Project, *hosbahClient, error) {
+	s, p, err := sv.project(ctx, projectRef, authz.IntegrationsManage)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	if err := limits.Integration(ctx, s.WorkspaceID, "hosbah"); err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-	base, err := hosbahBase(in.BaseURL)
+	base := hosbahURL()
+	if base == "" {
+		return nil, nil, nil, conflict("Hosbah is not configured on this server (HOSBAH_URL)")
+	}
+	pd, err := openPending(pending, s, p.ID, time.Now())
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return s, p, sv.hosbah(base, pd.Token), nil
+}
+
+// HosbahApps lists the Hosbah apps the caller's CircleXO sign-in can see (manager+).
+func (sv *Service) HosbahApps(ctx context.Context, projectRef string, in HosbahAppsInput) ([]HosbahApp, error) {
+	_, _, c, err := sv.pendingClient(ctx, projectRef, in.Pending)
 	if err != nil {
 		return nil, err
 	}
-	tok := strings.TrimSpace(in.Token)
-	if tok == "" {
-		return nil, invalid("token is required (a Hosbah user token, hbu_…)")
-	}
-	l, err := sv.hosbah(base, tok).apps(ctx)
+	l, err := c.apps(ctx)
 	if err != nil {
 		return nil, upstream(err)
 	}
 	return l, nil
 }
 
-// ConnectHosbah links the project to one Hosbah app (manager+): Hosbah mints a token scoped to
-// that app, which is stored sealed. Relinking revokes the previous app token.
+// ConnectHosbah links the project to one Hosbah app after a CircleXO sign-in (manager+): Hosbah
+// mints a token scoped to that app, which is stored sealed.
 func (sv *Service) ConnectHosbah(ctx context.Context, projectRef string, in HosbahInput) (*Integration, error) {
-	s, p, err := sv.project(ctx, projectRef, authz.IntegrationsManage)
-	if err != nil {
-		return nil, err
-	}
-	if err := limits.Integration(ctx, s.WorkspaceID, "hosbah"); err != nil {
-		return nil, err
-	}
-	base, err := hosbahBase(in.BaseURL)
-	if err != nil {
-		return nil, err
-	}
-	tok, app := strings.TrimSpace(in.Token), strings.TrimSpace(in.App)
-	if tok == "" {
-		return nil, invalid("token is required (a Hosbah user token, hbu_…)")
-	}
+	app := strings.TrimSpace(in.App)
 	if app == "" || len(app) > 100 {
 		return nil, invalid("app is required (the Hosbah app id)")
 	}
-	prev, err := sv.load(ctx, sv.DB, s.WorkspaceID, p.ID, "hosbah")
-	if err != nil && !isNotFound(err) {
+	s, p, c, err := sv.pendingClient(ctx, projectRef, in.Pending)
+	if err != nil {
 		return nil, err
 	}
-	appTok, a, err := sv.hosbah(base, tok).mint(ctx, app, "Mahaam · "+p.Name)
+	appTok, a, err := c.mint(ctx, app, "Mahaam · "+p.Name)
 	if err != nil {
 		return nil, upstream(err)
 	}
-	out, err := sv.connect(ctx, s, p.ID, "hosbah", hosbahConfig(base, a), &appTok, "an app token")
+	return sv.linkHosbah(ctx, s, p.ID, c.base, appTok, a)
+}
+
+// linkHosbah stores the app token for the project. Relinking revokes the previous app token.
+func (sv *Service) linkHosbah(ctx context.Context, s *tenant.Scope, projectID, base, appTok string, a *HosbahApp) (*Integration, error) {
+	prev, err := sv.load(ctx, sv.DB, s.WorkspaceID, projectID, "hosbah")
+	if err != nil && !isNotFound(err) {
+		return nil, err
+	}
+	out, err := sv.connect(ctx, s, projectID, "hosbah", hosbahConfig(base, a), &appTok, "an app token")
 	if err != nil {
 		return nil, err
 	}
-	if prev != nil {
-		sv.revokeHosbah(ctx, prev)
+	if prev != nil && prev.Secret != nil {
+		if old, err := sv.secret(prev); err == nil && old != appTok {
+			sv.revokeHosbah(ctx, prev)
+		}
 	}
 	return out, nil
 }
