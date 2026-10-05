@@ -1,19 +1,21 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { MailWarningIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import { FormError } from "@/components/form-text"
 
-import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, DataTable, DataTableFacetFilter, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
 
+import { DataView } from "@/components/data-view"
 import { Page, PageHeader, Panel } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { CopyField, Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
-import { api, ApiError, INVITABLE_ROLES, type Invitation } from "@/lib/api"
+import { api, ApiError, INVITABLE_ROLES, type Invitation, type Member } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useInvitations, useMembers } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
@@ -26,6 +28,37 @@ export default function MembersPage() {
   const canInvite = ws.can("members:invite")
   const members = useMembers(ws.id)
   const invitations = useInvitations(ws.id, canInvite)
+  const router = useRouter()
+  const list = useMemo(() => members.data?.members ?? [], [members.data])
+  const roles = useMemo(() => [...new Set(list.map((m) => m.role))], [list])
+  const statuses = useMemo(() => [...new Set(list.map((m) => m.status))], [list])
+  const columns = useMemo<DataTableColumn<Member>[]>(
+    () => [
+      {
+        id: "email",
+        header: t("members.email"),
+        hideable: false,
+        sortValue: (m) => m.email,
+        searchValue: (m) => m.email,
+        cell: (m) => (
+          <Link href={`/${locale}/w/${ws.slug}/members/${m.user_id}`} className="hover:underline">
+            <Ltr>{m.email}</Ltr>
+          </Link>
+        ),
+      },
+      { id: "role", header: t("members.role"), sortValue: (m) => m.role, filterValue: (m) => m.role, cell: (m) => <Badge variant="outline">{t(`role.${m.role}`)}</Badge> },
+      { id: "status", header: t("members.status"), sortValue: (m) => m.status, filterValue: (m) => m.status, className: "text-muted-foreground", cell: (m) => t(`status.${m.status}`) },
+      {
+        id: "joined",
+        header: t("members.joined"),
+        sortValue: (m) => m.joined_at,
+        className: "text-muted-foreground",
+        cell: (m) => <Ltr>{formatDate(m.joined_at)}</Ltr>,
+      },
+    ],
+    [t, locale, ws.slug, formatDate],
+  )
+  const table = useDataTable({ data: list, columns, getRowId: (m) => m.user_id, pageSize: 25, defaultSort: { id: "email", direction: "asc" } })
 
   return (
     <Page>
@@ -43,41 +76,22 @@ export default function MembersPage() {
 
       {members.error ? (
         <ErrorState error={members.error} />
-      ) : members.isLoading ? (
-        <LoadingRows />
-      ) : (members.data?.members ?? []).length === 0 ? (
-        <EmptyState title={t("members.empty")} />
       ) : (
-        <Panel flush>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-4">{t("members.email")}</TableHead>
-                <TableHead>{t("members.role")}</TableHead>
-                <TableHead>{t("members.status")}</TableHead>
-                <TableHead className="pe-4">{t("members.joined")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(members.data?.members ?? []).map((m) => (
-                <TableRow key={m.user_id}>
-                  <TableCell className="ps-4">
-                    <Link href={`/${locale}/w/${ws.slug}/members/${m.user_id}`} className="hover:underline">
-                      <Ltr>{m.email}</Ltr>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{t(`role.${m.role}`)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{t(`status.${m.status}`)}</TableCell>
-                  <TableCell className="pe-4 text-muted-foreground">
-                    <Ltr>{formatDate(m.joined_at)}</Ltr>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
+        <DataView
+          table={table}
+          label={t("nav.members")}
+          rowLabel={(m) => m.email}
+          loading={members.isLoading}
+          empty={<EmptyState title={t("members.empty")} />}
+          onRowClick={(m) => router.push(`/${locale}/w/${ws.slug}/members/${m.user_id}`)}
+          search={t("members.search")}
+          filters={
+            <>
+              <DataTableFacetFilter table={table} column="role" title={t("members.role")} options={roles.map((r) => ({ value: r, label: t(`role.${r}`) }))} />
+              <DataTableFacetFilter table={table} column="status" title={t("members.status")} options={statuses.map((v) => ({ value: v, label: t(`status.${v}`) }))} />
+            </>
+          }
+        />
       )}
 
       {canInvite ? (
@@ -211,6 +225,29 @@ function PendingInvitations({
   const { t } = useTranslations()
   const ws = useWorkspace()
 
+  const columns: DataTableColumn<Invitation>[] = [
+    { id: "email", header: t("members.email"), sortValue: (inv) => inv.email, cell: (inv) => <Ltr>{inv.email}</Ltr> },
+    { id: "role", header: t("members.role"), sortValue: (inv) => inv.role, cell: (inv) => <Badge variant="outline">{t(`role.${inv.role}`)}</Badge> },
+    { id: "expires", header: t("members.expires"), sortValue: (inv) => inv.expires_at, className: "text-muted-foreground", cell: (inv) => <Ltr>{formatDate(inv.expires_at)}</Ltr> },
+    {
+      id: "revoke",
+      header: <span className="sr-only">{t("common.actions")}</span>,
+      label: t("common.actions"),
+      hideable: false,
+      align: "end",
+      cell: (inv) => (
+        <ConfirmButton
+          label={t("common.revoke")}
+          title={t("members.revokeTitle")}
+          description={t("members.revokeBody", { email: inv.email })}
+          confirmLabel={t("common.revoke")}
+          onConfirm={() => revoke(inv.id)}
+        />
+      ),
+    },
+  ]
+  const table = useDataTable({ data: items, columns, getRowId: (inv) => inv.id, defaultSort: { id: "expires", direction: "asc" } })
+
   async function revoke(id: string) {
     try {
       await api(`/api/w/invitations/${encodeURIComponent(id)}`, { method: "DELETE", workspaceId: ws.id })
@@ -227,47 +264,8 @@ function PendingInvitations({
         <ErrorState error={error} />
       ) : loading ? (
         <LoadingRows rows={2} />
-      ) : items.length === 0 ? (
-        <EmptyState title={t("members.noPending")} />
       ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-4">{t("members.email")}</TableHead>
-                <TableHead>{t("members.role")}</TableHead>
-                <TableHead>{t("members.expires")}</TableHead>
-                <TableHead className="pe-4 text-end">
-                  <span className="sr-only">{t("common.actions")}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((inv) => (
-                <TableRow key={inv.id}>
-                  <TableCell className="ps-4">
-                    <Ltr>{inv.email}</Ltr>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{t(`role.${inv.role}`)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <Ltr>{formatDate(inv.expires_at)}</Ltr>
-                  </TableCell>
-                  <TableCell className="pe-4 text-end">
-                    <ConfirmButton
-                      label={t("common.revoke")}
-                      title={t("members.revokeTitle")}
-                      description={t("members.revokeBody", { email: inv.email })}
-                      confirmLabel={t("common.revoke")}
-                      onConfirm={() => revoke(inv.id)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </>
+        <DataTable table={table} label={t("members.pending")} rowLabel={(inv) => inv.email} empty={<EmptyState title={t("members.noPending")} />} />
       )}
     </Panel>
   )

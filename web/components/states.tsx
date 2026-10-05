@@ -15,7 +15,8 @@ export function LoadingRows({ rows = 3 }: { rows?: number }) {
 }
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
-  return <NqEmptyState title={title} description={body} actions={action} />
+  // spaced off the header / toolbar above and whatever follows, on every page
+  return <NqEmptyState className="my-8" title={title} description={body} actions={action} />
 }
 
 export function ErrorState({ error }: { error: unknown }) {

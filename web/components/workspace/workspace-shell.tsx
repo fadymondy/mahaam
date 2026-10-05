@@ -4,24 +4,19 @@ import Link from "next/link";
 import { useCallback, useState, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
-  BellIcon,
   BriefcaseIcon,
   ChartColumnIcon,
   CalendarRangeIcon,
   HomeIcon,
   ClockIcon,
-  CoinsIcon,
-  TimerIcon,
   FolderKanbanIcon,
   KeyRoundIcon,
   LayoutGridIcon,
   ReceiptTextIcon,
   UsersIcon,
   UsersRoundIcon,
-  ShieldCheckIcon,
   Settings2Icon,
   InboxIcon,
-  GaugeIcon,
   BanIcon,
 } from "lucide-react";
 
@@ -31,7 +26,6 @@ import {
   AppShell,
   Button,
   Dialog,
-  SidebarNest,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -229,9 +223,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 }
 
 /** The workspace navigation, gated by the caller's permissions. */
-function ShellNav({ base, can, isOwner }: { base: string; can: string[]; isOwner?: boolean }) {
+function ShellNav({ base, can }: { base: string; can: string[]; isOwner?: boolean }) {
   const { t } = useTranslations();
-  const pathname = usePathname();
   // A client is external: they get only the portal (their projects, issues and
   // invoices). members:read is the Member tier, which a client never holds, so
   // its absence identifies the client role without threading the role in.
@@ -255,7 +248,6 @@ function ShellNav({ base, can, isOwner }: { base: string; can: string[]; isOwner
       </NavItem>
     ) : null;
   const hasTime = can.includes("time:track") || can.includes("time:manage");
-  const settingsPaths = ["access", "mcp", "time", "notifications", "workspace", "plan", "rates"];
   return (
     <>
       <SidebarGroup>
@@ -277,19 +269,10 @@ function ShellNav({ base, can, isOwner }: { base: string; can: string[]; isOwner
         </SidebarGroup>
       ) : null}
       <SidebarGroup>
-        <SidebarNest
-          label={t("nav.settingsGroup")}
-          icon={<Settings2Icon />}
-          active={settingsPaths.some((p) => pathname.startsWith(`${base}/settings/${p}`))}
-        >
-          {can.includes("access:manage") ? <NavItem sub href={`${base}/settings/access`} icon={<ShieldCheckIcon />}>{t("nav.access")}</NavItem> : null}
-          <NavItem sub href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>{t("nav.mcpTokens")}</NavItem>
-          <NavItem sub href={`${base}/settings/time`} icon={<TimerIcon />}>{t("nav.timeSettings")}</NavItem>
-          <NavItem sub href={`${base}/settings/notifications`} icon={<BellIcon />}>{t("nav.notifications")}</NavItem>
-          {isOwner ? <NavItem sub href={`${base}/settings/workspace`} icon={<Settings2Icon />}>{t("nav.workspaceSettings")}</NavItem> : null}
-          {can.includes("workspace:update") ? <NavItem sub href={`${base}/settings/plan`} icon={<GaugeIcon />}>{t("nav.plan")}</NavItem> : null}
-          {can.includes("rates:read") ? <NavItem sub href={`${base}/settings/rates`} icon={<CoinsIcon />}>{t("nav.rates")}</NavItem> : null}
-        </SidebarNest>
+        {/* one entry: the settings page carries its own grouped nav (settings/layout.tsx) */}
+        <NavItem href={`${base}/settings`} icon={<Settings2Icon />}>
+          {t("nav.settingsGroup")}
+        </NavItem>
       </SidebarGroup>
     </>
   );

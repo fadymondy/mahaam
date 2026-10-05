@@ -1,18 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { DataTableFacetFilter, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
-import { Page, PageHeader, Panel } from "@/components/page"
-import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
+import { DataView } from "@/components/data-view"
+import { Page, PageHeader } from "@/components/page"
+import { EmptyState, ErrorState } from "@/components/states"
 import { RangePicker } from "@/components/kpi/kpi-dashboard"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { money } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
-import { compact, defaultRange, useTeamKPI } from "@/lib/kpi"
+import { compact, defaultRange, useTeamKPI, type TeamKPIRow } from "@/lib/kpi"
 import { hm } from "@/lib/time"
 import { useDocumentTitle } from "@/lib/title"
 
@@ -20,14 +22,60 @@ import { useDocumentTitle } from "@/lib/title"
 export default function TeamKpiPage() {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
+  const router = useRouter()
   const allowed = ws.can("kpi:all")
   const [range, setRange] = useState(defaultRange)
   const team = useTeamKPI(ws.id, range.from, range.to, allowed)
   const base = `/${locale}/w/${ws.slug}/members`
   useDocumentTitle(`${t("kpi.teamTitle")} · ${ws.summary.name}`)
 
-  const rows = team.data?.rows ?? []
-  const num = "text-end tabular-nums"
+  const rows = useMemo(() => team.data?.rows ?? [], [team.data])
+  const finance = !!team.data?.finance
+  const currency = team.data?.currency ?? ""
+  const roles = useMemo(() => [...new Set(rows.map((r) => r.member.role))], [rows])
+  const columns = useMemo<DataTableColumn<TeamKPIRow>[]>(() => {
+    const n = (id: string, header: string, v: (r: TeamKPIRow) => number | null, cell?: (r: TeamKPIRow) => ReactNode): DataTableColumn<TeamKPIRow> => ({
+      id,
+      header,
+      align: "end",
+      className: "tabular-nums",
+      sortValue: v,
+      cell: cell ?? ((r) => v(r) ?? "—"),
+    })
+    return [
+      {
+        id: "member",
+        header: t("kpi.member"),
+        hideable: false,
+        sortValue: (r) => r.member.email,
+        searchValue: (r) => r.member.email,
+        filterValue: (r) => r.member.role,
+        cell: (r) => (
+          <>
+            <Link href={`${base}/${r.member.user_id}`} className="font-medium text-foreground hover:underline">
+              <Ltr>{r.member.email}</Ltr>
+            </Link>
+            <span className="ms-2 text-caption text-muted-foreground">{t(`role.${r.member.role}`)}</span>
+          </>
+        ),
+      },
+      n("hours", t("kpi.hours"), (r) => r.tracked_s, (r) => <Ltr mono>{hm(r.tracked_s, "0:00")}</Ltr>),
+      n("billable", t("kpi.billable"), (r) => r.billable_s, (r) => <Ltr mono>{hm(r.billable_s, "0:00")}</Ltr>),
+      n("days", t("kpi.daysTracked"), (r) => r.days_tracked),
+      n("done", t("kpi.tasksDone"), (r) => r.tasks_completed),
+      n("overdue", t("kpi.overdue"), (r) => r.tasks_overdue),
+      n("issues", t("kpi.issuesFinished"), (r) => r.issues_finished),
+      n("tokens", t("kpi.aiTokens"), (r) => r.ai_tokens, (r) => <Ltr>{compact(r.ai_tokens)}</Ltr>),
+      ...(finance ? [n("cost", t("kpi.aiCost"), (r) => r.ai_cost_minor ?? 0, (r) => <Ltr>{money(r.ai_cost_minor ?? 0, currency, locale)}</Ltr>)] : []),
+      n("commits", t("kpi.commits"), (r) => (r.github_login ? r.commits : null), (r) => (
+        <span title={r.github_login ? `@${r.github_login}` : t("kpi.notConnected")}>{r.github_login ? r.commits : "—"}</span>
+      )),
+      n("prs", t("kpi.prsMerged"), (r) => (r.github_login ? r.prs_merged : null)),
+      n("mcp", t("kpi.mcp"), (r) => r.mcp_actions),
+      n("rating", t("kpi.rating"), (r) => r.avg_rating ?? null, (r) => (r.avg_rating != null ? r.avg_rating.toFixed(1) : "—")),
+    ]
+  }, [t, locale, base, finance, currency])
+  const table = useDataTable({ data: rows, columns, getRowId: (r) => r.member.user_id, defaultSort: { id: "hours", direction: "desc" } })
   return (
     <Page wide>
       <PageHeader
@@ -40,68 +88,17 @@ export default function TeamKpiPage() {
         <p className="text-sm text-muted-foreground">{t("kpi.teamNoPermission")}</p>
       ) : team.error ? (
         <ErrorState error={team.error} />
-      ) : !team.data ? (
-        <LoadingRows rows={4} />
-      ) : rows.length === 0 ? (
-        <EmptyState title={t("kpi.teamEmpty")} />
       ) : (
-        <Panel flush>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-4">{t("kpi.member")}</TableHead>
-                <TableHead className={num}>{t("kpi.hours")}</TableHead>
-                <TableHead className={num}>{t("kpi.billable")}</TableHead>
-                <TableHead className={num}>{t("kpi.daysTracked")}</TableHead>
-                <TableHead className={num}>{t("kpi.tasksDone")}</TableHead>
-                <TableHead className={num}>{t("kpi.overdue")}</TableHead>
-                <TableHead className={num}>{t("kpi.issuesFinished")}</TableHead>
-                <TableHead className={num}>{t("kpi.aiTokens")}</TableHead>
-                {team.data.finance ? <TableHead className={num}>{t("kpi.aiCost")}</TableHead> : null}
-                <TableHead className={num}>{t("kpi.commits")}</TableHead>
-                <TableHead className={num}>{t("kpi.prsMerged")}</TableHead>
-                <TableHead className={num}>{t("kpi.mcp")}</TableHead>
-                <TableHead className={`${num} pe-4`}>{t("kpi.rating")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.member.user_id}>
-                  <TableCell className="ps-4">
-                    <Link href={`${base}/${r.member.user_id}`} className="font-medium text-foreground hover:underline">
-                      <Ltr>{r.member.email}</Ltr>
-                    </Link>
-                    <span className="ms-2 text-caption text-muted-foreground">{t(`role.${r.member.role}`)}</span>
-                  </TableCell>
-                  <TableCell className={num}>
-                    <Ltr mono>{hm(r.tracked_s, "0:00")}</Ltr>
-                  </TableCell>
-                  <TableCell className={num}>
-                    <Ltr mono>{hm(r.billable_s, "0:00")}</Ltr>
-                  </TableCell>
-                  <TableCell className={num}>{r.days_tracked}</TableCell>
-                  <TableCell className={num}>{r.tasks_completed}</TableCell>
-                  <TableCell className={num}>{r.tasks_overdue}</TableCell>
-                  <TableCell className={num}>{r.issues_finished}</TableCell>
-                  <TableCell className={num}>
-                    <Ltr>{compact(r.ai_tokens)}</Ltr>
-                  </TableCell>
-                  {team.data?.finance ? (
-                    <TableCell className={num}>
-                      <Ltr>{money(r.ai_cost_minor ?? 0, team.data.currency, locale)}</Ltr>
-                    </TableCell>
-                  ) : null}
-                  <TableCell className={num} title={r.github_login ? `@${r.github_login}` : t("kpi.notConnected")}>
-                    {r.github_login ? r.commits : "—"}
-                  </TableCell>
-                  <TableCell className={num}>{r.github_login ? r.prs_merged : "—"}</TableCell>
-                  <TableCell className={num}>{r.mcp_actions}</TableCell>
-                  <TableCell className={`${num} pe-4`}>{r.avg_rating != null ? r.avg_rating.toFixed(1) : "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
+        <DataView
+          table={table}
+          label={t("kpi.teamTitle")}
+          rowLabel={(r) => r.member.email}
+          loading={!team.data}
+          empty={<EmptyState title={t("kpi.teamEmpty")} />}
+          onRowClick={(r) => router.push(`${base}/${r.member.user_id}`)}
+          search={t("members.search")}
+          filters={<DataTableFacetFilter table={table} column="member" title={t("members.role")} options={roles.map((r) => ({ value: r, label: t(`role.${r}`) }))} />}
+        />
       )}
     </Page>
   )

@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { BellIcon, CoinsIcon, GaugeIcon, KeyRoundIcon, Settings2Icon, ShieldCheckIcon, TimerIcon } from "lucide-react"
 import { SettingsSections } from "@fadymondy/nasaq/web"
@@ -12,7 +13,8 @@ import { useTranslations } from "@/lib/i18n"
 Workspace settings on Nasaq's SettingsSections: one "Settings" title, a grouped side nav (a select on
 small screens) and the open page on the right. Each settings page is still its own route, so the nav
 navigates and only the open page has content; the pages a role can't use aren't listed (the routes
-and endpoints enforce it too). A route outside the nav (the old /settings/labels) renders plainly.
+and endpoints enforce it too). A route outside the nav (the old /settings/labels) renders plainly; /settings
+itself (the sidebar's one Settings entry) goes on to the first page.
 */
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const { t, locale } = useTranslations()
@@ -52,6 +54,12 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
   const active = pathname.slice(base.length + 1).split("/")[0] ?? ""
   const listed = groups.some((g) => g.pages.some((p) => p.id === active))
+  // The sidebar links to /settings: open the first page this role can use.
+  const first = groups[0]?.pages[0]?.id
+  useEffect(() => {
+    if (active === "" && first) router.replace(`${base}/${first}`)
+  }, [active, first, base, router])
+  if (active === "") return null
   if (!listed) return <Page>{children}</Page>
 
   return (

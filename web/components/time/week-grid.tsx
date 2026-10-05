@@ -3,7 +3,7 @@
 // The week grid: project/task x day, one table per week of the period, built from the period's
 // slices. A week that is cut by the period (a month's first and last) shows only the period's days.
 // Scrolls sideways on a phone rather than dropping columns, so the numbers stay aligned.
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { Card, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
 import { EmptyState } from "@/components/states"
@@ -138,7 +138,7 @@ export function WeekGrid({ parts, period, weekStart, running, fetchedAt, now, tz
         <EmptyState title={t("time.noTime")} body={t("time.noTimeBody")} />
       ) : (
         weeks.map((days) => (
-          <section key={days[0]} className="border border-border bg-card">
+          <Card key={days[0]} className="gap-0 overflow-hidden py-0">
             {period.to > addDays(period.from, 7) ? (
               <header className="border-b border-border px-4 py-2.5 text-sm font-medium">
                 <Ltr className="tabular-nums">
@@ -147,7 +147,7 @@ export function WeekGrid({ parts, period, weekStart, running, fetchedAt, now, tz
               </header>
             ) : null}
             <WeekTable days={days} parts={parts} running={running} drift={drift} today={today} />
-          </section>
+          </Card>
         ))
       )}
     </div>

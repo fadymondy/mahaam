@@ -2,17 +2,18 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { PlusIcon, SearchIcon, UploadIcon } from "lucide-react"
-import { ListFilter } from "@/components/list-filter"
+import { ArchiveIcon, ArchiveRestoreIcon, PencilIcon, PlusIcon, UploadIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { toast } from "@fadymondy/nasaq/web"
 import { FormError } from "@/components/form-text"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Switch, Textarea, DataTableFacetFilter, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
 
-import { Page, PageHeader, Panel } from "@/components/page"
+import { DataView } from "@/components/data-view"
+import { Page, PageHeader } from "@/components/page"
 import { Ltr } from "@/components/copy-field"
 import { ClientImportDialog } from "@/components/work/client-import-dialog"
-import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
+import { EmptyState, ErrorState } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { money } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
@@ -22,6 +23,7 @@ import { errorText, useClients, w, type Client } from "@/lib/work"
 export default function ClientsPage() {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
+  const router = useRouter()
   useDocumentTitle(`${t("nav.clients")} · ${ws.summary.name}`)
   const [archived, setArchived] = useState(false)
   const [editing, setEditing] = useState<Client | "new" | null>(null)
@@ -30,21 +32,63 @@ export default function ClientsPage() {
   const clients = useClients(ws.id, archived, ws.can("clients:read"))
   const canWrite = ws.can("clients:write")
   const all = useMemo(() => clients.data?.clients ?? [], [clients.data])
-  const [q, setQ] = useState("")
-  const [currency, setCurrency] = useState("")
-  const [work, setWork] = useState("")
   const currencies = useMemo(() => [...new Set(all.map((c) => c.currency).filter(Boolean))].sort(), [all])
-  const list = useMemo(() => {
-    const needle = q.trim().toLowerCase()
-    return all.filter((c) => {
-      if (needle && !`${c.name} ${c.email ?? ""} ${c.phone ?? ""} ${c.company ?? ""} ${c.country ?? ""}`.toLowerCase().includes(needle)) return false
-      if (currency && c.currency !== currency) return false
-      if (work === "with" && !c.project_count) return false
-      if (work === "without" && c.project_count) return false
-      return true
-    })
-  }, [all, q, currency, work])
-  const filtered = !!(q.trim() || currency || work)
+  const columns = useMemo<DataTableColumn<Client>[]>(
+    () => [
+      {
+        id: "name",
+        header: t("clients.name"),
+        hideable: false,
+        sortValue: (c) => c.name.toLowerCase(),
+        searchValue: (c) => `${c.name} ${c.email ?? ""} ${c.phone ?? ""} ${c.company ?? ""} ${c.country ?? ""}`,
+        cell: (c) => (
+          <span className="font-medium" data-client={c.id}>
+            <Link href={`/${locale}/w/${ws.slug}/clients/${c.id}`} className="hover:underline">
+              {c.name}
+            </Link>
+            {c.archived_at ? (
+              <Badge variant="neutral" className="ms-2">
+                {t("project.archivedBadge")}
+              </Badge>
+            ) : null}
+          </span>
+        ),
+      },
+      {
+        id: "email",
+        header: t("clients.email"),
+        sortValue: (c) => c.email ?? null,
+        className: "text-muted-foreground",
+        cell: (c) => (c.email ? <Ltr>{c.email}</Ltr> : "—"),
+      },
+      {
+        id: "rate",
+        header: t("clients.rate"),
+        sortValue: (c) => c.default_rate_minor ?? null,
+        filterValue: (c) => c.currency,
+        className: "text-muted-foreground",
+        cell: (c) =>
+          c.default_rate_minor != null ? (
+            <Ltr>
+              {money(c.default_rate_minor, c.currency, locale)}/{t("clients.hourShort")}
+            </Ltr>
+          ) : (
+            <Ltr mono>{c.currency}</Ltr>
+          ),
+      },
+      {
+        id: "projects",
+        header: t("clients.projects"),
+        align: "end",
+        sortValue: (c) => c.project_count,
+        filterValue: (c) => (c.project_count ? "with" : "without"),
+        className: "text-muted-foreground tabular-nums",
+        cell: (c) => <Ltr>{c.project_count}</Ltr>,
+      },
+    ],
+    [t, locale, ws.slug],
+  )
+  const table = useDataTable({ data: all, columns, getRowId: (c) => c.id, pageSize: 25, defaultSort: { id: "name", direction: "asc" } })
 
   // Back from the Google Contacts consent screen: ?import=google&session=… (or &error=…).
   useEffect(() => {
@@ -96,84 +140,51 @@ export default function ClientsPage() {
           ) : null
         }
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("clients.search")} aria-label={t("clients.search")} className="h-9 ps-8" dir="auto" />
-        </div>
-        <ListFilter value={currency} onChange={setCurrency} label={t("clients.filterCurrency")} items={[{ value: "", label: t("clients.allCurrencies") }, ...currencies.map((c) => ({ value: c, label: c }))]} />
-        <ListFilter value={work} onChange={setWork} label={t("clients.filterWork")} items={[{ value: "", label: t("clients.allClients") }, { value: "with", label: t("clients.withProjects") }, { value: "without", label: t("clients.withoutProjects") }]} />
-        <label className="flex items-center gap-2 text-sm text-nq-fg-body">
-          <Switch checked={archived} onCheckedChange={setArchived} />
-          {t("clients.showArchived")}
-        </label>
-      </div>
-
       {clients.error ? (
         <ErrorState error={clients.error} />
-      ) : clients.isLoading ? (
-        <LoadingRows />
-      ) : list.length === 0 && filtered ? (
-        <EmptyState title={t("clients.noMatch")} />
-      ) : list.length === 0 ? (
-        <EmptyState title={t("clients.empty")} body={canWrite ? t("clients.emptyBody") : undefined} />
       ) : (
-        <Panel flush>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-4">{t("clients.name")}</TableHead>
-                <TableHead className="hidden md:table-cell">{t("clients.email")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t("clients.rate")}</TableHead>
-                <TableHead>{t("clients.projects")}</TableHead>
-                <TableHead className="pe-4 text-end">
-                  <span className="sr-only">{t("common.actions")}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.map((c) => (
-                <TableRow key={c.id} data-client={c.id}>
-                  <TableCell className="ps-4 font-medium">
-                    <Link href={`/${locale}/w/${ws.slug}/clients/${c.id}`} className="hover:underline">
-                      {c.name}
-                    </Link>
-                    {c.archived_at ? (
-                      <Badge variant="neutral" className="ms-2">
-                        {t("project.archivedBadge")}
-                      </Badge>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground md:table-cell">{c.email ? <Ltr>{c.email}</Ltr> : "—"}</TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">
-                    {c.default_rate_minor != null ? (
-                      <Ltr>
-                        {money(c.default_rate_minor, c.currency, locale)}/{t("clients.hourShort")}
-                      </Ltr>
-                    ) : (
-                      <Ltr mono>{c.currency}</Ltr>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <Ltr>{c.project_count}</Ltr>
-                  </TableCell>
-                  <TableCell className="pe-4 text-end">
-                    {canWrite ? (
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => setEditing(c)}>
-                          {t("common.edit")}
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => toggleArchive(c)}>
-                          {c.archived_at ? t("settings.restore") : t("settings.archive")}
-                        </Button>
-                      </div>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
+        <DataView
+          table={table}
+          label={t("nav.clients")}
+          rowLabel={(c) => c.name}
+          loading={clients.isLoading}
+          empty={<EmptyState title={t("clients.empty")} body={canWrite ? t("clients.emptyBody") : undefined} />}
+          onRowClick={(c) => router.push(`/${locale}/w/${ws.slug}/clients/${c.id}`)}
+          rowActions={
+            canWrite
+              ? (c) => [
+                  { id: "edit", label: t("common.edit"), icon: PencilIcon, onSelect: () => setEditing(c) },
+                  {
+                    id: "archive",
+                    label: c.archived_at ? t("settings.restore") : t("settings.archive"),
+                    icon: c.archived_at ? ArchiveRestoreIcon : ArchiveIcon,
+                    onSelect: () => void toggleArchive(c),
+                  },
+                ]
+              : undefined
+          }
+          search={t("clients.search")}
+          filters={
+            <>
+              <DataTableFacetFilter table={table} column="rate" title={t("clients.filterCurrency")} options={currencies.map((c) => ({ value: c, label: c }))} />
+              <DataTableFacetFilter
+                table={table}
+                column="projects"
+                title={t("clients.filterWork")}
+                options={[
+                  { value: "with", label: t("clients.withProjects") },
+                  { value: "without", label: t("clients.withoutProjects") },
+                ]}
+              />
+            </>
+          }
+          toolbarEnd={
+            <label className="flex items-center gap-2 text-sm text-nq-fg-body">
+              <Switch checked={archived} onCheckedChange={setArchived} />
+              {t("clients.showArchived")}
+            </label>
+          }
+        />
       )}
 
       {canWrite ? (

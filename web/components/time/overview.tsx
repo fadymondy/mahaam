@@ -8,7 +8,7 @@ import { type ReactNode } from "react"
 import { ArrowDownIcon, ArrowUpIcon, BotIcon, ClockIcon, ListChecksIcon, PlayIcon, ReceiptTextIcon, SquareIcon, TargetIcon } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts"
 
-import { Button, type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@fadymondy/nasaq/web"
+import { Button, Card, type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
 import { ColorDot, solid } from "@/components/work/palette"
@@ -21,13 +21,13 @@ const hours = (s: number) => Math.round((s / 3600) * 100) / 100
 
 function Panel({ title, action, children, className, ...rest }: { title: ReactNode; action?: ReactNode; children: ReactNode; className?: string } & Record<`data-${string}`, string | undefined>) {
   return (
-    <section className={cn("flex h-full min-w-0 flex-col border border-border bg-card", className)} {...rest}>
+    <Card className={cn("h-full min-w-0 gap-0 overflow-hidden py-0", className)} {...rest}>
       <header className="flex min-h-12 items-center justify-between gap-3 border-b border-border px-4 py-2">
         <h2 className="text-sm font-medium">{title}</h2>
         {action}
       </header>
       <div className="flex min-h-0 flex-1 flex-col p-4">{children}</div>
-    </section>
+    </Card>
   )
 }
 
@@ -47,9 +47,9 @@ function Delta({ cur, prev }: { cur: number; prev: number }) {
 
 function Kpi({ icon, label, value, delta: dl, sub, data }: { icon: ReactNode; label: string; value: string; delta: ReactNode; sub: ReactNode; data: string }) {
   return (
-    <div className="flex h-full min-w-0 flex-col gap-3 border border-border bg-card p-4" data-kpi={data}>
+    <Card className="h-full min-w-0 gap-3 p-4" data-kpi={data}>
       <div className="flex items-center gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center bg-muted text-muted-foreground [&_svg]:size-4">{icon}</span>
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:size-4">{icon}</span>
         <span className="min-w-0 truncate text-sm text-muted-foreground">{label}</span>
       </div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
@@ -59,7 +59,7 @@ function Kpi({ icon, label, value, delta: dl, sub, data }: { icon: ReactNode; la
         <span className="shrink-0">{dl}</span>
       </div>
       <p className="mt-auto text-xs text-muted-foreground">{sub}</p>
-    </div>
+    </Card>
   )
 }
 

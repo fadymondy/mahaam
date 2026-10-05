@@ -1,9 +1,10 @@
 "use client"
 
+import { useMemo } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 
-import { Badge, Card, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { Badge, Card, DataTable, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
 import { Page, PageHeader, Panel } from "@/components/page"
@@ -15,7 +16,7 @@ import { useWorkspace } from "@/components/workspace/workspace-context"
 import { formatDay, money } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
 import { useMe, useMembers } from "@/lib/queries"
-import { hm, useRates, useTimesheet } from "@/lib/time"
+import { hm, useRates, useTimesheet, type TimesheetRow } from "@/lib/time"
 import { useDocumentTitle } from "@/lib/title"
 import { useTeams } from "@/lib/work"
 import { KpiDashboard } from "@/components/kpi/kpi-dashboard"
@@ -37,6 +38,25 @@ export default function MemberDetailPage() {
 
   const member = (members.data?.members ?? []).find((m) => m.user_id === id)
   useDocumentTitle(`${member?.email ?? t("nav.members")} · ${ws.summary.name}`)
+  const timeColumns: DataTableColumn<TimesheetRow>[] = [
+    {
+      id: "project",
+      header: t("nav.projects"),
+      sortValue: (row) => row.project_name ?? null,
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2">
+          {row.project_color ? <ColorDot color={row.project_color} /> : null}
+          <span className="min-w-0 truncate text-foreground">
+            {row.project_name ?? t("project.noClient")}
+            {row.task_title ? <span className="text-muted-foreground"> · {row.task_title}</span> : null}
+          </span>
+        </span>
+      ),
+    },
+    { id: "tracked", header: t("memberDetail.tracked"), align: "end", className: "tabular-nums", sortValue: (row) => row.total_s, cell: (row) => <Ltr mono>{hm(row.total_s, "0:00")}</Ltr> },
+  ]
+  const sheetRows = useMemo(() => sheet.data?.rows ?? [], [sheet.data])
+  const timeTable = useDataTable({ data: sheetRows, columns: timeColumns, getRowId: (r) => `${r.project_id}-${r.task_id}`, defaultSort: { id: "tracked", direction: "desc" } })
 
   if (members.error) return <ErrorState error={members.error} />
   if (members.isLoading) return <LoadingRows rows={5} />
@@ -103,35 +123,8 @@ export default function MemberDetailPage() {
               <ErrorState error={sheet.error} />
             ) : !sheet.data ? (
               <LoadingRows rows={2} />
-            ) : sheet.data.rows.length === 0 ? (
-              <EmptyState title={t("memberDetail.noTime")} />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="ps-4">{t("nav.projects")}</TableHead>
-                    <TableHead className="pe-4 text-end">{t("memberDetail.tracked")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sheet.data.rows.map((row, i) => (
-                    <TableRow key={`${row.project_id}-${row.task_id}-${i}`}>
-                      <TableCell className="ps-4">
-                        <span className="flex min-w-0 items-center gap-2">
-                          {row.project_color ? <ColorDot color={row.project_color} /> : null}
-                          <span className="min-w-0 truncate text-foreground">
-                            {row.project_name ?? t("project.noClient")}
-                            {row.task_title ? <span className="text-muted-foreground"> · {row.task_title}</span> : null}
-                          </span>
-                        </span>
-                      </TableCell>
-                      <TableCell className="pe-4 text-end tabular-nums">
-                        <Ltr mono>{hm(row.total_s, "0:00")}</Ltr>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable table={timeTable} label={t("memberDetail.recentTime")} rowLabel={(r) => r.project_name ?? t("project.noClient")} empty={<EmptyState title={t("memberDetail.noTime")} />} />
             )}
           </Panel>
         </div>

@@ -4,7 +4,7 @@
 // edit, delete and stop. Entries that cross midnight show one row per day, as the server cuts them.
 import { BotIcon, LockIcon, PencilIcon, PlusIcon, SquareIcon } from "lucide-react"
 
-import { Badge, Button } from "@fadymondy/nasaq/web"
+import { Badge, Button, Card } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
@@ -52,12 +52,12 @@ export function LogList({
           {t("time.add")}
         </Button>
       </div>
-      {days.length === 0 ? <p className="border border-border bg-card px-4 py-10 text-center text-sm text-muted-foreground">{t("time.noEntriesDay")}</p> : null}
+      {days.length === 0 ? <p className="rounded-card border border-border bg-card px-4 py-10 text-center text-sm text-muted-foreground">{t("time.noEntriesDay")}</p> : null}
       {days.map((d) => {
         const rows = byDay.get(d)!.sort((a, b) => a.slice.start.localeCompare(b.slice.start))
         const total = rows.reduce((a, r) => a + r.slice.seconds, 0)
         return (
-          <section key={d} className="border border-border bg-card" data-day-list={d}>
+          <Card key={d} className="gap-0 overflow-hidden py-0" data-day-list={d}>
             <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
               <h2 className="text-sm font-medium">{dayLabel(d, locale, "long")}</h2>
               <div className="flex items-center gap-3">
@@ -148,7 +148,7 @@ export function LogList({
                 })}
               </ul>
             )}
-          </section>
+          </Card>
         )
       })}
     </div>

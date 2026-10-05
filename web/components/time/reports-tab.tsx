@@ -5,7 +5,7 @@
 import Link from "next/link"
 import { ArrowUpRightIcon } from "lucide-react"
 
-import { Button, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+import { Button, Card, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
 import { SeriesChart } from "@/components/reports/report-charts"
@@ -37,10 +37,10 @@ export function ReportsTab({ period, userId }: { period: Period; userId: string 
         <LoadingRows rows={4} />
       ) : (
         <>
-          <section className="border border-border bg-card p-4">
+          <Card className="p-4">
             <SeriesChart series={r.series} />
-          </section>
-          <section className="overflow-x-auto border border-border bg-card">
+          </Card>
+          <Card className="overflow-x-auto py-0">
             <Table className="min-w-[32rem]">
               <TableHeader>
                 <TableRow>
@@ -86,7 +86,7 @@ export function ReportsTab({ period, userId }: { period: Period; userId: string 
                 </TableRow>
               </TableFooter>
             </Table>
-          </section>
+          </Card>
         </>
       )}
     </div>

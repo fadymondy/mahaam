@@ -3,15 +3,15 @@
 import { useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { PlusIcon, SearchIcon } from "lucide-react"
-import { ListFilter } from "@/components/list-filter"
+import { PlusIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import { FormError } from "@/components/form-text"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea, DataTableFacetFilter, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
 
 import { DateField } from "@/components/work/fields"
-import { Page, PageHeader, Panel } from "@/components/page"
+import { DataView } from "@/components/data-view"
+import { Page, PageHeader } from "@/components/page"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -52,31 +52,65 @@ export default function InvoicesPage() {
   useDocumentTitle(`${t("invoices.title")} · ${ws.summary.name}`)
   const canRead = ws.can("invoices:read")
   const canWrite = ws.can("invoices:write")
-  const [status, setStatus] = useState<string>("")
   const [creating, setCreating] = useState(false)
-  const invoices = useInvoices(ws.id, status ? { status } : {}, canRead)
+  const invoices = useInvoices(ws.id, {}, canRead)
   const all = useMemo(() => invoices.data?.invoices ?? [], [invoices.data])
-  const [q, setQ] = useState("")
-  const [client, setClient] = useState("")
-  const [due, setDue] = useState("")
   const clientOptions = useMemo(() => {
     const m = new Map<string, string>()
     for (const iv of all) if (iv.client_name) m.set(iv.client_id, iv.client_name)
     return [...m].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label))
   }, [all])
-  const list = useMemo(() => {
-    const needle = q.trim().toLowerCase()
+  const columns = useMemo<DataTableColumn<Invoice>[]>(() => {
     const today = new Date().toISOString().slice(0, 10)
-    return all.filter((iv) => {
-      if (needle && !`${iv.number} ${iv.client_name ?? ""} ${iv.notes ?? ""}`.toLowerCase().includes(needle)) return false
-      if (client && iv.client_id !== client) return false
-      const unpaid = iv.status === "sent" && iv.paid_minor < iv.total_minor
-      if (due === "overdue" && !(unpaid && iv.due_date && iv.due_date.slice(0, 10) < today)) return false
-      if (due === "unpaid" && !unpaid) return false
-      return true
-    })
-  }, [all, q, client, due])
-  const filtered = !!(q.trim() || client || due)
+    return [
+      {
+        id: "number",
+        header: t("invoices.col.number"),
+        hideable: false,
+        sortValue: (iv) => iv.number,
+        searchValue: (iv) => `${iv.number} ${iv.client_name ?? ""} ${iv.notes ?? ""}`,
+        cell: (iv) => (
+          <Link href={`/${locale}/w/${ws.slug}/invoices/${iv.number}`} className="font-medium hover:underline" data-invoice={iv.number}>
+            <Ltr mono>{iv.number}</Ltr>
+          </Link>
+        ),
+      },
+      {
+        id: "client",
+        header: t("invoices.col.client"),
+        sortValue: (iv) => iv.client_name ?? null,
+        filterValue: (iv) => iv.client_id,
+        className: "text-nq-fg-body",
+        cell: (iv) => iv.client_name ?? "—",
+      },
+      {
+        id: "status",
+        header: t("invoices.col.status"),
+        sortValue: (iv) => INVOICE_STATUSES.indexOf(iv.status),
+        filterValue: (iv) => iv.status,
+        cell: (iv) => <StatusBadge status={iv.status} />,
+      },
+      {
+        id: "issued",
+        header: t("invoices.col.issued"),
+        sortValue: (iv) => iv.issue_date,
+        className: "text-muted-foreground",
+        cell: (iv) => <Ltr mono>{iv.issue_date}</Ltr>,
+      },
+      {
+        id: "total",
+        header: t("invoices.col.total"),
+        align: "end",
+        sortValue: (iv) => iv.total_minor,
+        // sent and not fully paid: overdue once the due date has passed
+        filterValue: (iv) =>
+          iv.status === "sent" && iv.paid_minor < iv.total_minor ? (iv.due_date && iv.due_date.slice(0, 10) < today ? "overdue" : "unpaid") : "settled",
+        className: "tabular-nums",
+        cell: (iv) => <Ltr>{money(iv.total_minor, iv.currency, locale)}</Ltr>,
+      },
+    ]
+  }, [t, locale, ws.slug])
+  const table = useDataTable({ data: all, columns, getRowId: (iv) => iv.id, pageSize: 25, defaultSort: { id: "issued", direction: "desc" } })
 
   if (ws.current && !canRead) return (
       <Page>
@@ -98,70 +132,38 @@ export default function InvoicesPage() {
           ) : null
         }
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("invoices.search")} aria-label={t("invoices.search")} className="h-9 ps-8" dir="auto" />
-        </div>
-        <ListFilter value={client} onChange={setClient} label={t("invoices.col.client")} items={[{ value: "", label: t("invoices.filter.allClients") }, ...clientOptions]} />
-        <ListFilter value={due} onChange={setDue} label={t("invoices.filter.payment")} items={[{ value: "", label: t("invoices.filter.anyPayment") }, { value: "unpaid", label: t("invoices.filter.unpaid") }, { value: "overdue", label: t("invoices.filter.overdue") }]} />
-        <Select items={STATUS_ITEMS(t)} value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : (v ?? ""))}>
-          <SelectTrigger className="w-48" data-status-filter>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_ITEMS(t).map((s) => (
-              <SelectItem key={s.value} value={s.value}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {invoices.error ? (
         <ErrorState error={invoices.error} />
-      ) : invoices.isLoading ? (
-        <LoadingRows />
-      ) : list.length === 0 && filtered ? (
-        <EmptyState title={t("invoices.noMatch")} />
-      ) : list.length === 0 ? (
-        <EmptyState title={t("invoices.none")} body={canWrite ? t("invoices.noneHint") : undefined} />
       ) : (
-        <Panel flush>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-4">{t("invoices.col.number")}</TableHead>
-                <TableHead>{t("invoices.col.client")}</TableHead>
-                <TableHead>{t("invoices.col.status")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t("invoices.col.issued")}</TableHead>
-                <TableHead className="pe-4 text-end">{t("invoices.col.total")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.map((iv) => (
-                <TableRow key={iv.id} data-invoice={iv.number}>
-                  <TableCell className="ps-4 font-medium">
-                    <Link href={`/${locale}/w/${ws.slug}/invoices/${iv.number}`} className="hover:underline">
-                      <Ltr mono>{iv.number}</Ltr>
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-nq-fg-body">{iv.client_name ?? "—"}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={iv.status} />
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">
-                    <Ltr mono>{iv.issue_date}</Ltr>
-                  </TableCell>
-                  <TableCell className="pe-4 text-end tabular-nums">
-                    <Ltr>{money(iv.total_minor, iv.currency, locale)}</Ltr>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
+        <DataView
+          table={table}
+          label={t("invoices.title")}
+          rowLabel={(iv) => iv.number}
+          loading={invoices.isLoading}
+          empty={<EmptyState title={t("invoices.none")} body={canWrite ? t("invoices.noneHint") : undefined} />}
+          onRowClick={(iv) => router.push(`/${locale}/w/${ws.slug}/invoices/${iv.number}`)}
+          search={t("invoices.search")}
+          filters={
+            <>
+              <DataTableFacetFilter
+                table={table}
+                column="status"
+                title={t("invoices.col.status")}
+                options={INVOICE_STATUSES.map((s) => ({ value: s, label: t(`invoices.status.${s}`) }))}
+              />
+              <DataTableFacetFilter table={table} column="client" title={t("invoices.col.client")} options={clientOptions} />
+              <DataTableFacetFilter
+                table={table}
+                column="total"
+                title={t("invoices.filter.payment")}
+                options={[
+                  { value: "unpaid", label: t("invoices.filter.unpaid") },
+                  { value: "overdue", label: t("invoices.filter.overdue") },
+                ]}
+              />
+            </>
+          }
+        />
       )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
@@ -183,10 +185,6 @@ export default function InvoicesPage() {
       </Dialog>
     </Page>
   )
-}
-
-function STATUS_ITEMS(t: (k: string) => string) {
-  return [{ value: "all", label: t("invoices.filter.allStatuses") }, ...INVOICE_STATUSES.map((s) => ({ value: s, label: t(`invoices.status.${s}`) }))]
 }
 
 function NewInvoiceForm({ onDone }: { onDone: (iv?: Invoice) => void }) {
