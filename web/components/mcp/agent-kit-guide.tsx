@@ -6,9 +6,9 @@
 import { ExternalLinkIcon } from "lucide-react"
 
 import { CopyField, Ltr } from "@/components/copy-field"
+import { MCP_ORIGIN } from "@/lib/mcp-origin"
 import { useTranslations } from "@/lib/i18n"
 
-const MCP_ORIGIN = process.env.NEXT_PUBLIC_MCP_ORIGIN ?? "http://localhost:8110"
 
 export const PLUGIN_REPO = "https://github.com/fadymondy/mahaam-plugin"
 

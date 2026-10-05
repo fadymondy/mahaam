@@ -2,16 +2,17 @@
 
 // "Connect your agent" as a side-over, opened from the header's green Connect button. The connection
 // types sit as tiles across the top (MCP, Agent kit, API), the way Supabase's Connect panel does.
-// MCP mints a token in place, then hands it to Nasaq's McpConnect for per-client setup.
+// MCP is ConnectSteps: pick your app, then plain steps with one big button.
 // TODO(MH-1094): once nasaq#18 ships (McpConnectSheet, ConnectButton, McpConnect layout="steps"),
 // swap the local frame below for those.
 import { useState, type ReactNode } from "react"
 import { BookOpenIcon, CodeIcon, PlugIcon, SparklesIcon } from "lucide-react"
-import { Button, McpConnect, Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@fadymondy/nasaq/web"
+import { Button, Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@fadymondy/nasaq/web"
 
 import { CopyField } from "@/components/copy-field"
 import { AgentKitGuide } from "@/components/mcp/agent-kit-guide"
-import { MCP_ORIGIN, TokenForm } from "@/components/mcp/connect-agent-dialog"
+import { ConnectSteps } from "@/components/mcp/connect-steps"
+import { MCP_ORIGIN } from "@/lib/mcp-origin"
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
@@ -38,12 +39,10 @@ type Kind = "mcp" | "kit" | "api"
 export function ConnectAgentSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useTranslations()
   const [kind, setKind] = useState<Kind>("mcp")
-  const [plaintext, setPlaintext] = useState<string | null>(null)
 
   function change(next: boolean) {
     onOpenChange(next)
     if (!next) {
-      setPlaintext(null)
       setKind("mcp")
     }
   }
@@ -89,11 +88,7 @@ export function ConnectAgentSheet({ open, onOpenChange }: { open: boolean; onOpe
           </div>
           <div className="p-4">
             {kind === "mcp" ? (
-              plaintext ? (
-                <McpConnect serverName="mahaam" serverUrl={`${MCP_ORIGIN}/api/mcp`} token={plaintext} className="max-w-none border-0 p-0 shadow-none" />
-              ) : open ? (
-                <TokenForm kit={false} onMinted={setPlaintext} onCancel={() => change(false)} />
-              ) : null
+              open ? <ConnectSteps onClose={() => change(false)} /> : null
             ) : kind === "kit" ? (
               <AgentKitGuide />
             ) : (

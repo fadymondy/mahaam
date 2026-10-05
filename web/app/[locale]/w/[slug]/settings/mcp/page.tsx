@@ -21,7 +21,7 @@ import { useTranslations } from "@/lib/i18n"
 import { useMcpTokens } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
 
-const MCP_ORIGIN = process.env.NEXT_PUBLIC_MCP_ORIGIN ?? "http://localhost:8110"
+import { MCP_ORIGIN } from "@/lib/mcp-origin"
 
 export default function McpTokensPage() {
   const { t, formatDate } = useTranslations()

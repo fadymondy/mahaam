@@ -23,7 +23,9 @@ import { useTranslations } from "@/lib/i18n"
 import { useMcpTokens } from "@/lib/queries"
 import { useProjects } from "@/lib/work"
 
-export const MCP_ORIGIN = process.env.NEXT_PUBLIC_MCP_ORIGIN ?? "http://localhost:8110"
+import { MCP_ORIGIN } from "@/lib/mcp-origin"
+
+export { MCP_ORIGIN }
 
 const EXPIRY = ["30", "90", "365", "never"] as const
 // A broad default so "Connect" works without making someone read the scope list first; they can
@@ -90,7 +92,7 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {header}
       {kit ? (
-        <details className="border border-border bg-card p-3">
+        <details className="rounded-card border border-border bg-card p-3">
           <summary className="cursor-pointer text-sm font-medium text-foreground">{t("mcp.kitTitle")}</summary>
           <div className="pt-3">
             <AgentKitGuide />
@@ -116,7 +118,7 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
               </label>
             </div>
             <FormHint>{t("mcp.scopesHint")}</FormHint>
-            <div className="max-h-80 divide-y divide-line overflow-y-auto border border-border">
+            <div className="max-h-80 divide-y divide-line overflow-y-auto rounded-card border border-border">
               {scopeGroups.map(([group, items]) => {
                 const pickable = items.filter((s) => s.allowed).map((s) => s.scope)
                 const picked = pickable.filter((x) => chosen.includes(x)).length
@@ -160,7 +162,7 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
           <Field>
             <FieldLabel>{t("mcp.projects")}</FieldLabel>
             <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
-            <ul className="max-h-48 divide-y divide-line overflow-y-auto border border-border">
+            <ul className="max-h-48 divide-y divide-line overflow-y-auto rounded-card border border-border">
               <li className="sticky top-0 z-10 bg-muted">
                 <label className="flex cursor-pointer items-center gap-3 px-3 py-2">
                   <Checkbox checked={projectIds.length === 0} onCheckedChange={(on) => on && setProjectIds([])} />
@@ -266,7 +268,7 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
         <DialogTitle>{t("mcp.createdTitle")}</DialogTitle>
         <DialogDescription>{t("mcp.createdHint")}</DialogDescription>
       </DialogHeader>
-      <p className="flex items-start gap-2 border border-border bg-card p-3 text-sm text-nq-warn-text" role="alert">
+      <p className="flex items-start gap-2 rounded-card border border-border bg-card p-3 text-sm text-nq-warn-text" role="alert">
         <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
         {t("mcp.shownOnce")}
       </p>
