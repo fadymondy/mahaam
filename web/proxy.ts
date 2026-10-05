@@ -34,6 +34,8 @@ function shouldSkip(pathname: string): boolean {
     // The CircleXO sign-in round trip is served by the API, not by a locale page.
     pathname.startsWith("/auth/circlexo") ||
     pathname === "/sso/circlexo" ||
+    // So is the Hosbah OAuth callback (next.config rewrites it to the API); a locale prefix 404s it.
+    pathname === "/integrations/hosbah/callback" ||
     // OAuth discovery metadata (RFC 8414/9728) must be reachable at these exact, unprefixed
     // paths — that's where a client looks for them, not under a locale.
     pathname.startsWith("/.well-known/") ||
