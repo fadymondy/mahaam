@@ -44,7 +44,7 @@ import {
 } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
-import { ColorDot, ColorPicker, PALETTE } from "@/components/work/palette"
+import { ColorDot, ColorPicker, PALETTE, soft } from "@/components/work/palette"
 import { useDirectory } from "@/components/work/people"
 import { useProjectCtx } from "@/components/work/project-context"
 import { ProjectForm } from "@/components/work/project-form"
@@ -52,10 +52,12 @@ import { ProjectAvatarField } from "@/components/work/project-avatar"
 import { FeedbackWidgetSection } from "@/components/work/feedback-widget"
 import { IntegrationsSection } from "@/components/work/integrations-section"
 import { ProjectLabelsSection } from "@/components/work/project-labels-section"
+import { STAGE_ICON, STATUS_ICONS, StatusIcon, statusLabel } from "@/components/work/status-icon"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { useMe } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
+import { cn } from "@/lib/utils"
 import { ISSUE_STATUSES, errorText, useTeams, w, type Status } from "@/lib/work"
 
 /*
@@ -373,8 +375,14 @@ export default function ProjectSettingsPage() {
   )
 }
 
+// The column's label in the other locale, when it differs: shown next to the current one so both can be checked at a glance.
+function otherLabel(s: Status, locale: string) {
+  const other = s.labels?.[locale === "ar" ? "en" : "ar"]
+  return other && other !== statusLabel(s, locale) ? other : ""
+}
+
 function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[]; projectId: string; onChanged: () => void }) {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const [editing, setEditing] = useState<Status | "new" | null>(null)
   const [deleting, setDeleting] = useState<Status | null>(null)
@@ -396,8 +404,19 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
       <ul className="-mx-4 divide-y divide-border border-y border-border">
         {statuses.map((s, i) => (
           <li key={s.id} className="flex items-center gap-3 px-4 py-2 text-sm" data-status-row={s.id}>
-            <ColorDot color={s.color} />
-            <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-md" style={{ background: soft(s.color) }}>
+              <StatusIcon status={s} />
+            </span>
+            <span className="min-w-0 flex-1 truncate">
+              <span className="font-medium" dir="auto">
+                {statusLabel(s, locale)}
+              </span>
+              {otherLabel(s, locale) ? (
+                <span className="ms-2 text-caption text-muted-foreground" dir="auto">
+                  {otherLabel(s, locale)}
+                </span>
+              ) : null}
+            </span>
             <Badge variant="outline">{t(`issues.status.${s.stage ?? "todo"}`)}</Badge>
             <span className="w-16 text-end text-caption text-muted-foreground">{t("settings.taskCount", { n: s.task_count })}</span>
             <Button variant="ghost" size="icon-sm" aria-label={t("settings.moveUp")} disabled={i === 0} onClick={() => run(() => w.patch(ws.id, `/api/w/statuses/${s.id}`, { index: i - 1 }))}>
@@ -445,14 +464,14 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
       <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("settings.deleteStatusTitle", { name: deleting?.name ?? "" })}</DialogTitle>
+            <DialogTitle>{t("settings.deleteStatusTitle", { name: deleting ? statusLabel(deleting, locale) : "" })}</DialogTitle>
             <DialogDescription>
               {deleting?.task_count ? t("settings.deleteStatusMove", { n: deleting.task_count }) : t("settings.deleteStatusEmpty")}
             </DialogDescription>
           </DialogHeader>
           {deleting?.task_count ? (
             <Select
-              items={statuses.filter((x) => x.id !== deleting.id).map((x) => ({ value: x.id, label: x.name }))}
+              items={statuses.filter((x) => x.id !== deleting.id).map((x) => ({ value: x.id, label: statusLabel(x, locale) }))}
               value={moveTo}
               onValueChange={(v) => setMoveTo(String(v ?? ""))}
             >
@@ -464,7 +483,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
                   .filter((x) => x.id !== deleting.id)
                   .map((x) => (
                     <SelectItem key={x.id} value={x.id}>
-                      {x.name}
+                      {statusLabel(x, locale)}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -491,20 +510,30 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
   )
 }
 
-function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | null; onClose: () => void; onSave: (b: { name: string; color: string; stage: string }) => Promise<void> }) {
-  const { t } = useTranslations()
+type StatusBody = { name: string; labels: Record<string, string>; icon: string; color: string; stage: string }
+
+function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | null; onClose: () => void; onSave: (b: StatusBody) => Promise<void> }) {
+  const { t, locale } = useTranslations()
   const s = status && status !== "new" ? status : null
-  const [name, setName] = useState("")
+  const [en, setEn] = useState("")
+  const [ar, setAr] = useState("")
+  const [icon, setIcon] = useState("")
   const [color, setColor] = useState<string>("slate")
   const [category, setCategory] = useState("in_progress")
   const [key, setKey] = useState<string | null>(null)
   const current = status === "new" ? "new" : (s?.id ?? null)
   if (current !== key) {
     setKey(current)
-    setName(s?.name ?? "")
+    // A column labelled before translations existed keeps its name as the label of the current locale.
+    setEn(s?.labels?.en ?? (s && locale !== "ar" ? s.name : ""))
+    setAr(s?.labels?.ar ?? (s && locale === "ar" ? s.name : ""))
+    setIcon(s?.icon ?? "")
     setColor(s?.color ?? PALETTE[8])
     setCategory(s?.stage ?? "in_progress")
   }
+  // The name the API matches on: English, else Arabic.
+  const name = en.trim() || ar.trim()
+  const shown = icon || STAGE_ICON[category] || "circle"
   const catItems = ISSUE_STATUSES.map((c) => ({ value: c as string, label: t(`issues.status.${c}`) }))
   return (
     <Dialog open={!!status} onOpenChange={(o) => !o && onClose()}>
@@ -513,10 +542,16 @@ function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | nu
           <DialogTitle>{status === "new" ? t("settings.addStatus") : t("settings.editStatus")}</DialogTitle>
           <DialogDescription>{t("settings.categoryHint")}</DialogDescription>
         </DialogHeader>
-        <Field>
-          <FieldLabel htmlFor="st-name">{t("project.name")}</FieldLabel>
-          <Input id="st-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
-        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="st-name-en">{t("settings.statusNameEn")}</FieldLabel>
+            <Input id="st-name-en" dir="ltr" lang="en" maxLength={60} autoFocus={locale !== "ar"} value={en} onChange={(e) => setEn(e.target.value)} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="st-name-ar">{t("settings.statusNameAr")}</FieldLabel>
+            <Input id="st-name-ar" dir="rtl" lang="ar" maxLength={60} autoFocus={locale === "ar"} value={ar} onChange={(e) => setAr(e.target.value)} />
+          </Field>
+        </div>
         <Field>
           <FieldLabel htmlFor="st-cat">{t("settings.category")}</FieldLabel>
           <Select items={catItems} value={category} onValueChange={(v) => setCategory(String(v ?? "in_progress"))}>
@@ -536,11 +571,37 @@ function StatusDialog({ status, onClose, onSave }: { status: Status | "new" | nu
           <FieldLabel>{t("work.color")}</FieldLabel>
           <ColorPicker value={color} onChange={setColor} />
         </Field>
+        <Field>
+          <FieldLabel id="st-icon">{t("settings.statusIcon")}</FieldLabel>
+          <div role="radiogroup" aria-labelledby="st-icon" className="flex flex-wrap gap-1.5" data-status-icons>
+            {Object.keys(STATUS_ICONS).map((name) => (
+              <button
+                key={name}
+                type="button"
+                role="radio"
+                aria-checked={shown === name}
+                aria-label={name}
+                title={name}
+                onClick={() => setIcon(name === STAGE_ICON[category] ? "" : name)}
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-nq-focus",
+                  shown === name && "border-border bg-muted",
+                )}
+              >
+                <StatusIcon status={{ icon: name, color: shown === name ? color : undefined }} />
+              </button>
+            ))}
+          </div>
+        </Field>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button variant="primary" disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color, stage: category })}>
+          <Button
+            variant="primary"
+            disabled={!name}
+            onClick={() => onSave({ name, labels: { en: en.trim(), ar: ar.trim() }, icon, color, stage: category })}
+          >
             {t("common.save")}
           </Button>
         </DialogFooter>

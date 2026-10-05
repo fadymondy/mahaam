@@ -11,7 +11,7 @@ import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, T
 import { Ltr } from "@/components/copy-field"
 import { EmptyState } from "@/components/states"
 import { LabelChips, PriorityIcon } from "@/components/work/fields"
-import { ColorDot } from "@/components/work/palette"
+import { StatusIcon, statusLabel } from "@/components/work/status-icon"
 import { AvatarStack, type Directory } from "@/components/work/people"
 import { formatDay, isOverdue } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
@@ -66,10 +66,10 @@ export function TaskList({ board, labels, dir, onOpen }: { board: Board; labels:
           const rows = tasks.filter((task) => task.status_id === s.id).sort((a, b) => a.position - b.position)
           if (!rows.length) return null
           return (
-            <section key={s.id} aria-label={s.name}>
+            <section key={s.id} aria-label={statusLabel(s, locale)}>
               <h2 className="flex items-center gap-2 border-b border-border bg-muted px-6 py-2 text-sm font-medium">
-                <ColorDot color={s.color} />
-                {s.name}
+                <StatusIcon status={s} />
+                <span dir="auto">{statusLabel(s, locale)}</span>
                 <span className="text-caption font-normal text-muted-foreground">
                   <Ltr>{rows.length}</Ltr>
                 </span>

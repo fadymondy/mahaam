@@ -19,6 +19,7 @@ import { PersonAvatar, useDirectory } from "@/components/work/people"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { formatDay, isOverdue, minutes, money, timeAgo } from "@/lib/format"
+import { StatusIcon, statusLabel } from "@/components/work/status-icon"
 import { useTranslations } from "@/lib/i18n"
 import { useGitHub, useIntegrations, type Commit, type Run } from "@/lib/integrations"
 import { useMe } from "@/lib/queries"
@@ -146,8 +147,10 @@ export default function ProjectOverviewPage() {
           {p.statuses.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-3 text-sm">
               <span className="flex min-w-0 items-center gap-2 text-nq-fg-body">
-                <ColorDot color={s.color} />
-                <span className="truncate">{s.name}</span>
+                <StatusIcon status={s} />
+                <span className="truncate" dir="auto">
+                  {statusLabel(s, locale)}
+                </span>
               </span>
               <span className="font-medium">
                 <Ltr>{s.task_count}</Ltr>
@@ -201,8 +204,8 @@ export default function ProjectOverviewPage() {
                     {late ? <span className="shrink-0 text-caption text-(--nq-danger-text)">{t("po.overdue")}</span> : null}
                     {st ? (
                       <span className="hidden shrink-0 items-center gap-1.5 text-caption text-muted-foreground sm:inline-flex">
-                        <ColorDot color={st.color} />
-                        {st.name}
+                        <StatusIcon status={st} className="size-3.5" />
+                        {statusLabel(st, locale)}
                       </span>
                     ) : null}
                   </button>

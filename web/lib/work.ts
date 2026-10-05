@@ -56,6 +56,10 @@ export type Status = {
   category: Category
   /** Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review, done. */
   stage?: string
+  /** The column's name per locale (en, ar); name is the fallback. */
+  labels?: Record<string, string>
+  /** Lucide icon name from the allow-list; empty means the stage's default. */
+  icon?: string
   position: number
   task_count: number
 }

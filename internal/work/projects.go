@@ -3,10 +3,12 @@ package work
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/limits"
@@ -633,8 +635,9 @@ func (sv *Service) CreateProject(ctx context.Context, in ProjectInput) (*Project
 			return err
 		}
 		for i, st := range names {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage)
-				VALUES ($1, $2, $3, $4, $5, $6, $7)`, s.WorkspaceID, id, st[0], defaultStatusColors[i], st[1], float64(i+1)*1024, st[2]); err != nil {
+			labels, _ := json.Marshal(map[string]string{"en": defaultStatuses["en"][i][0], "ar": defaultStatuses["ar"][i][0]})
+			if _, err := tx.ExecContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage, labels)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, s.WorkspaceID, id, st[0], defaultStatusColors[i], st[1], float64(i+1)*1024, st[2], string(labels)); err != nil {
 				return err
 			}
 		}
@@ -850,23 +853,30 @@ func (sv *Service) teamLink(ctx context.Context, projectID, teamID string, attac
 
 // Status is a kanban column of a project.
 type Status struct {
-	ID        string  `json:"id"`
-	ProjectID string  `json:"project_id"`
-	Name      string  `json:"name"`
-	Color     string  `json:"color"`
-	Category  string  `json:"category" doc:"todo, doing or done"`
-	Stage     string  `json:"stage" doc:"Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review or done"`
-	Position  float64 `json:"position"`
-	TaskCount int     `json:"task_count"`
+	ID        string            `json:"id"`
+	ProjectID string            `json:"project_id"`
+	Name      string            `json:"name"`
+	Color     string            `json:"color"`
+	Category  string            `json:"category" doc:"todo, doing or done"`
+	Stage     string            `json:"stage" doc:"Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review or done"`
+	Labels    map[string]string `json:"labels" doc:"The column's name per locale (en, ar); name is the fallback"`
+	Icon      string            `json:"icon" doc:"Lucide icon name; empty means the stage's default icon"`
+	Position  float64           `json:"position"`
+	TaskCount int               `json:"task_count"`
 }
 
-const statusCols = `st.id, st.project_id, st.name, st.color, st.category, COALESCE(st.stage, CASE st.category WHEN 'doing' THEN 'in_progress' WHEN 'done' THEN 'done' ELSE 'todo' END), st.position,
+const statusCols = `st.id, st.project_id, st.name, st.color, st.category, COALESCE(st.stage, CASE st.category WHEN 'doing' THEN 'in_progress' WHEN 'done' THEN 'done' ELSE 'todo' END), st.labels, COALESCE(st.icon, ''), st.position,
 	(SELECT count(*) FROM tasks t WHERE t.workspace_id = st.workspace_id AND t.status_id = st.id)`
 
 func scanStatus(r scanner) (*Status, error) {
 	st := &Status{}
-	err := r.Scan(&st.ID, &st.ProjectID, &st.Name, &st.Color, &st.Category, &st.Stage, &st.Position, &st.TaskCount)
-	return st, err
+	var labels []byte
+	if err := r.Scan(&st.ID, &st.ProjectID, &st.Name, &st.Color, &st.Category, &st.Stage, &labels, &st.Icon, &st.Position, &st.TaskCount); err != nil {
+		return st, err
+	}
+	st.Labels = map[string]string{}
+	_ = json.Unmarshal(labels, &st.Labels)
+	return st, nil
 }
 
 func listStatuses(ctx context.Context, q querier, ws, projectID string) ([]Status, error) {
@@ -911,6 +921,51 @@ type StatusInput struct {
 	Category *string `json:"category,omitempty" enum:"todo,doing,done"`
 	Stage    *string `json:"stage,omitempty" enum:"backlog,todo,in_progress,waiting_approval,in_review,done" doc:"Workflow stage; sets the category too"`
 	Index    *int    `json:"index,omitempty" minimum:"0"`
+	// Labels replaces the per-locale names (en, ar); an empty value drops that locale.
+	Labels map[string]string `json:"labels,omitempty" doc:"The column's name per locale: en, ar"`
+	Icon   *string           `json:"icon,omitempty" doc:"Lucide icon name (see StatusIcons); empty resets to the stage's default"`
+}
+
+// StatusLocales are the locales a column can be labelled in.
+var StatusLocales = []string{"en", "ar"}
+
+// StatusIcons are the icons a column can show (lucide names, the web's allow-list).
+var StatusIcons = []string{
+	"inbox", "list-todo", "circle", "circle-dashed", "circle-dot", "circle-pause", "circle-ellipsis", "loader", "timer", "hourglass", "pause",
+	"eye", "search-check", "shield-check", "circle-check", "check-check", "flag", "rocket", "bug", "sparkles",
+	"star", "archive", "ban", "clipboard-list", "message-square", "git-pull-request", "test-tube", "package",
+}
+
+// statusLabels validates per-locale names: known locales only, each at most 60 characters; blanks drop out.
+func statusLabels(in map[string]string) ([]byte, map[string]string, error) {
+	out := map[string]string{}
+	for k, v := range in {
+		k = strings.ToLower(strings.TrimSpace(k))
+		if err := oneOf("labels locale", k, StatusLocales...); err != nil {
+			return nil, nil, err
+		}
+		v = strings.TrimSpace(v)
+		if utf8.RuneCountInString(v) > 60 {
+			return nil, nil, invalid("the %s label is longer than 60 characters", k)
+		}
+		if v != "" {
+			out[k] = v
+		}
+	}
+	b, err := json.Marshal(out)
+	return b, out, err
+}
+
+// statusIcon validates an icon name; "" clears it (NULL).
+func statusIcon(in string) (any, error) {
+	in = strings.ToLower(strings.TrimSpace(in))
+	if in == "" {
+		return nil, nil
+	}
+	if err := oneOf("icon", in, StatusIcons...); err != nil {
+		return nil, err
+	}
+	return in, nil
 }
 
 func loadStatus(ctx context.Context, q querier, s *tenant.Scope, id string) (*Status, *Project, error) {
@@ -942,9 +997,25 @@ func (sv *Service) CreateStatus(ctx context.Context, projectID string, in Status
 	if err := requireManage(ctx, sv.DB, s, p.ID); err != nil {
 		return nil, err
 	}
+	labels, labelMap, err := statusLabels(in.Labels)
+	if err != nil {
+		return nil, err
+	}
 	name, _ := trimmed(in.Name)
+	if name == "" { // a column labelled only per locale takes its English (else any) label as its name
+		name = labelMap["en"]
+		if name == "" {
+			name = labelMap["ar"]
+		}
+	}
 	if name == "" {
 		return nil, invalid("a status needs a name")
+	}
+	var icon any
+	if in.Icon != nil {
+		if icon, err = statusIcon(*in.Icon); err != nil {
+			return nil, err
+		}
 	}
 	cat := "doing"
 	if v, ok := trimmed(in.Category); ok && v != "" {
@@ -966,9 +1037,9 @@ func (sv *Service) CreateStatus(ctx context.Context, projectID string, in Status
 	}
 	var id string
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
-		if err := tx.QueryRowContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage)
-			VALUES ($1, $2, $3, $4, $5, (SELECT COALESCE(MAX(position), 0) + 1024 FROM task_statuses WHERE workspace_id = $1 AND project_id = $2), $6)
-			RETURNING id`, s.WorkspaceID, p.ID, name, color, cat, stage).Scan(&id); err != nil {
+		if err := tx.QueryRowContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage, labels, icon)
+			VALUES ($1, $2, $3, $4, $5, (SELECT COALESCE(MAX(position), 0) + 1024 FROM task_statuses WHERE workspace_id = $1 AND project_id = $2), $6, $7, $8)
+			RETURNING id`, s.WorkspaceID, p.ID, name, color, cat, stage, string(labels), icon).Scan(&id); err != nil {
 			return err
 		}
 		return record(ctx, tx, s, entry{ProjectID: p.ID, Action: "status.created", SubjectType: "status", SubjectID: id,
@@ -1008,6 +1079,21 @@ func (sv *Service) UpdateStatus(ctx context.Context, id string, in StatusInput) 
 			return nil, err
 		}
 		pt.set("color", c)
+	}
+	if in.Labels != nil {
+		b, m, err := statusLabels(in.Labels)
+		if err != nil {
+			return nil, err
+		}
+		pt.set("labels", string(b))
+		pt.changes["labels"] = m // the activity log shows the map, not the JSON bytes
+	}
+	if in.Icon != nil {
+		icon, err := statusIcon(*in.Icon)
+		if err != nil {
+			return nil, err
+		}
+		pt.set("icon", icon)
 	}
 	if v, ok := trimmed(in.Category); ok && v != st.Category {
 		if err := oneOf("category", v, "todo", "doing", "done"); err != nil {

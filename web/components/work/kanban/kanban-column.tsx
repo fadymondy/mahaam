@@ -12,7 +12,7 @@ import { Button, Input } from "@fadymondy/nasaq/web"
 import TaskCard from "@/components/work/kanban/task-card"
 import type { Column } from "@/components/work/kanban"
 import { Ltr } from "@/components/copy-field"
-import { ColorDot } from "@/components/work/palette"
+import { StatusIcon, statusLabel } from "@/components/work/status-icon"
 import type { Directory } from "@/components/work/people"
 import { useTranslations } from "@/lib/i18n"
 import type { Label } from "@/lib/work"
@@ -27,7 +27,7 @@ type Props = {
 }
 
 export default function KanbanColumn({ column, canWrite, dir, labels, onOpen, onAddTask }: Props) {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const { setNodeRef, isOver } = useDroppable({ id: column.status.id })
   const [adding, setAdding] = useState(false)
   const [value, setValue] = useState("")
@@ -51,16 +51,18 @@ export default function KanbanColumn({ column, canWrite, dir, labels, onOpen, on
       data-over={isOver}
       data-status-id={column.status.id}
       data-category={column.status.category}
-      aria-label={column.status.name}
+      aria-label={statusLabel(column.status, locale)}
     >
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <ColorDot color={column.status.color} />
-        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{column.status.name}</h2>
+        <StatusIcon status={column.status} />
+        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" dir="auto">
+          {statusLabel(column.status, locale)}
+        </h2>
         <span className="text-xs text-muted-foreground">
           <Ltr>{column.tasks.length}</Ltr>
         </span>
         {canWrite ? (
-          <Button variant="ghost" size="icon-sm" aria-label={t("board.addTo", { status: column.status.name })} onClick={() => setAdding(true)}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("board.addTo", { status: statusLabel(column.status, locale) })} onClick={() => setAdding(true)}>
             <PlusIcon />
           </Button>
         ) : null}

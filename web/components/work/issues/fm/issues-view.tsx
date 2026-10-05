@@ -25,8 +25,8 @@ import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, Select
 
 
 import { ErrorState } from "@/components/states"
-import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
+import { StatusIcon, statusLabel } from "@/components/work/status-icon"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
 import { cn } from "@/lib/utils"
@@ -53,7 +53,7 @@ const PAGE = 20
 
 /** fadymondy.com's issue board, scoped to one Mahaam project. */
 export function IssuesView({ projectId, title }: { projectId: string; title?: string }) {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const canWrite = ws.can("feedback:write")
   useDocumentTitle(`${t("issues.title")}${title ? ` · ${title}` : ""} · ${ws.summary.name}`)
@@ -291,12 +291,12 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                   isTarget && "bg-nq-action/[0.06] inset-ring-1 inset-ring-nq-action/40",
                 )}
               >
-                <h2 className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5 font-mono text-xs tracking-wider text-muted-foreground uppercase">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <ColorDot color={column.color} className="size-2" />
-                    <span className="truncate" dir="auto">{column.name}</span>
+                <h2 className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5 text-sm font-medium">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <StatusIcon status={column} />
+                    <span className="truncate" dir="auto">{statusLabel(column, locale)}</span>
                   </span>
-                  <span dir="ltr" className="tabular-nums">
+                  <span dir="ltr" className="rounded-full bg-background px-2 text-caption text-muted-foreground tabular-nums">
                     {total}
                   </span>
                 </h2>
@@ -398,7 +398,7 @@ function IssueCard({
   onOpen: () => void
   onChanged: () => void | Promise<unknown>
 }) {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const mark = PRIORITY_MARK[issue.priority]
   const busy = Boolean(issue.started_at)
   const agentTime = busy ? formatAgentTime(issueSeconds(issue)) || "0m" : formatAgentTime(issue.agent_seconds)
@@ -463,12 +463,13 @@ function IssueCard({
 
         <Select value={column} disabled={!canWrite} onValueChange={(v) => onStatusChange(String(v ?? column))}>
           <SelectTrigger className="w-full">
-            <SelectValue>{(v) => columns.find((c) => c.id === v)?.name ?? ""}</SelectValue>
+            <SelectValue>{(v) => statusLabel(columns.find((c) => c.id === v) ?? { name: "" }, locale)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {columns.map((c) => (
               <SelectItem key={c.id} value={c.id}>
-                {c.name}
+                <StatusIcon status={c} />
+                {statusLabel(c, locale)}
               </SelectItem>
             ))}
           </SelectContent>
