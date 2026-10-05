@@ -15,9 +15,11 @@ import {
   CircleIcon,
   ClockIcon,
   DownloadIcon,
+  EllipsisVerticalIcon,
   HistoryIcon,
   LinkIcon,
   ListChecksIcon,
+  Maximize2Icon,
   MessageSquareIcon,
   PaperclipIcon,
   MoreHorizontalIcon,
@@ -37,12 +39,16 @@ import {
   Checkbox,
   Input,
   Markdown,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Progress,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   Switch,
   Tabs,
   TabsList,
@@ -268,6 +274,7 @@ export function TaskDetail({
       <ErrorState error={task.error} />
     )
   }
+  if (layout === "sheet" && (!d || issue.isLoading || project.isLoading)) return <TaskSheetSkeleton />
   if (!d) return <LoadingRows rows={6} />
 
   const open =
@@ -443,86 +450,67 @@ function Body({
   )
 
   if (!page) {
-    const agent = !!issue && ws.can("feedback:write")
     const tabs = SHEET_TABS.filter((x) => (x === "time" ? ws.can("time:track") : true))
     return (
       <div className="flex w-full flex-col gap-5 p-5 lg:p-6" data-task-detail={d.key} data-layout={layout}>
         {header}
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          {/* Reading first: description, then the tabs. The options sit in the side column. */}
-          <div className="flex min-w-0 flex-col gap-5">
-            <DescriptionCard bare d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
-            {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
+        <SheetBar
+          d={d}
+          issue={issue}
+          statuses={statuses}
+          dir={dir}
+          can={can}
+          canIssue={canIssue}
+          loggedSeconds={time.seconds}
+          call={call}
+          patch={patch}
+          patchIssue={patchIssue}
+          move={move}
+          actions={<SheetActions d={d} issue={issue} refresh={refresh} />}
+          footer={deleteButton}
+        />
+        <DescriptionCard bare d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
+        {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
 
-            <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as SheetTab)} className="min-w-0" data-sheet-tabs>
-              <div className="overflow-x-auto border-b border-border">
-                <TabsList variant="underline" className="min-w-max">
-                  {tabs.map((x) => {
-                    const Icon = SHEET_TAB_ICON[x]
-                    const n = x === "time" ? 0 : (counts[x] ?? 0)
-                    return (
-                      <TabsTab key={x} value={x} className="gap-2">
-                        <Icon className="size-4" />
-                        {t(`td.tab.${x}`)}
-                        {n > 0 ? <CountPill n={n} /> : null}
-                      </TabsTab>
-                    )
-                  })}
-                </TabsList>
-              </div>
-              <Flow.Provider value>
-                <TabsPanel value="discussions" className="pt-4">
-                  <Discussion d={d} issue={issue} can={can} dir={dir} comments={comments} onChanged={refresh} patchIssue={patchIssue} />
-                </TabsPanel>
-                <TabsPanel value="subtasks" className="pt-4">
-                  <div className="flex flex-col gap-5">
-                    <ChecklistCard d={d} can={can} call={call} />
-                    <SubtasksCard d={d} can={can} call={call} onOpen={onOpen} />
-                  </div>
-                </TabsPanel>
-                <TabsPanel value="attachments" className="pt-4">
-                  <AttachmentsCard d={d} can={can} dir={dir} files={files} onChanged={refresh} />
-                </TabsPanel>
-                <TabsPanel value="activity" className="pt-4">
-                  <div className="overflow-hidden rounded-lg border border-border bg-card">
-                    <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} showTask={false} emptyTitle={t("activity.empty")} />
-                  </div>
-                </TabsPanel>
-                <TabsPanel value="time" className="pt-4">
-                  <TimeCard d={d} time={time} dir={dir} />
-                </TabsPanel>
-              </Flow.Provider>
-            </Tabs>
+        <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as SheetTab)} className="min-w-0" data-sheet-tabs>
+          <div className="overflow-x-auto border-b border-border">
+            <TabsList variant="underline" className="min-w-max">
+              {tabs.map((x) => {
+                const Icon = SHEET_TAB_ICON[x]
+                const n = x === "time" ? 0 : (counts[x] ?? 0)
+                return (
+                  <TabsTab key={x} value={x} className="gap-2">
+                    <Icon className="size-4" />
+                    {t(`td.tab.${x}`)}
+                    {n > 0 ? <CountPill n={n} /> : null}
+                  </TabsTab>
+                )
+              })}
+            </TabsList>
           </div>
-
-          <aside className="flex min-w-0 flex-col gap-4 max-lg:order-first lg:sticky lg:top-0" data-sheet-side>
-            <div className="rounded-lg border border-border p-3">
-              <SheetFields
-                d={d}
-                issue={issue}
-                statuses={statuses}
-                dir={dir}
-                can={can}
-                canIssue={canIssue}
-                loggedSeconds={time.seconds}
-                call={call}
-                patch={patch}
-                patchIssue={patchIssue}
-                move={move}
-              />
-            </div>
-            {agent ? (
-              <section className="flex flex-col gap-3 rounded-lg border border-border p-3" data-sheet-agent>
-                <h2 className="flex items-center gap-2 text-caption font-medium tracking-wide text-muted-foreground uppercase">
-                  <BotIcon className="size-3.5" />
-                  {t("issues.agent.title")}
-                </h2>
-                <AgentCard bare issue={issue!} canIssue={canIssue} patchIssue={patchIssue} />
-              </section>
-            ) : null}
-            {deleteButton}
-          </aside>
-        </div>
+          <Flow.Provider value>
+            <TabsPanel value="discussions" className="pt-4">
+              <Discussion d={d} issue={issue} can={can} dir={dir} comments={comments} onChanged={refresh} patchIssue={patchIssue} />
+            </TabsPanel>
+            <TabsPanel value="subtasks" className="pt-4">
+              <div className="flex flex-col gap-5">
+                <ChecklistCard d={d} can={can} call={call} />
+                <SubtasksCard d={d} can={can} call={call} onOpen={onOpen} />
+              </div>
+            </TabsPanel>
+            <TabsPanel value="attachments" className="pt-4">
+              <AttachmentsCard d={d} can={can} dir={dir} files={files} onChanged={refresh} />
+            </TabsPanel>
+            <TabsPanel value="activity" className="pt-4">
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} showTask={false} emptyTitle={t("activity.empty")} />
+              </div>
+            </TabsPanel>
+            <TabsPanel value="time" className="pt-4">
+              <TimeCard d={d} time={time} dir={dir} />
+            </TabsPanel>
+          </Flow.Provider>
+        </Tabs>
       </div>
     )
   }
@@ -685,7 +673,7 @@ function Header({
 
   return (
     <header className="flex flex-col gap-3">
-      <div className={cn("flex flex-wrap items-start gap-x-3 gap-y-3", layout === "sheet" && "pe-10")}>
+      <div className={cn("flex items-start gap-x-3 gap-y-3", layout === "sheet" ? "pe-10" : "flex-wrap")}>
         <Button
           variant="secondary"
           size="icon"
@@ -700,7 +688,7 @@ function Header({
           {done ? <CheckCircle2Icon /> : <CircleIcon />}
         </Button>
 
-        <div className="min-w-48 flex-1 basis-64">
+        <div className={cn("min-w-0 flex-1", layout === "page" && "min-w-48 basis-64")}>
           {can ? (
             <Textarea
               aria-label={t("task.title")}
@@ -724,9 +712,9 @@ function Header({
           )}
         </div>
 
+        {layout === "page" ? (
         <div className="flex flex-wrap items-center gap-2">
-          {/* The wide side-over shows these in its side column. */}
-          <div className={cn("flex flex-wrap items-center gap-2", layout === "sheet" && "lg:hidden")}>
+          <div className="flex flex-wrap items-center gap-2">
             <div className="w-40">
               <StatusSelect statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
             </div>
@@ -760,17 +748,8 @@ function Header({
               }
             />
           ) : null}
-          {layout === "sheet" ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              nativeButton={false}
-              render={<Link href={`/${locale}/w/${ws.slug}/projects/${d.project_id}/issues/${encodeURIComponent(d.key)}`} />}
-            >
-              {t("task.openFullPage")}
-            </Button>
-          ) : null}
         </div>
+        ) : null}
       </div>
 
       {/* key · labels (+) · parent — one baseline row, indented under the title */}
@@ -1619,10 +1598,10 @@ function EstimateField({ d, can, patch }: { d: TaskDetailData; can: boolean; pat
 }
 
 /**
- * The side-over's fields: only the ones the header doesn't already show (status, priority and labels
- * live there), frameless and in two columns, so the description and the comments sit right under them.
+ * The side-over's property bar, Linear-style: one line of pills right under the title (status,
+ * priority, assignees, due), the rest behind "⋯", and the item actions at the end of the same line.
  */
-function SheetFields({
+function SheetBar({
   d,
   issue,
   statuses,
@@ -1634,6 +1613,8 @@ function SheetFields({
   patch,
   patchIssue,
   move,
+  actions,
+  footer,
 }: {
   d: TaskDetailData
   issue: (Issue & { comments: IssueComment[] }) | undefined
@@ -1646,6 +1627,10 @@ function SheetFields({
   patch: (b: Record<string, unknown>) => Promise<boolean>
   patchIssue: (f: IssuePatch) => Promise<boolean>
   move: (id: string) => Promise<boolean>
+  /** Copy link, the item menu, open full page: pinned to the end of the line. */
+  actions: ReactNode
+  /** Rendered at the bottom of the "⋯" panel (delete). */
+  footer?: ReactNode
 }) {
   const { t } = useTranslations()
   const ws = useWorkspace()
@@ -1653,81 +1638,175 @@ function SheetFields({
   const total = d.checklist.length + d.subtasks.length
   const finished = d.checklist.filter((c) => c.done).length + d.subtasks.filter((x) => x.done).length
   const pct = total ? Math.round((finished / total) * 100) : 0
+  const agent = !!issue && ws.can("feedback:write")
   return (
-    <dl className="flex flex-col" data-sheet-fields>
-      <div className="max-lg:hidden">
-        <InfoRow label={t("task.status")} htmlFor="td-status">
-          <div className={rowControl}>
-            <StatusSelect id="td-status" statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
-          </div>
-        </InfoRow>
-        <InfoRow label={t("task.priority")} htmlFor="td-priority">
-          <div className={rowControl}>
-            <PrioritySelect id="td-priority" value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
-          </div>
-        </InfoRow>
+    <div className="flex flex-wrap items-center gap-2" data-sheet-bar>
+      <div className="w-36">
+        <StatusSelect statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
       </div>
-      <InfoRow label={t("task.assignees")}>
+      <div className="w-32">
+        <PrioritySelect value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
+      </div>
+      <div className="flex max-w-48 min-w-0">
         <MemberPicker
           dir={dir}
           selected={d.assignee_ids}
           disabled={!can}
           onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/assignees`, { user_ids: ids }))}
         />
-      </InfoRow>
-      <InfoRow label={t("task.due")} htmlFor="td-due">
-        <DateField id="td-due" value={dayKey(d.due_at)} disabled={!can} tone={overdue ? "danger" : undefined} onChange={(v) => void patch({ due_at: v ?? "" })} />
-      </InfoRow>
-      <InfoRow label={t("td.project")}>
-        <ColorDot color={d.project.color} square className="size-4" />
-        <span className="truncate text-sm">{d.project.name}</span>
-      </InfoRow>
-      <InfoRow label={t("task.estimate")} htmlFor="td-estimate">
-        <EstimateField d={d} can={can} patch={patch} />
-      </InfoRow>
-      {ws.can("time:track") ? (
-        <InfoRow label={t("td.logged")}>
-          <ClockIcon className="size-4 shrink-0 text-muted-foreground" />
-          <Ltr className="text-sm tabular-nums">{loggedSeconds ? hm(loggedSeconds) : "—"}</Ltr>
-          {!d.project.archived ? <StartTimerButton task={{ id: d.id, key: d.key, title: d.title }} variant="icon" className="ms-auto" /> : null}
-        </InfoRow>
-      ) : null}
-      {total ? (
-        <InfoRow label={t("td.progress")}>
-          <Progress value={pct} aria-label={t("td.progress")} className="min-w-0 flex-1" />
-          <Ltr className="text-caption tabular-nums text-muted-foreground">{`${finished}/${total}`}</Ltr>
-        </InfoRow>
-      ) : null}
-      {issue ? (
-        <>
-          <InfoRow label={t("issues.typeLabel")} htmlFor="td-type">
-            <div className={rowControl}>
-              <SimpleSelect
-                id="td-type"
-                value={issue.issue_type}
-                disabled={!canIssue}
-                items={ISSUE_TYPES.map((x) => ({ value: x, label: t(`issues.type.${x}`) }))}
-                onChange={(v) => void patchIssue({ issue_type: v as IssueType })}
-              />
-            </div>
-          </InfoRow>
-          <InfoRow label={t("td.issuePriority")} htmlFor="td-ipriority">
-            <div className={rowControl}>
-              <SimpleSelect
-                id="td-ipriority"
-                value={issue.priority}
-                disabled={!canIssue}
-                items={ISSUE_PRIORITIES.map((x) => ({ value: x, label: t(`issues.priority.${x}`) }))}
-                onChange={(v) => void patchIssue({ priority: v as IssuePriority })}
-              />
-            </div>
-          </InfoRow>
-        </>
-      ) : null}
-    </dl>
+      </div>
+      <DateField value={dayKey(d.due_at)} disabled={!can} tone={overdue ? "danger" : undefined} onChange={(v) => void patch({ due_at: v ?? "" })} />
+
+      <Popover>
+        <PopoverTrigger render={<Button variant="secondary" size="icon-sm" aria-label={t("td.moreFields")} title={t("td.moreFields")} data-sheet-more />}>
+          <MoreHorizontalIcon />
+        </PopoverTrigger>
+        <PopoverContent align="start" className="flex max-h-[70dvh] w-80 flex-col gap-3 overflow-y-auto p-3">
+          <dl className="flex flex-col">
+            <InfoRow label={t("td.project")}>
+              <ColorDot color={d.project.color} square className="size-4" />
+              <span className="truncate text-sm">{d.project.name}</span>
+            </InfoRow>
+            <InfoRow label={t("task.estimate")} htmlFor="td-estimate">
+              <EstimateField d={d} can={can} patch={patch} />
+            </InfoRow>
+            {ws.can("time:track") ? (
+              <InfoRow label={t("td.logged")}>
+                <ClockIcon className="size-4 shrink-0 text-muted-foreground" />
+                <Ltr className="text-sm tabular-nums">{loggedSeconds ? hm(loggedSeconds) : "—"}</Ltr>
+                {!d.project.archived ? <StartTimerButton task={{ id: d.id, key: d.key, title: d.title }} variant="icon" className="ms-auto" /> : null}
+              </InfoRow>
+            ) : null}
+            {total ? (
+              <InfoRow label={t("td.progress")}>
+                <Progress value={pct} aria-label={t("td.progress")} className="min-w-0 flex-1" />
+                <Ltr className="text-caption tabular-nums text-muted-foreground">{`${finished}/${total}`}</Ltr>
+              </InfoRow>
+            ) : null}
+            {issue ? (
+              <>
+                <InfoRow label={t("issues.typeLabel")} htmlFor="td-type">
+                  <div className={rowControl}>
+                    <SimpleSelect
+                      id="td-type"
+                      value={issue.issue_type}
+                      disabled={!canIssue}
+                      items={ISSUE_TYPES.map((x) => ({ value: x, label: t(`issues.type.${x}`) }))}
+                      onChange={(v) => void patchIssue({ issue_type: v as IssueType })}
+                    />
+                  </div>
+                </InfoRow>
+                <InfoRow label={t("td.issuePriority")} htmlFor="td-ipriority">
+                  <div className={rowControl}>
+                    <SimpleSelect
+                      id="td-ipriority"
+                      value={issue.priority}
+                      disabled={!canIssue}
+                      items={ISSUE_PRIORITIES.map((x) => ({ value: x, label: t(`issues.priority.${x}`) }))}
+                      onChange={(v) => void patchIssue({ priority: v as IssuePriority })}
+                    />
+                  </div>
+                </InfoRow>
+              </>
+            ) : null}
+          </dl>
+          {agent ? (
+            <section className="flex flex-col gap-3 border-t border-border pt-3" data-sheet-agent>
+              <h2 className="flex items-center gap-2 text-caption font-medium tracking-wide text-muted-foreground uppercase">
+                <BotIcon className="size-3.5" />
+                {t("issues.agent.title")}
+              </h2>
+              <AgentCard bare issue={issue!} canIssue={canIssue} patchIssue={patchIssue} />
+            </section>
+          ) : null}
+          {footer ? <div className="border-t border-border pt-3">{footer}</div> : null}
+        </PopoverContent>
+      </Popover>
+
+      <div className="ms-auto flex items-center gap-1">{actions}</div>
+    </div>
   )
 }
 
+/** The side-over while the task loads: the same shape as the real thing, shimmering. */
+export function TaskSheetSkeleton() {
+  return (
+    <div className="flex w-full flex-col gap-5 p-5 lg:p-6" aria-busy data-task-skeleton>
+      <div className="flex items-start gap-3 pe-10">
+        <Skeleton className="size-9 shrink-0 rounded-md" />
+        <div className="flex flex-1 flex-col gap-2 pt-1">
+          <Skeleton className="h-6 w-4/5" />
+          <Skeleton className="h-6 w-2/5" />
+        </div>
+      </div>
+      <Skeleton className="ms-12 h-4 w-20" />
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-8 w-36 rounded-md" />
+        <Skeleton className="h-8 w-32 rounded-md" />
+        <Skeleton className="h-8 w-28 rounded-md" />
+        <Skeleton className="h-8 w-28 rounded-md" />
+        <Skeleton className="size-8 rounded-md" />
+        <Skeleton className="ms-auto size-8 rounded-md" />
+        <Skeleton className="size-8 rounded-md" />
+      </div>
+      <div className="flex flex-col gap-2.5">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-11/12" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-4 w-3/5" />
+      </div>
+      <div className="flex gap-5 border-b border-border pb-3">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-16" />
+      </div>
+      <Skeleton className="h-28 w-full rounded-lg" />
+      <Skeleton className="h-20 w-full rounded-lg" />
+    </div>
+  )
+}
+
+/** The side-over's item actions, at the end of the property bar: copy link, the item menu, full page. */
+function SheetActions({ d, issue, refresh }: { d: TaskDetailData; issue: (Issue & { comments: IssueComment[] }) | undefined; refresh: () => Promise<void> }) {
+  const { t, locale } = useTranslations()
+  const ws = useWorkspace()
+  const [copied, setCopied] = useState(false)
+  const path = `/${locale}/w/${ws.slug}/projects/${d.project_id}/issues/${encodeURIComponent(d.key)}`
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={t("td.copyLink")}
+        title={t("td.copyLink")}
+        onClick={async () => {
+          if (await copyText(`${window.location.origin}${path}`)) {
+            setCopied(true)
+            toast.success(t("td.linkCopied"))
+            setTimeout(() => setCopied(false), 1800)
+          }
+        }}
+      >
+        {copied ? <CheckIcon /> : <LinkIcon />}
+      </Button>
+      <Button variant="ghost" size="icon-sm" aria-label={t("task.openFullPage")} title={t("task.openFullPage")} nativeButton={false} render={<Link href={path} />}>
+        <Maximize2Icon />
+      </Button>
+      {issue ? (
+        <IssueActionsMenu
+          issue={issue}
+          onChanged={refresh}
+          trigger={
+            <Button variant="ghost" size="icon-sm" aria-label={t("td.more")} title={t("td.more")}>
+              <EllipsisVerticalIcon />
+            </Button>
+          }
+        />
+      ) : null}
+    </>
+  )
+}
 
 function SimpleSelect({ id, value, items, onChange, disabled }: { id: string; value: string; items: { value: string; label: string }[]; onChange: (v: string) => void; disabled?: boolean }) {
   return (
