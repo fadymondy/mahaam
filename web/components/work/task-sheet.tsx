@@ -27,7 +27,7 @@ export function TaskSheet({
     <Sheet open={!!taskKey} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="end"
-        className="w-full gap-0 overflow-y-auto p-0 sm:max-w-2xl!"
+        className="w-full gap-0 overflow-y-auto p-0 sm:max-w-2xl! lg:max-w-5xl!"
         data-task-sheet={taskKey ?? ""}
       >
         <SheetTitle className="sr-only">{taskKey ?? t("task.title")}</SheetTitle>

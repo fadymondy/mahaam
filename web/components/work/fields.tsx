@@ -70,8 +70,10 @@ export function PrioritySelect({ value, onChange, disabled, id }: { value: Prior
       <SelectContent>
         {items.map((i) => (
           <SelectItem key={i.value} value={i.value}>
-            <PriorityIcon priority={i.value} />
-            {i.label}
+            <span className="flex items-center gap-2">
+              <PriorityIcon priority={i.value} />
+              {i.label}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>
@@ -112,8 +114,10 @@ export function StatusSelect({
       <SelectContent>
         {statuses.map((s) => (
           <SelectItem key={s.id} value={s.id}>
-            <ColorDot color={s.color} />
-            {s.name}
+            <span className="flex min-w-0 items-center gap-2">
+              <ColorDot color={s.color} />
+              <span className="truncate">{s.name}</span>
+            </span>
           </SelectItem>
         ))}
       </SelectContent>

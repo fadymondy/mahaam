@@ -6,15 +6,20 @@
 // with the comments first. Grid: one 4px-based rhythm (p-4 cards, gap-4 between
 // them, 36px rows), logical (start/end) properties only so en/ar mirror, and every duration, key
 // and date is LTR-isolated.
-import { useMemo, useRef, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import {
   BotIcon,
   CheckCircle2Icon,
   CheckIcon,
+  ChevronDownIcon,
   CircleIcon,
   ClockIcon,
   DownloadIcon,
+  HistoryIcon,
   LinkIcon,
+  ListChecksIcon,
+  MessageSquareIcon,
+  PaperclipIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
@@ -103,10 +108,25 @@ type Layout = "page" | "sheet"
 const TABS = ["details", "activity", "attachments", "discussions", "subtasks", "time"] as const
 type Tab = (typeof TABS)[number]
 /** The side-over: fields and description up front, then these, comments first. */
-const SHEET_TABS = ["discussions", "subtasks", "attachments", "activity", "time", "agent"] as const
+const SHEET_TABS = ["discussions", "subtasks", "attachments", "activity", "time"] as const
+const SHEET_TAB_ICON: Record<(typeof SHEET_TABS)[number], typeof ClockIcon> = {
+  discussions: MessageSquareIcon,
+  subtasks: ListChecksIcon,
+  attachments: PaperclipIcon,
+  activity: HistoryIcon,
+  time: ClockIcon,
+}
 type SheetTab = (typeof SHEET_TABS)[number]
 
 // ── small building blocks ───────────────────────────────────────────────────
+
+/**
+ * Set inside the side-over's tabs: cards lose their frame and their title (the tab names them),
+ * and every row becomes its own rounded section so a thread is easy to follow.
+ */
+const Flow = createContext(false)
+const flowList = (flow: boolean) => (flow ? "flex flex-col gap-2" : "divide-y divide-line")
+const flowRow = (flow: boolean) => (flow ? "overflow-hidden rounded-lg border border-border bg-card" : "")
 
 /** A bordered card: one padding (p-4), one header row (title start, action end). */
 function Card({
@@ -117,6 +137,7 @@ function Card({
   className,
   bodyClassName,
   bare,
+  keepTitle,
 }: {
   title?: ReactNode
   count?: ReactNode
@@ -126,13 +147,17 @@ function Card({
   bodyClassName?: string
   /** No frame: a heading over the content, for the side-over's flowing layout. */
   bare?: boolean
+  /** In the side-over's tabs, keep the heading (a tab holding two lists). */
+  keepTitle?: boolean
 }) {
-  if (bare) {
+  const flow = useContext(Flow)
+  if (bare || flow) {
+    const head = flow && !keepTitle ? undefined : title
     return (
       <section className={cn("flex flex-col gap-2", className)}>
-        {title ? (
+        {head || action ? (
           <header className="flex min-h-8 items-center gap-2">
-            <h2 className="text-caption font-medium tracking-wide text-muted-foreground uppercase">{title}</h2>
+            {head ? <h2 className="text-caption font-medium tracking-wide text-muted-foreground uppercase">{head}</h2> : null}
             {count != null ? <span className="text-caption text-muted-foreground tabular-nums">{count}</span> : null}
             {action ? <div className="ms-auto flex items-center gap-1">{action}</div> : null}
           </header>
@@ -419,53 +444,85 @@ function Body({
 
   if (!page) {
     const agent = !!issue && ws.can("feedback:write")
-    const tabs = SHEET_TABS.filter((x) => (x === "agent" ? agent : x === "time" ? ws.can("time:track") : true))
-    const count = (x: SheetTab) => (x === "agent" ? 0 : (counts[x] ?? 0))
+    const tabs = SHEET_TABS.filter((x) => (x === "time" ? ws.can("time:track") : true))
     return (
-      <div className="flex w-full flex-col gap-5 p-5" data-task-detail={d.key} data-layout={layout}>
+      <div className="flex w-full flex-col gap-5 p-5 lg:p-6" data-task-detail={d.key} data-layout={layout}>
         {header}
-        <SheetFields d={d} issue={issue} dir={dir} can={can} canIssue={canIssue} loggedSeconds={time.seconds} call={call} patch={patch} patchIssue={patchIssue} />
-        <DescriptionCard bare d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
-        {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          {/* Reading first: description, then the tabs. The options sit in the side column. */}
+          <div className="flex min-w-0 flex-col gap-5">
+            <DescriptionCard bare d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
+            {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
 
-        <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as SheetTab)} className="min-w-0" data-sheet-tabs>
-          <div className="overflow-x-auto border-b border-border">
-            <TabsList variant="underline" className="min-w-max">
-              {tabs.map((x) => (
-                <TabsTab key={x} value={x} className="gap-2">
-                  {x === "agent" ? t("issues.agent.title") : t(`td.tab.${x}`)}
-                  {count(x) > 0 ? <CountPill n={count(x)} /> : null}
-                </TabsTab>
-              ))}
-            </TabsList>
+            <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as SheetTab)} className="min-w-0" data-sheet-tabs>
+              <div className="overflow-x-auto border-b border-border">
+                <TabsList variant="underline" className="min-w-max">
+                  {tabs.map((x) => {
+                    const Icon = SHEET_TAB_ICON[x]
+                    const n = x === "time" ? 0 : (counts[x] ?? 0)
+                    return (
+                      <TabsTab key={x} value={x} className="gap-2">
+                        <Icon className="size-4" />
+                        {t(`td.tab.${x}`)}
+                        {n > 0 ? <CountPill n={n} /> : null}
+                      </TabsTab>
+                    )
+                  })}
+                </TabsList>
+              </div>
+              <Flow.Provider value>
+                <TabsPanel value="discussions" className="pt-4">
+                  <Discussion d={d} issue={issue} can={can} dir={dir} comments={comments} onChanged={refresh} patchIssue={patchIssue} />
+                </TabsPanel>
+                <TabsPanel value="subtasks" className="pt-4">
+                  <div className="flex flex-col gap-5">
+                    <ChecklistCard d={d} can={can} call={call} />
+                    <SubtasksCard d={d} can={can} call={call} onOpen={onOpen} />
+                  </div>
+                </TabsPanel>
+                <TabsPanel value="attachments" className="pt-4">
+                  <AttachmentsCard d={d} can={can} dir={dir} files={files} onChanged={refresh} />
+                </TabsPanel>
+                <TabsPanel value="activity" className="pt-4">
+                  <div className="overflow-hidden rounded-lg border border-border bg-card">
+                    <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} showTask={false} emptyTitle={t("activity.empty")} />
+                  </div>
+                </TabsPanel>
+                <TabsPanel value="time" className="pt-4">
+                  <TimeCard d={d} time={time} dir={dir} />
+                </TabsPanel>
+              </Flow.Provider>
+            </Tabs>
           </div>
-          <TabsPanel value="discussions" className="pt-4">
-            <Discussion d={d} issue={issue} can={can} dir={dir} comments={comments} onChanged={refresh} patchIssue={patchIssue} />
-          </TabsPanel>
-          <TabsPanel value="subtasks" className="pt-4">
-            <div className="flex flex-col gap-4">
-              <ChecklistCard d={d} can={can} call={call} />
-              <SubtasksCard d={d} can={can} call={call} onOpen={onOpen} />
+
+          <aside className="flex min-w-0 flex-col gap-4 max-lg:order-first lg:sticky lg:top-0" data-sheet-side>
+            <div className="rounded-lg border border-border p-3">
+              <SheetFields
+                d={d}
+                issue={issue}
+                statuses={statuses}
+                dir={dir}
+                can={can}
+                canIssue={canIssue}
+                loggedSeconds={time.seconds}
+                call={call}
+                patch={patch}
+                patchIssue={patchIssue}
+                move={move}
+              />
             </div>
-          </TabsPanel>
-          <TabsPanel value="attachments" className="pt-4">
-            <AttachmentsCard d={d} can={can} dir={dir} files={files} onChanged={refresh} />
-          </TabsPanel>
-          <TabsPanel value="activity" className="pt-4">
-            <Card title={t("td.tab.activity")} bodyClassName="p-0">
-              <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} showTask={false} emptyTitle={t("activity.empty")} />
-            </Card>
-          </TabsPanel>
-          <TabsPanel value="time" className="pt-4">
-            <TimeCard d={d} time={time} dir={dir} />
-          </TabsPanel>
-          {agent ? (
-            <TabsPanel value="agent" className="pt-4">
-              <AgentCard bare issue={issue!} canIssue={canIssue} patchIssue={patchIssue} />
-            </TabsPanel>
-          ) : null}
-        </Tabs>
-        {deleteButton}
+            {agent ? (
+              <section className="flex flex-col gap-3 rounded-lg border border-border p-3" data-sheet-agent>
+                <h2 className="flex items-center gap-2 text-caption font-medium tracking-wide text-muted-foreground uppercase">
+                  <BotIcon className="size-3.5" />
+                  {t("issues.agent.title")}
+                </h2>
+                <AgentCard bare issue={issue!} canIssue={canIssue} patchIssue={patchIssue} />
+              </section>
+            ) : null}
+            {deleteButton}
+          </aside>
+        </div>
       </div>
     )
   }
@@ -668,11 +725,14 @@ function Header({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="w-40">
-            <StatusSelect statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
-          </div>
-          <div className="w-36">
-            <PrioritySelect value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
+          {/* The wide side-over shows these in its side column. */}
+          <div className={cn("flex flex-wrap items-center gap-2", layout === "sheet" && "lg:hidden")}>
+            <div className="w-40">
+              <StatusSelect statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
+            </div>
+            <div className="w-36">
+              <PrioritySelect value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
+            </div>
           </div>
           <Button
             variant="secondary"
@@ -769,9 +829,55 @@ function DescriptionCard({
     const ok = real ? await patchIssue({ body: draft }) : await patch({ description: draft })
     if (ok) setEditing(false)
   }
+  if (bare) {
+    return (
+      <section className="group/desc relative" data-description>
+        {editable && !editing ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="absolute end-0 top-0 z-10 opacity-0 group-hover/desc:opacity-100 focus-visible:opacity-100 max-lg:opacity-100"
+            aria-label={t("td.editDescription")}
+            onClick={() => {
+              setDraft(text)
+              setEditing(true)
+            }}
+          >
+            <PencilIcon />
+          </Button>
+        ) : null}
+        {editing ? (
+          <div className="flex flex-col gap-3">
+            <Textarea
+              aria-label={t("task.description")}
+              dir="auto"
+              rows={10}
+              autoFocus
+              value={draft}
+              placeholder={t("task.descriptionPlaceholder")}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+                {t("common.cancel")}
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => void save()}>
+                {t("common.save")}
+              </Button>
+            </div>
+          </div>
+        ) : text ? (
+          <Clamp>
+            <Markdown>{text}</Markdown>
+          </Clamp>
+        ) : (
+          <p className="pe-10 text-sm text-muted-foreground">{editable ? t("task.descriptionPlaceholder") : t("task.noDescription")}</p>
+        )}
+      </section>
+    )
+  }
   return (
     <Card
-      bare={bare}
       title={t("task.description")}
       action={
         editable && !editing ? (
@@ -818,6 +924,40 @@ function DescriptionCard({
   )
 }
 
+/** Long text folds to a fixed height with a fade and a "Show more" toggle, so the tabs stay in reach. */
+function Clamp({ children, max = 320 }: { children: ReactNode; max?: number }) {
+  const { t } = useTranslations()
+  const ref = useRef<HTMLDivElement>(null)
+  const [long, setLong] = useState(false)
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const check = () => setLong(el.scrollHeight > max + 48)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [max])
+  const folded = long && !open
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="relative">
+        <div ref={ref} className={cn(folded && "overflow-hidden")} style={folded ? { maxHeight: max } : undefined}>
+          {children}
+        </div>
+        {folded ? <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-popover to-transparent" /> : null}
+      </div>
+      {long ? (
+        <Button variant="ghost" size="sm" className="self-start" aria-expanded={open} onClick={() => setOpen(!open)} data-clamp-toggle>
+          <ChevronDownIcon className={cn("transition-transform", open && "rotate-180")} />
+          {open ? t("td.showLess") : t("td.showMore")}
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
 function ContextPanelCard({ issue }: { issue: Issue }) {
   // The report behind a card (page, screenshot, logs). Renders nothing when the card has none.
   return <ContextPanel issue={issue} />
@@ -827,10 +967,11 @@ function ContextPanelCard({ issue }: { issue: Issue }) {
 
 function AddForm({ placeholder, onAdd }: { placeholder: string; onAdd: (v: string) => Promise<boolean> }) {
   const { t } = useTranslations()
+  const flow = useContext(Flow)
   const [text, setText] = useState("")
   return (
     <form
-      className="flex items-center gap-2 border-t border-border p-4"
+      className={cn("flex items-center gap-2", flow ? "pt-1" : "border-t border-border p-4")}
       onSubmit={async (e) => {
         e.preventDefault()
         const v = text.trim()
@@ -850,17 +991,19 @@ function AddForm({ placeholder, onAdd }: { placeholder: string; onAdd: (v: strin
 function ChecklistCard({ d, can, call }: { d: TaskDetailData; can: boolean; call: Call }) {
   const { t } = useTranslations()
   const ws = useWorkspace()
+  const flow = useContext(Flow)
   const done = d.checklist.filter((c) => c.done).length
   return (
     <Card
+      keepTitle
       title={t("task.checklist")}
       count={d.checklist.length ? <Ltr>{`${done}/${d.checklist.length}`}</Ltr> : undefined}
       bodyClassName="p-0"
     >
       {d.checklist.length ? (
-        <ul data-checklist className="divide-y divide-line">
+        <ul data-checklist className={flowList(flow)}>
           {d.checklist.map((c) => (
-            <li key={c.id} data-item={c.id} className="group flex min-h-12 items-center gap-3 px-4 hover:bg-muted/50">
+            <li key={c.id} data-item={c.id} className={cn("group flex min-h-12 items-center gap-3 px-4 hover:bg-muted/50", flowRow(flow))}>
               <Checkbox
                 checked={c.done}
                 disabled={!can}
@@ -897,19 +1040,20 @@ function SubtasksCard({ d, can, call, onOpen }: { d: TaskDetailData; can: boolea
   const ws = useWorkspace()
   const me = useMe()
   const dir = useDirectory(me.data ? String(me.data.id) : undefined)
+  const flow = useContext(Flow)
   const board = useBoard(ws.id, d.parent ? null : d.project_id)
   if (d.parent) return null // one level deep
   const byId = new Map<string, Task>((board.data?.tasks ?? []).map((x) => [x.id, x]))
   const done = d.subtasks.filter((s) => s.done).length
   return (
-    <Card title={t("task.subtasks")} count={d.subtasks.length ? <Ltr>{`${done}/${d.subtasks.length}`}</Ltr> : undefined} bodyClassName="p-0">
+    <Card keepTitle title={t("task.subtasks")} count={d.subtasks.length ? <Ltr>{`${done}/${d.subtasks.length}`}</Ltr> : undefined} bodyClassName="p-0">
       {d.subtasks.length ? (
-        <ul data-subtasks className="divide-y divide-line">
+        <ul data-subtasks className={flowList(flow)}>
           {d.subtasks.map((s) => {
             const full = byId.get(s.id)
             const overdue = isOverdue(full?.due_at, full?.completed_at)
             return (
-              <li key={s.id}>
+              <li key={s.id} className={flowRow(flow)}>
                 <button
                   type="button"
                   onClick={() => onOpen(s.key)}
@@ -1001,11 +1145,12 @@ function AttachmentsCard({
 }) {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
+  const flow = useContext(Flow)
   const list = files.data?.attachments ?? []
   return (
     <Card title={t("task.attachments")} count={list.length ? <Ltr>{list.length}</Ltr> : undefined} bodyClassName="p-0">
       {can ? (
-        <div className="p-4">
+        <div className={flow ? "pb-1" : "p-4"}>
           <AttachmentDropzone
             upload={(file) => w.upload(ws.id, `/api/w/tasks/${d.id}/attachments`, file)}
             onUploaded={() => {
@@ -1016,9 +1161,9 @@ function AttachmentsCard({
         </div>
       ) : null}
       {list.length ? (
-        <ul data-attachments className={cn("divide-y divide-line", can && "border-t border-border")}>
+        <ul data-attachments className={cn(flowList(flow), can && !flow && "border-t border-border")}>
           {list.map((a) => (
-            <li key={a.id} className="flex min-h-14 items-center gap-3 px-4 py-2 text-sm">
+            <li key={a.id} className={cn("flex min-h-14 items-center gap-3 px-4 py-2 text-sm", flowRow(flow))}>
               {a.content_type.startsWith("image/") ? <ImageThumb ws={ws.id} a={a} /> : null}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium" dir="auto">
@@ -1107,6 +1252,7 @@ function Discussion({
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const author = useCommentAuthor()
+  const flow = useContext(Flow)
   const form = useCommentForm(d.key, onChanged)
   const [cardBody, setCardBody] = useState("")
   const [busy, setBusy] = useState(false)
@@ -1142,7 +1288,7 @@ function Discussion({
   return (
     <Card title={t("td.discussion")} count={entries.length ? <Ltr>{entries.length}</Ltr> : undefined} bodyClassName="p-0" className="min-w-0" >
       {canPost ? (
-        <div className="border-b border-border p-4">
+        <div className={flow ? "mb-2 rounded-lg border border-border bg-card p-3" : "border-b border-border p-4"}>
           {viaIssue ? (
             <form onSubmit={form.submit} className="flex flex-col gap-3">
               <MentionTextarea
@@ -1183,14 +1329,14 @@ function Discussion({
       ) : null}
 
       {entries.length ? (
-        <ol data-comments className="divide-y divide-line">
+        <ol data-comments className={cn(flowList(flow), flow && "gap-3")}>
           {entries.map((e) => {
             const authorId = e.kind === "card" ? e.c.author_id : e.c.author_id
             const isAgent = e.c.author_kind === "agent"
             const name = e.kind === "card" ? dir.name(e.c.author_id) : author(e.c)
             const mine = e.kind === "card" && e.c.author_id === dir.me && can
             return (
-              <li key={`${e.kind}-${e.id}`} data-comment={e.id} className="flex gap-3 p-4">
+              <li key={`${e.kind}-${e.id}`} data-comment={e.id} className={cn("flex gap-3 p-4", flowRow(flow))}>
                 {authorId ? <PersonAvatar id={authorId} dir={dir} className="mt-0.5 shrink-0" /> : <BotIcon className="mt-1 size-5 shrink-0 text-muted-foreground" />}
                 <div className="min-w-0 flex-1">
                   <div className="flex min-h-6 flex-wrap items-center gap-x-2 text-caption text-muted-foreground">
@@ -1275,6 +1421,7 @@ function Discussion({
 function TimeCard({ d, time, dir }: { d: TaskDetailData; time: ReturnType<typeof useTaskTime>; dir: Directory }) {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
+  const flow = useContext(Flow)
   return (
     <Card
       title={t("td.tab.time")}
@@ -1287,9 +1434,9 @@ function TimeCard({ d, time, dir }: { d: TaskDetailData; time: ReturnType<typeof
       ) : time.loading ? (
         <LoadingRows rows={2} />
       ) : time.entries.length ? (
-        <ul data-time-entries className="divide-y divide-line">
+        <ul data-time-entries className={flowList(flow)}>
           {time.entries.map((e) => (
-            <li key={e.id} className="grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm">
+            <li key={e.id} className={cn("grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm", flowRow(flow))}>
               <div className="flex min-w-0 items-center gap-3">
                 <PersonAvatar id={e.user_id} dir={dir} />
                 <div className="min-w-0">
@@ -1478,6 +1625,7 @@ function EstimateField({ d, can, patch }: { d: TaskDetailData; can: boolean; pat
 function SheetFields({
   d,
   issue,
+  statuses,
   dir,
   can,
   canIssue,
@@ -1485,9 +1633,11 @@ function SheetFields({
   call,
   patch,
   patchIssue,
+  move,
 }: {
   d: TaskDetailData
   issue: (Issue & { comments: IssueComment[] }) | undefined
+  statuses: TaskDetailData["status"][]
   dir: Directory
   can: boolean
   canIssue: boolean
@@ -1495,6 +1645,7 @@ function SheetFields({
   call: Call
   patch: (b: Record<string, unknown>) => Promise<boolean>
   patchIssue: (f: IssuePatch) => Promise<boolean>
+  move: (id: string) => Promise<boolean>
 }) {
   const { t } = useTranslations()
   const ws = useWorkspace()
@@ -1503,7 +1654,19 @@ function SheetFields({
   const finished = d.checklist.filter((c) => c.done).length + d.subtasks.filter((x) => x.done).length
   const pct = total ? Math.round((finished / total) * 100) : 0
   return (
-    <dl className="grid gap-x-6 border-y border-border py-2 sm:grid-cols-2" data-sheet-fields>
+    <dl className="flex flex-col" data-sheet-fields>
+      <div className="max-lg:hidden">
+        <InfoRow label={t("task.status")} htmlFor="td-status">
+          <div className={rowControl}>
+            <StatusSelect id="td-status" statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
+          </div>
+        </InfoRow>
+        <InfoRow label={t("task.priority")} htmlFor="td-priority">
+          <div className={rowControl}>
+            <PrioritySelect id="td-priority" value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
+          </div>
+        </InfoRow>
+      </div>
       <InfoRow label={t("task.assignees")}>
         <MemberPicker
           dir={dir}
