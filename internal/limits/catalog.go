@@ -47,7 +47,7 @@ const (
 )
 
 // Integrations Mahaam offers (Features.Integrations is a subset).
-var Integrations = []string{"github", "jira", "linear"}
+var Integrations = []string{"github", "jira", "linear", "hosbah"}
 
 // Def describes one limit key.
 type Def struct {
@@ -88,6 +88,7 @@ var featureNames = map[string]string{
 	"github":       "the GitHub integration",
 	"jira":         "the Jira integration",
 	"linear":       "the Linear integration",
+	"hosbah":       "the Hosbah hosting integration",
 }
 
 // DefOf returns the catalog entry for key.

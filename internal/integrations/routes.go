@@ -28,6 +28,15 @@ guard resolves session + membership first and the project must be visible (404 o
 	GET    …/github/{commits,pulls,runs,deployments,workflows}
 	POST   …/github/deploy                     workflow_dispatch (github:deploy)
 	POST   …/github/issues                     file a GitHub issue from an MG issue (github:issues)
+	POST   …/integrations/hosbah/apps          the apps a Hosbah user token can see (not stored)
+	PUT    …/integrations/hosbah               link one app (Hosbah mints an app token)
+	GET    …/hosting                           the linked app + recent deployments (integrations:read)
+	POST   …/hosting/deploy                    deploy it (integrations:manage)
+
+and the customer side, under /api/w/portal/projects/{project}/… (portal:read):
+
+	GET    …/hosting                           name, status, domains, whether the caller can open the panel
+	POST   …/hosting/panel                     a one-time auto-login link into the app's hosting panel
 
 Mount adds the two PUBLIC endpoints (guard allowlist): the install callback and the webhook.
 */
@@ -41,7 +50,7 @@ func Register(api huma.API, a *app.App) {
 	type Prov struct {
 		work.WS
 		work.ProjectRef
-		Provider string `path:"provider" doc:"github, jira or linear"`
+		Provider string `path:"provider" doc:"github, jira, linear or hosbah"`
 	}
 
 	reg(api, sv, http.MethodGet, "/api/w/projects/{project}/integrations", "w-list-integrations", "Project integrations", tag, 0,
@@ -96,6 +105,45 @@ func Register(api huma.API, a *app.App) {
 			}
 		}) (*Integration, error) {
 			return sv.LinkRepo(ctx, in.Project, in.Body.Repo)
+		})
+
+	reg(api, sv, http.MethodPost, "/api/w/projects/{project}/integrations/hosbah/apps", "w-hosbah-apps", "Hosbah apps a token can see", tag, 0,
+		func(ctx context.Context, in *struct {
+			P
+			Body HosbahAppsInput
+		}) (HosbahAppList, error) {
+			l, err := sv.HosbahApps(ctx, in.Project, in.Body)
+			return HosbahAppList{Apps: l}, err
+		})
+	reg(api, sv, http.MethodPut, "/api/w/projects/{project}/integrations/hosbah", "w-connect-hosbah", "Link a Hosbah app", tag, 0,
+		func(ctx context.Context, in *struct {
+			P
+			Body HosbahInput
+		}) (*Integration, error) {
+			return sv.ConnectHosbah(ctx, in.Project, in.Body)
+		})
+
+	const htag = "Hosting"
+	reg(api, sv, http.MethodGet, "/api/w/projects/{project}/hosting", "w-hosting", "The project's Hosbah app", htag, 0,
+		func(ctx context.Context, in *P) (*Hosting, error) {
+			return sv.Hosting(ctx, in.Project)
+		})
+	reg(api, sv, http.MethodPost, "/api/w/projects/{project}/hosting/deploy", "w-hosting-deploy", "Deploy the project's Hosbah app", htag, http.StatusAccepted,
+		func(ctx context.Context, in *P) (*HosbahDeployment, error) {
+			return sv.HostingDeploy(ctx, in.Project)
+		})
+	reg(api, sv, http.MethodGet, "/api/w/portal/projects/{project}/hosting", "w-portal-hosting", "The project's hosting, as its customer sees it", htag, 0,
+		func(ctx context.Context, in *P) (*PortalHosting, error) {
+			return sv.PortalHosting(ctx, in.Project)
+		})
+	reg(api, sv, http.MethodPost, "/api/w/portal/projects/{project}/hosting/panel", "w-portal-hosting-panel", "A one-time link into the hosting panel", htag, 0,
+		func(ctx context.Context, in *struct {
+			P
+			Body struct {
+				Locale string `json:"locale,omitempty" doc:"en or ar"`
+			}
+		}) (*PanelLink, error) {
+			return sv.PortalHostingPanel(ctx, in.Project, in.Body.Locale)
 		})
 
 	const gtag = "GitHub"
@@ -182,6 +230,9 @@ type (
 	}
 	WorkflowList struct {
 		Workflows []Workflow `json:"workflows"`
+	}
+	HosbahAppList struct {
+		Apps []HosbahApp `json:"apps"`
 	}
 	LinkedIssue struct {
 		Key string `json:"key"`

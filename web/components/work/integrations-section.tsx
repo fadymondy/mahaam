@@ -9,17 +9,18 @@ import useSWR from "swr"
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
-import { LogoTile, type Brand } from "@/components/work/brand-logos"
+import { LogoTile, type TileBrand } from "@/components/work/brand-logos"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
-import { useIntegrations, type Integration, type Provider, type Repo, type SyncResult } from "@/lib/integrations"
+import { hostingStatus, hostingVariant, useIntegrations, type HosbahApp, type Integration, type Provider, type Repo, type SyncResult } from "@/lib/integrations"
 import { errorText, w } from "@/lib/work"
 
 /*
 Project settings → Integrations: install the GitHub App and pick the repository, connect Jira or
-Linear import (the credential is write-only: sealed server-side, never shown again), and see each
-integration's status, last sync and last error with a Sync button. The three sit in one row as
+Linear import (the credential is write-only: sealed server-side, never shown again), link a Hosbah
+app (a Hosbah user token lists the apps; Hosbah mints a token for the picked one), and see each
+integration's status, last sync and last error with a Sync button. The four sit in one row as
 compact cards with one button each; the setup opens in a dialog (GitHub with no installation to
 reuse goes straight to the App install). Reading is member+; every
 change is manager+ (integrations:manage) — the endpoints enforce both.
@@ -44,10 +45,11 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
         <h2 className="text-h3">{t("int.title")}</h2>
         <p className="mt-1 text-body-sm text-muted-foreground">{t("int.hint")}</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <GitHubCard projectId={projectId} it={by("github")} canManage={canManage} onChanged={reload} />
         <JiraCard projectId={projectId} it={by("jira")} canManage={canManage} onChanged={reload} />
         <LinearCard projectId={projectId} it={by("linear")} canManage={canManage} onChanged={reload} />
+        <HosbahCard projectId={projectId} it={by("hosbah")} canManage={canManage} onChanged={reload} />
       </div>
     </section>
   )
@@ -73,7 +75,7 @@ function IntegrationCard({
   connect,
   children,
 }: {
-  brand: Brand
+  brand: TileBrand
   name: string
   desc: string
   it?: Integration
@@ -405,6 +407,151 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
             </Button>
           </div>
         </form>
+      )}
+    </IntegrationCard>
+  )
+}
+
+// Hosbah: paste a Hosbah user token, find the apps it can see and link one. Hosbah mints a token
+// for that app alone and Mahaam keeps only that; the user token is used for these two calls.
+// Linking another app replaces the first (and revokes its token).
+function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string; it?: Integration; canManage: boolean; onChanged: () => void }) {
+  const { t } = useTranslations()
+  const ws = useWorkspace()
+  const [baseUrl, setBaseUrl] = useState("")
+  const [token, setToken] = useState("")
+  const [apps, setApps] = useState<HosbahApp[] | null>(null)
+  const [pick, setPick] = useState("")
+  const [q, setQ] = useState("")
+  const [busy, setBusy] = useState(false)
+  const body = () => ({ token: token.trim(), ...(baseUrl.trim() ? { base_url: baseUrl.trim() } : {}) })
+  const find = async () => {
+    setBusy(true)
+    try {
+      const r = await w.post<{ apps: HosbahApp[] | null }>(ws.id, `/api/w/projects/${projectId}/integrations/hosbah/apps`, body())
+      setApps(r.apps ?? [])
+      setPick("")
+    } catch (err) {
+      toast.error(errorText(err, t("common.networkError")))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const link = async (close: () => void) => {
+    setBusy(true)
+    try {
+      await w.put(ws.id, `/api/w/projects/${projectId}/integrations/hosbah`, { ...body(), app: pick })
+      toast.success(t("int.hosbah.linked"))
+      setToken("")
+      setApps(null)
+      onChanged()
+      close()
+    } catch (err) {
+      toast.error(errorText(err, t("common.networkError")))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const title = (a: HosbahApp) => (a.title?.trim() ? a.title : a.name)
+  const needle = q.trim().toLowerCase()
+  const shown = (apps ?? []).filter((a) => !needle || `${a.name} ${a.title ?? ""} ${a.server_name ?? ""}`.toLowerCase().includes(needle))
+  const current = it?.config.app_title || it?.config.app_name
+  return (
+    <IntegrationCard
+      brand="hosbah"
+      name="Hosbah"
+      desc={t("int.hosbah.desc")}
+      it={it}
+      canManage={canManage}
+      projectId={projectId}
+      onChanged={onChanged}
+      summary={
+        current ? (
+          <p className="flex min-w-0 items-center gap-1.5">
+            {it?.config.panel_url ? (
+              <a className="inline-flex min-w-0 items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline" href={it.config.panel_url} target="_blank" rel="noreferrer">
+                <span className="truncate" dir="auto">
+                  {current}
+                </span>
+                <ExternalLinkIcon className="size-3.5 shrink-0" />
+              </a>
+            ) : (
+              <span className="truncate font-medium text-foreground" dir="auto">
+                {current}
+              </span>
+            )}
+            {it?.config.server_name ? (
+              <span className="shrink-0 truncate" dir="ltr">
+                · {it.config.server_name}
+              </span>
+            ) : null}
+          </p>
+        ) : null
+      }
+    >
+      {(close) => (
+        <div className="grid gap-3">
+          {current ? (
+            <p className="text-sm">
+              {t("int.hosbah.app")}:{" "}
+              <span className="font-medium" dir="auto">
+                {current}
+              </span>
+            </p>
+          ) : null}
+          <Field>
+            <FieldLabel htmlFor="hosbah-url">{t("int.hosbah.baseUrl")}</FieldLabel>
+            <Input id="hosbah-url" dir="ltr" placeholder={it?.config.base_url || "https://hosbah.example.com"} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+            <p className="text-caption text-muted-foreground">{t("int.hosbah.baseUrlHint")}</p>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="hosbah-token">{t("int.hosbah.token")}</FieldLabel>
+            <Input id="hosbah-token" dir="ltr" type="password" autoComplete="off" placeholder="hbu_…" value={token} onChange={(e) => setToken(e.target.value)} />
+            <p className="text-caption text-muted-foreground">{t("int.hosbah.tokenHint")}</p>
+          </Field>
+          <div>
+            <Button variant="secondary" disabled={busy || !token.trim()} onClick={() => void find()}>
+              {t("int.hosbah.findApps")}
+            </Button>
+          </div>
+          {apps ? (
+            apps.length ? (
+              <div className="space-y-2" data-hosbah-apps={apps.length}>
+                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("int.hosbah.searchApp")} aria-label={t("int.hosbah.searchApp")} />
+                <ul role="listbox" aria-label={t("int.hosbah.app")} className="max-h-60 overflow-y-auto rounded-md border border-border">
+                  {shown.length ? (
+                    shown.slice(0, 200).map((a) => (
+                      <li key={a.id} role="option" aria-selected={a.id === pick}>
+                        <button
+                          type="button"
+                          onClick={() => setPick(a.id)}
+                          className={`flex w-full items-center gap-2 px-3 py-1.5 text-start text-sm hover:bg-muted ${a.id === pick ? "bg-muted font-medium" : ""}`}
+                        >
+                          <span className="min-w-0 flex-1 truncate" dir="auto">
+                            {title(a)}
+                          </span>
+                          {a.server_name ? (
+                            <span className="shrink-0 text-caption text-muted-foreground" dir="ltr">
+                              {a.server_name}
+                            </span>
+                          ) : null}
+                          <Badge variant={hostingVariant(a.status)}>{hostingStatus(t, a.status)}</Badge>
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-3 py-2 text-sm text-muted-foreground">{t("int.hosbah.noMatch")}</li>
+                  )}
+                </ul>
+                <Button variant="primary" disabled={busy || !pick} onClick={() => void link(close)}>
+                  {it ? t("int.hosbah.relink") : t("int.hosbah.link")}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("int.hosbah.noApps")}</p>
+            )
+          ) : null}
+        </div>
       )}
     </IntegrationCard>
   )

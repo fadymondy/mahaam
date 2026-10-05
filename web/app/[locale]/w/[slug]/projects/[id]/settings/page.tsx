@@ -329,7 +329,7 @@ export default function ProjectSettingsPage() {
                 label: t("settings.card.integrationsTitle"),
                 description: t("settings.card.integrations"),
                 icon: <PlugIcon />,
-                keywords: ["github", "jira", "linear"],
+                keywords: ["github", "jira", "linear", "hosbah", "hosting"],
                 content: <IntegrationsSection projectId={p.id} />,
               },
             ]

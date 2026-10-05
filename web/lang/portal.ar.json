@@ -207,5 +207,7 @@
   "connectAi.copyConfig": "نسخ الإعداد",
   "connectAi.copied": "تم النسخ",
   "connectAi.tools": "الأدوات: portal_projects وportal_project وportal_board وportal_task وportal_issues وportal_issue وportal_update_issue وportal_comment_issue وrequest_feature وportal_requests وportal_invoices وportal_time.",
-  "connectAi.manage": "إدارة الرموز"
+  "connectAi.manage": "إدارة الرموز",
+  "portal.hosting.title": "الاستضافة",
+  "portal.hosting.open": "افتح لوحة الاستضافة"
 }

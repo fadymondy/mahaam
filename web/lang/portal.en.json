@@ -207,5 +207,7 @@
   "connectAi.copyConfig": "Copy config",
   "connectAi.copied": "Copied",
   "connectAi.tools": "Tools: portal_projects, portal_project, portal_board, portal_task, portal_issues, portal_issue, portal_update_issue, portal_comment_issue, request_feature, portal_requests, portal_invoices, portal_time.",
-  "connectAi.manage": "Manage tokens"
+  "connectAi.manage": "Manage tokens",
+  "portal.hosting.title": "Hosting",
+  "portal.hosting.open": "Open hosting panel"
 }

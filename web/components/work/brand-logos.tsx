@@ -5,6 +5,8 @@
 // the text colour and stay visible in dark mode.
 import type { ComponentProps } from "react"
 
+import { ProductMark } from "@fadymondy/nasaq/web"
+
 import { cn } from "@/lib/utils"
 
 type Mark = { title: string; color: string; path: string }
@@ -38,11 +40,14 @@ export function BrandLogo({ brand, className, ...props }: { brand: Brand } & Omi
   )
 }
 
+/** A tile brand: a simple-icons mark, or one of our own products (drawn by Nasaq's ProductMark). */
+export type TileBrand = Brand | "hosbah"
+
 /** A brand's mark on a light tile, so every brand colour reads the same in light and dark. */
-export function LogoTile({ brand, className, logoClassName }: { brand: Brand; className?: string; logoClassName?: string }) {
+export function LogoTile({ brand, className, logoClassName }: { brand: TileBrand; className?: string; logoClassName?: string }) {
   return (
     <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#181717] shadow-xs ring-1 ring-black/5", className)}>
-      <BrandLogo brand={brand} className={cn("size-6", logoClassName)} />
+      {brand === "hosbah" ? <ProductMark brand="hosbah" size={24} title="" /> : <BrandLogo brand={brand} className={cn("size-6", logoClassName)} />}
     </span>
   )
 }

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
   board columns, overview cards, lists), shimmering through the [data-shimmer] sweep in globals.css.
 */
 
-export type ProjectSkeletonTab = "overview" | "board" | "github" | "vault" | "billing" | "settings"
+export type ProjectSkeletonTab = "overview" | "board" | "github" | "hosting" | "vault" | "billing" | "settings"
 
 function Busy({ className, children, ...props }: React.ComponentProps<"div">) {
   const { t } = useTranslations()

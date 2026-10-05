@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Suspense, useCallback, type ReactNode } from "react"
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeftIcon, GithubIcon, KeyRoundIcon, LayoutDashboardIcon, ReceiptTextIcon, SettingsIcon, SquareKanbanIcon, type LucideIcon } from "lucide-react"
+import { ChevronLeftIcon, GithubIcon, KeyRoundIcon, LayoutDashboardIcon, ReceiptTextIcon, ServerIcon, SettingsIcon, SquareKanbanIcon, type LucideIcon } from "lucide-react"
 import { useSWRConfig } from "swr"
 
 import { Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
@@ -20,13 +20,14 @@ import { useProject } from "@/lib/work"
 import { ProjectHeader, StatusPill } from "@/components/work/project/project-header"
 import { ProjectAvatar } from "@/components/work/project-avatar"
 
-const TABS = ["overview", "board", "github", "vault", "billing", "settings"] as const
+const TABS = ["overview", "board", "github", "hosting", "vault", "billing", "settings"] as const
 type Tab = (typeof TABS)[number]
 // The board route is the issues view (board and list of the same items), so its tab reads "Issues".
 const TAB_LABEL: Record<Tab, string> = {
   overview: "projectTab.overview",
   board: "projectTab.issues",
   github: "projectTab.github",
+  hosting: "projectTab.hosting",
   vault: "projectTab.vault",
   billing: "projectTab.billing",
   settings: "projectTab.settings",
@@ -35,6 +36,7 @@ const TAB_ICON: Record<Tab, LucideIcon> = {
   overview: LayoutDashboardIcon,
   board: SquareKanbanIcon,
   github: GithubIcon,
+  hosting: ServerIcon,
   vault: KeyRoundIcon,
   billing: ReceiptTextIcon,
   settings: SettingsIcon,
@@ -126,6 +128,7 @@ function ProjectShell({ children }: { children: ReactNode }) {
                       (x) =>
                         (x !== "vault" || ws.can("vault:read")) &&
                         (x !== "github" || ws.can("integrations:read")) &&
+                        (x !== "hosting" || ws.can("integrations:read")) &&
                         (x !== "billing" || ws.can("subscriptions:manage")) &&
                         (x !== "settings" || p.can_manage),
                     ).map((x) => {
