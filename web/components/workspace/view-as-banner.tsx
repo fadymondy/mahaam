@@ -35,10 +35,12 @@ export function ViewAsBanner({
     }
   }, [onHeight])
   return (
-    <div ref={ref} className="sticky top-0 z-50 border-b border-border bg-background p-2" data-view-as={viewing.user_id}>
+    <div ref={ref} className="sticky top-0 z-50 bg-background" data-view-as={viewing.user_id}>
       <Alert
         tone="warning"
         icon={EyeIcon}
+        // Flush across the top: no outer padding, rounding or side borders (MH-1180).
+        className="rounded-none border-x-0 border-t-0"
         action={
           <Button variant="secondary" size="sm" onClick={() => exitViewAs(home)}>
             <LogOutIcon />
