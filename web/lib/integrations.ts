@@ -30,7 +30,7 @@ export type Run = { id: number; name: string; branch: string; event: string; sta
 export type Deployment = { id: number; environment: string; ref: string; sha: string; creator: string; state: string; url: string; created_at: string }
 export type Workflow = { id: number; name: string; path: string; state: string; url: string }
 
-// Hosbah hosting (internal/integrations/hosbah.go): the one app a project is linked to.
+// Hosbah hosting (internal/integrations/hosbah.go): the apps a project is linked to (web, api, mcp…).
 export type HosbahApp = {
   id: string
   name: string
@@ -56,8 +56,12 @@ export type HosbahDeployment = {
   queued_at: string
   finished_at?: string | null
 }
-export type Hosting = { app: HosbahApp; deployments: HosbahDeployment[] | null }
-export type PortalHosting = { connected: boolean; name?: string; status?: string; domains: string[] | null; can_open: boolean }
+/** One linked app; error says why Hosbah did not answer for it (app is then the last synced copy). */
+export type HostingApp = { app: HosbahApp; deployments: HosbahDeployment[] | null; error?: string }
+/** app/deployments repeat the first linked app's. */
+export type Hosting = { app: HosbahApp; deployments: HosbahDeployment[] | null; apps: HostingApp[] | null }
+export type PortalHostingApp = { id: string; name: string; status: string; domains: string[] | null }
+export type PortalHosting = { connected: boolean; name?: string; status?: string; domains: string[] | null; apps: PortalHostingApp[] | null; can_open: boolean }
 export type PanelLink = { url: string; expires_at?: string | null }
 
 const opts = { shouldRetryOnError: false, revalidateOnFocus: false }
@@ -81,9 +85,9 @@ export function usePortalHosting(ws: string, project: string | null) {
   return useSWR<PortalHosting>(project ? [`/api/w/portal/projects/${encodeURIComponent(project)}/hosting`, ws] : null, ([p, id]: [string, string]) => api<PortalHosting>(p, { workspaceId: id }), opts)
 }
 
-/** A one-time auto-login link into the app's hosting panel. */
-export const openHostingPanel = (ws: string, project: string, locale: string) =>
-  api<PanelLink>(`/api/w/portal/projects/${encodeURIComponent(project)}/hosting/panel`, { method: "POST", json: { locale }, workspaceId: ws })
+/** A one-time auto-login link into one linked app's hosting panel (app: its id; default the first). */
+export const openHostingPanel = (ws: string, project: string, locale: string, app?: string) =>
+  api<PanelLink>(`/api/w/portal/projects/${encodeURIComponent(project)}/hosting/panel`, { method: "POST", json: { locale, app }, workspaceId: ws })
 
 /** "running" → success, "failed" → danger, deploying → warning, else neutral. */
 export function hostingVariant(status?: string) {

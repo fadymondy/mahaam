@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fadymondy/mahaam/internal/authz"
@@ -19,13 +20,16 @@ import (
 )
 
 /*
-Hosbah hosting. A project is linked to ONE Hosbah app; its customers open that app's hosting panel
-from the portal.
+Hosbah hosting. A project is linked to one or more Hosbah apps of one Hosbah team (MH-1194: its
+web, api and mcp are each an app); its customers open those apps' hosting panels from the portal.
 
 Connecting is OAuth (hosbah_oauth.go): through the manager's CircleXO account (the hub issues a
-token for Hosbah with Mahaam as the actor; it lists their apps, they pick one and Hosbah mints a token
-scoped to that app, hba_…) or through Hosbah's own OAuth (the app is picked on Hosbah's consent
-screen and the token endpoint returns the app token). Only the app token is stored (sealed).
+token for Hosbah with Mahaam as the actor; it lists their apps, they pick some and Hosbah mints a
+token scoped to each app, hba_…) or through Hosbah's own OAuth (the apps are picked on Hosbah's
+consent screen and the token endpoint returns one app token each). The project keeps one hosbah
+row: config.apps lists the apps (the top-level app_* fields mirror the first, as before MH-1194)
+and the sealed secret is the JSON map {app id: app token}. A secret that is a bare token is a link
+from before MH-1194, for config.app_id.
 
 The Hosbah side of the contract (Hosbah's /api/integrations/*):
 
@@ -35,7 +39,8 @@ The Hosbah side of the contract (Hosbah's /api/integrations/*):
 	POST   /api/integrations/app/deployments      Bearer hba_  → {deployment: Deployment}
 	POST   /api/integrations/app/panel-sessions   Bearer hba_  {email, name, locale} → {url, expires_at}
 	DELETE /api/integrations/app/token            Bearer hba_  → 204
-	GET    /oauth/authorize, POST /oauth/token    authorization code + PKCE → {access_token: "hba_…", app}
+	GET    /oauth/authorize, POST /oauth/token    authorization code + PKCE →
+	                                              {access_token: "hba_…", app, apps: [{access_token, app}]}
 
 panel-sessions returns a single-use, short-lived link that signs the person into the app's page of
 the server's customer panel (/{locale}/panel/{server}/apps/{app}) and nothing else. Errors are
@@ -75,25 +80,45 @@ type HosbahAppsInput struct {
 	Pending string `json:"pending" doc:"The sealed CircleXO sign-in from the connect redirect (#hosbah=…); never a raw token"`
 }
 
-// HosbahInput links the project to one app.
+// HosbahInput links the project to Hosbah apps.
 type HosbahInput struct {
 	HosbahAppsInput
-	App string `json:"app" doc:"The Hosbah app id"`
+	App  string   `json:"app,omitempty" doc:"A Hosbah app id (or apps)"`
+	Apps []string `json:"apps,omitempty" maxItems:"20" doc:"The Hosbah app ids to link (web, api, mcp…); replaces the linked set"`
 }
 
-// Hosting is the project's linked app with its recent deployments.
+// HostingApp is one linked app with its recent deployments. Error says why Hosbah did not answer
+// for it (App is then the last synced copy).
+type HostingApp struct {
+	App         HosbahApp          `json:"app"`
+	Deployments []HosbahDeployment `json:"deployments"`
+	Error       string             `json:"error,omitempty"`
+}
+
+// Hosting is the project's linked apps. App and Deployments repeat the first app's.
 type Hosting struct {
 	App         HosbahApp          `json:"app"`
 	Deployments []HosbahDeployment `json:"deployments"`
+	Apps        []HostingApp       `json:"apps"`
+}
+
+// PortalHostingApp is one linked app as a customer sees it.
+type PortalHostingApp struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Status  string   `json:"status"`
+	Domains []string `json:"domains"`
 }
 
 // PortalHosting is what a customer sees of the hosting. Connected=false when the project has none.
+// Name, Status and Domains repeat the first app's.
 type PortalHosting struct {
-	Connected bool     `json:"connected"`
-	Name      string   `json:"name,omitempty"`
-	Status    string   `json:"status,omitempty"`
-	Domains   []string `json:"domains"`
-	CanOpen   bool     `json:"can_open" doc:"The caller may open the hosting panel (the project's client contacts, managers and up)"`
+	Connected bool               `json:"connected"`
+	Name      string             `json:"name,omitempty"`
+	Status    string             `json:"status,omitempty"`
+	Domains   []string           `json:"domains"`
+	Apps      []PortalHostingApp `json:"apps"`
+	CanOpen   bool               `json:"can_open" doc:"The caller may open the hosting panel (the project's client contacts, managers and up)"`
 }
 
 // PanelLink is a one-time auto-login link into the hosting panel.
@@ -188,8 +213,8 @@ func (c *hosbahClient) mint(ctx context.Context, app, label string) (string, *Ho
 	return out.Token, &a, nil
 }
 
-func (c *hosbahClient) app(ctx context.Context) (*Hosting, error) {
-	var out Hosting
+func (c *hosbahClient) app(ctx context.Context) (*HostingApp, error) {
+	var out HostingApp
 	if err := c.do(ctx, http.MethodGet, "/api/integrations/app", nil, &out); err != nil {
 		return nil, err
 	}
@@ -216,27 +241,116 @@ func (sv *Service) hosbah(base, token string) *hosbahClient {
 	return &hosbahClient{base: base, token: token, http: sv.HTTP}
 }
 
-// appClient opens the stored app token of r.
-func (sv *Service) appClient(r *row) (*hosbahClient, error) {
-	tok, err := sv.secret(r)
+// hosbahLinked is one app being linked, with its app token.
+type hosbahLinked struct {
+	Token string
+	App   HosbahApp
+}
+
+// hosbahTokens opens r's app tokens by app id.
+func (sv *Service) hosbahTokens(r *row) (map[string]string, error) {
+	raw, err := sv.secret(r)
 	if err != nil {
 		return nil, err
 	}
-	base := r.cfg("base_url")
-	if base == "" {
-		return nil, invalid("the Hosbah integration has no base_url — reconnect it")
+	if !strings.HasPrefix(raw, "{") {
+		return map[string]string{r.cfg("app_id"): raw}, nil // linked before MH-1194
 	}
-	return sv.hosbah(base, tok), nil
+	var m map[string]string
+	if json.Unmarshal([]byte(raw), &m) != nil || len(m) == 0 {
+		return nil, invalid("the stored Hosbah tokens cannot be read — reconnect Hosbah")
+	}
+	return m, nil
 }
 
-func hosbahConfig(base string, a *HosbahApp) map[string]any {
-	name := a.Name
-	if a.Title != nil && strings.TrimSpace(*a.Title) != "" {
-		name = *a.Title
+// hosbahLinkedApps is r's linked apps in link order, as last synced.
+func hosbahLinkedApps(r *row) []HosbahApp {
+	var out []HosbahApp
+	if l, ok := r.Config["apps"].([]any); ok && len(l) > 0 {
+		b, _ := json.Marshal(l)
+		_ = json.Unmarshal(b, &out)
 	}
-	return map[string]any{"base_url": base, "app_id": a.ID, "app_name": a.Name, "app_title": name,
-		"server_id": a.ServerID, "server_name": a.ServerName, "panel_url": a.PanelURL,
-		"app_status": a.Status, "domains": a.Domains}
+	if len(out) == 0 && r.cfg("app_id") != "" { // linked before MH-1194
+		a := HosbahApp{ID: r.cfg("app_id"), Name: r.cfg("app_name"), Status: r.cfg("app_status"), ServerID: r.cfg("server_id"),
+			ServerName: r.cfg("server_name"), PanelURL: r.cfg("panel_url")}
+		if t := r.cfg("app_title"); t != "" {
+			a.Title = &t
+		}
+		if d, ok := r.Config["domains"].([]any); ok {
+			for _, v := range d {
+				if s, ok := v.(string); ok {
+					a.Domains = append(a.Domains, s)
+				}
+			}
+		}
+		out = []HosbahApp{a}
+	}
+	return normApps(out)
+}
+
+// appClient opens the app token of one of r's apps: app (an id), or the first when empty.
+func (sv *Service) appClient(r *row, app string) (*hosbahClient, *HosbahApp, error) {
+	base := r.cfg("base_url")
+	if base == "" {
+		return nil, nil, invalid("the Hosbah integration has no base_url — reconnect it")
+	}
+	apps := hosbahLinkedApps(r)
+	var a *HosbahApp
+	for i := range apps {
+		if app == "" || apps[i].ID == app {
+			a = &apps[i]
+			break
+		}
+	}
+	if a == nil {
+		return nil, nil, notFound("hosting app")
+	}
+	toks, err := sv.hosbahTokens(r)
+	if err != nil {
+		return nil, nil, err
+	}
+	tok := toks[a.ID]
+	if tok == "" {
+		return nil, nil, invalid("no app token is stored for %s — reconnect Hosbah", appTitle(a))
+	}
+	return sv.hosbah(base, tok), a, nil
+}
+
+// appTitle is the app's title, or its name.
+func appTitle(a *HosbahApp) string {
+	if a.Title != nil && strings.TrimSpace(*a.Title) != "" {
+		return *a.Title
+	}
+	return a.Name
+}
+
+// hosbahConfig is the row's config for the linked apps (the first mirrored at the top level).
+func hosbahConfig(base string, apps []HosbahApp) map[string]any {
+	apps = normApps(apps)
+	cfg := map[string]any{"base_url": base, "apps": apps}
+	if len(apps) > 0 {
+		a := &apps[0]
+		cfg["app_id"], cfg["app_name"], cfg["app_title"] = a.ID, a.Name, appTitle(a)
+		cfg["server_id"], cfg["server_name"], cfg["panel_url"] = a.ServerID, a.ServerName, a.PanelURL
+		cfg["app_status"], cfg["domains"] = a.Status, a.Domains
+	}
+	return cfg
+}
+
+// pickedApps is the app ids of a link request, in order and once each.
+func pickedApps(app string, apps []string) []string {
+	if len(apps) == 0 && strings.TrimSpace(app) != "" {
+		apps = []string{app}
+	}
+	out := make([]string, 0, len(apps))
+	seen := map[string]bool{}
+	for _, a := range apps {
+		if a = strings.TrimSpace(a); a != "" && !seen[a] {
+			seen[a] = true
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 // ---- connect -------------------------------------------------------------------------
@@ -274,69 +388,142 @@ func (sv *Service) HosbahApps(ctx context.Context, projectRef string, in HosbahA
 	return l, nil
 }
 
-// ConnectHosbah links the project to one Hosbah app after a CircleXO sign-in (manager+): Hosbah
-// mints a token scoped to that app, which is stored sealed.
+// ConnectHosbah links the project to Hosbah apps after a CircleXO sign-in (manager+): Hosbah
+// mints a token scoped to each app, stored sealed. The apps picked replace the linked set.
 func (sv *Service) ConnectHosbah(ctx context.Context, projectRef string, in HosbahInput) (*Integration, error) {
-	app := strings.TrimSpace(in.App)
-	if app == "" || len(app) > 100 {
-		return nil, invalid("app is required (the Hosbah app id)")
+	apps := pickedApps(in.App, in.Apps)
+	if len(apps) == 0 {
+		return nil, invalid("apps is required (the Hosbah app ids)")
+	}
+	for _, a := range apps {
+		if len(a) > 100 {
+			return nil, invalid("%q is not a Hosbah app id", a)
+		}
 	}
 	s, p, c, err := sv.pendingClient(ctx, projectRef, in.Pending)
 	if err != nil {
 		return nil, err
 	}
-	appTok, a, err := c.mint(ctx, app, "Mahaam · "+p.Name)
-	if err != nil {
-		return nil, upstream(err)
+	links := make([]hosbahLinked, 0, len(apps))
+	for _, app := range apps {
+		tok, a, err := c.mint(ctx, app, "Mahaam · "+p.Name)
+		if err != nil {
+			for _, l := range links { // don't leave the ones already minted behind
+				sv.revokeToken(ctx, c.base, l.Token, "")
+			}
+			return nil, upstream(err)
+		}
+		links = append(links, hosbahLinked{Token: tok, App: *a})
 	}
-	return sv.linkHosbah(ctx, s, p.ID, c.base, appTok, a)
+	return sv.linkHosbah(ctx, s, p.ID, c.base, links)
 }
 
-// linkHosbah stores the app token for the project. Relinking revokes the previous app token.
-func (sv *Service) linkHosbah(ctx context.Context, s *tenant.Scope, projectID, base, appTok string, a *HosbahApp) (*Integration, error) {
+// linkHosbah stores the apps and their tokens for the project. Relinking revokes the previous app
+// tokens that are not kept.
+func (sv *Service) linkHosbah(ctx context.Context, s *tenant.Scope, projectID, base string, links []hosbahLinked) (*Integration, error) {
+	if len(links) == 0 {
+		return nil, invalid("Hosbah linked no app")
+	}
 	prev, err := sv.load(ctx, sv.DB, s.WorkspaceID, projectID, "hosbah")
 	if err != nil && !isNotFound(err) {
 		return nil, err
 	}
-	out, err := sv.connect(ctx, s, projectID, "hosbah", hosbahConfig(base, a), &appTok, "an app token")
+	toks := make(map[string]string, len(links))
+	apps := make([]HosbahApp, 0, len(links))
+	keep := map[string]bool{}
+	for _, l := range links {
+		toks[l.App.ID] = l.Token
+		apps = append(apps, l.App)
+		keep[l.Token] = true
+	}
+	b, _ := json.Marshal(toks)
+	secret := string(b)
+	out, err := sv.connect(ctx, s, projectID, "hosbah", hosbahConfig(base, apps), &secret, "an app token")
 	if err != nil {
 		return nil, err
 	}
-	if prev != nil && prev.Secret != nil {
-		if old, err := sv.secret(prev); err == nil && old != appTok {
-			sv.revokeHosbah(ctx, prev)
+	if prev != nil && prev.HasSecret {
+		if old, err := sv.hosbahTokens(prev); err == nil {
+			for _, tok := range old {
+				if !keep[tok] {
+					sv.revokeToken(ctx, prev.cfg("base_url"), tok, prev.ID)
+				}
+			}
 		}
 	}
 	return out, nil
 }
 
-// revokeHosbah asks Hosbah to drop r's app token. Best-effort: a dead Hosbah must not keep a
-// project from disconnecting.
+// revokeHosbah asks Hosbah to drop every app token of r. Best-effort: a dead Hosbah must not keep
+// a project from disconnecting.
 func (sv *Service) revokeHosbah(ctx context.Context, r *row) {
-	c, err := sv.appClient(r)
+	toks, err := sv.hosbahTokens(r)
 	if err != nil {
 		return
 	}
-	if err := c.do(ctx, http.MethodDelete, "/api/integrations/app/token", nil, nil); err != nil {
-		sv.Log.Warn("hosbah: revoke app token", "integration", r.ID, "err", err)
+	for _, tok := range toks {
+		sv.revokeToken(ctx, r.cfg("base_url"), tok, r.ID)
 	}
 }
 
-// syncHosbah refreshes the app's name, status and domains on the row.
+func (sv *Service) revokeToken(ctx context.Context, base, tok, integration string) {
+	if base == "" || tok == "" {
+		return
+	}
+	if err := sv.hosbah(base, tok).do(ctx, http.MethodDelete, "/api/integrations/app/token", nil, nil); err != nil && sv.Log != nil {
+		sv.Log.Warn("hosbah: revoke app token", "integration", integration, "err", err)
+	}
+}
+
+// fetchApps reads every linked app live from Hosbah, at once. An app Hosbah does not answer for
+// keeps its last synced copy and says why.
+func (sv *Service) fetchApps(ctx context.Context, r *row) []HostingApp {
+	apps := hosbahLinkedApps(r)
+	out := make([]HostingApp, len(apps))
+	var wg sync.WaitGroup
+	for i := range apps {
+		out[i] = HostingApp{App: apps[i], Deployments: []HosbahDeployment{}}
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			c, _, err := sv.appClient(r, apps[i].ID)
+			var h *HostingApp
+			if err == nil {
+				h, err = c.app(ctx)
+			}
+			if err != nil {
+				out[i].Error = err.Error()
+				return
+			}
+			out[i] = *h
+		}(i)
+	}
+	wg.Wait()
+	return out
+}
+
+// syncHosbah refreshes the apps' names, statuses and domains on the row.
 func (sv *Service) syncHosbah(ctx context.Context, s *tenant.Scope, r *row, res *SyncResult) error {
-	c, err := sv.appClient(r)
-	if err != nil {
+	fetched := sv.fetchApps(ctx, r)
+	apps := make([]HosbahApp, len(fetched))
+	var failed error
+	for i, h := range fetched {
+		apps[i] = h.App
+		if h.Error == "" {
+			res.Fetched++
+		} else if failed == nil {
+			failed = &UpstreamError{Status: http.StatusBadGateway, Msg: h.Error}
+		}
+	}
+	if res.Fetched == 0 && failed != nil {
+		return failed
+	}
+	cfg, _ := json.Marshal(hosbahConfig(r.cfg("base_url"), apps))
+	if _, err := sv.DB.ExecContext(ctx, `UPDATE project_integrations SET config = $3::jsonb WHERE workspace_id = $1 AND id = $2`,
+		s.WorkspaceID, r.ID, string(cfg)); err != nil {
 		return err
 	}
-	h, err := c.app(ctx)
-	if err != nil {
-		return err
-	}
-	res.Fetched = 1
-	cfg, _ := json.Marshal(hosbahConfig(r.cfg("base_url"), &h.App))
-	_, err = sv.DB.ExecContext(ctx, `UPDATE project_integrations SET config = $3::jsonb WHERE workspace_id = $1 AND id = $2`,
-		s.WorkspaceID, r.ID, string(cfg))
-	return err
+	return failed
 }
 
 // ---- hosting -------------------------------------------------------------------------
@@ -353,7 +540,7 @@ func (sv *Service) hostingRow(ctx context.Context, s *tenant.Scope, projectID st
 	return r, nil
 }
 
-// Hosting returns the linked app live from Hosbah (members+).
+// Hosting returns the linked apps live from Hosbah (members+).
 func (sv *Service) Hosting(ctx context.Context, projectRef string) (*Hosting, error) {
 	s, p, err := sv.project(ctx, projectRef, authz.IntegrationsRead)
 	if err != nil {
@@ -363,19 +550,22 @@ func (sv *Service) Hosting(ctx context.Context, projectRef string) (*Hosting, er
 	if err != nil {
 		return nil, err
 	}
-	c, err := sv.appClient(r)
-	if err != nil {
-		return nil, err
+	apps := sv.fetchApps(ctx, r)
+	if len(apps) == 0 {
+		return nil, invalid("no Hosbah app is linked — reconnect Hosbah")
 	}
-	h, err := c.app(ctx)
-	if err != nil {
-		return nil, upstream(err)
+	ok := false
+	for _, a := range apps {
+		ok = ok || a.Error == ""
 	}
-	return h, nil
+	if !ok {
+		return nil, upstream(&UpstreamError{Status: http.StatusBadGateway, Msg: apps[0].Error})
+	}
+	return &Hosting{App: apps[0].App, Deployments: apps[0].Deployments, Apps: apps}, nil
 }
 
-// HostingDeploy queues a deploy of the linked app (manager+).
-func (sv *Service) HostingDeploy(ctx context.Context, projectRef string) (*HosbahDeployment, error) {
+// HostingDeploy queues a deploy of one linked app, app (an id) or the first (manager+).
+func (sv *Service) HostingDeploy(ctx context.Context, projectRef, app string) (*HosbahDeployment, error) {
 	s, p, err := sv.project(ctx, projectRef, authz.IntegrationsManage)
 	if err != nil {
 		return nil, err
@@ -387,7 +577,7 @@ func (sv *Service) HostingDeploy(ctx context.Context, projectRef string) (*Hosba
 	if err != nil {
 		return nil, err
 	}
-	c, err := sv.appClient(r)
+	c, a, err := sv.appClient(r, app)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +588,7 @@ func (sv *Service) HostingDeploy(ctx context.Context, projectRef string) (*Hosba
 		return nil, upstream(err)
 	}
 	_ = work.RecordActivity(ctx, sv.DB, s, work.ActivityEntry{ProjectID: p.ID, Action: "hosting.deployed",
-		SubjectType: "integration", SubjectID: r.ID, Changes: map[string]any{"app": r.cfg("app_name"), "deployment": out.Deployment.Number}})
+		SubjectType: "integration", SubjectID: r.ID, Changes: map[string]any{"app": a.Name, "deployment": out.Deployment.Number}})
 	return &out.Deployment, nil
 }
 
@@ -453,30 +643,21 @@ func (sv *Service) PortalHosting(ctx context.Context, projectRef string) (*Porta
 	if r == nil {
 		return &PortalHosting{Domains: []string{}}, nil
 	}
-	out := &PortalHosting{Connected: true, Name: r.cfg("app_title"), Status: r.cfg("app_status"), Domains: []string{},
-		CanOpen: sv.canOpenPanel(ctx, s, p)}
-	if out.Name == "" {
-		out.Name = r.cfg("app_name")
+	out := &PortalHosting{Connected: true, Domains: []string{}, Apps: []PortalHostingApp{}, CanOpen: sv.canOpenPanel(ctx, s, p)}
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	for _, h := range sv.fetchApps(cctx, r) {
+		out.Apps = append(out.Apps, PortalHostingApp{ID: h.App.ID, Name: appTitle(&h.App), Status: h.App.Status, Domains: h.App.Domains})
 	}
-	if d, ok := r.Config["domains"].([]any); ok {
-		for _, v := range d {
-			if str, ok := v.(string); ok {
-				out.Domains = append(out.Domains, str)
-			}
-		}
-	}
-	if c, err := sv.appClient(r); err == nil {
-		cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-		if h, err := c.app(cctx); err == nil {
-			out.Status, out.Domains = h.App.Status, h.App.Domains
-		}
+	if len(out.Apps) > 0 {
+		out.Name, out.Status, out.Domains = out.Apps[0].Name, out.Apps[0].Status, out.Apps[0].Domains
 	}
 	return out, nil
 }
 
-// PortalHostingPanel mints a one-time link that signs the caller into the app's hosting panel.
-func (sv *Service) PortalHostingPanel(ctx context.Context, projectRef, locale string) (*PanelLink, error) {
+// PortalHostingPanel mints a one-time link that signs the caller into one linked app's hosting
+// panel: app (an id), or the first.
+func (sv *Service) PortalHostingPanel(ctx context.Context, projectRef, locale, app string) (*PanelLink, error) {
 	s, p, r, err := sv.portalHostingRow(ctx, projectRef)
 	if err != nil {
 		return nil, err
@@ -494,7 +675,7 @@ func (sv *Service) PortalHostingPanel(ctx context.Context, projectRef, locale st
 	if locale != "ar" {
 		locale = "en"
 	}
-	c, err := sv.appClient(r)
+	c, a, err := sv.appClient(r, app)
 	if err != nil {
 		return nil, err
 	}
@@ -507,7 +688,7 @@ func (sv *Service) PortalHostingPanel(ctx context.Context, projectRef, locale st
 		return nil, upstream(errors.New("Hosbah did not return a panel link"))
 	}
 	_ = work.RecordActivity(ctx, sv.DB, s, work.ActivityEntry{ProjectID: p.ID, Action: "hosting.panel_opened",
-		SubjectType: "integration", SubjectID: r.ID, Changes: map[string]any{"app": r.cfg("app_name")}})
+		SubjectType: "integration", SubjectID: r.ID, Changes: map[string]any{"app": a.Name}})
 	return &out, nil
 }
 

@@ -9,10 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fadymondy/mahaam/internal/secretbox"
 	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
-// fakeHosbah serves the /api/integrations contract with one user token and one app.
+// fakeHosbah serves the /api/integrations contract with one user token and two apps: a1 (token
+// hba_minted) and a2 (token hba_web). The code "multi" picks both (MH-1194).
 func fakeHosbah(t *testing.T) *httptest.Server {
 	t.Helper()
 	app := `{"id":"a1","name":"shop","title":"Shop","status":"running","server_id":"s1","server_name":"edge","domains":["shop.example.com"],"panel_url":"https://h.example/en/panel/s1/apps/a1"}`
@@ -20,6 +22,7 @@ func fakeHosbah(t *testing.T) *httptest.Server {
 		auth := r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
 		user, appTok := auth == "Bearer hbu_good", auth == "Bearer hba_minted"
+		web := `{"id":"a2","name":"web","status":"running","server_id":"s1","domains":["web.example.com"]}`
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/oauth/token":
 			_ = r.ParseForm()
@@ -28,12 +31,19 @@ func fakeHosbah(t *testing.T) *httptest.Server {
 				f.Get("redirect_uri") != "https://mahaam.test"+HosbahCallbackPath || f.Get("grant_type") != "authorization_code" {
 				t.Errorf("token form: %v", f)
 			}
-			if f.Get("code") != "good" {
+			if f.Get("code") != "good" && f.Get("code") != "multi" {
 				w.WriteHeader(http.StatusBadRequest)
 				_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
 				return
 			}
+			if f.Get("code") == "multi" {
+				_, _ = w.Write([]byte(`{"access_token":"hba_web","token_type":"Bearer","app":` + web +
+					`,"apps":[{"access_token":"hba_web","app":` + web + `},{"access_token":"hba_minted"}]}`))
+				return
+			}
 			_, _ = w.Write([]byte(`{"access_token":"hba_minted","token_type":"Bearer","app":` + app + `}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/integrations/app" && auth == "Bearer hba_web":
+			_, _ = w.Write([]byte(`{"app":` + web + `,"deployments":[]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/api/integrations/apps" && user:
 			_, _ = w.Write([]byte(`{"apps":[` + app + `,{"id":"a2","name":"bare","status":"new","server_id":"s1"}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/api/integrations/apps/a1/tokens" && user:
@@ -79,7 +89,7 @@ func TestHosbahClient(t *testing.T) {
 	if err != nil || tok != "hba_minted" || a.ID != "a1" {
 		t.Fatalf("mint = %q %+v %v", tok, a, err)
 	}
-	cfg := hosbahConfig(srv.URL, a)
+	cfg := hosbahConfig(srv.URL, []HosbahApp{*a})
 	if cfg["app_title"] != "Shop" || cfg["server_id"] != "s1" || cfg["base_url"] != srv.URL {
 		t.Fatalf("config = %v", cfg)
 	}
@@ -177,16 +187,100 @@ func TestHosbahCodeToken(t *testing.T) {
 	t.Setenv("HOSBAH_CLIENT_SECRET", "s3cret")
 	t.Setenv("WEB_URL", "https://mahaam.test")
 	sv := &Service{HTTP: srv.Client()}
-	tok, app, err := sv.hosbahCodeToken(context.Background(), "good", "verifier")
-	if err != nil || tok != "hba_minted" || app.ID != "a1" || len(app.Domains) != 1 {
-		t.Fatalf("code token = %q %+v %v", tok, app, err)
+	links, err := sv.hosbahCodeToken(context.Background(), "good", "verifier")
+	if err != nil || len(links) != 1 || links[0].Token != "hba_minted" || links[0].App.ID != "a1" || len(links[0].App.Domains) != 1 {
+		t.Fatalf("code token = %+v %v", links, err)
 	}
-	if _, _, err := sv.hosbahCodeToken(context.Background(), "bad", "verifier"); err == nil || !strings.Contains(err.Error(), "invalid_grant") {
+	// Several apps: one token each, in the consent's order; an app Hosbah left out is fetched.
+	links, err = sv.hosbahCodeToken(context.Background(), "multi", "verifier")
+	if err != nil || len(links) != 2 || links[0].Token != "hba_web" || links[0].App.ID != "a2" ||
+		links[1].Token != "hba_minted" || links[1].App.ID != "a1" {
+		t.Fatalf("multi code token = %+v %v", links, err)
+	}
+	if _, err := sv.hosbahCodeToken(context.Background(), "bad", "verifier"); err == nil || !strings.Contains(err.Error(), "invalid_grant") {
 		t.Errorf("a refused code: %v", err)
 	}
 	t.Setenv("HOSBAH_CLIENT_SECRET", "")
-	if _, _, err := sv.hosbahCodeToken(context.Background(), "good", "verifier"); err == nil {
+	if _, err := sv.hosbahCodeToken(context.Background(), "good", "verifier"); err == nil {
 		t.Error("no client credentials must refuse")
+	}
+}
+
+// TestHosbahLinkedApps covers a row linked to several apps (MH-1194) and one linked before it
+// (a bare token for config.app_id).
+func TestHosbahLinkedApps(t *testing.T) {
+	srv := fakeHosbah(t)
+	defer srv.Close()
+	ctx := context.Background()
+	sv := &Service{HTTP: srv.Client()}
+	sealed := func(s string) *string {
+		v, err := secretbox.Seal([]byte(s))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return &v
+	}
+	toRow := func(cfg map[string]any, secret *string) *row {
+		b, _ := json.Marshal(cfg)
+		r := &row{Secret: secret}
+		_ = json.Unmarshal(b, &r.Config) // as scanRow reads it back
+		r.HasSecret = secret != nil
+		return r
+	}
+	a1 := HosbahApp{ID: "a1", Name: "shop", Status: "running", ServerID: "s1", Domains: []string{"shop.example.com"}}
+	a2 := HosbahApp{ID: "a2", Name: "web", Status: "new", ServerID: "s1"}
+	multi := toRow(hosbahConfig(srv.URL, []HosbahApp{a2, a1}), sealed(`{"a1":"hba_minted","a2":"hba_web"}`))
+	if multi.cfg("app_id") != "a2" {
+		t.Errorf("the first app is mirrored at the top level: %v", multi.Config)
+	}
+	if got := hosbahLinkedApps(multi); len(got) != 2 || got[0].ID != "a2" || got[1].ID != "a1" || got[0].Domains == nil {
+		t.Fatalf("linked apps = %+v", got)
+	}
+	if _, a, err := sv.appClient(multi, ""); err != nil || a.ID != "a2" {
+		t.Errorf("no app picks the first: %+v %v", a, err)
+	}
+	if c, a, err := sv.appClient(multi, "a1"); err != nil || a.ID != "a1" || c.token != "hba_minted" {
+		t.Errorf("app a1: %+v %v", a, err)
+	}
+	if _, _, err := sv.appClient(multi, "a9"); err == nil {
+		t.Error("an app that is not linked must be refused")
+	}
+	got := sv.fetchApps(ctx, multi)
+	if len(got) != 2 || got[0].Error != "" || got[0].App.Status != "running" || got[1].Error != "" || len(got[1].Deployments) != 1 {
+		t.Fatalf("fetch = %+v", got)
+	}
+
+	legacy := toRow(hosbahConfig(srv.URL, []HosbahApp{a1}), sealed("hba_minted"))
+	delete(legacy.Config, "apps")
+	if toks, err := sv.hosbahTokens(legacy); err != nil || toks["a1"] != "hba_minted" || len(toks) != 1 {
+		t.Fatalf("legacy tokens = %v %v", toks, err)
+	}
+	if got := hosbahLinkedApps(legacy); len(got) != 1 || got[0].ID != "a1" || len(got[0].Domains) != 1 {
+		t.Fatalf("legacy apps = %+v", got)
+	}
+
+	// One app Hosbah no longer answers for keeps its stored copy and says why.
+	broken := toRow(hosbahConfig(srv.URL, []HosbahApp{a1, a2}), sealed(`{"a1":"hba_minted","a2":"hba_revoked"}`))
+	got = sv.fetchApps(ctx, broken)
+	if got[0].Error != "" || got[1].Error == "" || got[1].App.ID != "a2" {
+		t.Fatalf("partial fetch = %+v", got)
+	}
+}
+
+func TestPickedApps(t *testing.T) {
+	for _, c := range []struct {
+		app  string
+		apps []string
+		want string
+	}{
+		{"a1", nil, "a1"},
+		{"", []string{"b", " a ", "b", ""}, "b,a"},
+		{"x", []string{"a"}, "a"},
+		{" ", nil, ""},
+	} {
+		if got := strings.Join(pickedApps(c.app, c.apps), ","); got != c.want {
+			t.Errorf("pickedApps(%q, %v) = %q, want %q", c.app, c.apps, got, c.want)
+		}
 	}
 }
 

@@ -149,13 +149,16 @@ func Register(api huma.API, a *app.App) {
 	})
 
 	const htag = "Hosting"
-	reg(api, sv, http.MethodGet, "/api/w/projects/{project}/hosting", "w-hosting", "The project's Hosbah app", htag, 0,
+	reg(api, sv, http.MethodGet, "/api/w/projects/{project}/hosting", "w-hosting", "The project's Hosbah apps", htag, 0,
 		func(ctx context.Context, in *P) (*Hosting, error) {
 			return sv.Hosting(ctx, in.Project)
 		})
-	reg(api, sv, http.MethodPost, "/api/w/projects/{project}/hosting/deploy", "w-hosting-deploy", "Deploy the project's Hosbah app", htag, http.StatusAccepted,
-		func(ctx context.Context, in *P) (*HosbahDeployment, error) {
-			return sv.HostingDeploy(ctx, in.Project)
+	reg(api, sv, http.MethodPost, "/api/w/projects/{project}/hosting/deploy", "w-hosting-deploy", "Deploy one of the project's Hosbah apps", htag, http.StatusAccepted,
+		func(ctx context.Context, in *struct {
+			P
+			App string `query:"app" doc:"The Hosbah app id (default: the first linked app)"`
+		}) (*HosbahDeployment, error) {
+			return sv.HostingDeploy(ctx, in.Project, in.App)
 		})
 	reg(api, sv, http.MethodGet, "/api/w/portal/projects/{project}/hosting", "w-portal-hosting", "The project's hosting, as its customer sees it", htag, 0,
 		func(ctx context.Context, in *P) (*PortalHosting, error) {
@@ -166,9 +169,10 @@ func Register(api huma.API, a *app.App) {
 			P
 			Body struct {
 				Locale string `json:"locale,omitempty" doc:"en or ar"`
+				App    string `json:"app,omitempty" doc:"The Hosbah app id (default: the first linked app)"`
 			}
 		}) (*PanelLink, error) {
-			return sv.PortalHostingPanel(ctx, in.Project, in.Body.Locale)
+			return sv.PortalHostingPanel(ctx, in.Project, in.Body.Locale, in.Body.App)
 		})
 
 	const gtag = "GitHub"
