@@ -896,3 +896,101 @@ func TestCircleXODisabled(t *testing.T) {
 	}
 	_ = fmt.Sprint
 }
+
+// MH-1149: deleting the org's workspace in Mahaam is final. The next sign-in does not make a new
+// one; it tells the hub, which shows the app as not installed until it is installed again.
+func TestCircleXONoRecreate(t *testing.T) {
+	s := bootHub(t)
+	org := hubOrg()
+	s.install(org, [2]string{"own-" + rnd(), "owner"})
+	sub, email := "sub-"+rnd(), "keep-"+rnd()+"@example.test"
+	if _, _, err := s.login(sub, email, true, org, "owner", "sid-"+rnd()); err != nil {
+		t.Fatal(err)
+	}
+	ws, _, _ := s.workspaceOf(org)
+
+	// A lost link (the workspace is still there) is restored, not replaced.
+	if _, err := s.a.SysDB.Exec(`DELETE FROM circlexo_org_links WHERE org_id = $1`, org); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.login(sub, email, true, org, "owner", "sid-"+rnd()); err != nil {
+		t.Fatal(err)
+	}
+	if again, _, _ := s.workspaceOf(org); again != ws {
+		t.Fatalf("relink made a new workspace: %s, had %s", again, ws)
+	}
+
+	// The workspace is deleted: the sign-in lands home and creates nothing.
+	if _, err := s.a.SysDB.Exec(`DELETE FROM workspaces WHERE id = $1`, ws); err != nil {
+		t.Fatal(err)
+	}
+	before := s.count(`SELECT count(*) FROM workspaces`)
+	if _, to, err := s.login(sub, email, true, org, "owner", "sid-"+rnd()); err != nil || to != "/" {
+		t.Fatalf("after delete: %q %v", to, err)
+	}
+	if s.count(`SELECT count(*) FROM workspaces`) != before || s.count(`SELECT count(*) FROM circlexo_org_links WHERE org_id = $1`, org) != 0 {
+		t.Fatal("a sign-in re-created the deleted workspace")
+	}
+	s.hub.Lock()
+	t2, still := s.hub.Tenants[org]
+	s.hub.Unlock()
+	if still && t2.Status != "removed" {
+		t.Fatalf("the hub was not told: tenant %q", t2.Status)
+	}
+
+	// Installing again from the hub provisions a fresh one.
+	s.hub.Install(org)
+	if _, _, err := s.login(sub, email, true, org, "owner", "sid-"+rnd()); err != nil {
+		t.Fatal(err)
+	}
+	if fresh, _, _ := s.workspaceOf(org); fresh == ws {
+		t.Fatal("reinstall reused the deleted workspace id")
+	}
+}
+
+// MH-1149: the hub owns the person's name, address, language and timezone; every sign-in and
+// every user.updated copies them onto the linked Mahaam account.
+func TestCircleXOProfileSync(t *testing.T) {
+	s := bootHub(t)
+	sub, email := "sub-"+rnd(), "prof-"+rnd()+"@example.test"
+	id := &circlexo.Claims{Subject: sub, SessionID: "sid-" + rnd(), Raw: map[string]any{
+		"email": email, "email_verified": true, "name": "Hub Name", "locale": "ar", "zoneinfo": "Africa/Cairo",
+	}}
+	if _, err := s.svc.FinishLogin(context.Background(), httptest.NewRecorder(), &oidc.Login{IDClaims: id, AccessClaims: &circlexo.Claims{Subject: sub}}); err != nil {
+		t.Fatal(err)
+	}
+	profile := func() (name, locale, tz, mail string) {
+		t.Helper()
+		err := s.a.SysDB.QueryRow(`SELECT p.name, coalesce(p.locale, ''), coalesce(p.timezone, ''), u.email
+			FROM circlexo_user_links l JOIN users u ON u.id = l.user_id JOIN user_profiles p ON p.user_id = l.user_id
+			WHERE l.subject = $1`, sub).Scan(&name, &locale, &tz, &mail)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	if n, l, z, m := profile(); n != "Hub Name" || l != "ar" || z != "Africa/Cairo" || m != email {
+		t.Fatalf("sign-in sync: %q %q %q %q", n, l, z, m)
+	}
+
+	// A verified new address on the hub moves the account, and the next sign-in still lands in it.
+	moved := "moved-" + rnd() + "@example.test"
+	user := map[string]any{"id": sub, "email": moved, "email_verified": true, "display_name": "Renamed", "locale": "en", "timezone": "Asia/Dubai"}
+	if code := s.event(webhooks.UserUpdated, hubOrg(), map[string]any{"user": user}, "evt-"+rnd()); code != http.StatusOK && code != http.StatusNoContent {
+		t.Fatalf("user.updated: %d", code)
+	}
+	if n, l, z, m := profile(); n != "Renamed" || l != "en" || z != "Asia/Dubai" || m != moved {
+		t.Fatalf("user.updated sync: %q %q %q %q", n, l, z, m)
+	}
+	id.Raw["email"], id.Raw["name"] = moved, "Renamed"
+	if _, err := s.svc.FinishLogin(context.Background(), httptest.NewRecorder(), &oidc.Login{IDClaims: id, AccessClaims: &circlexo.Claims{Subject: sub}}); err != nil {
+		t.Fatalf("sign-in after the address moved: %v", err)
+	}
+
+	// An unverified or taken address is not taken.
+	user["email"], user["email_verified"] = "unverified-"+rnd()+"@example.test", false
+	s.event(webhooks.UserUpdated, hubOrg(), map[string]any{"user": user}, "evt-"+rnd())
+	if _, _, _, m := profile(); m != moved {
+		t.Fatalf("an unverified address replaced the account's: %q", m)
+	}
+}
