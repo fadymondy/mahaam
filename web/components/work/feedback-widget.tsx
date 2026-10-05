@@ -1,7 +1,18 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { BotIcon, CopyIcon, EyeIcon, EyeOffIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
+import {
+  ActivityIcon,
+  BotIcon,
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
+  MessageSquareIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  UsersIcon,
+  type LucideIcon,
+} from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
@@ -13,8 +24,10 @@ import { Badge, Button, Field, FieldLabel, Input, Tabs, TabsList, TabsPanel, Tab
 
 
 import { ConfirmButton } from "@/components/confirm-button"
+import { BrandLogo, LogoTile, STACK_BRAND } from "@/components/work/brand-logos"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 import { errorText, w } from "@/lib/work"
 
 /*
@@ -125,80 +138,121 @@ export function FeedbackWidgetSection({
         <p className="mt-1 text-sm text-muted-foreground">{t("sdk.section.desc")}</p>
       </div>
 
-      <div className="px-6 pb-5">
-        <h3 className="text-sm font-medium mb-2">{t("sdk.contacts.title")}</h3>
-        {!clientId ? (
-          <p className="text-sm text-muted-foreground">{t("sdk.contacts.needClient")}</p>
-        ) : (
-          <ContactManager
-            clientId={clientId}
-            contacts={contacts.data?.contacts ?? []}
-            canManage={canManage}
-            busy={busy}
-            onChange={() => contacts.mutate()}
-            run={run}
-          />
-        )}
-      </div>
+      <div className="grid gap-4 px-6 pb-6">
+        <ProductCard icon={UsersIcon} title={t("sdk.contacts.title")} data="contacts">
+          {!clientId ? (
+            <p className="text-sm text-muted-foreground">{t("sdk.contacts.needClient")}</p>
+          ) : (
+            <ContactManager
+              clientId={clientId}
+              contacts={contacts.data?.contacts ?? []}
+              canManage={canManage}
+              busy={busy}
+              onChange={() => contacts.mutate()}
+              run={run}
+            />
+          )}
+        </ProductCard>
 
-      <div className="px-6 pb-5">
-        <ProductHeader
+        <ProductCard
+          icon={MessageSquareIcon}
           badge={t("sdk.feedback.badge")}
           title={t("sdk.feedback.title")}
           desc={t("sdk.feedback.desc")}
-        />
-        <KeyManager
-          projectId={projectId}
-          keys={keys.data?.keys ?? []}
-          canManage={canManage}
-          busy={busy}
-          onChange={() => keys.mutate()}
-          run={run}
-          copy={copy}
-        />
-      </div>
+          stacks={FEEDBACK_STACKS}
+          data="feedback"
+        >
+          <KeyManager
+            projectId={projectId}
+            keys={keys.data?.keys ?? []}
+            canManage={canManage}
+            busy={busy}
+            onChange={() => keys.mutate()}
+            run={run}
+            copy={copy}
+          />
+        </ProductCard>
 
-      <div className="px-6 pb-6">
-        <ProductHeader
+        <ProductCard
+          icon={ActivityIcon}
           badge={t("sdk.monitor.badge")}
           title={t("sdk.monitor.title")}
           desc={t("sdk.monitor.desc")}
+          stacks={MONITOR_STACKS}
           tone="monitor"
-        />
-        <MonitorKeyManager
-          projectId={projectId}
-          keys={monitorKeys.data?.keys ?? []}
-          canManage={canManage}
-          busy={busy}
-          onChange={() => monitorKeys.mutate()}
-          run={run}
-          copy={copy}
-        />
+          data="monitor"
+        >
+          <MonitorKeyManager
+            projectId={projectId}
+            keys={monitorKeys.data?.keys ?? []}
+            canManage={canManage}
+            busy={busy}
+            onChange={() => monitorKeys.mutate()}
+            run={run}
+            copy={copy}
+          />
+        </ProductCard>
       </div>
     </section>
   )
 }
 
-// The two products sit in one page, so each gets its own labelled header: a badge that
-// says where the code runs (browser vs server) and one line on what it reports.
-function ProductHeader({
+// Portal contacts and the two products each get a card: an icon tile, a badge that says where the
+// code runs (browser vs server), one line on what it reports and the logos of the stacks it installs on.
+function ProductCard({
+  icon: Icon,
   badge,
   title,
   desc,
+  stacks,
   tone = "feedback",
+  data,
+  children,
 }: {
-  badge: string
+  icon: LucideIcon
+  badge?: string
   title: string
-  desc: string
+  desc?: string
+  stacks?: string[]
   tone?: "feedback" | "monitor"
+  data: string
+  children: React.ReactNode
 }) {
+  const { t } = useTranslations()
+  const brands = (stacks ?? []).flatMap((s) => {
+    const b = STACK_BRAND[s]
+    return b ? [{ stack: s, brand: b }] : []
+  })
   return (
-    <div className="mb-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <Badge variant={tone === "monitor" ? "outline" : "neutral"}>{badge}</Badge>
+    <div className="flex min-w-0 flex-col gap-4 rounded-card bg-muted/40 p-4" data-sdk={data}>
+      <div className="flex items-start gap-3">
+        <span
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-lg",
+            tone === "monitor" ? "bg-nq-danger/10 text-nq-danger-text" : "bg-primary/10 text-primary",
+          )}
+        >
+          <Icon className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-medium">{title}</h3>
+            {badge ? <Badge variant={tone === "monitor" ? "outline" : "neutral"}>{badge}</Badge> : null}
+          </div>
+          {desc ? <p className="mt-1 text-caption text-muted-foreground">{desc}</p> : null}
+          {brands.length ? (
+            <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={t("sdk.install.label")}>
+              {brands.map(({ stack, brand }) => (
+                <li key={stack} title={t(`sdk.stack.${stack}`)}>
+                  <LogoTile brand={brand} className="size-7 rounded-md" logoClassName="size-4" />
+                  <span className="sr-only">{t(`sdk.stack.${stack}`)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       </div>
-      <p className="mt-1 text-caption text-muted-foreground">{desc}</p>
+      {children}
     </div>
   )
 }
@@ -767,7 +821,8 @@ function InstallGuides({
       <Tabs defaultValue={available[0]}>
         <TabsList className="flex-wrap">
           {available.map((s) => (
-            <TabsTab key={s} value={s}>
+            <TabsTab key={s} value={s} className="gap-1.5">
+              {STACK_BRAND[s] ? <BrandLogo brand={STACK_BRAND[s]} className="size-4" /> : <BotIcon className="size-4" aria-hidden />}
               {label(s)}
             </TabsTab>
           ))}

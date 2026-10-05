@@ -13,6 +13,7 @@ import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectI
 
 
 import { ConfirmButton } from "@/components/confirm-button"
+import { LogoTile, type Brand } from "@/components/work/brand-logos"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -45,7 +46,7 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
         <h2 className="text-h3">{t("int.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("int.hint")}</p>
       </div>
-      <div className="divide-y divide-line border-t border-border">
+      <div className="grid gap-4 px-6 pb-6 lg:grid-cols-2 2xl:grid-cols-3">
         <GitHubCard projectId={projectId} it={by("github")} canManage={canManage} onChanged={reload} />
         <JiraCard projectId={projectId} it={by("jira")} canManage={canManage} onChanged={reload} />
         <LinearCard projectId={projectId} it={by("linear")} canManage={canManage} onChanged={reload} />
@@ -58,7 +59,27 @@ function statusVariant(s: Integration["status"]) {
   return s === "active" ? "success" : s === "error" ? "danger" : "neutral"
 }
 
-function Header({ name, desc, it, canManage, projectId, onChanged }: { name: string; desc: string; it?: Integration; canManage: boolean; projectId: string; onChanged: () => void }) {
+// One integration as a card: logo, name and status on top, then what it does, the last error, the
+// provider's own setup (children) and, once connected, Sync and Disconnect at the foot.
+function IntegrationCard({
+  brand,
+  name,
+  desc,
+  it,
+  canManage,
+  projectId,
+  onChanged,
+  children,
+}: {
+  brand: Brand
+  name: string
+  desc: string
+  it?: Integration
+  canManage: boolean
+  projectId: string
+  onChanged: () => void
+  children?: React.ReactNode
+}) {
   const { t, formatDate } = useTranslations()
   const ws = useWorkspace()
   const [busy, setBusy] = useState(false)
@@ -76,24 +97,28 @@ function Header({ name, desc, it, canManage, projectId, onChanged }: { name: str
     }
   }
   return (
-    <div className="flex flex-wrap items-start gap-3">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-medium">{name}</h3>
-          {it ? <Badge variant={statusVariant(it.status)}>{t(`int.status.${it.status}`)}</Badge> : <Badge variant="outline">{t("int.notConnected")}</Badge>}
-          {it ? (
-            <span className="text-caption text-muted-foreground">{it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")}</span>
-          ) : null}
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
-        {it?.last_error ? (
-          <p className="mt-2 text-sm text-destructive" dir="auto">
-            {it.last_error}
+    <div className="flex min-w-0 flex-col gap-4 rounded-card bg-muted/40 p-4" data-integration={brand}>
+      <div className="flex items-start gap-3">
+        <LogoTile brand={brand} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-medium">{name}</h3>
+            {it ? <Badge variant={statusVariant(it.status)}>{t(`int.status.${it.status}`)}</Badge> : <Badge variant="outline">{t("int.notConnected")}</Badge>}
+          </div>
+          <p className="text-caption text-muted-foreground">
+            {it ? (it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")) : desc}
           </p>
-        ) : null}
+        </div>
       </div>
+      {it ? <p className="text-sm text-muted-foreground">{desc}</p> : null}
+      {it?.last_error ? (
+        <p className="text-sm text-destructive" dir="auto">
+          {it.last_error}
+        </p>
+      ) : null}
+      {children}
       {it && canManage ? (
-        <div className="flex items-center gap-2">
+        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-line pt-3">
           {it.status !== "pending" && it.status !== "disabled" ? (
             <Button variant="secondary" size="sm" disabled={busy} onClick={sync}>
               <RefreshCwIcon className={busy ? "animate-spin" : undefined} />
@@ -153,8 +178,7 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
   const list = repos.data?.repos ?? []
   const current = it?.config.repo
   return (
-    <div className="space-y-3 px-6 py-4" data-integration="github">
-      <Header name="GitHub" desc={t("int.github.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged} />
+    <IntegrationCard brand="github" name="GitHub" desc={t("int.github.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged}>
       {current ? (
         <p className="text-sm">
           {t("int.github.repo")}:{" "}
@@ -184,7 +208,7 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
           {repos.error && it ? <p className="text-sm text-destructive">{errorText(repos.error, t("common.networkError"))}</p> : null}
         </div>
       ) : null}
-    </div>
+    </IntegrationCard>
   )
 }
 
@@ -254,11 +278,10 @@ function JiraCard({ projectId, it, canManage, onChanged }: { projectId: string; 
   const { busy, save } = useSave(projectId, "jira", onChanged)
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value })
   return (
-    <div className="space-y-3 px-6 py-4" data-integration="jira">
-      <Header name="Jira" desc={t("int.jira.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged} />
+    <IntegrationCard brand="jira" name="Jira" desc={t("int.jira.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged}>
       {canManage ? (
         <form
-          className="grid gap-3 sm:grid-cols-2"
+          className="grid gap-3"
           onSubmit={(e) => {
             e.preventDefault()
             void save(f)
@@ -280,18 +303,18 @@ function JiraCard({ projectId, it, canManage, onChanged }: { projectId: string; 
             <FieldLabel htmlFor="jira-jql">{t("int.jira.jql")}</FieldLabel>
             <Input id="jira-jql" dir="ltr" value={f.jql} onChange={set("jql")} />
           </Field>
-          <Field className="sm:col-span-2">
+          <Field>
             <FieldLabel htmlFor="jira-token">{t("int.jira.token")}</FieldLabel>
             <Input id="jira-token" dir="ltr" type="password" autoComplete="off" placeholder={it?.has_secret ? t("int.keepSecret") : ""} value={f.api_token} onChange={set("api_token")} />
           </Field>
-          <div className="sm:col-span-2">
+          <div>
             <Button variant="primary" type="submit" disabled={busy}>
               {it ? t("int.save") : t("int.connect")}
             </Button>
           </div>
         </form>
       ) : null}
-    </div>
+    </IntegrationCard>
   )
 }
 
@@ -307,11 +330,10 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
   }
   const { busy, save } = useSave(projectId, "linear", onChanged)
   return (
-    <div className="space-y-3 px-6 py-4" data-integration="linear">
-      <Header name="Linear" desc={t("int.linear.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged} />
+    <IntegrationCard brand="linear" name="Linear" desc={t("int.linear.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged}>
       {canManage ? (
         <form
-          className="grid gap-3 sm:grid-cols-2"
+          className="grid gap-3"
           onSubmit={(e) => {
             e.preventDefault()
             void save({ team_id: team, api_key: key })
@@ -325,13 +347,13 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
             <FieldLabel htmlFor="linear-key">{t("int.linear.key")}</FieldLabel>
             <Input id="linear-key" dir="ltr" type="password" autoComplete="off" placeholder={it?.has_secret ? t("int.keepSecret") : "lin_api_…"} value={key} onChange={(e) => setKey(e.target.value)} />
           </Field>
-          <div className="sm:col-span-2">
+          <div>
             <Button variant="primary" type="submit" disabled={busy}>
               {it ? t("int.save") : t("int.connect")}
             </Button>
           </div>
         </form>
       ) : null}
-    </div>
+    </IntegrationCard>
   )
 }
