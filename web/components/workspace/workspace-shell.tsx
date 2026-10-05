@@ -37,6 +37,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  BootSplash,
   ProductMark,
   Sidebar,
   SidebarContent,
@@ -174,10 +175,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   const suspended = suspensionCode(me.error) ?? suspensionCode(list.error) ?? suspensionCode(current.error);
 
+  // Until we know who you are, which workspaces you have and what you can do here, show Nasaq's boot
+  // splash instead of a half-built shell (empty nav, empty header) that looks broken.
+  const booting =
+    !suspended && !me.error && !list.error && !current.error && (!me.data || !list.data || (!!summary && !current.data));
+  if (booting) return <BootSplash mark={<ProductMark brand="mahaam" size={56} title="" />} name={brandName(locale)} />;
+
   let body: ReactNode;
   if (suspended) body = <SuspendedState code={suspended} message={(me.error ?? list.error ?? current.error)?.message} />;
   else if (me.error || list.error) body = <ErrorState error={me.error ?? list.error} />;
-  else if (!me.data || !list.data) body = <ShellSkeleton />;
   else if (!summary)
     body = (
       <NotFoundState
@@ -221,16 +227,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   );
 
   return ctx ? <WorkspaceContext.Provider value={ctx}>{shell}</WorkspaceContext.Provider> : shell;
-}
-
-function ShellSkeleton() {
-  return (
-    <div className="space-y-4 p-6">
-      <Skeleton className="h-8 w-56" />
-      <Skeleton className="h-4 w-96 max-w-full" />
-      <Skeleton className="h-32 w-full" />
-    </div>
-  );
 }
 
 /** The workspace navigation, gated by the caller's permissions. */
