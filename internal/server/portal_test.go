@@ -319,6 +319,45 @@ func TestCustomerPortal(t *testing.T) {
 	if ppl := cust.must("GET", "/api/w/people", nil, 200)["people"].([]any); len(ppl) == 0 {
 		t.Errorf("client people directory is empty")
 	}
+	// Every project tab but Settings (MH-1190): integrations, the vault and billing, on their own
+	// project only, with our cost, the markup and secret values kept back.
+	if code, _ := cust.do("GET", "/api/w/projects/"+prID+"/integrations", nil); code != 200 {
+		t.Errorf("client should read its project's integrations: %d", code)
+	}
+	vault := "/api/w/projects/" + prID + "/vault"
+	cust.must("POST", vault, map[string]any{"kind": "memory", "title": "Brand colours", "body": "Teal and sand."}, 201)
+	sec := owner.must("POST", vault, map[string]any{"kind": "secret", "title": "Production DB", "value": "s3cr3t-pa55"}, 201)["id"].(string)
+	if raw := mustString(t, cust, "GET", vault); !strings.Contains(raw, "Brand colours") || !strings.Contains(raw, "Production DB") || strings.Contains(raw, "s3cr3t-pa55") {
+		t.Errorf("client vault (notes and secret titles, never a value): %s", raw)
+	}
+	if code, _ := cust.do("POST", "/api/w/vault/"+sec+"/reveal", nil); code/100 == 2 {
+		t.Errorf("client revealed a secret: %d", code)
+	}
+	owner.must("POST", "/api/w/projects/"+prID+"/subscriptions", map[string]any{
+		"name": "Hetzner server", "price": "49.00", "cost": "30.00", "currency": "USD", "notes": "internal margin note",
+	}, 201)
+	owner.must("POST", "/api/w/projects/"+prID+"/subscriptions", map[string]any{"name": "Our own tooling", "price": "5.00", "billable": false}, 201)
+	subs := mustString(t, cust, "GET", "/api/w/subscriptions?project="+prID)
+	if !strings.Contains(subs, "Hetzner server") || !strings.Contains(subs, `"price_minor":4900`) || strings.Contains(subs, `"cost_minor":3000`) ||
+		strings.Contains(subs, "internal margin note") || strings.Contains(subs, "Our own tooling") {
+		t.Errorf("client subscriptions (billable, price only): %s", subs)
+	}
+	if code, _ := cust.do("GET", "/api/w/ai-usage?project="+prID, nil); code != 200 {
+		t.Errorf("client should read its project's AI usage: %d", code)
+	}
+	for _, p := range []string{
+		"/api/w/projects/" + otherPr + "/integrations", "/api/w/projects/" + otherPr + "/vault",
+		"/api/w/subscriptions?project=" + otherPr, "/api/w/ai-usage?project=" + otherPr,
+	} {
+		if code, _ := cust.do("GET", p, nil); code != 404 {
+			t.Errorf("client on another project: %s answered %d, want 404", p, code)
+		}
+	}
+	for _, p := range []string{"/api/w/subscriptions", "/api/w/ai-usage", "/api/w/projects/" + prID + "/ai-markup"} {
+		if code, _ := cust.do("GET", p, nil); code/100 == 2 {
+			t.Errorf("client read workspace billing or the markup: %s answered %d", p, code)
+		}
+	}
 	if tm := cust.must("GET", "/api/w/portal/projects/"+prID+"/time", nil, 200); num(tm["used_minutes"]) != 90 {
 		t.Errorf("portal time: %v", tm)
 	}

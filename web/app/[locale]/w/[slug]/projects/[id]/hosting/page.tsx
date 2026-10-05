@@ -12,7 +12,7 @@ import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { intlTag } from "@/lib/i18n-locale"
-import { hostingStatus, hostingVariant, useHosting, useIntegrations, type HosbahDeployment } from "@/lib/integrations"
+import { hostingStatus, hostingVariant, openHostingPanel, useHosting, useIntegrations, type HosbahDeployment } from "@/lib/integrations"
 import { useDocumentTitle } from "@/lib/title"
 import { errorText, w } from "@/lib/work"
 
@@ -80,6 +80,25 @@ export default function ProjectHostingPage() {
   const server = app?.server_name ?? hb!.config.server_name
   const panel = app?.panel_url ?? hb!.config.panel_url
   const deployments = hosting.data?.deployments ?? []
+  // A customer opens the panel through a one-time sign-in link (MH-1190), not the staff panel URL.
+  const isClient = ws.current?.role === "client"
+  const openPanel = async () => {
+    // Open the tab inside the click so it isn't blocked as a popup, then send it to the link.
+    const win = window.open("", "_blank")
+    setBusy(true)
+    try {
+      const link = await openHostingPanel(ws.id, p.id, locale)
+      if (win) {
+        win.opener = null
+        win.location.href = link.url
+      } else window.location.assign(link.url)
+    } catch (err) {
+      win?.close()
+      toast.error(errorText(err, t("common.networkError")))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6" data-hosting>
@@ -127,7 +146,12 @@ export default function ProjectHostingPage() {
           <Button variant="ghost" size="sm" onClick={() => void hosting.mutate()} aria-label={t("hosting.refresh")} title={t("hosting.refresh")}>
             <RefreshCwIcon className={hosting.isValidating ? "animate-spin" : undefined} />
           </Button>
-          {panel ? (
+          {isClient ? (
+            <Button variant="secondary" size="sm" disabled={busy} onClick={() => void openPanel()} data-action="open-hosting-panel">
+              <ExternalLinkIcon />
+              {t("portal.hosting.open")}
+            </Button>
+          ) : panel ? (
             <Button variant="secondary" size="sm" nativeButton={false} render={<a href={panel} target="_blank" rel="noreferrer" />}>
               <ExternalLinkIcon />
               {t("hosting.openInHosbah")}

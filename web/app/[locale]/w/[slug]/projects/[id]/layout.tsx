@@ -129,7 +129,8 @@ function ProjectShell({ children }: { children: ReactNode }) {
                         (x !== "vault" || ws.can("vault:read")) &&
                         (x !== "github" || ws.can("integrations:read")) &&
                         (x !== "hosting" || ws.can("integrations:read")) &&
-                        (x !== "billing" || ws.can("subscriptions:manage")) &&
+                        // A customer sees every tab but Settings (MH-1190); Billing at the prices they pay.
+                        (x !== "billing" || ws.can("subscriptions:manage") || ws.current?.role === "client") &&
                         (x !== "settings" || p.can_manage),
                     ).map((x) => {
                       const Icon = TAB_ICON[x]
