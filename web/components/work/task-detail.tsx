@@ -79,6 +79,7 @@ import { useCommentAuthor, useCommentForm } from "@/components/work/issues/fm/is
 import { MentionTextarea } from "@/components/work/issues/fm/mention-textarea"
 import { copyText } from "@/components/work/issues/fm/shared"
 import { ContextPanel } from "@/components/work/issues/issue-detail"
+import { ColorDot } from "@/components/work/palette"
 import { PersonAvatar, useDirectory, type Directory } from "@/components/work/people"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError } from "@/lib/api"
@@ -417,28 +418,31 @@ function Body({
     />
   )
 
-  // One column for both layouts: title, the property line, the framed description, then the tabs.
+  // One column for both layouts: title, (side-over) the property line, the framed description, then the tabs.
   const tabs = SHEET_TABS.filter((x) => (x === "time" ? ws.can("time:track") : true))
   const main = (
     <>
       {header}
-      <SheetBar
-        d={d}
-        issue={issue}
-        statuses={statuses}
-        dir={dir}
-        can={can}
-        canIssue={canIssue}
-        loggedSeconds={time.seconds}
-        call={call}
-        patch={patch}
-        patchIssue={patchIssue}
-        move={move}
-        labels={labels.data?.labels ?? []}
-        createLabel={ws.can("labels:create") ? createLabel : undefined}
-        actions={<SheetActions d={d} issue={issue} refresh={refresh} page={page} />}
-        footer={deleteButton}
-      />
+      {/* The side-over is narrow: its fields sit in one line under the title. The page has a sidebar for them. */}
+      {page ? null : (
+        <SheetBar
+          d={d}
+          issue={issue}
+          statuses={statuses}
+          dir={dir}
+          can={can}
+          canIssue={canIssue}
+          loggedSeconds={time.seconds}
+          call={call}
+          patch={patch}
+          patchIssue={patchIssue}
+          move={move}
+          labels={labels.data?.labels ?? []}
+          createLabel={ws.can("labels:create") ? createLabel : undefined}
+          actions={<SheetActions d={d} issue={issue} refresh={refresh} />}
+          footer={deleteButton}
+        />
+      )}
       <DescriptionCard bare d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
       {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
 
@@ -492,16 +496,37 @@ function Body({
     )
   }
 
-  // The full page is the side-over in the Nasaq page frame, with progress and the latest activity
-  // alongside on wide screens.
+  // The full page: the side-over's column in the Nasaq page frame, with every property, the item
+  // actions, progress, the agent settings and the latest activity in a sidebar (below on narrow screens).
   return (
     <Page wide data-task-detail={d.key} data-layout={layout}>
       <Trail d={d} />
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-5">{main}</div>
-        <aside className="flex min-w-0 flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-4" data-task-sidebar>
+          <InfoCard
+            d={d}
+            issue={issue}
+            statuses={statuses}
+            dir={dir}
+            labels={labels.data?.labels ?? []}
+            can={can}
+            canIssue={canIssue}
+            done={done}
+            loggedSeconds={time.seconds}
+            call={call}
+            patch={patch}
+            patchIssue={patchIssue}
+            move={move}
+            toggleDone={toggleDone}
+            canToggle={!!(done ? reopenColumn : doneColumn)}
+            createLabel={ws.can("labels:create") ? createLabel : undefined}
+            actions={<SheetActions d={d} issue={issue} refresh={refresh} page />}
+          />
           <ProgressCard d={d} />
+          {issue && ws.can("feedback:write") ? <AgentCard issue={issue} canIssue={canIssue} patchIssue={patchIssue} /> : null}
           <RecentActivity items={activity.data?.activity} loading={activity.isLoading} dir={dir} onAll={() => setSheetTab("activity")} />
+          {deleteButton}
         </aside>
       </div>
     </Page>
@@ -1315,6 +1340,154 @@ function TimeCard({ d, time, dir }: { d: TaskDetailData; time: ReturnType<typeof
   )
 }
 
+// ── the properties sidebar (full page) ────────────────────────────────────────────────────────────────────────
+
+function InfoCard({
+  d,
+  issue,
+  statuses,
+  dir,
+  labels,
+  can,
+  canIssue,
+  done,
+  loggedSeconds,
+  call,
+  patch,
+  patchIssue,
+  move,
+  toggleDone,
+  canToggle,
+  createLabel,
+  actions,
+}: {
+  d: TaskDetailData
+  issue: (Issue & { comments: IssueComment[] }) | undefined
+  statuses: TaskDetailData["status"][]
+  dir: Directory
+  labels: Label[]
+  can: boolean
+  canIssue: boolean
+  done: boolean
+  loggedSeconds: number
+  call: Call
+  patch: (b: Record<string, unknown>) => Promise<boolean>
+  patchIssue: (f: IssuePatch) => Promise<boolean>
+  move: (id: string) => Promise<boolean>
+  toggleDone: () => void
+  canToggle: boolean
+  createLabel?: (name: string) => Promise<Label>
+  /** Copy link and the item menu, beside finish in the card header. */
+  actions?: ReactNode
+}) {
+  const { t } = useTranslations()
+  const ws = useWorkspace()
+  const overdue = isOverdue(d.due_at, d.completed_at)
+  const status = statuses.find((s) => s.id === d.status_id)
+
+  return (
+    <Card
+      title={t("td.info")}
+      action={
+        <div className="flex items-center gap-1">
+          {can && canToggle ? (
+            <Button variant={done ? "secondary" : "primary"} size="sm" onClick={toggleDone} data-finish-task>
+              <CheckIcon />
+              {done ? t("td.reopenTask") : t("td.finish")}
+            </Button>
+          ) : null}
+          {actions}
+        </div>
+      }
+    >
+      <dl className="flex flex-col">
+        <InfoRow label={t("task.status")} htmlFor="td-status">
+          <div className={rowControl}>
+            <StatusSelect id="td-status" statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
+          </div>
+        </InfoRow>
+        <InfoRow label={t("task.priority")} htmlFor="td-priority">
+          <div className={rowControl}>
+            <PrioritySelect id="td-priority" value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
+          </div>
+        </InfoRow>
+        <InfoRow label={t("td.project")}>
+          <TaskProjectAvatar project={d.project} className="size-5 text-[0.55rem]" />
+          <span className="truncate text-sm">{d.project.name}</span>
+        </InfoRow>
+        <InfoRow label={t("td.list")}>
+          <ColorDot color={status?.color} />
+          <span className="truncate text-sm">{status?.name ?? "—"}</span>
+        </InfoRow>
+        <InfoRow label={t("task.assignees")}>
+          <MemberPicker
+            dir={dir}
+            selected={d.assignee_ids}
+            disabled={!can}
+            onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/assignees`, { user_ids: ids }))}
+          />
+        </InfoRow>
+        <InfoRow label={t("task.due")} htmlFor="td-due">
+          <DateField id="td-due" value={dayKey(d.due_at)} disabled={!can} tone={overdue ? "danger" : undefined} onChange={(v) => void patch({ due_at: v ?? "" })} />
+        </InfoRow>
+        <InfoRow label={t("task.estimate")} htmlFor="td-estimate">
+          <EstimateField d={d} can={can} patch={patch} />
+        </InfoRow>
+        {ws.can("time:track") ? (
+          <InfoRow label={t("td.logged")}>
+            <ClockIcon className="size-4 shrink-0 text-muted-foreground" />
+            <Ltr className="text-sm tabular-nums">{loggedSeconds ? hm(loggedSeconds) : "—"}</Ltr>
+            {!d.project.archived ? <StartTimerButton task={{ id: d.id, key: d.key, title: d.title }} variant="icon" className="ms-auto" /> : null}
+          </InfoRow>
+        ) : null}
+        {issue ? (
+          <>
+            <InfoRow label={t("issues.typeLabel")} htmlFor="td-type">
+              <div className={rowControl}>
+                <SimpleSelect
+                  id="td-type"
+                  value={issue.issue_type}
+                  disabled={!canIssue}
+                  items={ISSUE_TYPES.map((x) => ({ value: x, label: t(`issues.type.${x}`) }))}
+                  onChange={(v) => void patchIssue({ issue_type: v as IssueType })}
+                />
+              </div>
+            </InfoRow>
+            <InfoRow label={t("td.issuePriority")} htmlFor="td-ipriority">
+              <div className={rowControl}>
+                <SimpleSelect
+                  id="td-ipriority"
+                  value={issue.priority}
+                  disabled={!canIssue}
+                  items={ISSUE_PRIORITIES.map((x) => ({ value: x, label: t(`issues.priority.${x}`) }))}
+                  onChange={(v) => void patchIssue({ priority: v as IssuePriority })}
+                />
+              </div>
+            </InfoRow>
+          </>
+        ) : null}
+        <InfoRow label={t("task.labels")}>
+          {ws.can("labels:read") || can ? (
+            <div className={rowControl}>
+              <LabelPicker
+                labels={labels}
+                selected={d.label_ids}
+                disabled={!can}
+                onCreate={createLabel}
+                onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/labels`, { label_ids: ids }))}
+              />
+            </div>
+          ) : (
+            <div className="flex min-w-0 flex-wrap items-center gap-1 py-1">
+              {d.label_ids.length ? <LabelChips ids={d.label_ids} labels={labels} /> : <span className="text-sm text-muted-foreground">{t("task.noLabels")}</span>}
+            </div>
+          )}
+        </InfoRow>
+      </dl>
+    </Card>
+  )
+}
+
 /** The task's project as its avatar; the task payload has no avatar, so it comes from the (cached) project list. */
 function TaskProjectAvatar({ project, className }: { project: TaskDetailData["project"]; className?: string }) {
   const ws = useWorkspace()
@@ -1512,15 +1685,17 @@ export function TaskSheetSkeleton({ page }: { page?: boolean } = {}) {
         </div>
       </div>
       <Skeleton className="ms-12 h-4 w-20" />
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-8 w-36 rounded-md" />
-        <Skeleton className="h-8 w-32 rounded-md" />
-        <Skeleton className="h-8 w-28 rounded-md" />
-        <Skeleton className="h-8 w-28 rounded-md" />
-        <Skeleton className="size-8 rounded-md" />
-        <Skeleton className="ms-auto size-8 rounded-md" />
-        <Skeleton className="size-8 rounded-md" />
-      </div>
+      {page ? null : (
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-36 rounded-md" />
+          <Skeleton className="h-8 w-32 rounded-md" />
+          <Skeleton className="h-8 w-28 rounded-md" />
+          <Skeleton className="h-8 w-28 rounded-md" />
+          <Skeleton className="size-8 rounded-md" />
+          <Skeleton className="ms-auto size-8 rounded-md" />
+          <Skeleton className="size-8 rounded-md" />
+        </div>
+      )}
       <div className="flex flex-col gap-2.5">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-11/12" />
@@ -1553,9 +1728,20 @@ function TaskPageSkeleton() {
       </div>
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <TaskSheetSkeleton page />
-        <div className="flex flex-col gap-4 max-xl:hidden">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-8 w-20 rounded-md" />
+            </div>
+            {Array.from({ length: 9 }, (_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-7 flex-1 rounded-md" />
+              </div>
+            ))}
+          </div>
           <Skeleton className="h-28 w-full rounded-xl" />
-          <Skeleton className="h-64 w-full rounded-xl" />
         </div>
       </div>
     </Page>
