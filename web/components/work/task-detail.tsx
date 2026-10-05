@@ -35,6 +35,11 @@ import useSWR from "swr"
 
 import {
   Badge,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
   Button,
   Checkbox,
   Input,
@@ -61,6 +66,7 @@ import {
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { NotFoundState } from "@/components/not-found-state"
+import { Page } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { StartTimerButton } from "@/components/time/start-timer-button"
 import { ActivityFeed } from "@/components/work/activity-feed"
@@ -73,7 +79,6 @@ import { useCommentAuthor, useCommentForm } from "@/components/work/issues/fm/is
 import { MentionTextarea } from "@/components/work/issues/fm/mention-textarea"
 import { copyText } from "@/components/work/issues/fm/shared"
 import { ContextPanel } from "@/components/work/issues/issue-detail"
-import { ColorDot } from "@/components/work/palette"
 import { PersonAvatar, useDirectory, type Directory } from "@/components/work/people"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError } from "@/lib/api"
@@ -113,9 +118,7 @@ import {
 type Call = (fn: () => Promise<unknown>) => Promise<boolean>
 type Layout = "page" | "sheet"
 
-const TABS = ["details", "activity", "attachments", "discussions", "subtasks", "time"] as const
-type Tab = (typeof TABS)[number]
-/** The side-over: fields and description up front, then these, comments first. */
+/** The side-over and the full page: fields and description up front, then these, comments first. */
 const SHEET_TABS = ["discussions", "subtasks", "attachments", "activity", "time"] as const
 const SHEET_TAB_ICON: Record<(typeof SHEET_TABS)[number], typeof ClockIcon> = {
   discussions: MessageSquareIcon,
@@ -276,8 +279,7 @@ export function TaskDetail({
       <ErrorState error={task.error} />
     )
   }
-  if (layout === "sheet" && (!d || issue.isLoading || project.isLoading)) return <TaskSheetSkeleton />
-  if (!d) return <LoadingRows rows={6} />
+  if (!d || issue.isLoading || project.isLoading) return layout === "sheet" ? <TaskSheetSkeleton /> : <TaskPageSkeleton />
 
   const open =
     onOpen ?? ((key: string) => router.push(`/${locale}/w/${ws.slug}/projects/${d.project_id}/issues/${encodeURIComponent(key)}`))
@@ -324,7 +326,6 @@ function Body({
   const me = useMe()
   const dir = useDirectory(me.data ? String(me.data.id) : undefined)
   const labels = useLabels(ws.id)
-  const [tab, setTab] = useState<Tab>("details")
   const [sheetTab, setSheetTab] = useState<SheetTab>("discussions")
   const can = d.can_write
   const canIssue = ws.can("feedback:write") && !!issue
@@ -373,7 +374,7 @@ function Body({
 
   const discussionCount = (issue?.comments.length ?? 0) + (comments.data?.comments.length ?? 0)
   const subCount = d.subtasks.length + d.checklist.length
-  const counts: Partial<Record<Tab, number>> = {
+  const counts: Partial<Record<SheetTab, number>> = {
     attachments: files.data?.attachments.length ?? d.attachment_count,
     discussions: discussionCount,
     subtasks: subCount,
@@ -402,265 +403,181 @@ function Body({
     </div>
   ) : null
 
-  const rail = (
-    <aside className="flex min-w-0 flex-col gap-4">
-      <InfoCard
+  const header = (
+    <Header
+      d={d}
+      labels={labels.data?.labels ?? []}
+      can={can}
+      done={done}
+      toggleDone={toggleDone}
+      canToggle={!!(done ? reopenColumn : doneColumn)}
+      patch={patch}
+      onOpen={onOpen}
+      layout={layout}
+    />
+  )
+
+  // One column for both layouts: title, the property line, the framed description, then the tabs.
+  const tabs = SHEET_TABS.filter((x) => (x === "time" ? ws.can("time:track") : true))
+  const main = (
+    <>
+      {header}
+      <SheetBar
         d={d}
         issue={issue}
         statuses={statuses}
         dir={dir}
-        labels={labels.data?.labels ?? []}
         can={can}
         canIssue={canIssue}
-        done={done}
         loggedSeconds={time.seconds}
         call={call}
         patch={patch}
         patchIssue={patchIssue}
         move={move}
-        toggleDone={toggleDone}
-        canToggle={!!(done ? reopenColumn : doneColumn)}
+        labels={labels.data?.labels ?? []}
         createLabel={ws.can("labels:create") ? createLabel : undefined}
+        actions={<SheetActions d={d} issue={issue} refresh={refresh} page={page} />}
+        footer={deleteButton}
       />
-      <ProgressCard d={d} />
-      {issue && ws.can("feedback:write") ? <AgentCard issue={issue} canIssue={canIssue} patchIssue={patchIssue} /> : null}
-      <RecentActivity items={activity.data?.activity} loading={activity.isLoading} dir={dir} onAll={() => setTab("activity")} />
-      {deleteButton}
-    </aside>
-  )
+      <DescriptionCard bare d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
+      {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
 
-  const header = (
-    <Header
-      d={d}
-      issue={issue}
-      statuses={statuses}
-      labels={labels.data?.labels ?? []}
-      can={can}
-      canIssue={canIssue}
-      done={done}
-      toggleDone={toggleDone}
-      canToggle={!!(done ? reopenColumn : doneColumn)}
-      move={move}
-      patch={patch}
-      patchIssue={patchIssue}
-      call={call}
-      refresh={refresh}
-      onOpen={onOpen}
-      layout={layout}
-      createLabel={ws.can("labels:create") ? createLabel : undefined}
-    />
-  )
-
-  if (!page) {
-    const tabs = SHEET_TABS.filter((x) => (x === "time" ? ws.can("time:track") : true))
-    return (
-      <div className="flex w-full flex-col gap-5 p-5 lg:p-6" data-task-detail={d.key} data-layout={layout}>
-        {header}
-        <SheetBar
-          d={d}
-          issue={issue}
-          statuses={statuses}
-          dir={dir}
-          can={can}
-          canIssue={canIssue}
-          loggedSeconds={time.seconds}
-          call={call}
-          patch={patch}
-          patchIssue={patchIssue}
-          move={move}
-          labels={labels.data?.labels ?? []}
-          createLabel={ws.can("labels:create") ? createLabel : undefined}
-          actions={<SheetActions d={d} issue={issue} refresh={refresh} />}
-          footer={deleteButton}
-        />
-        <DescriptionCard bare d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
-        {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
-
-        <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as SheetTab)} className="min-w-0" data-sheet-tabs>
-          <div className="overflow-x-auto">
-            <TabsList variant="segmented" className="min-w-max">
-              {tabs.map((x) => {
-                const Icon = SHEET_TAB_ICON[x]
-                const n = x === "time" ? 0 : (counts[x] ?? 0)
-                return (
-                  <TabsTab key={x} value={x} className="gap-2">
-                    <Icon className="size-4" />
-                    {t(`td.tab.${x}`)}
-                    {n > 0 ? <CountPill n={n} /> : null}
-                  </TabsTab>
-                )
-              })}
-            </TabsList>
-          </div>
-          <Flow.Provider value>
-            <TabsPanel value="discussions" className="pt-4">
-              <Discussion d={d} issue={issue} can={can} dir={dir} comments={comments} onChanged={refresh} patchIssue={patchIssue} />
-            </TabsPanel>
-            <TabsPanel value="subtasks" className="pt-4">
-              <div className="flex flex-col gap-5">
-                <ChecklistCard d={d} can={can} call={call} />
-                <SubtasksCard d={d} can={can} call={call} onOpen={onOpen} />
-              </div>
-            </TabsPanel>
-            <TabsPanel value="attachments" className="pt-4">
-              <AttachmentsCard d={d} can={can} dir={dir} files={files} onChanged={refresh} />
-            </TabsPanel>
-            <TabsPanel value="activity" className="pt-4">
-              <div className="overflow-hidden rounded-lg border border-border bg-card">
-                <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} showTask={false} emptyTitle={t("activity.empty")} />
-              </div>
-            </TabsPanel>
-            <TabsPanel value="time" className="pt-4">
-              <TimeCard d={d} time={time} dir={dir} />
-            </TabsPanel>
-          </Flow.Provider>
-        </Tabs>
-      </div>
-    )
-  }
-
-
-  return (
-    <div className={cn("flex w-full flex-col gap-4", page ? "mx-auto max-w-[1400px] px-4 py-6 sm:px-6" : "p-4")} data-task-detail={d.key} data-layout={layout}>
-      {page ? <Breadcrumb d={d} /> : null}
-
-      {header}
-
-      <div className={cn("grid items-start gap-4", page && "xl:grid-cols-[minmax(0,1fr)_21rem]")}>
-        {/* The sheet shows the rail first: the fields are what you open a side-over for. */}
-        {!page ? rail : null}
-
-        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="min-w-0">
-          <div className="overflow-x-auto">
-            <TabsList variant="segmented" className="min-w-max">
-              {TABS.map((x) => (
+      <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as SheetTab)} className="min-w-0" data-sheet-tabs>
+        <div className="overflow-x-auto">
+          <TabsList variant="segmented" className="min-w-max">
+            {tabs.map((x) => {
+              const Icon = SHEET_TAB_ICON[x]
+              const n = x === "time" ? 0 : (counts[x] ?? 0)
+              return (
                 <TabsTab key={x} value={x} className="gap-2">
+                  <Icon className="size-4" />
                   {t(`td.tab.${x}`)}
-                  {counts[x] != null && counts[x]! > 0 ? <CountPill n={counts[x]!} /> : null}
+                  {n > 0 ? <CountPill n={n} /> : null}
                 </TabsTab>
-              ))}
-            </TabsList>
-          </div>
-
-          <TabsPanel value="details" className="pt-4">
-            <div className={cn("grid items-start gap-4", page && "2xl:grid-cols-2")}>
-              <div className="flex min-w-0 flex-col gap-4">
-                <DescriptionCard d={d} issue={issue} can={can} canIssue={canIssue} patch={patch} patchIssue={patchIssue} />
-                {issue && !issue.project_id ? null : issue ? <ContextPanelCard issue={issue} /> : null}
-                <ChecklistCard d={d} can={can} call={call} />
-                <SubtasksCard d={d} can={can} call={call} onOpen={onOpen} />
-              </div>
-              <Discussion d={d} issue={issue} can={can} dir={dir} comments={comments} onChanged={refresh} patchIssue={patchIssue} />
-            </div>
-          </TabsPanel>
-
-          <TabsPanel value="activity" className="pt-4">
-            <Card title={t("td.tab.activity")} bodyClassName="p-0">
-              <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} showTask={false} emptyTitle={t("activity.empty")} />
-            </Card>
-          </TabsPanel>
-
-          <TabsPanel value="attachments" className="pt-4">
-            <AttachmentsCard d={d} can={can} dir={dir} files={files} onChanged={refresh} />
-          </TabsPanel>
-
+              )
+            })}
+          </TabsList>
+        </div>
+        <Flow.Provider value>
           <TabsPanel value="discussions" className="pt-4">
             <Discussion d={d} issue={issue} can={can} dir={dir} comments={comments} onChanged={refresh} patchIssue={patchIssue} />
           </TabsPanel>
-
           <TabsPanel value="subtasks" className="pt-4">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               <ChecklistCard d={d} can={can} call={call} />
               <SubtasksCard d={d} can={can} call={call} onOpen={onOpen} />
             </div>
           </TabsPanel>
-
+          <TabsPanel value="attachments" className="pt-4">
+            <AttachmentsCard d={d} can={can} dir={dir} files={files} onChanged={refresh} />
+          </TabsPanel>
+          <TabsPanel value="activity" className="pt-4">
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
+              <ActivityFeed items={activity.data?.activity} loading={activity.isLoading} error={activity.error} dir={dir} showTask={false} emptyTitle={t("activity.empty")} />
+            </div>
+          </TabsPanel>
           <TabsPanel value="time" className="pt-4">
             <TimeCard d={d} time={time} dir={dir} />
           </TabsPanel>
-        </Tabs>
+        </Flow.Provider>
+      </Tabs>
+    </>
+  )
 
-        {page ? rail : null}
+  if (!page) {
+    return (
+      <div className="flex w-full flex-col gap-5 p-5 lg:p-6" data-task-detail={d.key} data-layout={layout}>
+        {main}
       </div>
-    </div>
+    )
+  }
+
+  // The full page is the side-over in the Nasaq page frame, with progress and the latest activity
+  // alongside on wide screens.
+  return (
+    <Page wide data-task-detail={d.key} data-layout={layout}>
+      <Trail d={d} />
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-5">{main}</div>
+        <aside className="flex min-w-0 flex-col gap-4">
+          <ProgressCard d={d} />
+          <RecentActivity items={activity.data?.activity} loading={activity.isLoading} dir={dir} onAll={() => setSheetTab("activity")} />
+        </aside>
+      </div>
+    </Page>
   )
 }
 
 // ── breadcrumb + header ──────────────────────────────────────────────────────────
 
-function Breadcrumb({ d }: { d: TaskDetailData }) {
+function Trail({ d }: { d: TaskDetailData }) {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const base = `/${locale}/w/${ws.slug}`
-  const link = "truncate text-muted-foreground hover:text-foreground"
+  const link = "truncate text-muted-foreground transition-colors hover:text-foreground"
   return (
-    <nav aria-label={t("td.breadcrumb")} className="flex min-w-0 items-center gap-2 text-sm">
-      <Link href={`${base}/projects`} className={link}>
-        {t("nav.projects")}
-      </Link>
-      <Sep />
-      <Link href={`${base}/projects/${d.project_id}`} className={cn(link, "max-w-48")}>
-        {d.project.name}
-      </Link>
-      {d.parent ? (
-        <>
-          <Sep />
-          <Link href={`${base}/projects/${d.project_id}/issues/${encodeURIComponent(d.parent.key)}`} className={cn(link, "max-w-48")}>
-            <Ltr mono>{d.parent.key}</Ltr>
+    <Breadcrumb aria-label={t("td.breadcrumb")}>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <Link href={`${base}/projects`} className={link}>
+            {t("nav.projects")}
           </Link>
-        </>
-      ) : null}
-      <Sep />
-      <span aria-current="page" className="min-w-0 truncate font-medium text-foreground">
-        <Ltr mono>{d.key}</Ltr> <span dir="auto">{d.title}</span>
-      </span>
-    </nav>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem className="max-w-48">
+          <Link href={`${base}/projects/${d.project_id}`} className={link}>
+            {d.project.name}
+          </Link>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <Link href={`${base}/projects/${d.project_id}/issues`} className={link}>
+            {t("issues.title")}
+          </Link>
+        </BreadcrumbItem>
+        {d.parent ? (
+          <>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <Link href={`${base}/projects/${d.project_id}/issues/${encodeURIComponent(d.parent.key)}`} className={link}>
+                <Ltr mono>{d.parent.key}</Ltr>
+              </Link>
+            </BreadcrumbItem>
+          </>
+        ) : null}
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>
+            <Ltr mono>{d.key}</Ltr>
+          </BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
   )
-}
-
-function Sep() {
-  return <span aria-hidden className="text-muted-foreground/60 rtl:-scale-x-100">›</span>
 }
 
 function Header({
   d,
-  issue,
-  statuses,
   labels,
   can,
-  canIssue,
   done,
   toggleDone,
   canToggle,
-  move,
   patch,
-  patchIssue,
-  call,
-  refresh,
   onOpen,
   layout,
-  createLabel,
 }: {
   d: TaskDetailData
-  issue: (Issue & { comments: IssueComment[] }) | undefined
-  statuses: TaskDetailData["status"][]
   labels: Label[]
   can: boolean
-  canIssue: boolean
   done: boolean
   toggleDone: () => void
   canToggle: boolean
-  move: (id: string) => Promise<boolean>
   patch: (b: Record<string, unknown>) => Promise<boolean>
-  patchIssue: (f: IssuePatch) => Promise<boolean>
-  call: Call
-  refresh: () => Promise<void>
   onOpen: (key: string) => void
   layout: Layout
-  createLabel?: (name: string) => Promise<Label>
 }) {
-  const { t, locale } = useTranslations()
-  const ws = useWorkspace()
+  const { t } = useTranslations()
   const [title, setTitle] = useState(d.title)
   const [lastTitle, setLastTitle] = useState(d.title)
   if (d.title !== lastTitle) {
@@ -672,12 +589,11 @@ function Header({
     if (!v) return setTitle(d.title)
     if (v !== d.title) void patch({ title: v })
   }
-  const href = `${typeof window === "undefined" ? "" : window.location.origin}/${locale}/w/${ws.slug}/projects/${d.project_id}/issues/${encodeURIComponent(d.key)}`
-  const [copied, setCopied] = useState(false)
 
   return (
     <header className="flex flex-col gap-3">
-      <div className={cn("flex items-start gap-x-3 gap-y-3", layout === "sheet" ? "pe-10" : "flex-wrap")}>
+      {/* The side-over keeps room at the end for its close button. */}
+      <div className={cn("flex items-start gap-x-3 gap-y-3", layout === "sheet" && "pe-10")}>
         <Button
           variant="secondary"
           size="icon"
@@ -693,7 +609,7 @@ function Header({
         </Button>
 
         {/* The key is a fixed tag at the start of the title, not part of what you edit. */}
-        <div className={cn("flex min-w-0 flex-1 items-start gap-1", layout === "page" && "min-w-48 basis-64")}>
+        <div className="flex min-w-0 flex-1 items-start gap-1">
           <Ltr mono className="mt-1.5 shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 text-sm leading-5 text-muted-foreground select-all" data-task-key>
             {d.key}
           </Ltr>
@@ -722,66 +638,18 @@ function Header({
           </div>
         </div>
 
-        {layout === "page" ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="w-40">
-              <StatusSelect statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
-            </div>
-            <div className="w-36">
-              <PrioritySelect value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
-            </div>
-          </div>
-          <Button
-            variant="secondary"
-            size="icon"
-            aria-label={t("td.copyLink")}
-            title={t("td.copyLink")}
-            onClick={async () => {
-              if (await copyText(href)) {
-                setCopied(true)
-                toast.success(t("td.linkCopied"))
-                setTimeout(() => setCopied(false), 1800)
-              }
-            }}
-          >
-            {copied ? <CheckIcon /> : <LinkIcon />}
-          </Button>
-          {issue ? (
-            <IssueActionsMenu
-              issue={issue}
-              onChanged={refresh}
-              trigger={
-                <Button variant="secondary" size="icon" aria-label={t("td.more")}>
-                  <MoreHorizontalIcon />
-                </Button>
-              }
-            />
-          ) : null}
-        </div>
-        ) : null}
       </div>
 
-      {/* labels (+) · parent — one row, indented under the title */}
-      {d.label_ids.length || d.parent || layout === "page" ? (
-      <div className="flex flex-wrap items-center gap-2 ps-12">
-        <LabelChips ids={d.label_ids} labels={labels} />
-        {layout === "page" && (ws.can("labels:read") || can) ? (
-          <LabelPicker
-            compact
-            labels={labels}
-            selected={d.label_ids}
-            disabled={!can}
-            onCreate={createLabel}
-            onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/labels`, { label_ids: ids }))}
-          />
-        ) : null}
-        {d.parent ? (
-          <button type="button" onClick={() => onOpen(d.parent!.key)} className="text-start text-caption text-muted-foreground hover:text-foreground">
-            {t("task.subtaskOf")} <Ltr mono>{d.parent.key}</Ltr> {d.parent.title}
-          </button>
-        ) : null}
-      </div>
+      {/* labels · parent — one row, indented under the title */}
+      {d.label_ids.length || d.parent ? (
+        <div className="flex flex-wrap items-center gap-2 ps-12">
+          <LabelChips ids={d.label_ids} labels={labels} />
+          {d.parent ? (
+            <button type="button" onClick={() => onOpen(d.parent!.key)} className="text-start text-caption text-muted-foreground hover:text-foreground">
+              {t("task.subtaskOf")} <Ltr mono>{d.parent.key}</Ltr> {d.parent.title}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </header>
   )
@@ -1447,136 +1315,6 @@ function TimeCard({ d, time, dir }: { d: TaskDetailData; time: ReturnType<typeof
   )
 }
 
-// ── the info rail ────────────────────────────────────────────────────────────────────────
-
-function InfoCard({
-  d,
-  issue,
-  statuses,
-  dir,
-  labels,
-  can,
-  canIssue,
-  done,
-  loggedSeconds,
-  call,
-  patch,
-  patchIssue,
-  move,
-  toggleDone,
-  canToggle,
-  createLabel,
-}: {
-  d: TaskDetailData
-  issue: (Issue & { comments: IssueComment[] }) | undefined
-  statuses: TaskDetailData["status"][]
-  dir: Directory
-  labels: Label[]
-  can: boolean
-  canIssue: boolean
-  done: boolean
-  loggedSeconds: number
-  call: Call
-  patch: (b: Record<string, unknown>) => Promise<boolean>
-  patchIssue: (f: IssuePatch) => Promise<boolean>
-  move: (id: string) => Promise<boolean>
-  toggleDone: () => void
-  canToggle: boolean
-  createLabel?: (name: string) => Promise<Label>
-}) {
-  const { t } = useTranslations()
-  const ws = useWorkspace()
-  const overdue = isOverdue(d.due_at, d.completed_at)
-  const status = statuses.find((s) => s.id === d.status_id)
-
-  return (
-    <Card
-      title={t("td.info")}
-      action={
-        can && canToggle ? (
-          <Button variant={done ? "secondary" : "primary"} size="sm" onClick={toggleDone} data-finish-task>
-            <CheckIcon />
-            {done ? t("td.reopenTask") : t("td.finish")}
-          </Button>
-        ) : null
-      }
-    >
-      <dl className="flex flex-col">
-        <InfoRow label={t("task.status")} htmlFor="td-status">
-          <div className={rowControl}>
-            <StatusSelect id="td-status" statuses={statuses} value={d.status_id} disabled={!can} onChange={(s) => void move(s)} />
-          </div>
-        </InfoRow>
-        <InfoRow label={t("task.priority")} htmlFor="td-priority">
-          <div className={rowControl}>
-            <PrioritySelect id="td-priority" value={d.priority} disabled={!can} onChange={(p: Priority) => void patch({ priority: p })} />
-          </div>
-        </InfoRow>
-        <InfoRow label={t("td.project")}>
-          <TaskProjectAvatar project={d.project} className="size-5 text-[0.55rem]" />
-          <span className="truncate text-sm">{d.project.name}</span>
-        </InfoRow>
-        <InfoRow label={t("td.list")}>
-          <ColorDot color={status?.color} />
-          <span className="truncate text-sm">{status?.name ?? "—"}</span>
-        </InfoRow>
-        <InfoRow label={t("task.assignees")}>
-          <MemberPicker
-            dir={dir}
-            selected={d.assignee_ids}
-            disabled={!can}
-            onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/assignees`, { user_ids: ids }))}
-          />
-        </InfoRow>
-        <InfoRow label={t("task.due")} htmlFor="td-due">
-          <DateField id="td-due" value={dayKey(d.due_at)} disabled={!can} tone={overdue ? "danger" : undefined} onChange={(v) => void patch({ due_at: v ?? "" })} />
-        </InfoRow>
-        <InfoRow label={t("task.estimate")} htmlFor="td-estimate">
-          <EstimateField d={d} can={can} patch={patch} />
-        </InfoRow>
-        {ws.can("time:track") ? (
-          <InfoRow label={t("td.logged")}>
-            <ClockIcon className="size-4 shrink-0 text-muted-foreground" />
-            <Ltr className="text-sm tabular-nums">{loggedSeconds ? hm(loggedSeconds) : "—"}</Ltr>
-            {!d.project.archived ? <StartTimerButton task={{ id: d.id, key: d.key, title: d.title }} variant="icon" className="ms-auto" /> : null}
-          </InfoRow>
-        ) : null}
-        {issue ? (
-          <>
-            <InfoRow label={t("issues.typeLabel")} htmlFor="td-type">
-              <div className={rowControl}>
-                <SimpleSelect
-                  id="td-type"
-                  value={issue.issue_type}
-                  disabled={!canIssue}
-                  items={ISSUE_TYPES.map((x) => ({ value: x, label: t(`issues.type.${x}`) }))}
-                  onChange={(v) => void patchIssue({ issue_type: v as IssueType })}
-                />
-              </div>
-            </InfoRow>
-            <InfoRow label={t("td.issuePriority")} htmlFor="td-ipriority">
-              <div className={rowControl}>
-                <SimpleSelect
-                  id="td-ipriority"
-                  value={issue.priority}
-                  disabled={!canIssue}
-                  items={ISSUE_PRIORITIES.map((x) => ({ value: x, label: t(`issues.priority.${x}`) }))}
-                  onChange={(v) => void patchIssue({ priority: v as IssuePriority })}
-                />
-              </div>
-            </InfoRow>
-          </>
-        ) : null}
-        <InfoRow label={t("task.labels")}>
-          <div className="flex min-w-0 flex-wrap items-center gap-1 py-1">
-            {d.label_ids.length ? <LabelChips ids={d.label_ids} labels={labels} /> : <span className="text-sm text-muted-foreground">{t("task.noLabels")}</span>}
-          </div>
-        </InfoRow>
-      </dl>
-    </Card>
-  )
-}
-
 /** The task's project as its avatar; the task payload has no avatar, so it comes from the (cached) project list. */
 function TaskProjectAvatar({ project, className }: { project: TaskDetailData["project"]; className?: string }) {
   const ws = useWorkspace()
@@ -1763,9 +1501,9 @@ function SheetBar({
 }
 
 /** The side-over while the task loads: the same shape as the real thing, shimmering. */
-export function TaskSheetSkeleton() {
+export function TaskSheetSkeleton({ page }: { page?: boolean } = {}) {
   return (
-    <div className="flex w-full flex-col gap-5 p-5 lg:p-6" aria-busy data-task-skeleton>
+    <div className={cn("flex w-full min-w-0 flex-col gap-5", !page && "p-5 lg:p-6")} aria-busy data-shimmer data-task-skeleton>
       <div className="flex items-start gap-3 pe-10">
         <Skeleton className="size-9 shrink-0 rounded-md" />
         <div className="flex flex-1 flex-col gap-2 pt-1">
@@ -1801,8 +1539,42 @@ export function TaskSheetSkeleton() {
   )
 }
 
+/** The full page while the task loads: the trail, the side-over column and the side cards, shimmering. */
+function TaskPageSkeleton() {
+  const { t } = useTranslations()
+  return (
+    <Page wide aria-busy data-shimmer>
+      <span className="sr-only">{t("common.loading")}</span>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-4 w-14" />
+        <Skeleton className="h-4 w-16" />
+      </div>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <TaskSheetSkeleton page />
+        <div className="flex flex-col gap-4 max-xl:hidden">
+          <Skeleton className="h-28 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+      </div>
+    </Page>
+  )
+}
+
 /** The side-over's item actions, at the end of the property bar: copy link, the item menu, full page. */
-function SheetActions({ d, issue, refresh }: { d: TaskDetailData; issue: (Issue & { comments: IssueComment[] }) | undefined; refresh: () => Promise<void> }) {
+function SheetActions({
+  d,
+  issue,
+  refresh,
+  page,
+}: {
+  d: TaskDetailData
+  issue: (Issue & { comments: IssueComment[] }) | undefined
+  refresh: () => Promise<void>
+  /** On the full page there is no "open full page". */
+  page?: boolean
+}) {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const [copied, setCopied] = useState(false)
@@ -1824,9 +1596,11 @@ function SheetActions({ d, issue, refresh }: { d: TaskDetailData; issue: (Issue 
       >
         {copied ? <CheckIcon /> : <LinkIcon />}
       </Button>
-      <Button variant="ghost" size="icon-sm" aria-label={t("task.openFullPage")} title={t("task.openFullPage")} nativeButton={false} render={<Link href={path} />}>
-        <Maximize2Icon />
-      </Button>
+      {page ? null : (
+        <Button variant="ghost" size="icon-sm" aria-label={t("task.openFullPage")} title={t("task.openFullPage")} nativeButton={false} render={<Link href={path} />}>
+          <Maximize2Icon />
+        </Button>
+      )}
       {issue ? (
         <IssueActionsMenu
           issue={issue}
