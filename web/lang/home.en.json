@@ -54,5 +54,14 @@
   "home.time.empty": "No time tracked this week.",
   "home.time.byProject": "By project",
   "home.time.other": "Other",
-  "home.time.open": "My time"
+  "home.time.open": "My time",
+  "home.time.titleTeam": "Time this week",
+  "home.time.you": "you",
+  "home.time.yours": "Yours",
+  "home.time.byMember": "By member",
+  "home.time.details": "Open time details",
+  "home.time.total": "Total",
+  "home.time.member": "Member",
+  "home.time.project": "Project",
+  "home.time.openTeam": "Team time"
 }

@@ -54,5 +54,14 @@
   "home.time.empty": "لم يُسجَّل وقت هذا الأسبوع.",
   "home.time.byProject": "حسب المشروع",
   "home.time.other": "أخرى",
-  "home.time.open": "وقتي"
+  "home.time.open": "وقتي",
+  "home.time.titleTeam": "الوقت هذا الأسبوع",
+  "home.time.you": "أنت",
+  "home.time.yours": "وقتك",
+  "home.time.byMember": "حسب العضو",
+  "home.time.details": "عرض تفاصيل الوقت",
+  "home.time.total": "الإجمالي",
+  "home.time.member": "العضو",
+  "home.time.project": "المشروع",
+  "home.time.openTeam": "وقت الفريق"
 }

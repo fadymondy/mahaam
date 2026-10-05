@@ -7,10 +7,9 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { AlertTriangleIcon, CheckCircle2Icon, FolderKanbanIcon, ListChecksIcon, PlusIcon, SearchIcon, UsersIcon } from "lucide-react"
+import { AlertTriangleIcon, CalendarClockIcon, CheckCircle2Icon, CircleDotIcon, FolderKanbanIcon, ListChecksIcon, PlusIcon, SearchIcon, UsersIcon } from "lucide-react"
 
-import { Button, ChartContainer, ChartTooltip, ChartTooltipContent, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, type ChartConfig } from "@fadymondy/nasaq/web"
+import { Attention, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, type AttentionItem } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
 import { Panel, PanelLink, StatTile } from "@/components/home/panels"
@@ -18,13 +17,14 @@ import { PersonAvatar, AvatarStack, useDirectory, type Directory } from "@/compo
 import { ColorDot, solid } from "@/components/work/palette"
 import { ProjectAvatar } from "@/components/work/project-avatar"
 import { ProjectForm } from "@/components/work/project-form"
+import { TaskSheet } from "@/components/work/task-sheet"
+import { TimePanel } from "@/components/home/time-panel"
 import { useActivitySentence } from "@/components/work/activity-feed"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
 import { formatDay, timeAgo } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
 import { useMe, useMembers } from "@/lib/queries"
-import { dayLabel, hm, useTimesheet } from "@/lib/time"
 import { cn } from "@/lib/utils"
 import { PROJECT_STATUSES, useOverview, useProjects, useWorkspaceActivity, type Activity, type Project, type Task } from "@/lib/work"
 
@@ -44,6 +44,8 @@ export function HomeDashboard() {
   const meId = me.data ? String(me.data.id) : undefined
   const dir = useDirectory(meId)
   const [creating, setCreating] = useState(false)
+  // Tasks open in their side-over right here; the dashboard never navigates away for one.
+  const [taskKey, setTaskKey] = useState<string | null>(null)
 
   const projects = useProjects(ws.id)
   const overview = useOverview(ws.id)
@@ -126,10 +128,21 @@ export function HomeDashboard() {
       <ProjectsPanel projects={list} loading={projects.isLoading} memberIds={ov?.project_members ?? {}} dir={dir} base={base} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <AttentionPanel base={base} />
-        {ws.can("activity:read") ? <ActivityPanel dir={dir} base={base} /> : null}
-        {ws.can("time:track") ? <TimePanel base={base} /> : null}
+        <AttentionPanel onOpen={setTaskKey} />
+        {ws.can("activity:read") ? <ActivityPanel dir={dir} base={base} onOpen={setTaskKey} /> : null}
+        {ws.can("time:track") ? <TimePanel base={base} dir={dir} meId={meId} /> : null}
       </div>
+
+      <TaskSheet
+        taskKey={taskKey}
+        onClose={() => setTaskKey(null)}
+        onOpen={setTaskKey}
+        onChanged={() => {
+          void overview.mutate()
+          void mine.mutate()
+          void projects.mutate()
+        }}
+      />
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
@@ -262,42 +275,43 @@ function ProjectCard({ project: p, ids, dir, base }: { project: Project; ids: st
 
 // ── needs attention ───────────────────────────────────────────────────────
 
-function AttentionPanel({ base }: { base: string }) {
+function AttentionPanel({ onOpen }: { onOpen: (key: string) => void }) {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const ov = useOverview(ws.id)
-  const items = ov.data?.attention ?? []
+  const items: AttentionItem[] = (ov.data?.attention ?? []).map((x) => ({
+    id: x.id,
+    title: x.title,
+    description: (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <ColorDot color={x.project_color} className="shrink-0" />
+        <Ltr mono>{x.key}</Ltr>
+        <span className="truncate">· {x.project_name}</span>
+      </span>
+    ),
+    tone: x.overdue ? "danger" : x.due_at ? "warning" : x.priority === "urgent" || x.priority === "high" ? "info" : "neutral",
+    icon: x.overdue ? AlertTriangleIcon : x.due_at ? CalendarClockIcon : CircleDotIcon,
+    time: x.overdue ? t("home.attention.overdue") : x.due_at ? t("home.attention.due", { date: formatDay(x.due_at, locale, "short") }) : t(`priority.${x.priority}`),
+    dateTime: x.due_at ?? undefined,
+    onSelect: () => onOpen(x.key),
+  }))
   return (
-    <Panel title={t("home.attention.title")} data-panel="attention">
-      {items.length === 0 ? (
-        <p className="flex flex-1 items-center justify-center py-6 text-center text-sm text-muted-foreground">{ov.isLoading ? "…" : t("home.attention.empty")}</p>
-      ) : (
-        <ul className="-my-2 divide-y divide-line">
-          {items.map((x) => (
-            <li key={x.id}>
-              <Link href={`${base}/projects/${x.project_id}?task=${encodeURIComponent(x.key)}`} className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 hover:bg-muted/50">
-                <ColorDot color={x.project_color} className="shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{x.title}</span>
-                  <span className="block truncate text-caption text-muted-foreground">
-                    <Ltr mono>{x.key}</Ltr> · {x.project_name}
-                  </span>
-                </span>
-                <span className={cn("shrink-0 text-caption", x.overdue ? "font-medium text-nq-danger-text" : "text-muted-foreground")}>
-                  {x.overdue ? t("home.attention.overdue") : x.due_at ? t("home.attention.due", { date: formatDay(x.due_at, locale, "short") }) : t(`priority.${x.priority}`)}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Panel>
+    <div className="flex min-w-0 flex-col rounded-lg border border-border bg-card p-4" data-panel="attention">
+      <Attention
+        items={items}
+        title={t("home.attention.title")}
+        headingLevel={2}
+        max={6}
+        loading={ov.isLoading}
+        empty={<p className="py-6 text-center text-sm text-muted-foreground">{t("home.attention.empty")}</p>}
+      />
+    </div>
   )
 }
 
 // ── recent activity ───────────────────────────────────────────────────────
 
-function ActivityPanel({ dir, base }: { dir: Directory; base: string }) {
+function ActivityPanel({ dir, base, onOpen }: { dir: Directory; base: string; onOpen: (key: string) => void }) {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const activity = useWorkspaceActivity(ws.id, true)
@@ -316,7 +330,7 @@ function ActivityPanel({ dir, base }: { dir: Directory; base: string }) {
                 <span className="font-medium text-foreground" dir="ltr">
                   {dir.name(a.actor_id).split("@")[0]}
                 </span>{" "}
-                {sentence(a)}
+                <Linked text={sentence(a)} taskKey={typeof a.changes.key === "string" && a.task_id ? a.changes.key : ""} onOpen={onOpen} />
               </p>
               <time className="shrink-0 pt-0.5 text-caption text-muted-foreground" dateTime={a.created_at}>
                 <Ltr>{timeAgo(a.created_at, locale)}</Ltr>
@@ -329,71 +343,23 @@ function ActivityPanel({ dir, base }: { dir: Directory; base: string }) {
   )
 }
 
-// ── my time this week ─────────────────────────────────────────────────────
-
-function TimePanel({ base }: { base: string }) {
-  const { t, locale, isRtl } = useTranslations()
-  const ws = useWorkspace()
-  const sheet = useTimesheet(ws.id)
-  const s = sheet.data
-  const hours = (sec: number) => Math.round((sec / 3600) * 100) / 100
-
-  const data = (s?.days ?? []).map((d, i) => ({ day: d, h: hours(s?.day_totals[i] ?? 0) }))
-  const byProject = useMemo(() => {
-    const m = new Map<string, { name: string; color: string | null; sec: number }>()
-    for (const r of s?.rows ?? []) {
-      const key = r.project_id ?? "none"
-      const cur = m.get(key) ?? { name: r.project_name ?? t("home.time.other"), color: r.project_color, sec: 0 }
-      cur.sec += r.total_s
-      m.set(key, cur)
-    }
-    return [...m.values()].sort((a, b) => b.sec - a.sec)
-  }, [s, t])
-  const top = byProject.slice(0, 4)
-  const rest = byProject.slice(4).reduce((n, x) => n + x.sec, 0)
-  const rows = rest ? [...top, { name: t("home.time.other"), color: null, sec: rest }] : top
-  const total = s?.total_s ?? 0
-  const config = { h: { label: t("home.time.hours", { h: "" }).trim(), color: "var(--nq-action)" } } satisfies ChartConfig
-
+/** The sentence with its task key turned into a button that opens the task's side-over. */
+function Linked({ text, taskKey, onOpen }: { text: string; taskKey: string; onOpen: (key: string) => void }) {
+  const at = taskKey ? text.indexOf(taskKey) : -1
+  if (at < 0) return <>{text}</>
   return (
-    <Panel title={t("home.time.title")} action={<PanelLink href={`${base}/time`}>{t("home.time.open")}</PanelLink>} data-panel="time">
-      {!s || total === 0 ? (
-        <p className="flex flex-1 items-center justify-center py-6 text-center text-sm text-muted-foreground">{sheet.isLoading ? "…" : t("home.time.empty")}</p>
-      ) : (
-        <div className="flex flex-1 flex-col gap-4">
-          <p className="text-2xl font-semibold leading-none tabular-nums">
-            <Ltr>{hm(total, "0:00")}</Ltr>
-          </p>
-          <ChartContainer config={config} className="aspect-auto h-36 w-full" role="img" aria-label={t("home.time.title")}>
-            <BarChart data={data} margin={{ top: 4, left: 0, right: 0, bottom: 0 }} accessibilityLayer>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="day" reversed={isRtl} tickLine={false} axisLine={false} tickMargin={6} tickFormatter={(d: string) => dayLabel(d, locale).split(" ")[0].replace(/[,،]$/, "")} />
-              <YAxis orientation={isRtl ? "right" : "left"} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent config={config} labelFormatter={(l) => (l ? dayLabel(String(l), locale, "long") : "")} valueFormat={{ maximumFractionDigits: 2 }} />} />
-              <Bar dataKey="h" fill="var(--color-h)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-            </BarChart>
-          </ChartContainer>
-          <div className="flex flex-col gap-2">
-            <p className="text-caption text-muted-foreground">{t("home.time.byProject")}</p>
-            <ul className="flex flex-col gap-2">
-              {rows.map((r, i) => (
-                <li key={i} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-sm">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <ColorDot color={r.color} className="shrink-0" />
-                    <span className="truncate">{r.name}</span>
-                  </span>
-                  <span className="text-caption tabular-nums text-muted-foreground">
-                    <Ltr>{hm(r.sec, "0:00")}</Ltr>
-                  </span>
-                  <span className="col-span-2 h-1 overflow-hidden rounded-full bg-muted">
-                    <span className="block h-full rounded-full" style={{ width: `${Math.max(2, (r.sec / total) * 100)}%`, background: solid(r.color) }} />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-    </Panel>
+    <>
+      {text.slice(0, at)}
+      <button
+        type="button"
+        onClick={() => onOpen(taskKey)}
+        dir="ltr"
+        className="rounded-sm font-mono text-[0.92em] font-medium text-nq-accent-text underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-nq-focus"
+        data-activity-task={taskKey}
+      >
+        {taskKey}
+      </button>
+      {text.slice(at + taskKey.length)}
+    </>
   )
 }
