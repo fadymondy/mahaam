@@ -170,7 +170,8 @@ function ProjectsPanel({ projects, loading, memberIds, dir, base }: { projects: 
     .slice(0, 8)
 
   return (
-    <Panel title={t("home.projects.title")} action={<PanelLink href={`${base}/projects`}>{t("home.projects.viewAll")}</PanelLink>} data-panel="projects">
+    // No panel frame or title: the filters and the cards sit straight on the page, like the stat tiles above.
+    <section className="flex min-w-0 flex-col" aria-label={t("home.projects.title")} data-panel="projects">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2" role="group" aria-label={t("home.projects.filterLabel")}>
           {chips.map(([key, label, n]) => (
@@ -190,16 +191,19 @@ function ProjectsPanel({ projects, loading, memberIds, dir, base }: { projects: 
             </button>
           ))}
         </div>
-        <div className="relative w-full sm:w-64">
-          <SearchIcon className="pointer-events-none absolute inset-y-0 start-2.5 my-auto size-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("home.projects.search")} aria-label={t("home.projects.search")} className="ps-8" />
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <PanelLink href={`${base}/projects`}>{t("home.projects.viewAll")}</PanelLink>
+          <div className="relative w-full sm:w-64">
+            <SearchIcon className="pointer-events-none absolute inset-y-0 start-2.5 my-auto size-4 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("home.projects.search")} aria-label={t("home.projects.search")} className="ps-8" />
+          </div>
         </div>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-40 animate-pulse rounded-lg bg-muted" />
+            <div key={i} className="h-40 animate-pulse rounded-lg bg-card" />
           ))}
         </div>
       ) : shown.length === 0 ? (
@@ -213,7 +217,7 @@ function ProjectsPanel({ projects, loading, memberIds, dir, base }: { projects: 
           ))}
         </ul>
       )}
-    </Panel>
+    </section>
   )
 }
 
@@ -224,7 +228,7 @@ function ProjectCard({ project: p, ids, dir, base }: { project: Project; ids: st
   return (
     <Link
       href={`${base}/projects/${p.id}/board`}
-      className="flex h-full flex-col gap-3 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
+      className="flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50"
       data-project-card
     >
       <div className="flex items-center gap-3">
