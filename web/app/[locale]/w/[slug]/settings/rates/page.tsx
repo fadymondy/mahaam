@@ -57,7 +57,7 @@ export default function RatesPage() {
 
   return (
     <>
-      <SectionHeader micro={ws.summary.name} title={t("rates.title")} description={t("rates.hint")} />
+      <SectionHeader title={t("rates.title")} description={t("rates.hint")} />
       {sheet.error ? (
         <ErrorState error={sheet.error} />
       ) : !rs ? (

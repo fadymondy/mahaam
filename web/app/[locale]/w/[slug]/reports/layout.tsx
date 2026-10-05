@@ -31,7 +31,7 @@ export default function ReportsLayout({ children }: { children: ReactNode }) {
   return (
     <div data-reports={tab}>
       <div data-print-hide>
-        <SectionHeader micro={ws.summary.name} title={t("reports.title")} description={t("reports.hint")} />
+        <SectionHeader title={t("reports.title")} description={t("reports.hint")} />
         <div className="border-b border-border px-6">
           <Tabs value={tab}>
             <TabsList variant="underline">

@@ -45,7 +45,6 @@ export default function McpTokensPage() {
   return (
     <>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("nav.mcpTokens")}
         description={t("mcp.hint")}
         action={

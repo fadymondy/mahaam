@@ -35,7 +35,6 @@ export default function MembersPage() {
   return (
     <>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("nav.members")}
         description={t("members.hint")}
         action={

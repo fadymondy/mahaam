@@ -44,7 +44,7 @@ export default function LabelsPage() {
 
   return (
     <>
-      <SectionHeader micro={ws.summary.name} title={t("nav.labels")} description={t("labels.hint")} />
+      <SectionHeader title={t("nav.labels")} description={t("labels.hint")} />
       {canCreate ? (
         <form onSubmit={create} className="flex flex-wrap items-end gap-4 border-t border-border px-6 py-4">
           <Field className="min-w-48 flex-1">

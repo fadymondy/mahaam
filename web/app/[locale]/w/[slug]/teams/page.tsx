@@ -40,7 +40,6 @@ export default function TeamsPage() {
   return (
     <>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("nav.teams")}
         description={t("teams.hint")}
         action={

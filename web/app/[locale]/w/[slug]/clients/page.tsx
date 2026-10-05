@@ -82,7 +82,6 @@ export default function ClientsPage() {
   return (
     <>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("nav.clients")}
         description={t("clients.hint")}
         action={

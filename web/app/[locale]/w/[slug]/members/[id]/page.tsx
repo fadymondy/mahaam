@@ -60,7 +60,6 @@ export default function MemberDetailPage() {
         </Link>
       </div>
       <SectionHeader
-        micro={ws.summary.name}
         title={
           <span className="flex flex-wrap items-center gap-3">
             <PersonAvatar id={id} dir={dir} size="md" />

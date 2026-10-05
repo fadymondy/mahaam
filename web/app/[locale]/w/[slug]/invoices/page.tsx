@@ -90,7 +90,6 @@ export default function InvoicesPage() {
   return (
     <>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("invoices.title")}
         description={t("invoices.hint")}
         action={

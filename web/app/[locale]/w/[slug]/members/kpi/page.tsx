@@ -38,7 +38,6 @@ export default function TeamKpiPage() {
         </Link>
       </div>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("kpi.teamTitle")}
         description={t("kpi.teamHint")}
         action={allowed ? <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} /> : null}

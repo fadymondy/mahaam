@@ -59,7 +59,7 @@ export default function TimeSettingsPage() {
   const s = useTimeSettings(ws.id)
   return (
     <>
-      <SectionHeader micro={ws.summary.name} title={t("timeSettings.title")} description={t("timeSettings.hint")} />
+      <SectionHeader title={t("timeSettings.title")} description={t("timeSettings.hint")} />
       {s.error ? (
         <ErrorState error={s.error} />
       ) : !s.data ? (

@@ -68,7 +68,6 @@ export default function ClientDetailPage() {
         </Link>
       </div>
       <SectionHeader
-        micro={ws.summary.name}
         title={
           <span className="flex flex-wrap items-center gap-2">
             {c.name}

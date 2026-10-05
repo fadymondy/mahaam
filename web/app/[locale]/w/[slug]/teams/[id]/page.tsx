@@ -48,7 +48,6 @@ export default function TeamDetailPage() {
         </Link>
       </div>
       <SectionHeader
-        micro={ws.summary.name}
         title={
           <span className="flex flex-wrap items-center gap-2">
             <ColorDot color={team.color} className="size-3" />

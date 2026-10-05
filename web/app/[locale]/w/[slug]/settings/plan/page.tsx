@@ -37,7 +37,7 @@ export default function PlanSettingsPage() {
 
   return (
     <>
-      <SectionHeader micro={ws.summary.name} title={t("plan.title")} description={t("plan.hint")} />
+      <SectionHeader title={t("plan.title")} description={t("plan.hint")} />
       {body}
     </>
   )

@@ -41,7 +41,7 @@ export default function NotificationSettingsPage() {
   const s = useNotificationSettings(ws.id)
   return (
     <>
-      <SectionHeader micro={ws.summary.name} title={t("nset.title")} description={t("nset.hint")} />
+      <SectionHeader title={t("nset.title")} description={t("nset.hint")} />
       {s.error ? <ErrorState error={s.error} /> : !s.data ? <LoadingRows rows={4} /> : <Form data={s.data} onSaved={(d) => void s.mutate(d, { revalidate: false })} />}
     </>
   )

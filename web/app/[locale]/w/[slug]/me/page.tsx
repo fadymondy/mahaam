@@ -42,7 +42,6 @@ export default function MyProfilePage() {
   return (
     <>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("kpi.profile")}
         description={
           me.data ? (

@@ -55,7 +55,6 @@ function TeamView() {
   return (
     <>
       <SectionHeader
-        micro={ws.summary.name}
         title={t("team.title")}
         description={t("team.hint", { tz })}
         action={<WeekNav days={tt?.days} isCurrent={days.includes(today)} onWeek={(ref) => router.replace(`${pathname}${ref ? `?week=${ref}` : ""}`)} />}
