@@ -6,8 +6,9 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import { ChevronLeftIcon, GithubIcon, KeyRoundIcon, LayoutDashboardIcon, ReceiptTextIcon, SettingsIcon, SquareKanbanIcon, type LucideIcon } from "lucide-react"
 import { useSWRConfig } from "swr"
 
-import { Skeleton, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
+import { Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
 
+import { ProjectHeaderSkeleton, ProjectTabSkeleton } from "@/components/work/project/project-skeletons"
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState } from "@/components/states"
 import { ProjectContext } from "@/components/work/project-context"
@@ -79,22 +80,19 @@ function ProjectShell({ children }: { children: ReactNode }) {
       <ErrorState error={project.error} />
     )
   }
-  if (!project.data) {
-    return (
-      <div className="border-b border-border md:-mx-page" data-project-loading>
-        <Skeleton className="h-28 w-full rounded-none sm:h-36" />
-        <div className="space-y-3 px-4 py-4 sm:px-6">
-          <Skeleton className="-mt-14 size-20 rounded-xl" />
-          <Skeleton className="h-7 w-72 max-w-full" />
-          <Skeleton className="h-8 w-[28rem] max-w-full" />
-        </div>
-      </div>
-    )
-  }
-  const p = project.data
   const rest = pathname.slice(base.length)
   // An item's page (/issues/MH-3) belongs to the board: issues and cards are one thing.
   const tab = /^\/issues(\/|$)/.test(rest) ? "board" : (TABS.find((x) => rest.includes(`/${x}/`) || rest.endsWith(`/${x}`)) ?? "overview")
+  if (!project.data) {
+    // The header and the open tab outline themselves in place until the project is in.
+    return (
+      <>
+        <ProjectHeaderSkeleton />
+        <ProjectTabSkeleton tab={tab} />
+      </>
+    )
+  }
+  const p = project.data
   // A task detail page (/projects/{id}/tasks/{key}) nests under this layout: keep the
   // project breadcrumb and context (statuses) but drop the project tabs, which don't apply.
   const isTaskRoute = pathname.includes(`/projects/${id}/tasks/`)

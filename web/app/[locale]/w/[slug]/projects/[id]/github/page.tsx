@@ -34,6 +34,7 @@ import {
 
 import { Ltr } from "@/components/copy-field"
 import { EmptyState } from "@/components/states"
+import { GithubSkeleton } from "@/components/work/project/project-skeletons"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -59,9 +60,8 @@ export default function ProjectGitHubPage() {
 
   if (!list.data && !list.error) {
     return (
-      <div className="mx-auto w-full max-w-6xl space-y-3 p-4 sm:p-6">
-        <Skeleton className="h-10 w-72 max-w-full" />
-        <Skeleton className="h-96 w-full rounded-card" />
+      <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
+        <GithubSkeleton />
       </div>
     )
   }

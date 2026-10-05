@@ -25,7 +25,8 @@ import {
 } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
-import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
+import { EmptyState, ErrorState } from "@/components/states"
+import { RowsSkeleton } from "@/components/work/project/project-skeletons"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
@@ -164,7 +165,7 @@ export default function BillingPage() {
         {subs.error ? (
           <ErrorState error={subs.error} />
         ) : !subs.data ? (
-          <LoadingRows rows={2} />
+          <RowsSkeleton rows={2} />
         ) : list.length === 0 ? (
           <EmptyState title={t("billing.noSubs")} />
         ) : (

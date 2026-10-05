@@ -19,12 +19,13 @@ import {
 import { ClockIcon, Loader2Icon, PlusIcon, SearchIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@fadymondy/nasaq/web"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
 
 
 
 
 import { ErrorState } from "@/components/states"
+import { BoardColumnsSkeleton } from "@/components/work/project/project-skeletons"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { StatusIcon, statusLabel } from "@/components/work/status-icon"
 import { useTranslations } from "@/lib/i18n"
@@ -259,11 +260,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
       {list.error ? (
         <ErrorState error={list.error} />
       ) : !list.data ? (
-        <div className="flex flex-col">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-none border-b border-border" />
-          ))}
-        </div>
+        <BoardColumnsSkeleton />
       ) : (
         /* Columns scroll horizontally; each is a fixed width so cards stay legible. */
         <DndContext

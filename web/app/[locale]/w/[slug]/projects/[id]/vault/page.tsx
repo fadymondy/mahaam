@@ -31,7 +31,8 @@ import {
 } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
-import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
+import { EmptyState, ErrorState } from "@/components/states"
+import { CardGridSkeleton } from "@/components/work/project/project-skeletons"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
@@ -213,7 +214,7 @@ function Memories({
         </div>
       ) : null}
       {loading ? (
-        <LoadingRows rows={3} />
+        <CardGridSkeleton />
       ) : shown.length === 0 ? (
         <EmptyState title={query ? t("vault.noMatch") : t("vault.empty")} body={query ? undefined : t("vault.emptyBody")} />
       ) : (

@@ -91,7 +91,7 @@ export default function ProjectOverviewPage() {
   const HealthIcon = overall === "ok" ? CheckCircle2Icon : overall === "warn" ? CircleAlertIcon : TriangleAlertIcon
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-4 p-4 sm:p-6 lg:grid-cols-3">
+    <div className="mx-auto grid w-full max-w-6xl gap-4 p-4 sm:p-6 lg:grid-cols-3" data-shimmer>
       <MetricTiles
         className="lg:col-span-3"
         loading={loadingHealth}
