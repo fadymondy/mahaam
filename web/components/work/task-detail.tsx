@@ -466,6 +466,8 @@ function Body({
           patch={patch}
           patchIssue={patchIssue}
           move={move}
+          labels={labels.data?.labels ?? []}
+          createLabel={ws.can("labels:create") ? createLabel : undefined}
           actions={<SheetActions d={d} issue={issue} refresh={refresh} />}
           footer={deleteButton}
         />
@@ -758,7 +760,7 @@ function Header({
           {d.key}
         </Ltr>
         <LabelChips ids={d.label_ids} labels={labels} />
-        {ws.can("labels:read") || can ? (
+        {layout === "page" && (ws.can("labels:read") || can) ? (
           <LabelPicker
             compact
             labels={labels}
@@ -1613,6 +1615,8 @@ function SheetBar({
   patch,
   patchIssue,
   move,
+  labels,
+  createLabel,
   actions,
   footer,
 }: {
@@ -1627,6 +1631,8 @@ function SheetBar({
   patch: (b: Record<string, unknown>) => Promise<boolean>
   patchIssue: (f: IssuePatch) => Promise<boolean>
   move: (id: string) => Promise<boolean>
+  labels: Label[]
+  createLabel?: (name: string) => Promise<Label>
   /** Copy link, the item menu, open full page: pinned to the end of the line. */
   actions: ReactNode
   /** Rendered at the bottom of the "⋯" panel (delete). */
@@ -1670,6 +1676,19 @@ function SheetBar({
             <InfoRow label={t("task.estimate")} htmlFor="td-estimate">
               <EstimateField d={d} can={can} patch={patch} />
             </InfoRow>
+            {ws.can("labels:read") || can ? (
+              <InfoRow label={t("task.labels")}>
+                <div className={rowControl}>
+                  <LabelPicker
+                    labels={labels}
+                    selected={d.label_ids}
+                    disabled={!can}
+                    onCreate={createLabel}
+                    onChange={(ids) => void call(() => w.put(ws.id, `/api/w/tasks/${d.id}/labels`, { label_ids: ids }))}
+                  />
+                </div>
+              </InfoRow>
+            ) : null}
             {ws.can("time:track") ? (
               <InfoRow label={t("td.logged")}>
                 <ClockIcon className="size-4 shrink-0 text-muted-foreground" />
