@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react"
 import { PlusIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
+import { Button, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
 
 
 
@@ -13,11 +13,15 @@ import { SectionHeader } from "@/components/public-frame"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
+import { EditLabel } from "@/components/work/label-edit-dialog"
 import { ColorChip, ColorPicker } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
 import { errorText, useLabels, w, type Label } from "@/lib/work"
+
+// No longer in the sidebar: labels are managed from a project's Settings → Labels. The page stays
+// so old links still work.
 
 export default function LabelsPage() {
   const { t } = useTranslations()
@@ -108,51 +112,5 @@ export default function LabelsPage() {
         }}
       />
     </>
-  )
-}
-
-function EditLabel({ label, onClose, onSaved }: { label: Label | null; onClose: () => void; onSaved: () => void }) {
-  const { t } = useTranslations()
-  const ws = useWorkspace()
-  const [key, setKey] = useState<string | null>(null)
-  const [name, setName] = useState("")
-  const [color, setColor] = useState<string>("slate")
-  if ((label?.id ?? null) !== key) {
-    setKey(label?.id ?? null)
-    setName(label?.name ?? "")
-    setColor(label?.color ?? "slate")
-  }
-  return (
-    <Dialog open={!!label} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t("labels.edit")}</DialogTitle>
-          <DialogDescription>{t("labels.editHint")}</DialogDescription>
-        </DialogHeader>
-        <Field>
-          <FieldLabel htmlFor="le-name">{t("labels.newName")}</FieldLabel>
-          <Input id="le-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
-        </Field>
-        <ColorPicker value={color} onChange={setColor} />
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button variant="primary"
-            disabled={!name.trim()}
-            onClick={async () => {
-              try {
-                await w.patch(ws.id, `/api/w/labels/${label!.id}`, { name: name.trim(), color })
-                onSaved()
-              } catch (err) {
-                toast.error(errorText(err, t("common.networkError")))
-              }
-            }}
-          >
-            {t("common.save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

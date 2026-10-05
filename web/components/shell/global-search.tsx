@@ -12,7 +12,6 @@ import {
   FolderKanbanIcon,
   HomeIcon,
   ReceiptTextIcon,
-  TagIcon,
   UsersIcon,
   UsersRoundIcon,
 } from "lucide-react"
@@ -44,7 +43,6 @@ export function GlobalSearch() {
       ["clients", `${base}/clients`, BriefcaseIcon, ws.can("clients:read")],
       ["invoices", `${base}/invoices`, ReceiptTextIcon, ws.can("invoices:read")],
       ["teams", `${base}/teams`, UsersRoundIcon, ws.can("teams:read")],
-      ["labels", `${base}/settings/labels`, TagIcon, true],
     ]
     const pageCmds = pages
       .filter(([, , , ok]) => ok)

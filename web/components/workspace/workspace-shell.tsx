@@ -16,7 +16,6 @@ import {
   KeyRoundIcon,
   LayoutGridIcon,
   ReceiptTextIcon,
-  TagIcon,
   UsersIcon,
   UsersRoundIcon,
   ShieldCheckIcon,
@@ -270,7 +269,6 @@ function ShellNav({ base, can, isOwner }: { base: string; can: string[]; isOwner
         {item("invoices:read", `${base}/invoices`, <ReceiptTextIcon />, t("nav.invoices"))}
         {item("teams:read", `${base}/teams`, <UsersRoundIcon />, t("nav.teams"))}
         {item("requests:manage", `${base}/requests`, <InboxIcon />, t("nav.requests"))}
-        {item(null, `${base}/settings/labels`, <TagIcon />, t("nav.labels"))}
       </SidebarGroup>
       {hasTime ? (
         <SidebarGroup label={t("nav.timeGroup")}>
