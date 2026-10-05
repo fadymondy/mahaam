@@ -209,6 +209,8 @@
   "shell.expandNav": "Expand sidebar (Ctrl+B)",
   "mcp.connectAgent": "Connect AI agent",
   "mcp.connectTitle": "Connect an AI agent",
+  "mcp.selectAll": "Select all",
+  "mcp.allProjectsHint": "incl. future projects",
   "mcp.connectShort": "Connect",
   "mcp.connectSheetHint": "Choose how you want to connect to this workspace.",
   "mcp.connectType": "Connection type",

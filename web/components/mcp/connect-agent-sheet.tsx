@@ -15,15 +15,16 @@ import { MCP_ORIGIN, TokenForm } from "@/components/mcp/connect-agent-dialog"
 import { useTranslations } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
-/** The header's call to action: a green pill with a plug. */
+/** The header's call to action: a pill with a plug, in the app's primary colour. */
 export function ConnectAgentButton({ onClick }: { onClick: () => void }) {
   const { t } = useTranslations()
   return (
     <Button
+      variant="primary"
       size="sm"
       onClick={onClick}
       aria-label={t("mcp.connectTitle")}
-      className="rounded-full border border-nq-success/40 bg-nq-success px-3.5 text-white shadow-sm hover:bg-[color-mix(in_oklab,var(--nq-success)_86%,black)]"
+      className="rounded-full px-3.5 shadow-sm"
       data-connect-agent
     >
       <PlugIcon />

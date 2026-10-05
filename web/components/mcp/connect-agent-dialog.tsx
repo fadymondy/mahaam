@@ -7,7 +7,7 @@
 import { useState, type FormEvent, type ReactNode } from "react"
 import { CheckIcon, TriangleAlertIcon } from "lucide-react"
 
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+import { Button, Checkbox, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
 import { FormError, FormHint } from "@/components/form-text"
 
 
@@ -50,6 +50,10 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
   // A customer sees only the scopes their role can hold; staff see the whole list (disallowed
   // ones greyed, so the hierarchy is visible when picking scopes for someone else's token).
   const scopes = (tokens.data?.scopes ?? []).filter((s) => s.allowed || ws.can("members:read"))
+  const allowedScopes = scopes.filter((s) => s.allowed).map((s) => s.scope)
+  // Scopes are "area:action"; one group per area, in first-seen order.
+  const scopeGroups = [...Map.groupBy(scopes, (s) => s.scope.split(":")[0]).entries()]
+  const projectList = projects.data?.projects ?? []
   const expiryItems = EXPIRY.map((v) => ({ value: v, label: v === "never" ? t("mcp.expiryNever") : t("mcp.expiryDays", { n: v }) }))
 
   function toggle(scope: string, on: boolean) {
@@ -97,34 +101,58 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
         </Field>
 
         {advanced ? (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
+          <fieldset className="flex flex-col gap-2" data-scope-groups>
+            <div className="flex items-center justify-between gap-2">
+              <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                <Checkbox
+                  checked={allowedScopes.length > 0 && chosen.length === allowedScopes.length}
+                  indeterminate={chosen.length > 0 && chosen.length < allowedScopes.length}
+                  onCheckedChange={(on) => setChosen(on ? allowedScopes : [])}
+                />
+                {t("mcp.selectAll")}
+              </label>
+            </div>
             <FormHint>{t("mcp.scopesHint")}</FormHint>
-            <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-border">
-              {scopes.map((s) => {
-                const id = `ca-scope-${s.scope}`
+            <div className="max-h-80 divide-y divide-line overflow-y-auto border border-border">
+              {scopeGroups.map(([group, items]) => {
+                const pickable = items.filter((s) => s.allowed).map((s) => s.scope)
+                const picked = pickable.filter((x) => chosen.includes(x)).length
                 return (
-                  <li key={s.scope} className={s.allowed ? "" : "bg-muted/50"}>
-                    <label htmlFor={id} className={`flex items-start gap-3 px-3 py-2.5 ${s.allowed ? "cursor-pointer" : "cursor-not-allowed"}`}>
-                      <input
-                        id={id}
-                        type="checkbox"
-                        className="mt-0.5 size-4 shrink-0 accent-(--nq-action)"
-                        disabled={!s.allowed}
-                        checked={chosen.includes(s.scope)}
-                        onChange={(e) => toggle(s.scope, e.target.checked)}
+                  <div key={group} data-scope-group={group}>
+                    <label className="sticky top-0 z-10 flex cursor-pointer items-center gap-3 bg-muted px-3 py-2">
+                      <Checkbox
+                        disabled={pickable.length === 0}
+                        checked={pickable.length > 0 && picked === pickable.length}
+                        indeterminate={picked > 0 && picked < pickable.length}
+                        onCheckedChange={(on) => setChosen((prev) => (on ? [...new Set([...prev, ...pickable])] : prev.filter((x) => !pickable.includes(x))))}
                       />
-                      <span className="min-w-0">
-                        <span dir="ltr" className="ltr-isolate block font-mono text-xs text-foreground">
-                          {s.scope}
-                        </span>
-                        <span className="block text-sm text-nq-fg-body">{s.description}</span>
+                      <span dir="ltr" className="ltr-isolate flex-1 font-mono text-xs font-semibold text-foreground">
+                        {group}
+                      </span>
+                      <span className="text-caption text-muted-foreground tabular-nums" dir="ltr">
+                        {picked}/{pickable.length}
                       </span>
                     </label>
-                  </li>
+                    <ul className="divide-y divide-line">
+                      {items.map((s) => (
+                        <li key={s.scope} className={s.allowed ? "" : "bg-muted/50"}>
+                          <label className={`flex items-start gap-3 py-2 ps-9 pe-3 ${s.allowed ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                            <Checkbox className="mt-0.5" disabled={!s.allowed} checked={chosen.includes(s.scope)} onCheckedChange={(on) => toggle(s.scope, on)} />
+                            <span className="min-w-0">
+                              <span dir="ltr" className="ltr-isolate block font-mono text-xs text-foreground">
+                                {s.scope.slice(group.length + 1) || s.scope}
+                              </span>
+                              <span className="block text-sm text-nq-fg-body">{s.description}</span>
+                            </span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )
               })}
-            </ul>
+            </div>
           </fieldset>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -139,21 +167,27 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
           <Field>
             <FieldLabel>{t("mcp.projects")}</FieldLabel>
             <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
-            <ul className="max-h-40 divide-y divide-line overflow-y-auto border border-border">
-              <li>
-                <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-                  <input type="checkbox" className="size-4 shrink-0 accent-(--nq-action)" checked={projectIds.length === 0} onChange={() => setProjectIds([])} />
-                  <span className="text-sm text-foreground">{t("mcp.allProjects")}</span>
+            <ul className="max-h-48 divide-y divide-line overflow-y-auto border border-border">
+              <li className="sticky top-0 z-10 bg-muted">
+                <label className="flex cursor-pointer items-center gap-3 px-3 py-2">
+                  <Checkbox checked={projectIds.length === 0} onCheckedChange={(on) => on && setProjectIds([])} />
+                  <span className="flex-1 text-sm font-medium text-foreground">{t("mcp.allProjects")}</span>
+                  <span className="text-caption text-muted-foreground">{t("mcp.allProjectsHint")}</span>
                 </label>
               </li>
-              {(projects.data?.projects ?? []).map((p) => (
+              {projectList.map((p) => (
                 <li key={p.id}>
-                  <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-                    <input
-                      type="checkbox"
-                      className="size-4 shrink-0 accent-(--nq-action)"
-                      checked={projectIds.includes(p.id)}
-                      onChange={(e) => setProjectIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)))}
+                  <label className="flex cursor-pointer items-center gap-3 py-2 ps-9 pe-3">
+                    <Checkbox
+                      checked={projectIds.length === 0 || projectIds.includes(p.id)}
+                      onCheckedChange={(on) =>
+                        setProjectIds((prev) => {
+                          // From "all", unticking one keeps every other project.
+                          const base = prev.length === 0 ? projectList.map((x) => x.id) : prev
+                          const next = on ? [...base, p.id] : base.filter((x) => x !== p.id)
+                          return next.length === projectList.length ? [] : next
+                        })
+                      }
                     />
                     <span className="truncate text-sm text-nq-fg-body" dir="auto">
                       {p.name}

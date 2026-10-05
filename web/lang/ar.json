@@ -210,6 +210,8 @@
   "shell.expandNav": "توسيع الشريط الجانبي (Ctrl+B)",
   "mcp.connectAgent": "ربط وكيل ذكاء",
   "mcp.connectTitle": "ربط وكيل ذكاء اصطناعي",
+  "mcp.selectAll": "تحديد الكل",
+  "mcp.allProjectsHint": "تشمل المشاريع القادمة",
   "mcp.connectShort": "اربط",
   "mcp.connectSheetHint": "اختر طريقة الربط بمساحة العمل هذه.",
   "mcp.connectType": "نوع الربط",
