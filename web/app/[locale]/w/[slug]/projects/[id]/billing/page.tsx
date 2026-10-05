@@ -168,7 +168,7 @@ export default function BillingPage() {
         ) : list.length === 0 ? (
           <EmptyState title={t("billing.noSubs")} />
         ) : (
-          <Card className="gap-0 py-0" data-subscriptions>
+          <Card className="gap-0 border-transparent py-0" data-subscriptions>
             <ul className="divide-y divide-border">
               {list.map((x) => (
                 <li key={x.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3" data-subscription={x.id}>

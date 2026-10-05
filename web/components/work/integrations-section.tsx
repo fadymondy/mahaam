@@ -40,7 +40,7 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
   const reload = () => void list.mutate()
 
   return (
-    <section id="integrations" className="overflow-hidden rounded-card border border-border bg-card">
+    <section id="integrations" className="overflow-hidden rounded-card bg-card">
       <div className="px-6 pt-5 pb-3">
         <h2 className="text-h3">{t("int.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("int.hint")}</p>

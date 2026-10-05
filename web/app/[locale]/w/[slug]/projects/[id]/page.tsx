@@ -378,7 +378,7 @@ export default function ProjectOverviewPage() {
       </div>
 
       {p.can_manage ? (
-        <section className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-nq-danger/40 bg-card p-4 lg:col-span-3" aria-label={t("po.danger.title")} data-card="danger">
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-nq-danger/5 p-4 lg:col-span-3" aria-label={t("po.danger.title")} data-card="danger">
           <div className="min-w-0">
             <h2 className="text-sm font-medium text-(--nq-danger-text)">{t("po.danger.title")}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">{p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}</p>

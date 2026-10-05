@@ -101,7 +101,7 @@ export default function ProjectSettingsPage() {
   ]
 
   const details = (
-    <SettingsSection title={t("settings.details")} description={t("settings.card.details")}>
+    <SettingsSection className="border-transparent" title={t("settings.details")} description={t("settings.card.details")}>
       <div className="flex flex-col gap-6">
         <ProjectAvatarField project={p} onChanged={reload} />
         <ProjectForm
@@ -117,13 +117,13 @@ export default function ProjectSettingsPage() {
   )
 
   const statuses = (
-    <SettingsSection title={t("settings.statuses")} description={t("settings.statusesHint")}>
+    <SettingsSection className="border-transparent" title={t("settings.statuses")} description={t("settings.statusesHint")}>
       <StatusManager statuses={p.statuses} projectId={p.id} onChanged={reload} />
     </SettingsSection>
   )
 
   const members = (
-    <SettingsSection title={t("settings.members")} description={p.visibility === "members" ? t("settings.membersHintPrivate") : t("settings.membersHint")}>
+    <SettingsSection className="border-transparent" title={t("settings.members")} description={p.visibility === "members" ? t("settings.membersHintPrivate") : t("settings.membersHint")}>
       <ul className="-mx-4 divide-y divide-border border-y border-border">
         {p.members.map((m) => (
           <li key={m.user_id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
@@ -189,7 +189,7 @@ export default function ProjectSettingsPage() {
   )
 
   const teamsPage = (
-    <SettingsSection title={t("settings.teams")} description={t("settings.teamsHint")}>
+    <SettingsSection className="border-transparent" title={t("settings.teams")} description={t("settings.teamsHint")}>
       {p.teams.length ? (
         <ul className="-mx-4 divide-y divide-border border-y border-border">
           {p.teams.map((x) => (
@@ -239,7 +239,7 @@ export default function ProjectSettingsPage() {
 
   const SHARE = ["share_board", "share_team", "share_money"] as const
   const share = (
-    <SettingsSection title={t("settings.share")} description={t("settings.shareHint")}>
+    <SettingsSection className="border-transparent" title={t("settings.share")} description={t("settings.shareHint")}>
       <div className="divide-y divide-border">
         {SHARE.map((k) => (
           <SettingRow key={k} id={k} label={t(`settings.${k}`)} description={t(`settings.${k}Hint`)} data-share={k}>

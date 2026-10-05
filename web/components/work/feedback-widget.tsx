@@ -119,7 +119,7 @@ export function FeedbackWidgetSection({
   }
 
   return (
-    <section className="overflow-hidden rounded-card border border-border bg-card">
+    <section className="overflow-hidden rounded-card bg-card">
       <div className="px-6 pt-5 pb-3">
         <h2 className="text-h3">{t("sdk.section.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("sdk.section.desc")}</p>

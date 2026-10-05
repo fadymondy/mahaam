@@ -122,7 +122,8 @@ function ProjectShell({ children }: { children: ReactNode }) {
             tabs={
               <nav aria-label={p.name} data-project-tabs>
                 <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
-                  <TabsList variant="underline" className="w-max min-w-full border-b-0">
+                  {/* Open tabs: the active one takes the page background and drops its bottom edge, so it runs into the content below. */}
+                  <TabsList variant="underline" className="w-max min-w-full gap-1 border-b-0">
                     {TABS.filter(
                       (x) =>
                         (x !== "vault" || ws.can("vault:read")) &&
@@ -132,7 +133,10 @@ function ProjectShell({ children }: { children: ReactNode }) {
                     ).map((x) => {
                       const Icon = TAB_ICON[x]
                       return (
-                        <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />} data-tab={x}>
+                        <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}
+                          className="h-10 rounded-t-lg border border-b-0 border-transparent px-3.5 hover:bg-background/60 data-active:border-border data-active:bg-background"
+                          data-tab={x}
+                        >
                           <Icon />
                           {t(TAB_LABEL[x])}
                         </TabsTab>
@@ -146,7 +150,7 @@ function ProjectShell({ children }: { children: ReactNode }) {
         </>
       )}
       {p.archived_at ? (
-        <p className="mx-4 mt-2 rounded-lg border border-border bg-muted px-4 py-2 text-sm text-muted-foreground sm:mx-6">{t("project.archivedNotice")}</p>
+        <p className="mx-4 mt-2 rounded-lg bg-muted px-4 py-2 text-sm text-muted-foreground sm:mx-6">{t("project.archivedNotice")}</p>
       ) : null}
       {children}
       <TaskSheet taskKey={taskKey} statuses={p.statuses} onClose={() => setTask(null)} onOpen={(k) => setTask(k)} onChanged={reload} />

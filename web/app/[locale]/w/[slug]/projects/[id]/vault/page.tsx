@@ -219,7 +219,7 @@ function Memories({
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {shown.map((v) => (
-            <Card key={v.id} className="min-w-0 gap-3" data-vault-note={v.id}>
+            <Card key={v.id} className="min-w-0 gap-3 border-transparent" data-vault-note={v.id}>
               <CardHeader>
                 <CardTitle as="h3" className="flex min-w-0 items-center gap-2">
                   <BrainIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />

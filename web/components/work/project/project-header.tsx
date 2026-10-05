@@ -220,7 +220,8 @@ export function ProjectHeader({ p, base, slugBase, tabs }: { p: ProjectDetail; b
               {t("po.updated")} <Ltr>{timeAgo(p.updated_at, locale)}</Ltr>
             </span>
           </div>
-          {tabs ? <div className="-mb-px mt-3 overflow-x-auto">{tabs}</div> : <div className="h-4" />}
+          {/* Shifted 1px over the header's bottom border so the active tab covers it and opens into the page. */}
+          {tabs ? <div className="relative top-px mt-4">{tabs}</div> : <div className="h-4" />}
         </div>
       </div>
     </header>

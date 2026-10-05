@@ -26,7 +26,7 @@ export function Card({
   flush?: boolean
 } & Omit<React.ComponentProps<"section">, "title">) {
   return (
-    <NqCard role="region" aria-label={title} className={cn("min-w-0 gap-3", flush && "pb-1", className)} {...(rest as React.ComponentProps<"div">)}>
+    <NqCard role="region" aria-label={title} className={cn("min-w-0 gap-3 border-transparent", flush && "pb-1", className)} {...(rest as React.ComponentProps<"div">)}>
       <CardHeader>
         <CardTitle as="h2">{title}</CardTitle>
         {action ? (
