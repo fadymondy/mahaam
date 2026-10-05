@@ -28,6 +28,8 @@ export type Project = {
   updated_at: string
   tasks: TaskCounts
   member_count: number
+  /** When anything last happened in the project; absent when nothing has. */
+  last_activity_at?: string | null
   /** data: URL of the project's image; null = coloured initials. */
   avatar?: string | null
   /** Items per issue status (lists only). */

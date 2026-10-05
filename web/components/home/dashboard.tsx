@@ -164,7 +164,10 @@ function ProjectsPanel({ projects, loading, memberIds, dir, base }: { projects: 
     return c
   }, [projects])
   const chips = [["all", t("home.projects.all"), projects.length] as const, ...PROJECT_STATUSES.filter((s) => counts[s]).map((s) => [s, t(`projectStatus.${s}`), counts[s]] as const)]
-  const shown = projects
+  // Most recently active first; a project with no activity yet falls back to when it was last edited.
+  const last = (p: Project) => p.last_activity_at ?? p.updated_at
+  const shown = [...projects]
+    .sort((a, b) => last(b).localeCompare(last(a)))
     .filter((p) => status === "all" || p.status === status)
     .filter((p) => !q.trim() || `${p.name} ${p.client_name ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()))
     .slice(0, 8)

@@ -126,27 +126,28 @@ func hasFullAccess(ctx context.Context, q querier, s *tenant.Scope, projectID st
 
 // Project is a project as listed.
 type Project struct {
-	ID            string     `json:"id"`
-	Name          string     `json:"name"`
-	Description   *string    `json:"description"`
-	Color         string     `json:"color"`
-	Status        string     `json:"status" enum:"planned,active,on_hold,completed,cancelled" doc:"planned, active, on_hold, completed, cancelled"`
-	BillingMode   string     `json:"billing_mode" enum:"non_billable,hourly,fixed" doc:"non_billable, hourly, fixed"`
-	BudgetMinutes *int64     `json:"budget_minutes"`
-	BudgetMinor   *int64     `json:"budget_minor" doc:"Budget in minor units of currency"`
-	Currency      *string    `json:"currency"`
-	Visibility    string     `json:"visibility" doc:"workspace (every member) or members (only people on the project)"`
-	StartsOn      *string    `json:"starts_on" doc:"YYYY-MM-DD"`
-	EndsOn        *string    `json:"ends_on" doc:"YYYY-MM-DD"`
-	ArchivedAt    *time.Time `json:"archived_at"`
-	ClientID      *string    `json:"client_id"`
-	ClientName    *string    `json:"client_name"`
-	CreatedBy     string     `json:"created_by"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	Tasks         TaskCounts `json:"tasks"`
-	MemberCount   int        `json:"member_count"`
-	Avatar        *string    `json:"avatar" doc:"data: URL of the project's image; null = coloured initials"`
+	ID             string     `json:"id"`
+	Name           string     `json:"name"`
+	Description    *string    `json:"description"`
+	Color          string     `json:"color"`
+	Status         string     `json:"status" enum:"planned,active,on_hold,completed,cancelled" doc:"planned, active, on_hold, completed, cancelled"`
+	BillingMode    string     `json:"billing_mode" enum:"non_billable,hourly,fixed" doc:"non_billable, hourly, fixed"`
+	BudgetMinutes  *int64     `json:"budget_minutes"`
+	BudgetMinor    *int64     `json:"budget_minor" doc:"Budget in minor units of currency"`
+	Currency       *string    `json:"currency"`
+	Visibility     string     `json:"visibility" doc:"workspace (every member) or members (only people on the project)"`
+	StartsOn       *string    `json:"starts_on" doc:"YYYY-MM-DD"`
+	EndsOn         *string    `json:"ends_on" doc:"YYYY-MM-DD"`
+	ArchivedAt     *time.Time `json:"archived_at"`
+	ClientID       *string    `json:"client_id"`
+	ClientName     *string    `json:"client_name"`
+	CreatedBy      string     `json:"created_by"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	Tasks          TaskCounts `json:"tasks"`
+	MemberCount    int        `json:"member_count"`
+	LastActivityAt *time.Time `json:"last_activity_at,omitempty" doc:"when anything last happened in the project (its newest activity log entry); list only"`
+	Avatar         *string    `json:"avatar" doc:"data: URL of the project's image; null = coloured initials"`
 	// Issues counts the project's items by issue status (the board's columns); only in lists.
 	Issues map[string]int `json:"issues,omitempty" doc:"Items per status: backlog, todo, in_progress, waiting_approval, in_review, done"`
 	// What the project's customer sees in the portal (19c_portal_share.sql).
@@ -304,7 +305,26 @@ func (sv *Service) ListProjects(ctx context.Context, f ProjectFilter) ([]Project
 		}
 		out[at[pid]].Issues[st] = n
 	}
-	return out, cr.Err()
+	if err := cr.Err(); err != nil {
+		return nil, err
+	}
+	cr.Close()
+	// Last activity per project, for "most recently active first" views (activity_logs_project_idx).
+	lr, err := sv.DB.QueryContext(ctx, `SELECT project_id, max(created_at) FROM activity_logs
+		WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id`, s.WorkspaceID, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer lr.Close()
+	for lr.Next() {
+		var pid string
+		var t time.Time
+		if err := lr.Scan(&pid, &t); err != nil {
+			return nil, err
+		}
+		out[at[pid]].LastActivityAt = &t
+	}
+	return out, lr.Err()
 }
 
 // FindProject resolves an id or an exact name (case-insensitive) — for MCP callers.
