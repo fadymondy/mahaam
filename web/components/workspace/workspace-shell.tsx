@@ -49,7 +49,6 @@ import { ConnectAgentButton, ConnectAgentSheet } from "@/components/mcp/connect-
 import { NotFoundState } from "@/components/not-found-state";
 import { NavItem } from "@/components/shell/nav-item";
 import { GlobalSearch } from "@/components/shell/global-search";
-import { WorkspaceCard } from "@/components/shell/workspace-card";
 import { ErrorState } from "@/components/states";
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
 import { UserMenu } from "@/components/workspace/user-menu";
@@ -64,7 +63,7 @@ import { useLiveStream } from "@/lib/time";
 import { brandName } from "@/lib/brand-name";
 
 /** The sidebar (Nasaq dashboard layout): brand, workspace switcher and search on top, the permission-gated
- * navigation, then the plan card and the account menu (help, theme, language) at the bottom. */
+ * navigation, then the account menu (help, theme, language) at the bottom. */
 function ShellSidebar({
   base,
   summary,
@@ -123,7 +122,6 @@ function ShellSidebar({
       </SidebarHeader>
       <SidebarContent>{summary ? <ShellNav base={base} can={can} isOwner={summary.role === "owner" || summary.role === "admin"} /> : null}</SidebarContent>
       <SidebarFooter>
-        {summary ? <WorkspaceCard summary={summary} base={base} canPlan={can.includes("workspace:update")} /> : null}
         {email ? <UserMenu email={email} onReport={onReport} onInstall={onInstall} profileHref={summary ? `${base}/me` : undefined} /> : null}
       </SidebarFooter>
       <Dialog open={creating} onOpenChange={setCreating}>
