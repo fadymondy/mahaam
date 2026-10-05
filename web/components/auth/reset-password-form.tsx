@@ -80,7 +80,7 @@ export function ResetPasswordForm() {
       await api("/api/auth/login", { json: { email: email.trim(), password } })
       resetCsrf()
       await mutate("/api/auth/me")
-      router.replace(`/${locale}/workspaces`)
+      router.replace(`/${locale}`)
     } catch {
       // The password did change. Only the automatic sign-in failed, so send them to sign in.
       router.replace(`/${locale}/login`)

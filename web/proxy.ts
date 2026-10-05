@@ -47,6 +47,16 @@ function preferredLocale(request: NextRequest): Locale {
   return localeFromAcceptLanguage(request.headers.get("accept-language")) ?? DEFAULT_LOCALE
 }
 
+// The last workspace opened, so the app starts on its home instead of the workspace list.
+// A stale slug (no longer a member) lands on the workspace not-found page, which links back.
+const LAST_WS_COOKIE = "mahaam_ws"
+
+function startPath(request: NextRequest, locale: string, signedIn: boolean): string {
+  if (!signedIn) return `/${locale}/login`
+  const slug = request.cookies.get(LAST_WS_COOKIE)?.value
+  return slug && /^[a-z0-9-]+$/i.test(slug) ? `/${locale}/w/${slug}` : `/${locale}/workspaces`
+}
+
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
   if (shouldSkip(pathname)) return NextResponse.next()
@@ -58,7 +68,7 @@ export function proxy(request: NextRequest) {
   if (!locale) {
     const url = request.nextUrl.clone()
     const target = preferredLocale(request)
-    url.pathname = pathname === "/" ? `/${target}/${signedIn ? "workspaces" : "login"}` : `/${target}${pathname}`
+    url.pathname = pathname === "/" ? startPath(request, target, signedIn) : `/${target}${pathname}`
     return NextResponse.redirect(url)
   }
 
@@ -66,7 +76,7 @@ export function proxy(request: NextRequest) {
 
   if (restPath === "/") {
     const url = request.nextUrl.clone()
-    url.pathname = `/${locale}/${signedIn ? "workspaces" : "login"}`
+    url.pathname = startPath(request, locale, signedIn)
     return NextResponse.redirect(url)
   }
 
@@ -84,6 +94,10 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers } })
   if (request.cookies.get(LOCALE_COOKIE)?.value !== locale) {
     response.cookies.set(LOCALE_COOKIE, locale, { path: "/", maxAge: 31536000, sameSite: "lax" })
+  }
+  const ws = /^\/w\/([^/]+)/.exec(restPath)?.[1]
+  if (ws && request.cookies.get(LAST_WS_COOKIE)?.value !== ws) {
+    response.cookies.set(LAST_WS_COOKIE, ws, { path: "/", maxAge: 31536000, sameSite: "lax" })
   }
   return response
 }

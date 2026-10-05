@@ -78,7 +78,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter()
   const params = useSearchParams()
   const { mutate } = useSWRConfig()
-  const next = safeNext(params.get("next"), `/${locale}/workspaces`)
+  const next = safeNext(params.get("next"), `/${locale}`)
 
   useDocumentTitle(mode === "login" ? t("auth.signIn") : t("auth.createAccount"))
 
