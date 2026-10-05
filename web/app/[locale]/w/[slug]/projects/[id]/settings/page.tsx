@@ -65,6 +65,10 @@ Project settings on Nasaq SettingsSections: grouped pages in a side nav (a selec
 screens) with search, the open page in ?s=<id>. Each page is one or more SettingsSection cards;
 every control saves on its own, so there is no save bar. Manager+ (can_manage).
 */
+// Settings pages sit flat on the page: the section keeps its heading and description but loses
+// the card (border, fill and the parts' inset).
+const FLAT = "border-transparent bg-transparent py-0 shadow-none *:px-0"
+
 export default function ProjectSettingsPage() {
   const { t } = useTranslations()
   const ws = useWorkspace()
@@ -103,7 +107,7 @@ export default function ProjectSettingsPage() {
   ]
 
   const details = (
-    <SettingsSection className="border-transparent" title={t("settings.details")} description={t("settings.card.details")}>
+    <SettingsSection className={FLAT} title={t("settings.details")} description={t("settings.card.details")}>
       <div className="flex flex-col gap-6">
         <ProjectAvatarField project={p} onChanged={reload} />
         <ProjectForm
@@ -119,14 +123,14 @@ export default function ProjectSettingsPage() {
   )
 
   const statuses = (
-    <SettingsSection className="border-transparent" title={t("settings.statuses")} description={t("settings.statusesHint")}>
+    <SettingsSection className={FLAT} title={t("settings.statuses")} description={t("settings.statusesHint")}>
       <StatusManager statuses={p.statuses} projectId={p.id} onChanged={reload} />
     </SettingsSection>
   )
 
   const members = (
-    <SettingsSection className="border-transparent" title={t("settings.members")} description={p.visibility === "members" ? t("settings.membersHintPrivate") : t("settings.membersHint")}>
-      <ul className="-mx-4 divide-y divide-border border-y border-border">
+    <SettingsSection className={FLAT} title={t("settings.members")} description={p.visibility === "members" ? t("settings.membersHintPrivate") : t("settings.membersHint")}>
+      <ul className="divide-y divide-border border-y border-border">
         {p.members.map((m) => (
           <li key={m.user_id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
             <span className="min-w-0 flex-1 truncate" dir="ltr">
@@ -191,9 +195,9 @@ export default function ProjectSettingsPage() {
   )
 
   const teamsPage = (
-    <SettingsSection className="border-transparent" title={t("settings.teams")} description={t("settings.teamsHint")}>
+    <SettingsSection className={FLAT} title={t("settings.teams")} description={t("settings.teamsHint")}>
       {p.teams.length ? (
-        <ul className="-mx-4 divide-y divide-border border-y border-border">
+        <ul className="divide-y divide-border border-y border-border">
           {p.teams.map((x) => (
             <li key={x.team_id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
               <ColorDot color={x.color} />
@@ -241,7 +245,7 @@ export default function ProjectSettingsPage() {
 
   const SHARE = ["share_board", "share_team", "share_money"] as const
   const share = (
-    <SettingsSection className="border-transparent" title={t("settings.share")} description={t("settings.shareHint")}>
+    <SettingsSection className={FLAT} title={t("settings.share")} description={t("settings.shareHint")}>
       <div className="divide-y divide-border">
         {SHARE.map((k) => (
           <SettingRow key={k} id={k} label={t(`settings.${k}`)} description={t(`settings.${k}Hint`)} data-share={k}>
@@ -258,6 +262,7 @@ export default function ProjectSettingsPage() {
 
   const archive = (
     <SettingsSection
+      className={FLAT}
       tone="danger"
       title={p.archived_at ? t("settings.restoreTitle") : t("settings.archiveTitle")}
       description={p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}
@@ -401,7 +406,7 @@ function StatusManager({ statuses, projectId, onChanged }: { statuses: Status[];
 
   return (
     <>
-      <ul className="-mx-4 divide-y divide-border border-y border-border">
+      <ul className="divide-y divide-border border-y border-border">
         {statuses.map((s, i) => (
           <li key={s.id} className="flex items-center gap-3 px-4 py-2 text-sm" data-status-row={s.id}>
             <span className="flex size-7 shrink-0 items-center justify-center rounded-md" style={{ background: soft(s.color) }}>

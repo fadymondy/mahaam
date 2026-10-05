@@ -15,6 +15,7 @@
   "int.disconnectTitle": "Disconnect {provider}?",
   "int.disconnectBody": "Imported issues stay in Mahaam. For GitHub, uninstall the App on GitHub to revoke its access.",
   "int.connect": "Connect",
+  "int.manage": "Manage",
   "int.save": "Save",
   "int.saved": "Integration saved",
   "int.keepSecret": "Leave empty to keep the stored credential",

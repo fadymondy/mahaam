@@ -15,6 +15,7 @@
   "int.disconnectTitle": "قطع الاتصال بـ {provider}؟",
   "int.disconnectBody": "تبقى المشكلات المستوردة في مهام. بالنسبة إلى GitHub، أزل تثبيت التطبيق من GitHub لإلغاء وصوله.",
   "int.connect": "اتصال",
+  "int.manage": "إدارة",
   "int.save": "حفظ",
   "int.saved": "تم حفظ التكامل",
   "int.keepSecret": "اتركه فارغًا للاحتفاظ ببيانات الاعتماد المخزنة",

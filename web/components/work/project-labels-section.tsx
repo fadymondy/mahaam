@@ -47,12 +47,12 @@ export function ProjectLabelsSection({ projectId }: { projectId: string }) {
   }
 
   return (
-    <section className="overflow-hidden rounded-card bg-card">
-      <div className="px-6 pt-5 pb-3">
+    <section className="flex flex-col gap-4">
+      <div>
         <h2 className="text-h3">{t("projectLabels.title")}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t("projectLabels.hint")}</p>
+        <p className="mt-1 text-body-sm text-muted-foreground">{t("projectLabels.hint")}</p>
       </div>
-      <div className="flex flex-wrap items-center gap-2 px-6 pb-6">
+      <div className="flex flex-wrap items-center gap-2">
         {(all.data?.labels ?? []).map((l) => (
           <button
             key={l.id}

@@ -6,11 +6,7 @@ import { ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
-import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
-
-
-
-
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { LogoTile, type Brand } from "@/components/work/brand-logos"
@@ -23,7 +19,9 @@ import { errorText, w } from "@/lib/work"
 /*
 Project settings → Integrations: install the GitHub App and pick the repository, connect Jira or
 Linear import (the credential is write-only: sealed server-side, never shown again), and see each
-integration's status, last sync and last error with a Sync button. Reading is member+; every
+integration's status, last sync and last error with a Sync button. The three sit in one row as
+compact cards with one button each; the setup opens in a dialog (GitHub with no installation to
+reuse goes straight to the App install). Reading is member+; every
 change is manager+ (integrations:manage) — the endpoints enforce both.
 */
 export function IntegrationsSection({ projectId }: { projectId: string }) {
@@ -41,12 +39,12 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
   const reload = () => void list.mutate()
 
   return (
-    <section id="integrations" className="overflow-hidden rounded-card bg-card">
-      <div className="px-6 pt-5 pb-3">
+    <section id="integrations" className="flex flex-col gap-4">
+      <div>
         <h2 className="text-h3">{t("int.title")}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t("int.hint")}</p>
+        <p className="mt-1 text-body-sm text-muted-foreground">{t("int.hint")}</p>
       </div>
-      <div className="grid gap-4 px-6 pb-6 lg:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         <GitHubCard projectId={projectId} it={by("github")} canManage={canManage} onChanged={reload} />
         <JiraCard projectId={projectId} it={by("jira")} canManage={canManage} onChanged={reload} />
         <LinearCard projectId={projectId} it={by("linear")} canManage={canManage} onChanged={reload} />
@@ -59,8 +57,10 @@ function statusVariant(s: Integration["status"]) {
   return s === "active" ? "success" : s === "error" ? "danger" : "neutral"
 }
 
-// One integration as a card: logo, name and status on top, then what it does, the last error, the
-// provider's own setup (children) and, once connected, Sync and Disconnect at the foot.
+// One integration as a compact card: logo, name and status, what it does (or its last sync and
+// error once connected), and a single Connect / Manage button. `connect` skips the dialog for a
+// one-click connect; otherwise the provider's setup (children, handed a close callback) opens in a
+// dialog that also carries Disconnect.
 function IntegrationCard({
   brand,
   name,
@@ -69,6 +69,8 @@ function IntegrationCard({
   canManage,
   projectId,
   onChanged,
+  summary,
+  connect,
   children,
 }: {
   brand: Brand
@@ -78,10 +80,13 @@ function IntegrationCard({
   canManage: boolean
   projectId: string
   onChanged: () => void
-  children?: React.ReactNode
+  summary?: React.ReactNode
+  connect?: () => void
+  children: (close: () => void) => React.ReactNode
 }) {
   const { t, formatDate } = useTranslations()
   const ws = useWorkspace()
+  const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const sync = async () => {
     if (!it) return
@@ -96,51 +101,74 @@ function IntegrationCard({
       onChanged()
     }
   }
+  const syncable = it && it.status !== "pending" && it.status !== "disabled"
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-card bg-muted/40 p-4" data-integration={brand}>
-      <div className="flex items-start gap-3">
+    <div className="flex min-w-0 flex-col gap-3 rounded-card bg-muted/40 p-4" data-integration={brand}>
+      <div className="flex items-center gap-3">
         <LogoTile brand={brand} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-medium">{name}</h3>
-            {it ? <Badge variant={statusVariant(it.status)}>{t(`int.status.${it.status}`)}</Badge> : <Badge variant="outline">{t("int.notConnected")}</Badge>}
-          </div>
-          <p className="text-caption text-muted-foreground">
-            {it ? (it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")) : desc}
-          </p>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <h3 className="truncate font-medium">{name}</h3>
+          {it ? <Badge variant={statusVariant(it.status)}>{t(`int.status.${it.status}`)}</Badge> : <Badge variant="outline">{t("int.notConnected")}</Badge>}
         </div>
       </div>
-      {it ? <p className="text-sm text-muted-foreground">{desc}</p> : null}
-      {it?.last_error ? (
-        <p className="text-sm text-destructive" dir="auto">
-          {it.last_error}
-        </p>
-      ) : null}
-      {children}
-      {it && canManage ? (
-        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-line pt-3">
-          {it.status !== "pending" && it.status !== "disabled" ? (
-            <Button variant="secondary" size="sm" disabled={busy} onClick={sync}>
+      {it ? (
+        <div className="space-y-1 text-caption text-muted-foreground">
+          {summary}
+          <p>{it.last_synced_at ? t("int.lastSync", { when: formatDate(it.last_synced_at) }) : t("int.neverSynced")}</p>
+          {it.last_error ? (
+            <p className="line-clamp-2 text-destructive" dir="auto" title={it.last_error}>
+              {it.last_error}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <p className="line-clamp-3 text-caption text-muted-foreground">{desc}</p>
+      )}
+      {canManage ? (
+        <div className="mt-auto flex items-center gap-2 pt-1">
+          <Button variant={it ? "secondary" : "primary"} size="sm" className="flex-1" onClick={!it && connect ? connect : () => setOpen(true)}>
+            {it ? t("int.manage") : t("int.connect")}
+          </Button>
+          {syncable ? (
+            <Button variant="ghost" size="sm" disabled={busy} onClick={sync} aria-label={t("int.sync")} title={t("int.sync")}>
               <RefreshCwIcon className={busy ? "animate-spin" : undefined} />
-              {t("int.sync")}
             </Button>
           ) : null}
-          <ConfirmButton
-            label={t("int.disconnect")}
-            title={t("int.disconnectTitle", { provider: name })}
-            description={t("int.disconnectBody")}
-            confirmLabel={t("int.disconnect")}
-            onConfirm={async () => {
-              try {
-                await w.del(ws.id, `/api/w/projects/${projectId}/integrations/${it.provider}`)
-              } catch (err) {
-                toast.error(errorText(err, t("common.networkError")))
-              }
-              onChanged()
-            }}
-          />
         </div>
       ) : null}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" data-integration-dialog={brand}>
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <LogoTile brand={brand} />
+              <div className="min-w-0">
+                <DialogTitle>{name}</DialogTitle>
+                <DialogDescription>{desc}</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          {children(() => setOpen(false))}
+          {it ? (
+            <div className="flex justify-end border-t border-line pt-4">
+              <ConfirmButton
+                label={t("int.disconnect")}
+                title={t("int.disconnectTitle", { provider: name })}
+                description={t("int.disconnectBody")}
+                confirmLabel={t("int.disconnect")}
+                onConfirm={async () => {
+                  try {
+                    await w.del(ws.id, `/api/w/projects/${projectId}/integrations/${it.provider}`)
+                    setOpen(false)
+                  } catch (err) {
+                    toast.error(errorText(err, t("common.networkError")))
+                  }
+                  onChanged()
+                }}
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -165,12 +193,13 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
       toast.error(errorText(err, t("common.networkError")))
     }
   }
-  const link = async () => {
+  const link = async (close: () => void) => {
     try {
       await w.put(ws.id, `/api/w/projects/${projectId}/integrations/github/repo`, { repo })
       toast.success(t("int.github.linked"))
       setRepo("")
       onChanged()
+      close()
     } catch (err) {
       toast.error(errorText(err, t("common.networkError")))
     }
@@ -178,36 +207,59 @@ function GitHubCard({ projectId, it, canManage, onChanged }: { projectId: string
   const list = repos.data?.repos ?? []
   const current = it?.config.repo
   return (
-    <IntegrationCard brand="github" name="GitHub" desc={t("int.github.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged}>
-      {current ? (
-        <p className="text-sm">
-          {t("int.github.repo")}:{" "}
-          <a className="inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline" dir="ltr" href={`https://github.com/${current}`} target="_blank" rel="noreferrer">
-            {current}
-            <ExternalLinkIcon className="size-3.5" />
+    <IntegrationCard
+      brand="github"
+      name="GitHub"
+      desc={t("int.github.desc")}
+      it={it}
+      canManage={canManage}
+      projectId={projectId}
+      onChanged={onChanged}
+      // No installation to reuse: Connect goes straight to the GitHub App install.
+      connect={list.length ? undefined : install}
+      summary={
+        current ? (
+          <a
+            className="inline-flex max-w-full items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline"
+            dir="ltr"
+            href={`https://github.com/${current}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span className="truncate">{current}</span>
+            <ExternalLinkIcon className="size-3.5 shrink-0" />
           </a>
-        </p>
-      ) : null}
-      {canManage ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <Button variant={it || list.length ? "secondary" : "primary"} onClick={install}>
-            {it ? t("int.github.reinstall") : t("int.github.install")}
-          </Button>
+        ) : null
+      }
+    >
+      {(close) => (
+        <div className="space-y-3">
+          {current ? (
+            <p className="text-sm">
+              {t("int.github.repo")}:{" "}
+              <span className="font-medium" dir="ltr">
+                {current}
+              </span>
+            </p>
+          ) : null}
           {needsRepo && repos.data ? (
             list.length ? (
-              <>
+              <div className="space-y-2">
                 <RepoSearch repos={list.map((r) => r.full_name)} value={repo} onChange={setRepo} />
-                <Button variant="secondary" disabled={!repo} onClick={link}>
+                <Button variant="primary" disabled={!repo} onClick={() => void link(close)}>
                   {t("int.github.link")}
                 </Button>
-              </>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">{t("int.github.noRepos")}</p>
             )
           ) : null}
           {repos.error && it ? <p className="text-sm text-destructive">{errorText(repos.error, t("common.networkError"))}</p> : null}
+          <Button variant="secondary" onClick={install}>
+            {it ? t("int.github.reinstall") : t("int.github.install")}
+          </Button>
         </div>
-      ) : null}
+      )}
     </IntegrationCard>
   )
 }
@@ -279,12 +331,12 @@ function JiraCard({ projectId, it, canManage, onChanged }: { projectId: string; 
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value })
   return (
     <IntegrationCard brand="jira" name="Jira" desc={t("int.jira.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged}>
-      {canManage ? (
+      {(close) => (
         <form
           className="grid gap-3"
           onSubmit={(e) => {
             e.preventDefault()
-            void save(f)
+            void save(f).then((ok) => ok && close())
           }}
         >
           <Field>
@@ -313,7 +365,7 @@ function JiraCard({ projectId, it, canManage, onChanged }: { projectId: string; 
             </Button>
           </div>
         </form>
-      ) : null}
+      )}
     </IntegrationCard>
   )
 }
@@ -331,12 +383,12 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
   const { busy, save } = useSave(projectId, "linear", onChanged)
   return (
     <IntegrationCard brand="linear" name="Linear" desc={t("int.linear.desc")} it={it} canManage={canManage} projectId={projectId} onChanged={onChanged}>
-      {canManage ? (
+      {(close) => (
         <form
           className="grid gap-3"
           onSubmit={(e) => {
             e.preventDefault()
-            void save({ team_id: team, api_key: key })
+            void save({ team_id: team, api_key: key }).then((ok) => ok && close())
           }}
         >
           <Field>
@@ -353,7 +405,7 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
             </Button>
           </div>
         </form>
-      ) : null}
+      )}
     </IntegrationCard>
   )
 }
