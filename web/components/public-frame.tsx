@@ -1,9 +1,9 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { AuthEmblem, AuthFooter, AuthLayout, ProductLogo, ProductMark } from "@fadymondy/nasaq/web"
+import { FingerprintIcon, HistoryIcon, LayersIcon, ShieldCheckIcon } from "lucide-react"
+import { AuthEmblem, AuthFooter, AuthLayout, AuthOrigin, LocaleSwitcher, ProductLogo, ProductMark, ThemeToggle } from "@fadymondy/nasaq/web"
 
-import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls"
 import { brandName } from "@/lib/brand-name"
 import { useTranslations } from "@/lib/i18n"
 
@@ -12,7 +12,9 @@ import { useTranslations } from "@/lib/i18n"
   the language/theme controls in the footer. `wide` widens the column for reading pages (legal,
   workspace picker). `split` is the sign-in look: the brand panel on the inline start (the Mahaam
   logo), the form on the other side under the animated emblem (the mark turns into a lock and
-  scans while a sign-in request runs), and `prompt` under the form ("No account? Create one").
+  scans while a sign-in request runs), the address check (AuthOrigin) and `prompt` under the form
+  ("No account? Create one"); the panel says what protects the account, as the CircleXO hub's does.
+  The footer's theme and language switchers are the hub's too (ThemeToggle, labelled LocaleSwitcher).
 */
 export function PublicFrame({
   eyebrow,
@@ -45,7 +47,7 @@ export function PublicFrame({
           <ProductMark brand="mahaam" size={32} title={brandName(locale)} />
         )
       }
-      logo={<ProductLogo brand="mahaam" size={56} />}
+      panel={split ? <SecurityPanel /> : undefined}
       prompt={prompt}
       title={title}
       description={description}
@@ -57,8 +59,8 @@ export function PublicFrame({
           ]}
           end={
             <>
-              <LanguageSwitcher />
               <ThemeToggle />
+              <LocaleSwitcher showLabel label={t("header.language")} />
             </>
           }
         />
@@ -66,7 +68,45 @@ export function PublicFrame({
     >
       {eyebrow ? <p className="text-eyebrow uppercase text-muted-foreground">{eyebrow}</p> : null}
       {children}
+      {split ? <AuthOrigin /> : null}
     </AuthLayout>
+  )
+}
+
+const POINTS = [
+  { key: "hub", icon: LayersIcon },
+  { key: "twoStep", icon: FingerprintIcon },
+  { key: "isolation", icon: ShieldCheckIcon },
+  { key: "record", icon: HistoryIcon },
+] as const
+
+// The brand side of the sign-in page: what Mahaam is, and what protects the account.
+function SecurityPanel() {
+  const { t } = useTranslations()
+  return (
+    <>
+      <ProductLogo brand="mahaam" size={28} />
+      <div className="flex max-w-md flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <p className="text-h2 text-foreground">{t("auth.panel.title")}</p>
+          <p className="text-body text-muted-foreground">{t("auth.panel.body")}</p>
+        </div>
+        <ul className="flex flex-col gap-4">
+          {POINTS.map(({ key, icon: Icon }) => (
+            <li key={key} className="flex gap-3">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-background text-nq-action">
+                <Icon aria-hidden="true" className="size-4" />
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <p className="text-body-sm font-medium text-foreground">{t(`auth.panel.${key}`)}</p>
+                <p className="text-caption text-muted-foreground">{t(`auth.panel.${key}Body`)}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p className="text-caption text-muted-foreground">© {t("auth.panel.copyright")}</p>
+    </>
   )
 }
 

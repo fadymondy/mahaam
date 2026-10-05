@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState, type FormEvent } from "react"
+import { useRef, useState, type FormEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 
@@ -12,11 +12,10 @@ import {
   FieldDescription,
   FieldLabel,
   Input,
-  LoginForm,
+  SignInFlow,
   OAuthButtons,
   OAuthDivider,
   PasswordInput,
-  TwoFactorChallenge,
   type OAuthProvider as NqProvider,
 } from "@fadymondy/nasaq/web"
 
@@ -89,9 +88,6 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   // A refused CircleXO sign-in comes back as /login?circlexo_error=<code>.
   const hubError = params.get("circlexo_error")
   const [notice, setNotice] = useState<string | null>(hubError ? hubErrorMessage(t, hubError) : null)
-  // Two-factor sign-in (MH-341): the password was right and the account has a second factor, so
-  // the API answered with a challenge instead of a session.
-  const [challenge, setChallenge] = useState<string | null>(null)
 
   const methods = useSWR("/api/auth/methods", (p: string) => api<unknown>(p), {
     revalidateOnFocus: false,
@@ -137,7 +133,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     router.replace(next)
   }
 
-  async function signIn(values: { email: string; password: string }): Promise<Failure> {
+  // The email-first flow (as on the CircleXO hub): email, then password, then the second factor.
+  // There is no lookup on the email step, so every address goes on to the password step and the page
+  // never says whether an account exists. The challenge id lives in a ref so the flow's 2FA step
+  // reads the latest one.
+  const pending = useRef<string | null>(null)
+
+  async function password(values: { email: string; password: string }): Promise<{ error?: string } | { twoFactor: true } | void> {
     setNotice(null)
     try {
       resetCsrf()
@@ -147,8 +149,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       if (err instanceof ApiError) {
         const mfa = (err.data as { challenge?: string } | undefined)?.challenge
         if (err.code === "mfa_required" && mfa) {
-          setChallenge(mfa)
-          return
+          pending.current = mfa
+          return { twoFactor: true }
         }
         return { error: err.status === 401 ? t("auth.invalidCredentials") : err.message }
       }
@@ -156,21 +158,16 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     }
   }
 
-  async function secondFactor(values: { code: string; method: string }): Promise<Failure> {
-    if (!challenge) return
+  async function flowSecondFactor(values: { code: string; method: string }): Promise<Failure> {
+    const id = pending.current
+    if (!id) return { error: t("auth.mfaExpired") }
     const code = values.code.trim()
     try {
-      await api("/api/auth/2fa/challenge", {
-        json: values.method === "recovery" ? { challenge, recovery_code: code } : { challenge, code },
-      })
+      await api("/api/auth/2fa/challenge", { json: values.method === "recovery" ? { challenge: id, recovery_code: code } : { challenge: id, code } })
       await finish()
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        // The challenge expired (five minutes) or the password changed: start over.
-        setChallenge(null)
-        setNotice(t("auth.mfaExpired"))
-        return
-      }
+      // The challenge expired (five minutes) or the password changed: say so; "Change" starts over.
+      if (err instanceof ApiError && err.status === 401) return { error: t("auth.mfaExpired") }
       if (err instanceof ApiError && err.status === 429) return { error: t("auth.mfaLocked") }
       if (err instanceof ApiError && err.status === 400) return { error: t("auth.mfaWrong") }
       return { error: err instanceof ApiError ? err.message : t("common.networkError") }
@@ -204,12 +201,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           </Alert>
         ) : null}
 
-        {challenge ? (
-          <div data-mfa-form>
-            <TwoFactorChallenge showTrustDevice={false} onSubmit={secondFactor} />
-          </div>
-        ) : mode === "login" ? (
-          <LoginForm
+        {mode === "login" ? (
+          <SignInFlow
             showRemember={false}
             forgotPassword={
               <Link
@@ -221,7 +214,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             }
             oauthProviders={buttons}
             onOAuth={goOAuth}
-            onSubmit={signIn}
+            onPassword={password}
+            onTwoFactor={flowSecondFactor}
+            onRegister={() => router.push(otherHref)}
+            onStepChange={() => setNotice(null)}
           />
         ) : (
           <RegisterFields providers={buttons} onDone={finish} onOAuth={goOAuth} />

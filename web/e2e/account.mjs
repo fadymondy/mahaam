@@ -172,6 +172,7 @@ try {
   await ctx.clearCookies()
   await page.goto(`${WEB}/en/login`, { waitUntil: "load" })
   await page.getByLabel("Email").fill(next)
+  await page.getByRole("button", { name: "Continue" }).click()
   await page.getByLabel("Password").fill("account-pass-2")
   await page.getByRole("button", { name: "Sign in" }).click()
   await page.waitForURL(/\/workspaces/, { timeout: 20000 })
