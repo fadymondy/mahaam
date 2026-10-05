@@ -1,6 +1,6 @@
 "use client"
 
-// The in-app inbox: Nasaq's NotificationCenter under the header bell (All / Unread tabs, mark all
+// The in-app inbox: Nasaq's NotificationCenter as a side-over from the header bell (All / Unread tabs, mark all
 // read). Each kind gets its own icon and colour so a glance tells mentions, assignments, finished
 // work, time reminders and budget alerts apart. Items are rendered in the UI language from
 // kind + data, falling back to the server's title. New items arrive on the per-user live stream
@@ -121,6 +121,7 @@ export function NotificationBell() {
         if (n) void open(n)
       }}
       onMarkAllRead={readAll}
+      variant="sheet"
       labels={{ title: t("notify.title"), markAllRead: t("notify.markAll"), emptyAll: t("notify.empty") }}
       data-notification-bell
       data-inbox
