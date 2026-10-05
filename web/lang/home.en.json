@@ -41,6 +41,7 @@
   "home.projects.noMatch": "No projects match.",
   "home.projects.tasksDone": "{done} / {total} tasks",
   "home.projects.noTasks": "No tasks yet",
+  "home.projects.lastActivity": "Active {when}",
   "home.projects.noClient": "No client",
   "home.projects.membersMore": "{n} more members",
   "home.attention.title": "Needs your attention",

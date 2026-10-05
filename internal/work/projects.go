@@ -146,7 +146,7 @@ type Project struct {
 	UpdatedAt      time.Time  `json:"updated_at"`
 	Tasks          TaskCounts `json:"tasks"`
 	MemberCount    int        `json:"member_count"`
-	LastActivityAt *time.Time `json:"last_activity_at,omitempty" doc:"when anything last happened in the project (its newest activity log entry); list only"`
+	LastActivityAt *time.Time `json:"last_activity_at,omitempty" doc:"when anything last happened in the project (newest of its activity log, tasks and issues); list only"`
 	Avatar         *string    `json:"avatar" doc:"data: URL of the project's image; null = coloured initials"`
 	// Issues counts the project's items by issue status (the board's columns); only in lists.
 	Issues map[string]int `json:"issues,omitempty" doc:"Items per status: backlog, todo, in_progress, waiting_approval, in_review, done"`
@@ -309,9 +309,16 @@ func (sv *Service) ListProjects(ctx context.Context, f ProjectFilter) ([]Project
 		return nil, err
 	}
 	cr.Close()
-	// Last activity per project, for "most recently active first" views (activity_logs_project_idx).
-	lr, err := sv.DB.QueryContext(ctx, `SELECT project_id, max(created_at) FROM activity_logs
-		WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id`, s.WorkspaceID, ids)
+	// Last activity per project, for "most recently active first" views: the newest of its activity
+	// log, its tasks and its issues — an issue edited outside /api/w (portal, agents, the widget)
+	// leaves no activity row but still counts.
+	lr, err := sv.DB.QueryContext(ctx, `SELECT project_id, max(at) FROM (
+		SELECT project_id, max(created_at) AS at FROM activity_logs WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id
+		UNION ALL
+		SELECT project_id, max(updated_at) FROM tasks WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id
+		UNION ALL
+		SELECT project_id, max(updated_at) FROM reports WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id
+	) x GROUP BY project_id`, s.WorkspaceID, ids)
 	if err != nil {
 		return nil, err
 	}

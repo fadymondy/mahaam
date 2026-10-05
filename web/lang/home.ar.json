@@ -41,6 +41,7 @@
   "home.projects.noMatch": "لا توجد مشاريع مطابقة.",
   "home.projects.tasksDone": "{done} / {total} مهمة",
   "home.projects.noTasks": "لا توجد مهام بعد",
+  "home.projects.lastActivity": "آخر نشاط {when}",
   "home.projects.noClient": "بلا عميل",
   "home.projects.membersMore": "{n} أعضاء آخرين",
   "home.attention.title": "المهام التي تحتاج انتباهك",

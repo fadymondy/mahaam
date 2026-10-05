@@ -7,7 +7,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
-import { AlertTriangleIcon, CalendarClockIcon, CheckCircle2Icon, CircleDotIcon, FolderKanbanIcon, ListChecksIcon, PlusIcon, SearchIcon, UsersIcon } from "lucide-react"
+import { AlertTriangleIcon, CalendarClockIcon, CheckCircle2Icon, CircleDotIcon, FolderKanbanIcon, HistoryIcon, ListChecksIcon, PlusIcon, SearchIcon, UsersIcon } from "lucide-react"
 
 import { Attention, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, type AttentionItem } from "@fadymondy/nasaq/web"
 
@@ -22,7 +22,7 @@ import { TimePanel } from "@/components/home/time-panel"
 import { useActivitySentence } from "@/components/work/activity-feed"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
-import { formatDay, timeAgo } from "@/lib/format"
+import { formatDateTime, formatDay, timeAgo } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
 import { useMe, useMembers } from "@/lib/queries"
 import { cn } from "@/lib/utils"
@@ -180,7 +180,7 @@ function ProjectsPanel({ projects, loading, memberIds, dir, base }: { projects: 
   // Most recently active first; a project with no activity yet falls back to when it was last edited.
   const last = (p: Project) => p.last_activity_at ?? p.updated_at
   const shown = [...projects]
-    .sort((a, b) => last(b).localeCompare(last(a)))
+    .sort((a, b) => Date.parse(last(b)) - Date.parse(last(a)))
     .filter((p) => status === "all" || p.status === status)
     .filter((p) => !q.trim() || `${p.name} ${p.client_name ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()))
     .slice(0, 8)
@@ -238,8 +238,9 @@ function ProjectsPanel({ projects, loading, memberIds, dir, base }: { projects: 
 }
 
 function ProjectCard({ project: p, ids, dir, base }: { project: Project; ids: string[]; dir: Directory; base: string }) {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const total = p.tasks.todo + p.tasks.doing + p.tasks.done
+  const active = p.last_activity_at ?? p.updated_at
   const pct = total ? Math.round((p.tasks.done / total) * 100) : 0
   return (
     <Link
@@ -267,7 +268,16 @@ function ProjectCard({ project: p, ids, dir, base }: { project: Project; ids: st
       </div>
       <div className="flex h-6 items-center justify-between gap-2">
         <AvatarStack ids={ids} dir={dir} max={4} />
-        <span className="ms-auto text-caption text-muted-foreground">{t(`projectStatus.${p.status}`)}</span>
+        <time
+          dateTime={active}
+          title={formatDateTime(active, locale)}
+          className="ms-auto inline-flex min-w-0 items-center gap-1 text-caption text-muted-foreground"
+          data-last-activity
+        >
+          <HistoryIcon className="size-3.5 shrink-0" />
+          <span className="truncate">{t("home.projects.lastActivity", { when: timeAgo(active, locale) })}</span>
+        </time>
+        <span className="shrink-0 text-caption text-muted-foreground">· {t(`projectStatus.${p.status}`)}</span>
       </div>
     </Link>
   )
