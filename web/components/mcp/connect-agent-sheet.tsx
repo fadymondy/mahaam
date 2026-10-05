@@ -19,26 +19,26 @@ import { cn } from "@/lib/utils"
 /** The header's call to action: a pill with a plug, in the app's primary colour. */
 export function ConnectAgentButton({ onClick }: { onClick: () => void }) {
   const { t } = useTranslations()
+  // A thin light travels around the pill's edge, the way AI products mark "this talks to your agent":
+  // quiet enough for a header, and it stops for people who turn motion off.
   return (
-    <Button
-      variant="primary"
-      size="sm"
-      onClick={onClick}
-      aria-label={t("mcp.connectTitle")}
-      className="group relative overflow-hidden rounded-full px-3.5 shadow-sm shadow-primary/30 transition-all duration-200 hover:shadow-md hover:shadow-primary/40 motion-safe:hover:-translate-y-px"
-      data-connect-agent
-    >
+    <span className="group relative inline-flex overflow-hidden rounded-full p-px shadow-sm shadow-primary/25 transition-shadow duration-300 hover:shadow-md hover:shadow-primary/40">
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 start-0 w-1/3 bg-gradient-to-r from-transparent via-white/35 to-transparent motion-safe:animate-[connect-sheen_4s_ease-in-out_infinite] motion-reduce:hidden"
+        className="pointer-events-none absolute -inset-[200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,rgb(255_255_255/0.9)_320deg,transparent_360deg)] motion-safe:animate-[spin_3.5s_linear_infinite] motion-reduce:hidden"
       />
-      <PlugIcon className="transition-transform duration-300 motion-safe:group-hover:rotate-45" />
-      <span className="hidden sm:inline">{t("mcp.connectShort")}</span>
-      <span aria-hidden className="relative flex size-2">
-        <span className="absolute inline-flex size-full rounded-full bg-white/70 motion-safe:animate-ping" />
-        <span className="relative inline-flex size-2 rounded-full bg-white" />
-      </span>
-    </Button>
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={onClick}
+        aria-label={t("mcp.connectTitle")}
+        className="relative rounded-full px-3.5"
+        data-connect-agent
+      >
+        <PlugIcon className="transition-transform duration-300 group-hover:-rotate-12" />
+        <span className="hidden sm:inline">{t("mcp.connectShort")}</span>
+      </Button>
+    </span>
   )
 }
 
