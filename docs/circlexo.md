@@ -59,7 +59,7 @@ a bad or missing signature is a 401 before anything runs.
 
 `internal/db/schema/circlexo.sql`, plus the workspace FK in `internal/db/post/19o_circlexo.sql`.
 
-- `circlexo_user_links`: hub subject to Mahaam user. Unique both ways (one subject per user, one user per subject).
+- `circlexo_user_links`: hub subject to Mahaam user. Unique both ways (one subject per user, one user per subject). `picture_url` is the hub picture the avatar was last made from.
 - `circlexo_org_links`: hub org to workspace, with `status` `active` or `inactive`. Unique both ways.
 - `circlexo_sessions`: hub session id, user and JWT `iat`, for `session.revoked`.
 - `circlexo_webhook_events`: processed event ids.
@@ -75,7 +75,18 @@ one, so every existing login method keeps working (dual login).
 
 **Landing.** After sign-in the user lands in the workspace mapped to the token's org (or the org
 named by the launch URL), added with their hub role. If the hub confirms the org has the app but
-the install webhook has not arrived, the workspace is provisioned on the spot.
+the install webhook has not arrived, the workspace is provisioned on the spot, but only while the
+hub still has the install `provisioning` (MH-1149). A lost link to a workspace the hub already
+names is restored. If the workspace was deleted in Mahaam, the sign-in creates nothing: it calls
+`ReleaseTenant`, the hub shows the app as not installed, and the user lands on `/`. Installing it
+again from the hub provisions a fresh workspace. A new workspace adopts the owner's own unlinked
+workspace with the org's slug instead of making `<slug>-2`.
+
+**Profile.** The hub owns the person's name, address, picture, language and timezone. Every
+CircleXO sign-in (ID-token claims) and every `user.updated` webhook copies them onto the linked
+account: `user_profiles` name, locale and timezone; `users.email` only when the hub has verified
+the new address and no other account holds it; the avatar re-fetched and re-encoded only when the
+hub's picture URL changed (fetched after the sign-in returns).
 
 **Org to workspace.** One active workspace per org. Provision is idempotent: the same org returns
 the same workspace, reactivating an inactive link. It reads the org and members from the hub,
@@ -128,7 +139,7 @@ entries as `changes.hub_actors`.
 
 ## SDK dependency
 
-`github.com/circlexo/circlexo-go` is a public module, pinned at `v0.1.1` in `go.mod` (no `replace`).
+`github.com/circlexo/circlexo-go` is a public module, pinned at `v0.2.0` in `go.mod` (no `replace`).
 No credentials or `GOPRIVATE` setting are needed locally, in Docker or in CI.
 
 ## Owner cut-over checklist
