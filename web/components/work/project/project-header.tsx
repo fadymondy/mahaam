@@ -98,7 +98,8 @@ export function ProjectHeader({ p, base, slugBase, tabs }: { p: ProjectDetail; b
   const canWrite = p.can_write && !p.archived_at
 
   return (
-    <header className="border-b border-border bg-card" data-project-header>
+    // AppMain keeps md:px-page through the shell's p-0 (tailwind-merge drops px-4 but not the md: variant), so break out of it.
+    <header className="border-b border-border bg-card md:-mx-page" data-project-header>
       <div>
         <div
           className="relative h-28 sm:h-36"

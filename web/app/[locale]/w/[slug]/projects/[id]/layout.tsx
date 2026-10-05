@@ -81,7 +81,7 @@ function ProjectShell({ children }: { children: ReactNode }) {
   }
   if (!project.data) {
     return (
-      <div className="border-b border-border" data-project-loading>
+      <div className="border-b border-border md:-mx-page" data-project-loading>
         <Skeleton className="h-28 w-full rounded-none sm:h-36" />
         <div className="space-y-3 px-4 py-4 sm:px-6">
           <Skeleton className="-mt-14 size-20 rounded-xl" />
