@@ -150,8 +150,10 @@ var Matrix = map[string]Role{
 	TokensManageOwn:   Client,
 	TokensRevokeAny:   Admin,
 	FeedbackFile:      Client,
-	FeedbackRead:      Member,
-	FeedbackWrite:     Member,
+	// A customer works the issues of their own projects like a member (MH-1176); the issue
+	// tracker (internal/reports.customer) keeps them to the projects they can see.
+	FeedbackRead:  Client,
+	FeedbackWrite: Client,
 	// The generic GraphQL endpoint exposes generated resolvers, which carry no
 	// per-field authorization of their own; RLS isolates tenants, and this keeps
 	// it to people who could make the same changes in the UI.
@@ -160,15 +162,16 @@ var Matrix = map[string]Role{
 	ProjectsRead:   Client, // clients: only the projects of the client they are a portal contact of (internal/work)
 	ProjectsCreate: Manager,
 	ProjectsManage: Manager, // or the project's lead
-	// A client never reads tasks: the portal shows their projects, the issues they
-	// filed and their invoices — never the internal task board (P7). Members up.
-	TasksRead:        Member,
-	TasksWrite:       Member,
+	// A customer (client) gets the full project — board, tasks, issues — with a member's
+	// rights, on the projects they can see (visibleClause / taskClause) and nothing wider
+	// (MH-1176). Rates, time tracking, the vault, members and the workspace areas stay member+.
+	TasksRead:        Client,
+	TasksWrite:       Client,
 	ClientsRead:      Member,
 	ClientsWrite:     Manager,
 	TeamsRead:        Member,
 	TeamsWrite:       Manager,
-	LabelsCreate:     Member,
+	LabelsCreate:     Client,
 	LabelsManage:     Manager,
 	ActivityRead:     Manager, // the workspace-wide feed; project/task feeds follow project access
 	CommentsModerate: Manager,

@@ -27,6 +27,10 @@ type Scope struct {
 	// Actors is the act chain of a CircleXO-issued token (the hub gateway, then any agent; nearest
 	// first) when the call arrived that way. Recorded on activity entries.
 	Actors []string
+	// ImpersonatorID / ImpersonatorEmail are the owner or admin looking through this member's eyes
+	// (X-View-As, viewas.go); empty otherwise. Such a request is read-only.
+	ImpersonatorID    string
+	ImpersonatorEmail string
 }
 
 type scopeKey struct{}

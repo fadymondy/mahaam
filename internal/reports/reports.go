@@ -14,6 +14,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/tenant"
 	"strings"
 	"sync"
@@ -245,6 +246,9 @@ func filterSQL(ctx context.Context, workspaceID string, f Filter) (string, []any
 	if ids := scopedProjects(ctx); len(ids) > 0 {
 		add("project_id = ANY($%d::text[])", ids)
 	}
+	if c, ok := customer(ctx); ok {
+		q += " AND project_id IN (SELECT p.id FROM projects p WHERE p.workspace_id = $1 AND " + work.VisibleProjectsSQL(c, &args) + ")"
+	}
 	if f.CustomerView || !f.IncludeBoard {
 		q += " AND NOT from_board"
 	}
@@ -269,7 +273,32 @@ func Find(ctx context.Context, db *sql.DB, workspaceID, ref string) (*Report, er
 	if err == nil && !inScope(ctx, r.ProjectID) {
 		return nil, sql.ErrNoRows
 	}
+	if err == nil {
+		if c, ok := customer(ctx); ok {
+			if r.ProjectID == nil {
+				return nil, sql.ErrNoRows
+			}
+			args := []any{workspaceID, *r.ProjectID}
+			var seen bool
+			if err := db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM projects p WHERE p.workspace_id = $1 AND p.id = $2 AND `+
+				work.VisibleProjectsSQL(c, &args)+`)`, args...).Scan(&seen); err != nil {
+				return nil, err
+			}
+			if !seen {
+				return nil, sql.ErrNoRows
+			}
+		}
+	}
 	return r, err
+}
+
+// customer is the calling scope when it is a customer (the client role). A customer works on the
+// issues of the projects they can see (work.VisibleProjectsSQL) like a member does (MH-1176), but
+// never reaches a workspace-level issue or another customer's project — on every path: the app's
+// /api/w/issues, the portal, the MCP tools and the screenshot route all list and find through here.
+func customer(ctx context.Context) (*tenant.Scope, bool) {
+	s, ok := tenant.From(ctx)
+	return s, ok && s.Role == string(authz.Client)
 }
 
 // scopedProjects is the project limit of a project-scoped MCP token (tenant.Scope.ProjectIDs).
@@ -340,6 +369,10 @@ func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*
 		if !inScope(ctx, &pid) || pid == "" {
 			return nil, fmt.Errorf("this token is limited to its projects: pass one of them as project")
 		}
+	}
+	// A customer files only into one of their projects (the callers resolve it as visible).
+	if _, ok := customer(ctx); ok && n.ProjectID == "" {
+		return nil, fmt.Errorf("pick one of your projects for this issue")
 	}
 	status := firstNonEmpty(n.Status, "backlog")
 	if !ValidStatus(status) {

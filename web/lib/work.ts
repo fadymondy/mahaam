@@ -4,6 +4,7 @@
 import useSWR, { type KeyedMutator } from "swr"
 
 import { api, ApiError } from "@/lib/api"
+import { wsHeaders } from "@/lib/view-as"
 
 export type TaskCounts = { todo: number; doing: number; done: number }
 
@@ -432,7 +433,7 @@ export const invoicesApi = {
 
 /** Fetch a workspace-scoped file (needs the X-Workspace-ID header a plain link can't set). */
 async function fetchWithWs(ws: string, path: string) {
-  const res = await fetch(path, { headers: { "X-Workspace-ID": ws }, credentials: "same-origin", cache: "no-store" })
+  const res = await fetch(path, { headers: wsHeaders(ws), credentials: "same-origin", cache: "no-store" })
   if (!res.ok) {
     let msg = res.statusText
     try {

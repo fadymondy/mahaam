@@ -28,9 +28,10 @@ portal_panel.go, a project's customer sees — per the project's "Share with cus
 	             Time by task (PortalTime) and task lines in the activity feed need it too.
 	share_money  the money budget
 
-A client never reaches the staff /api/w/tasks or board endpoints (authz.TasksRead is member+);
-these functions are the only task surface a customer has. Access is authz.PortalRead AND a
-visible project (404 otherwise); a setting that is off answers 404 for its endpoint.
+Since MH-1176 a customer also works the app's own project pages (board, tasks, issues) on
+the projects they can see; these portal reads stay for the portal dashboard, the MCP portal
+tools and the mobile client app. Access is authz.PortalRead AND a visible project (404
+otherwise); a setting that is off answers 404 for its endpoint.
 */
 
 // PortalShare is a project's "Share with customer" settings.
@@ -123,6 +124,9 @@ type PortalActivityItem struct {
 	From  string    `json:"from,omitempty"`
 	To    string    `json:"to,omitempty"`
 	At    time.Time `json:"at"`
+	// Project is set on the portal dashboard's feed, which spans projects.
+	Project   string `json:"project,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 // portalProject loads a visible project for a portal read (authz.PortalRead), or 404.

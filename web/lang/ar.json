@@ -418,5 +418,9 @@
   "auth.circlexoError.unavailable": "تسجيل الدخول عبر CircleXO غير متاح حاليًا. حاول مجددًا بعد قليل.",
   "auth.signInCircleXO": "تسجيل الدخول عبر CircleXO",
   "plan.hubBilling": "تُدار فوترة مساحة العمل هذه في CircleXO.",
-  "plan.hubBillingOpen": "إدارة الفوترة في CircleXO"
+  "plan.hubBillingOpen": "إدارة الفوترة في CircleXO",
+  "viewAs.action": "عرض بصفته",
+  "viewAs.banner": "تعرض الآن بصفة {email} ({role}). للقراءة فقط: التعديلات معطّلة.",
+  "viewAs.exit": "إنهاء العرض",
+  "viewAs.failed": "تعذّر العرض بصفة هذا العضو"
 }

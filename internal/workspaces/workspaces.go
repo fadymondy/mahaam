@@ -110,6 +110,14 @@ type wsHeader struct {
 	WorkspaceID string `header:"X-Workspace-ID" doc:"Workspace id or slug. Non-members get 404."`
 }
 
+// viewingAs is the member an owner/admin is viewing the workspace as, and who that viewer is.
+type viewingAs struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
+	By     string `json:"by"`
+}
+
 func identity(ctx context.Context) (*auth.Identity, error) {
 	id, ok := auth.IdentityFrom(ctx)
 	if !ok || id == nil {
@@ -306,6 +314,8 @@ func Register(api huma.API, a *app.App) {
 			} `json:"workspace"`
 			Role string   `json:"role"`
 			Can  []string `json:"can"`
+			// ViewingAs is set while an owner/admin views as this member (X-View-As, MH-1159).
+			ViewingAs *viewingAs `json:"viewing_as,omitempty"`
 		}
 	}, error) {
 		s, err := scope(ctx)
@@ -322,8 +332,9 @@ func Register(api huma.API, a *app.App) {
 					Timezone string `json:"timezone"`
 					Currency string `json:"currency"`
 				} `json:"workspace"`
-				Role string   `json:"role"`
-				Can  []string `json:"can"`
+				Role      string     `json:"role"`
+				Can       []string   `json:"can"`
+				ViewingAs *viewingAs `json:"viewing_as,omitempty"`
 			}
 		}{}
 		w := &out.Body.Workspace
@@ -336,6 +347,9 @@ func Register(api huma.API, a *app.App) {
 		}
 		out.Body.Role = s.Role
 		out.Body.Can = authz.Allowed(s.Role)
+		if s.ImpersonatorID != "" {
+			out.Body.ViewingAs = &viewingAs{UserID: s.UserID, Email: s.Email, Role: s.Role, By: s.ImpersonatorEmail}
+		}
 		return out, nil
 	})
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   BriefcaseIcon,
@@ -10,8 +10,6 @@ import {
   HomeIcon,
   ClockIcon,
   FolderKanbanIcon,
-  KeyRoundIcon,
-  LayoutGridIcon,
   ReceiptTextIcon,
   UsersIcon,
   UsersRoundIcon,
@@ -53,7 +51,9 @@ import { ErrorState } from "@/components/states";
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
 import { UserMenu } from "@/components/workspace/user-menu";
 import { WorkspaceContext, type WorkspaceCtx } from "@/components/workspace/workspace-context";
-import { suspensionCode, type WorkspaceSummary } from "@/lib/api";
+import { ViewAsBanner } from "@/components/workspace/view-as-banner";
+import { ApiError, suspensionCode, type WorkspaceSummary } from "@/lib/api";
+import { clearViewAs } from "@/lib/view-as";
 import { useTranslations } from "@/lib/i18n";
 import { useCurrentWorkspace, useMyWorkspaces } from "@/lib/queries";
 import { useRequireAuth } from "@/lib/use-require-auth";
@@ -146,6 +146,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const [appOpen, setAppOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const openApp = useCallback(() => setAppOpen(true), []);
+  const [bannerHeight, setBannerHeight] = useState(0);
   useAutoOpenAppPrompt(Boolean(me.data), openApp);
 
   const summary = list.data?.find((w) => w.slug === slug);
@@ -163,6 +164,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     : null;
   // The per-user realtime stream: mounted once per tab, it keeps every view of the timer in step.
   const live = useLiveStream(summary?.id);
+
+  // A stale view-as (the member left or now outranks you): drop it and load your own view.
+  const viewAsDenied = current.error instanceof ApiError && current.error.code === "view_as_denied";
+  useEffect(() => {
+    if (!viewAsDenied) return;
+    clearViewAs();
+    window.location.reload();
+  }, [viewAsDenied]);
 
   const suspended = suspensionCode(me.error) ?? suspensionCode(list.error) ?? suspensionCode(current.error);
 
@@ -187,8 +196,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   else if (current.error) body = <ErrorState error={current.error} />;
   else body = children;
 
+  const viewing = current.data?.viewing_as;
   const shell = (
     <AppShell
+      offset={viewing ? bannerHeight : 0}
       sidebar={
         <ShellSidebar
           base={base}
@@ -217,7 +228,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     </AppShell>
   );
 
-  return ctx ? <WorkspaceContext.Provider value={ctx}>{shell}</WorkspaceContext.Provider> : shell;
+  const framed = viewing ? (
+    <>
+      <ViewAsBanner viewing={viewing} home={base} onHeight={setBannerHeight} />
+      {shell}
+    </>
+  ) : (
+    shell
+  );
+  return ctx ? <WorkspaceContext.Provider value={ctx}>{framed}</WorkspaceContext.Provider> : framed;
 }
 
 /** The workspace navigation, gated by the caller's permissions. */
@@ -230,11 +249,20 @@ function ShellNav({ base, can }: { base: string; can: string[]; isOwner?: boolea
   if (isClient) {
     return (
       <SidebarGroup>
-        <NavItem href={`${base}/portal`} icon={<LayoutGridIcon />}>
-          {t("nav.portal")}
+        <NavItem href={`${base}/portal`} exact icon={<HomeIcon />}>
+          {t("portal.nav.dashboard")}
         </NavItem>
-        <NavItem href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
-          {t("nav.connectAi")}
+        <NavItem href={`${base}/projects`} icon={<FolderKanbanIcon />}>
+          {t("nav.projects")}
+        </NavItem>
+        <NavItem href={`${base}/portal/time`} icon={<ClockIcon />}>
+          {t("portal.nav.time")}
+        </NavItem>
+        <NavItem href={`${base}/portal/requests`} icon={<InboxIcon />}>
+          {t("nav.requests")}
+        </NavItem>
+        <NavItem href={`${base}/portal/invoices`} icon={<ReceiptTextIcon />}>
+          {t("portal.nav.billing")}
         </NavItem>
       </SidebarGroup>
     );

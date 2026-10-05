@@ -1,9 +1,9 @@
 "use client"
 
-import { useMemo, useState, type FormEvent } from "react"
+import { useCallback, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { MailWarningIcon } from "lucide-react"
+import { EyeIcon, MailWarningIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import { FormError } from "@/components/form-text"
 
@@ -17,8 +17,12 @@ import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError, INVITABLE_ROLES, type Invitation, type Member } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
-import { useInvitations, useMembers } from "@/lib/queries"
+import { useInvitations, useMe, useMembers } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
+import { startViewAs } from "@/lib/view-as"
+import { errorText } from "@/lib/work"
+
+const RANK: Record<string, number> = { client: 1, member: 2, manager: 3, admin: 4, owner: 5 }
 
 export default function MembersPage() {
   const { t, locale, formatDate } = useTranslations()
@@ -32,6 +36,27 @@ export default function MembersPage() {
   const list = useMemo(() => members.data?.members ?? [], [members.data])
   const roles = useMemo(() => [...new Set(list.map((m) => m.role))], [list])
   const statuses = useMemo(() => [...new Set(list.map((m) => m.status))], [list])
+  // View as (MH-1159): owners and admins, never as yourself or someone above you (the API checks too).
+  const me = useMe()
+  const myRole = ws.current?.role
+  const viewer = !ws.current?.viewing_as && (myRole === "owner" || myRole === "admin")
+  const canViewAs = useCallback(
+    (m: Member) => viewer && m.status === "active" && String(m.user_id) !== String(me.data?.id) && RANK[m.role] <= RANK[myRole ?? "client"],
+    [viewer, myRole, me.data?.id],
+  )
+  const [switching, setSwitching] = useState<string | null>(null)
+  const viewAs = useCallback(
+    async (m: Member) => {
+      setSwitching(m.user_id)
+      try {
+        await startViewAs(ws, m.user_id, `/${locale}/w/${ws.slug}`)
+      } catch (err) {
+        toast.error(errorText(err, t("viewAs.failed")))
+        setSwitching(null)
+      }
+    },
+    [ws, locale, t],
+  )
   const columns = useMemo<DataTableColumn<Member>[]>(
     () => [
       {
@@ -55,8 +80,26 @@ export default function MembersPage() {
         className: "text-muted-foreground",
         cell: (m) => <Ltr>{formatDate(m.joined_at)}</Ltr>,
       },
+      ...(viewer
+        ? [
+            {
+              id: "actions",
+              header: <span className="sr-only">{t("common.actions")}</span>,
+              label: t("common.actions"),
+              hideable: false,
+              className: "text-end",
+              cell: (m: Member) =>
+                canViewAs(m) ? (
+                  <Button variant="ghost" size="sm" disabled={switching !== null} onClick={() => void viewAs(m)} data-view-as-start={m.user_id}>
+                    <EyeIcon />
+                    {t("viewAs.action")}
+                  </Button>
+                ) : null,
+            } satisfies DataTableColumn<Member>,
+          ]
+        : []),
     ],
-    [t, locale, ws.slug, formatDate],
+    [t, locale, ws.slug, formatDate, viewer, canViewAs, switching, viewAs],
   )
   const table = useDataTable({ data: list, columns, getRowId: (m) => m.user_id, pageSize: 25, defaultSort: { id: "email", direction: "asc" } })
 

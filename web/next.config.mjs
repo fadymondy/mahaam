@@ -31,6 +31,8 @@ const nextConfig = {
       // round trip and the hub launch URL are served by the Go API.
       { source: "/auth/circlexo/:path*", destination: `${API_ORIGIN}/auth/circlexo/:path*` },
       { source: "/sso/circlexo", destination: `${API_ORIGIN}/sso/circlexo` },
+      // Connect Hosbah (OAuth through CircleXO or Hosbah): the redirect back is served by the Go API.
+      { source: "/integrations/hosbah/callback", destination: `${API_ORIGIN}/integrations/hosbah/callback` },
       // The embeddable feedback loader/bundle is served by the Go API; proxy it so
       // the snippet's {app-origin}/embed/v1.js works on the public host too.
       { source: "/embed/:path*", destination: `${API_ORIGIN}/embed/:path*` },

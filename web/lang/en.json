@@ -417,5 +417,9 @@
   "auth.circlexoError.unavailable": "Sign in with CircleXO is unavailable right now. Please try again shortly.",
   "auth.signInCircleXO": "Sign in with CircleXO",
   "plan.hubBilling": "Billing for this workspace is managed in CircleXO.",
-  "plan.hubBillingOpen": "Manage billing in CircleXO"
+  "plan.hubBillingOpen": "Manage billing in CircleXO",
+  "viewAs.action": "View as",
+  "viewAs.banner": "Viewing as {email} ({role}). Read-only: changes are off.",
+  "viewAs.exit": "Exit view",
+  "viewAs.failed": "Could not view as this member"
 }

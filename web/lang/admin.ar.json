@@ -194,6 +194,7 @@
   "plan.integration.github": "GitHub",
   "plan.integration.jira": "Jira",
   "plan.integration.linear": "Linear",
+  "plan.integration.hosbah": "حوسبة",
   "suspended.workspaceTitle": "مساحة العمل هذه موقوفة",
   "suspended.workspaceBody": "أوقف أحد مسؤولي المنصة مساحة العمل هذه. تواصل مع الدعم لاستعادة الوصول.",
   "suspended.accountTitle": "حسابك موقوف",

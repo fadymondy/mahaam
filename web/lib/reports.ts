@@ -7,6 +7,7 @@ import useSWR from "swr"
 
 import { api, ApiError } from "@/lib/api"
 import { addDays } from "@/lib/time"
+import { wsHeaders } from "@/lib/view-as"
 
 // ── contract ─────────────────────────────────────────────────────────────────
 
@@ -293,7 +294,7 @@ export async function downloadExport(ws: string, query: string): Promise<string>
 /** Fetch a workspace-scoped download (any path) and save it under its Content-Disposition name. */
 export async function downloadFile(ws: string, path: string): Promise<string> {
   const res = await fetch(path, {
-    headers: { "X-Workspace-ID": ws },
+    headers: wsHeaders(ws),
     credentials: "same-origin",
     cache: "no-store",
   })

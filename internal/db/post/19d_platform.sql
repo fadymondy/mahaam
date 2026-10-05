@@ -55,11 +55,11 @@ VALUES
    "tasks_per_month": {"limit": null, "policy": "overage", "unit_size": 100},
    "api_calls_per_month": {"limit": 1000000, "policy": "overage", "unit_size": 1000, "unit_price_minor": 50},
    "api_rate_per_minute": {"limit": 600, "policy": "block"}}',
- '{"ai_usage_tracking": true, "integrations": ["github", "jira", "linear"], "customer_portal": true, "vault": true, "kpi": true}'),
+ '{"ai_usage_tracking": true, "integrations": ["github", "jira", "linear", "hosbah"], "customer_portal": true, "vault": true, "kpi": true}'),
 ('unlimited', 'Unlimited', 'غير محدود', 'No quotas and no overage (existing workspaces, the platform, partners).', 'بلا حصص ولا رسوم زائدة (مساحات العمل الحالية والمنصة والشركاء).', 'USD', 0,
  'Custom', 'حسب الاتفاق', 99,
  '{}',
- '{"ai_usage_tracking": true, "integrations": ["github", "jira", "linear"], "customer_portal": true, "vault": true, "kpi": true}')
+ '{"ai_usage_tracking": true, "integrations": ["github", "jira", "linear", "hosbah"], "customer_portal": true, "vault": true, "kpi": true}')
 ON CONFLICT (key) DO NOTHING;
 
 -- ---- one-off: every workspace that exists before plans are enforced moves to `unlimited` -------

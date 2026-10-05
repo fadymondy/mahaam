@@ -18,9 +18,10 @@ import { Badge, Button, type ChartConfig, ChartContainer, ChartTooltip, ChartToo
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { formatDay } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
-import { REQUEST_KINDS, hours, portalApi, type PortalWeek, type RequestState } from "@/lib/portal"
+import { REQUEST_KINDS, hours, portalApi, type CustomerRequest, type PortalWeek, type RequestState } from "@/lib/portal"
 import { cn } from "@/lib/utils"
 import { errorText } from "@/lib/work"
+import { wsHeaders } from "@/lib/view-as"
 
 /** A labelled progress bar; value 0–100. `warn` paints it in the danger colour (over budget). */
 export function Meter({ value, label, warn }: { value: number; label?: string; warn?: boolean }) {
@@ -328,7 +329,7 @@ export function AuthImage({ src, alt, className }: { src: string; alt: string; c
   useEffect(() => {
     let gone = false
     let made: string | null = null
-    fetch(src, { headers: { "X-Workspace-ID": ws.id }, credentials: "same-origin" })
+    fetch(src, { headers: wsHeaders(ws.id), credentials: "same-origin" })
       .then((res) => (res.ok ? res.blob() : Promise.reject(new Error(String(res.status)))))
       .then((b) => {
         if (gone) return
@@ -418,5 +419,66 @@ export function PortalEmpty({ icon, title, body, action }: { icon: ReactNode; ti
       {body ? <p className="max-w-sm text-sm text-muted-foreground">{body}</p> : null}
       {action}
     </div>
+  )
+}
+
+/** One customer request: its state, the team's reply, and a way into the issue or task it became. */
+export function RequestCard({
+  r,
+  project,
+  onOpenIssue,
+  onOpenTask,
+}: {
+  r: CustomerRequest
+  project?: string | null
+  onOpenIssue: (key: string) => void
+  onOpenTask?: (key: string) => void
+}) {
+  const { t, locale } = useTranslations()
+  return (
+    <li className="rounded-xl border border-border bg-card p-4" data-request={r.key}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-2">
+            <code className="text-xs text-muted-foreground" dir="ltr">
+              {r.key}
+            </code>
+            <span className="font-medium">{r.title}</span>
+          </p>
+          <p className="text-caption text-muted-foreground">
+            {project ? `${project} · ` : ""}
+            {t(`portal.request.kind.${r.kind}`)} · {formatDay(r.created_at, locale)}
+            {r.desired_on ? ` · ${t("portal.request.wantedBy", { date: formatDay(r.desired_on, locale) })}` : ""}
+          </p>
+        </div>
+        <span className="flex items-center gap-2">
+          {r.state === "accepted" ? <Badge variant="neutral">{t(`issues.status.${r.status}`)}</Badge> : null}
+          <RequestStateBadge state={r.state} />
+        </span>
+      </div>
+      {r.body ? (
+        <p className="mt-2 text-sm whitespace-pre-wrap text-muted-foreground" dir="auto">
+          {r.body}
+        </p>
+      ) : null}
+      {r.reply ? (
+        <div className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+          <p className="text-caption font-medium text-muted-foreground">{r.state === "declined" ? t("portal.request.reason") : t("portal.request.reply")}</p>
+          <p className="whitespace-pre-wrap" dir="auto">
+            {r.reply}
+          </p>
+        </div>
+      ) : null}
+      {r.state === "accepted" ? (
+        <Button size="sm" variant="ghost" className="mt-2 -ms-2" onClick={() => onOpenIssue(r.key)}>
+          {t("portal.request.openIssue")}
+        </Button>
+      ) : null}
+      {r.state === "converted" && r.task_key && onOpenTask ? (
+        <Button size="sm" variant="ghost" className="mt-2 -ms-2" onClick={() => onOpenTask(r.task_key!)}>
+          {t("portal.request.openTask", { task: r.task_key })}
+        </Button>
+      ) : null}
+    </li>
   )
 }

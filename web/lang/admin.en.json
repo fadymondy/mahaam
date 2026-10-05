@@ -194,6 +194,7 @@
   "plan.integration.github": "GitHub",
   "plan.integration.jira": "Jira",
   "plan.integration.linear": "Linear",
+  "plan.integration.hosbah": "Hosbah",
   "suspended.workspaceTitle": "This workspace is suspended",
   "suspended.workspaceBody": "A platform administrator has suspended this workspace. Contact support to restore access.",
   "suspended.accountTitle": "Your account is suspended",

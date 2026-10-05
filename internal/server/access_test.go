@@ -105,8 +105,9 @@ func TestAccess(t *testing.T) {
 	if code := sees(cust); code != 200 {
 		t.Errorf("customer added to the project must see it: %d", code)
 	}
-	if code, _ := cust.do("GET", "/api/w/projects/"+pid+"/board", nil); code != 403 && code != 404 {
-		t.Errorf("a customer must not read the board: %d", code)
+	// A customer works their project's board like a member (MH-1176).
+	if code, _ := cust.do("GET", "/api/w/projects/"+pid+"/board", nil); code != 200 {
+		t.Errorf("a customer on the project must read its board: %d", code)
 	}
 	var linked int
 	_ = a.SysDB.QueryRow(`SELECT count(*) FROM client_contacts WHERE workspace_id = $1 AND user_id = $2 AND client_id = $3`, ws, custID, clID).Scan(&linked)
