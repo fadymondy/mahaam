@@ -1,14 +1,32 @@
 "use client"
 
-// The project page header: avatar, name and description, status pill and key facts, primary
-// actions (new task, timer, more) and the meta row (client, visibility, GitHub repository).
+// The project header, shown above every project tab: a cover in the project's colour (its logo,
+// blurred, when it has one), the avatar over the cover's edge, name and client, the primary
+// actions (timer, new task, more) and the key facts as chips (billing, budget, dates, people,
+// visibility, GitHub repository).
 import Link from "next/link"
-import { ArchiveIcon, CalendarIcon, ChevronLeftIcon, ClockIcon, EllipsisIcon, EyeIcon, GlobeIcon, LayoutGridIcon, PlayIcon, PlusIcon, SettingsIcon, SquareIcon, UsersIcon, WalletIcon } from "lucide-react"
+import {
+  ArchiveIcon,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ClockIcon,
+  EllipsisIcon,
+  EyeIcon,
+  GithubIcon,
+  PlayIcon,
+  PlusIcon,
+  SettingsIcon,
+  SquareIcon,
+  SquareKanbanIcon,
+  UsersIcon,
+  WalletIcon,
+} from "lucide-react"
 
 import { Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
 import { useTimerActions } from "@/components/time/timer-bar"
+import { soft, solid } from "@/components/work/palette"
 import { NewTaskDialog } from "@/components/work/project/new-task-dialog"
 import { ProjectAvatar } from "@/components/work/project-avatar"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -37,9 +55,14 @@ export function StatusPill({ status, className }: { status: ProjectStatus; class
   )
 }
 
-function Chip({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+function Chip({ icon, children, className }: { icon?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap border border-border bg-card px-2.5 text-caption text-nq-fg-body [&_svg]:size-3.5 [&_svg]:text-muted-foreground">
+    <span
+      className={cn(
+        "inline-flex h-7 items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 text-caption whitespace-nowrap text-nq-fg-body [&_svg]:size-3.5 [&_svg]:text-muted-foreground",
+        className,
+      )}
+    >
       {icon}
       {children}
     </span>
@@ -75,18 +98,27 @@ export function ProjectHeader({ p, base, slugBase }: { p: ProjectDetail; base: s
   const canWrite = p.can_write && !p.archived_at
 
   return (
-    <header className="px-4 pt-5 sm:px-6">
-      <Link href={`${slugBase}/projects`} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
-        <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
-        {t("nav.projects")}
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-start gap-x-4 gap-y-3">
-        <ProjectAvatar project={p} className="size-14 text-base sm:size-16 sm:text-lg" />
-        <div className="min-w-0 flex-1 basis-60">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="text-h2 min-w-0 break-words text-2xl">{p.name}</h1>
-            <StatusPill status={p.status} />
+    <header className="px-4 pt-4 sm:px-6" data-project-header>
+      <div className="overflow-hidden rounded-card border border-border bg-card shadow-xs">
+        <div
+          className="relative h-24 sm:h-28"
+          style={{ background: `linear-gradient(135deg, ${soft(p.color)}, color-mix(in oklab, ${solid(p.color)} 40%, var(--card)))` }}
+          data-project-cover
+        >
+          {p.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.avatar} alt="" aria-hidden className="absolute inset-0 size-full scale-125 object-cover opacity-50 blur-2xl" />
+          ) : null}
+          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,var(--border)_1px,transparent_0)] bg-size-[14px_14px] opacity-60" />
+          <Link
+            href={`${slugBase}/projects`}
+            className="absolute start-3 top-3 inline-flex items-center gap-1 rounded-full bg-background/75 px-2.5 py-1 text-caption text-muted-foreground backdrop-blur-sm hover:text-foreground"
+          >
+            <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
+            {t("nav.projects")}
+          </Link>
+          <div className="absolute end-3 top-3 flex items-center gap-1.5">
+            <StatusPill status={p.status} className="bg-background/75 backdrop-blur-sm" />
             {p.archived_at ? (
               <Badge variant="neutral" className="gap-1">
                 <ArchiveIcon />
@@ -94,90 +126,100 @@ export function ProjectHeader({ p, base, slugBase }: { p: ProjectDetail; base: s
               </Badge>
             ) : null}
           </div>
-          {p.client_name ? <p className="mt-0.5 text-sm font-medium text-nq-fg-body">{p.client_name}</p> : null}
-          {p.description ? <p className="mt-0.5 line-clamp-2 max-w-3xl text-sm text-muted-foreground">{p.description}</p> : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <TimerButton p={p} />
-          {canWrite ? (
-            <NewTaskDialog
-              trigger={(open) => (
-                <Button onClick={open} data-new-task>
-                  <PlusIcon />
-                  {t("po.newTask")}
-                </Button>
-              )}
-            />
+
+        <div className="px-4 pb-4 sm:px-6">
+          <div className="-mt-8 flex flex-wrap items-end gap-x-4 gap-y-3 sm:-mt-10">
+            <ProjectAvatar project={p} className="relative size-16 rounded-xl text-lg ring-4 ring-card sm:size-20 sm:text-xl" />
+            <div className="min-w-0 flex-1 basis-60">
+              <h1 className="text-h2 min-w-0 text-2xl break-words" dir="auto">
+                {p.name}
+              </h1>
+              {p.client_name ? (
+                p.client_id ? (
+                  <Link href={`${slugBase}/clients/${p.client_id}`} className="text-sm font-medium text-nq-fg-body underline-offset-4 hover:underline">
+                    {p.client_name}
+                  </Link>
+                ) : (
+                  <p className="text-sm font-medium text-nq-fg-body">{p.client_name}</p>
+                )
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <TimerButton p={p} />
+              {canWrite ? (
+                <NewTaskDialog
+                  trigger={(open) => (
+                    <Button onClick={open} data-new-task>
+                      <PlusIcon />
+                      {t("po.newTask")}
+                    </Button>
+                  )}
+                />
+              ) : null}
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="secondary" size="icon" aria-label={t("po.more")} />}>
+                  <EllipsisIcon />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem render={<Link href={`${base}/board`} />}>
+                      <SquareKanbanIcon />
+                      {t("projectTab.issues")}
+                    </DropdownMenuItem>
+                    {p.can_manage ? (
+                      <DropdownMenuItem render={<Link href={`${base}/settings`} />}>
+                        <SettingsIcon />
+                        {t("projectTab.settings")}
+                      </DropdownMenuItem>
+                    ) : null}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {p.description ? (
+            <p className="mt-3 line-clamp-2 max-w-3xl text-sm text-muted-foreground" dir="auto">
+              {p.description}
+            </p>
           ) : null}
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="secondary" size="icon" aria-label={t("po.more")} />}>
-              <EllipsisIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-48">
-              <DropdownMenuGroup>
-                <DropdownMenuItem render={<Link href={`${base}/board`} />}>
-                  <LayoutGridIcon />
-                  {t("projectTab.board")}
-                </DropdownMenuItem>
-                {p.can_manage ? (
-                  <DropdownMenuItem render={<Link href={`${base}/settings`} />}>
-                    <SettingsIcon />
-                    {t("projectTab.settings")}
-                  </DropdownMenuItem>
-                ) : null}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Chip icon={<WalletIcon />}>{t(`billing.${p.billing_mode}`)}</Chip>
+            {p.budget_minutes ? (
+              <Chip icon={<ClockIcon />}>
+                <Ltr>{minutes(p.budget_minutes)}</Ltr>
+              </Chip>
+            ) : null}
+            {p.budget_minor ? (
+              <Chip>
+                <Ltr>{money(p.budget_minor, p.currency, locale)}</Ltr>
+              </Chip>
+            ) : null}
+            {p.starts_on || p.ends_on ? (
+              <Chip icon={<CalendarIcon />}>
+                <Ltr>
+                  {p.starts_on && p.ends_on
+                    ? `${formatDay(p.starts_on, locale, "short")} → ${formatDay(p.ends_on, locale, "short")}`
+                    : formatDay(p.starts_on ?? p.ends_on, locale, "short")}
+                </Ltr>
+              </Chip>
+            ) : null}
+            <Chip icon={<UsersIcon />}>{t("po.members", { n: String(p.member_count) })}</Chip>
+            <Chip icon={<EyeIcon />}>{t(`visibility.${p.visibility}`)}</Chip>
+            {repo ? (
+              <a href={`https://github.com/${repo}`} target="_blank" rel="noreferrer" data-project-repo>
+                <Chip icon={<GithubIcon />} className="hover:border-nq-action">
+                  <Ltr mono>{repo}</Ltr>
+                </Chip>
+              </a>
+            ) : null}
+            <span className="ms-auto text-caption text-muted-foreground">
+              {t("po.updated")} <Ltr>{timeAgo(p.updated_at, locale)}</Ltr>
+            </span>
+          </div>
         </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Chip icon={<WalletIcon />}>{t(`billing.${p.billing_mode}`)}</Chip>
-        {p.budget_minutes ? (
-          <Chip icon={<ClockIcon />}>
-            <Ltr>{minutes(p.budget_minutes)}</Ltr>
-          </Chip>
-        ) : null}
-        {p.budget_minor ? (
-          <Chip>
-            <Ltr>{money(p.budget_minor, p.currency, locale)}</Ltr>
-          </Chip>
-        ) : null}
-        {p.starts_on || p.ends_on ? (
-          <Chip icon={<CalendarIcon />}>
-            <Ltr>
-              {p.starts_on && p.ends_on ? `${formatDay(p.starts_on, locale, "short")} → ${formatDay(p.ends_on, locale, "short")}` : formatDay(p.starts_on ?? p.ends_on, locale, "short")}
-            </Ltr>
-          </Chip>
-        ) : null}
-        <Chip icon={<UsersIcon />}>{t("po.members", { n: String(p.member_count) })}</Chip>
-        <span className="text-caption text-muted-foreground">
-          {t("po.updated")} <Ltr>{timeAgo(p.updated_at, locale)}</Ltr>
-        </span>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-border py-2.5 text-caption text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          {t("project.client")}:
-          {p.client_id ? (
-            <Link href={`${slugBase}/clients/${p.client_id}`} className="text-nq-fg-body underline-offset-4 hover:underline">
-              {p.client_name}
-            </Link>
-          ) : (
-            <span className="text-nq-fg-body">{t("project.noClient")}</span>
-          )}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <EyeIcon className="size-3.5" />
-          {t(`visibility.${p.visibility}`)}
-        </span>
-        {repo ? (
-          <a href={`https://github.com/${repo}`} target="_blank" rel="noreferrer" className="ms-auto inline-flex items-center gap-1.5 text-nq-fg-body underline-offset-4 hover:underline" data-project-repo>
-            <GlobeIcon className="size-3.5" />
-            GitHub
-            <Ltr mono>{repo}</Ltr>
-          </a>
-        ) : null}
       </div>
     </header>
   )

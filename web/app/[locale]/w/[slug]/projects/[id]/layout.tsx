@@ -3,12 +3,10 @@
 import Link from "next/link"
 import { Suspense, useCallback, type ReactNode } from "react"
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeftIcon } from "lucide-react"
+import { ChevronLeftIcon, GithubIcon, KeyRoundIcon, LayoutDashboardIcon, ReceiptTextIcon, SettingsIcon, SquareKanbanIcon, type LucideIcon } from "lucide-react"
 import { useSWRConfig } from "swr"
 
 import { Skeleton, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
-
-
 
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState } from "@/components/states"
@@ -22,6 +20,24 @@ import { ProjectHeader, StatusPill } from "@/components/work/project/project-hea
 import { ProjectAvatar } from "@/components/work/project-avatar"
 
 const TABS = ["overview", "board", "github", "vault", "billing", "settings"] as const
+type Tab = (typeof TABS)[number]
+// The board route is the issues view (board and list of the same items), so its tab reads "Issues".
+const TAB_LABEL: Record<Tab, string> = {
+  overview: "projectTab.overview",
+  board: "projectTab.issues",
+  github: "projectTab.github",
+  vault: "projectTab.vault",
+  billing: "projectTab.billing",
+  settings: "projectTab.settings",
+}
+const TAB_ICON: Record<Tab, LucideIcon> = {
+  overview: LayoutDashboardIcon,
+  board: SquareKanbanIcon,
+  github: GithubIcon,
+  vault: KeyRoundIcon,
+  billing: ReceiptTextIcon,
+  settings: SettingsIcon,
+}
 
 function ProjectShell({ children }: { children: ReactNode }) {
   const { id } = useParams<{ id: string }>()
@@ -60,10 +76,9 @@ function ProjectShell({ children }: { children: ReactNode }) {
   }
   if (!project.data) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-8 w-72" />
-        <Skeleton className="h-9 w-96 max-w-full" />
+      <div className="space-y-3 px-4 pt-4 sm:px-6" data-project-loading>
+        <Skeleton className="h-52 w-full rounded-card" />
+        <Skeleton className="h-9 w-[28rem] max-w-full rounded-lg" />
       </div>
     )
   }
@@ -92,20 +107,30 @@ function ProjectShell({ children }: { children: ReactNode }) {
       ) : (
         <>
           <ProjectHeader p={p} base={base} slugBase={`/${locale}/w/${ws.slug}`} />
-          <div className="mt-1 overflow-x-auto border-b border-border px-4 sm:px-6">
+          <nav className="overflow-x-auto px-4 pt-3 pb-1 sm:px-6" aria-label={p.name} data-project-tabs>
             <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
-              <TabsList variant="underline" className="w-max min-w-full">
-                {TABS.filter((x) => (x !== "vault" || ws.can("vault:read")) && (x !== "github" || ws.can("integrations:read")) && (x !== "billing" || ws.can("subscriptions:manage")) && (x !== "settings" || p.can_manage)).map((x) => (
-                  <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
-                    {t(`projectTab.${x}`)}
-                  </TabsTab>
-                ))}
+              <TabsList variant="segmented" className="w-max">
+                {TABS.filter(
+                  (x) =>
+                    (x !== "vault" || ws.can("vault:read")) &&
+                    (x !== "github" || ws.can("integrations:read")) &&
+                    (x !== "billing" || ws.can("subscriptions:manage")) &&
+                    (x !== "settings" || p.can_manage),
+                ).map((x) => {
+                  const Icon = TAB_ICON[x]
+                  return (
+                    <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />} data-tab={x}>
+                      <Icon />
+                      {t(TAB_LABEL[x])}
+                    </TabsTab>
+                  )
+                })}
               </TabsList>
             </Tabs>
-          </div>
+          </nav>
         </>
       )}
-      {p.archived_at ? <p className="border-b border-border bg-muted px-4 py-2 sm:px-6 text-sm text-muted-foreground">{t("project.archivedNotice")}</p> : null}
+      {p.archived_at ? <p className="mx-4 mt-2 rounded-lg border border-border bg-muted px-4 py-2 text-sm text-muted-foreground sm:mx-6">{t("project.archivedNotice")}</p> : null}
       {children}
       <TaskSheet taskKey={taskKey} statuses={p.statuses} onClose={() => setTask(null)} onOpen={(k) => setTask(k)} onChanged={reload} />
     </ProjectContext.Provider>

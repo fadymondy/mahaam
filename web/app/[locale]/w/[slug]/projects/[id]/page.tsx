@@ -3,9 +3,9 @@
 import Link from "next/link"
 import { useMemo } from "react"
 import { toast } from "@fadymondy/nasaq/web"
-import { CheckCircle2Icon, CircleAlertIcon, GitCommitHorizontalIcon, LayoutGridIcon, PlusIcon, SettingsIcon, TriangleAlertIcon } from "lucide-react"
+import { CheckCircle2Icon, CircleAlertIcon, CircleDotIcon, ClockAlertIcon, GitCommitHorizontalIcon, ListChecksIcon, PlusIcon, SettingsIcon, SquareKanbanIcon, TriangleAlertIcon } from "lucide-react"
 
-import { Button, Progress, Skeleton } from "@fadymondy/nasaq/web"
+import { Button, MetricTiles, Progress, Skeleton } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
@@ -91,6 +91,16 @@ export default function ProjectOverviewPage() {
 
   return (
     <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-3">
+      <MetricTiles
+        className="lg:col-span-3"
+        loading={loadingHealth}
+        metrics={[
+          { id: "progress", label: t("po.progress.title"), value: pct, display: <Ltr>{pct}%</Ltr>, icon: <ListChecksIcon /> },
+          { id: "open", label: t("po.kpi.openTasks"), value: p.tasks.todo + p.tasks.doing, icon: <CircleDotIcon /> },
+          { id: "overdue", label: t("po.health.overdue"), value: overdue, invert: true, icon: <ClockAlertIcon /> },
+          { id: "issues", label: t("po.health.issues"), value: openIssues.length, icon: <SquareKanbanIcon /> },
+        ]}
+      />
       <Card title={t("po.health.title")} data-card="health">
         {loadingHealth ? (
           <Skeleton className="h-28 w-full" />
@@ -240,7 +250,7 @@ export default function ProjectOverviewPage() {
             />
           ) : null}
           <Button variant="secondary" className="justify-start" nativeButton={false} render={<Link href={`${base}/board`} />}>
-            <LayoutGridIcon />
+            <SquareKanbanIcon />
             {t("po.quick.board")}
           </Button>
           {ws.can("reports:read") ? <ProjectReportMenu projectId={p.id} className="w-full justify-start" /> : null}
@@ -334,7 +344,7 @@ export default function ProjectOverviewPage() {
               ))}
               {p.teams.map((x) => (
                 <li key={x.team_id} className="flex items-center gap-3 text-sm">
-                  <span className="flex size-6 shrink-0 items-center justify-center border border-border">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border">
                     <ColorDot color={x.color} />
                   </span>
                   <span className="min-w-0 flex-1 truncate">{x.name}</span>
@@ -368,7 +378,7 @@ export default function ProjectOverviewPage() {
       </div>
 
       {p.can_manage ? (
-        <section className="flex flex-wrap items-center justify-between gap-3 border border-nq-danger/40 bg-card p-4 lg:col-span-3" aria-label={t("po.danger.title")} data-card="danger">
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-nq-danger/40 bg-card p-4 lg:col-span-3" aria-label={t("po.danger.title")} data-card="danger">
           <div className="min-w-0">
             <h2 className="text-sm font-medium text-(--nq-danger-text)">{t("po.danger.title")}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">{p.archived_at ? t("settings.restoreHint") : t("settings.archiveHint")}</p>
