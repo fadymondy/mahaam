@@ -148,6 +148,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const [appOpen, setAppOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const openApp = useCallback(() => setAppOpen(true), []);
+  const [bannerHeight, setBannerHeight] = useState(0);
   useAutoOpenAppPrompt(Boolean(me.data), openApp);
 
   const summary = list.data?.find((w) => w.slug === slug);
@@ -197,8 +198,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   else if (current.error) body = <ErrorState error={current.error} />;
   else body = children;
 
+  const viewing = current.data?.viewing_as;
   const shell = (
     <AppShell
+      offset={viewing ? bannerHeight : 0}
       sidebar={
         <ShellSidebar
           base={base}
@@ -219,10 +222,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           {ctx ? <NotificationBell /> : null}
         </div>
       </AppHeader>
-      <AppMain className="p-0">
-        {current.data?.viewing_as ? <ViewAsBanner viewing={current.data.viewing_as} home={base} /> : null}
-        {body}
-      </AppMain>
+      <AppMain className="p-0">{body}</AppMain>
 
       <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
       {ctx ? <ConnectAgentSheet open={connectOpen} onOpenChange={setConnectOpen} /> : null}
@@ -230,7 +230,15 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     </AppShell>
   );
 
-  return ctx ? <WorkspaceContext.Provider value={ctx}>{shell}</WorkspaceContext.Provider> : shell;
+  const framed = viewing ? (
+    <>
+      <ViewAsBanner viewing={viewing} home={base} onHeight={setBannerHeight} />
+      {shell}
+    </>
+  ) : (
+    shell
+  );
+  return ctx ? <WorkspaceContext.Provider value={ctx}>{framed}</WorkspaceContext.Provider> : framed;
 }
 
 /** The workspace navigation, gated by the caller's permissions. */
