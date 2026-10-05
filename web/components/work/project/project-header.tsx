@@ -1,9 +1,9 @@
 "use client"
 
-// The project header, shown above every project tab: a cover in the project's colour (its logo,
-// blurred, when it has one), the avatar over the cover's edge, name and client, the primary
+// The project header, shown above every project tab: a full-width cover in the project's colour
+// (its logo, blurred, when it has one), the avatar over the cover's edge, name and client, the primary
 // actions (timer, new task, more) and the key facts as chips (billing, budget, dates, people,
-// visibility, GitHub repository).
+// visibility, GitHub repository), with the project tabs along its bottom edge.
 import Link from "next/link"
 import {
   ArchiveIcon,
@@ -89,7 +89,7 @@ function TimerButton({ p }: { p: ProjectDetail }) {
   )
 }
 
-export function ProjectHeader({ p, base, slugBase }: { p: ProjectDetail; base: string; slugBase: string }) {
+export function ProjectHeader({ p, base, slugBase, tabs }: { p: ProjectDetail; base: string; slugBase: string; tabs?: React.ReactNode }) {
   const { t, locale, isRtl } = useTranslations()
   const ws = useWorkspace()
   const integrations = useIntegrations(ws.id, p.id, ws.can("integrations:read"))
@@ -98,10 +98,10 @@ export function ProjectHeader({ p, base, slugBase }: { p: ProjectDetail; base: s
   const canWrite = p.can_write && !p.archived_at
 
   return (
-    <header className="px-4 pt-4 sm:px-6" data-project-header>
-      <div className="overflow-hidden rounded-card border border-border bg-card shadow-xs">
+    <header className="border-b border-border bg-card" data-project-header>
+      <div>
         <div
-          className="relative h-24 sm:h-28"
+          className="relative h-28 sm:h-36"
           style={{ background: `linear-gradient(135deg, ${soft(p.color)}, color-mix(in oklab, ${solid(p.color)} 40%, var(--card)))` }}
           data-project-cover
         >
@@ -112,12 +112,12 @@ export function ProjectHeader({ p, base, slugBase }: { p: ProjectDetail; base: s
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,var(--border)_1px,transparent_0)] bg-size-[14px_14px] opacity-60" />
           <Link
             href={`${slugBase}/projects`}
-            className="absolute start-3 top-3 inline-flex items-center gap-1 rounded-full bg-background/75 px-2.5 py-1 text-caption text-muted-foreground backdrop-blur-sm hover:text-foreground"
+            className="absolute start-4 top-4 sm:start-6 inline-flex items-center gap-1 rounded-full bg-background/75 px-2.5 py-1 text-caption text-muted-foreground backdrop-blur-sm hover:text-foreground"
           >
             <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
             {t("nav.projects")}
           </Link>
-          <div className="absolute end-3 top-3 flex items-center gap-1.5">
+          <div className="absolute end-4 top-4 flex items-center gap-1.5 sm:end-6">
             <StatusPill status={p.status} className="bg-background/75 backdrop-blur-sm" />
             {p.archived_at ? (
               <Badge variant="neutral" className="gap-1">
@@ -128,9 +128,9 @@ export function ProjectHeader({ p, base, slugBase }: { p: ProjectDetail; base: s
           </div>
         </div>
 
-        <div className="px-4 pb-4 sm:px-6">
-          <div className="-mt-8 flex flex-wrap items-end gap-x-4 gap-y-3 sm:-mt-10">
-            <ProjectAvatar project={p} className="relative size-16 rounded-xl text-lg ring-4 ring-card sm:size-20 sm:text-xl" />
+        <div className="px-4 sm:px-6">
+          <div className="-mt-9 flex flex-wrap items-end gap-x-4 gap-y-3 sm:-mt-11">
+            <ProjectAvatar project={p} className="relative size-18 rounded-xl text-lg shadow-sm ring-4 ring-card sm:size-22 sm:text-xl" />
             <div className="min-w-0 flex-1 basis-60">
               <h1 className="text-h2 min-w-0 text-2xl break-words" dir="auto">
                 {p.name}
@@ -219,6 +219,7 @@ export function ProjectHeader({ p, base, slugBase }: { p: ProjectDetail; base: s
               {t("po.updated")} <Ltr>{timeAgo(p.updated_at, locale)}</Ltr>
             </span>
           </div>
+          {tabs ? <div className="-mb-px mt-3 overflow-x-auto">{tabs}</div> : <div className="h-4" />}
         </div>
       </div>
     </header>

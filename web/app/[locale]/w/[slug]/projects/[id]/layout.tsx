@@ -69,16 +69,25 @@ function ProjectShell({ children }: { children: ReactNode }) {
 
   if (project.error) {
     return project.error instanceof ApiError && project.error.status === 404 ? (
-      <NotFoundState title={t("project.notFound")} body={t("project.notFoundBody")} backHref={`/${locale}/w/${ws.slug}/projects`} backLabel={t("nav.projects")} />
+      <NotFoundState
+        title={t("project.notFound")}
+        body={t("project.notFoundBody")}
+        backHref={`/${locale}/w/${ws.slug}/projects`}
+        backLabel={t("nav.projects")}
+      />
     ) : (
       <ErrorState error={project.error} />
     )
   }
   if (!project.data) {
     return (
-      <div className="space-y-3 px-4 pt-4 sm:px-6" data-project-loading>
-        <Skeleton className="h-52 w-full rounded-card" />
-        <Skeleton className="h-9 w-[28rem] max-w-full rounded-lg" />
+      <div className="border-b border-border" data-project-loading>
+        <Skeleton className="h-28 w-full rounded-none sm:h-36" />
+        <div className="space-y-3 px-4 py-4 sm:px-6">
+          <Skeleton className="-mt-14 size-20 rounded-xl" />
+          <Skeleton className="h-7 w-72 max-w-full" />
+          <Skeleton className="h-8 w-[28rem] max-w-full" />
+        </div>
       </div>
     )
   }
@@ -106,31 +115,39 @@ function ProjectShell({ children }: { children: ReactNode }) {
         </div>
       ) : (
         <>
-          <ProjectHeader p={p} base={base} slugBase={`/${locale}/w/${ws.slug}`} />
-          <nav className="overflow-x-auto px-4 pt-3 pb-1 sm:px-6" aria-label={p.name} data-project-tabs>
-            <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
-              <TabsList variant="segmented" className="w-max">
-                {TABS.filter(
-                  (x) =>
-                    (x !== "vault" || ws.can("vault:read")) &&
-                    (x !== "github" || ws.can("integrations:read")) &&
-                    (x !== "billing" || ws.can("subscriptions:manage")) &&
-                    (x !== "settings" || p.can_manage),
-                ).map((x) => {
-                  const Icon = TAB_ICON[x]
-                  return (
-                    <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />} data-tab={x}>
-                      <Icon />
-                      {t(TAB_LABEL[x])}
-                    </TabsTab>
-                  )
-                })}
-              </TabsList>
-            </Tabs>
-          </nav>
+          <ProjectHeader
+            p={p}
+            base={base}
+            slugBase={`/${locale}/w/${ws.slug}`}
+            tabs={
+              <nav aria-label={p.name} data-project-tabs>
+                <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
+                  <TabsList variant="underline" className="w-max min-w-full border-b-0">
+                    {TABS.filter(
+                      (x) =>
+                        (x !== "vault" || ws.can("vault:read")) &&
+                        (x !== "github" || ws.can("integrations:read")) &&
+                        (x !== "billing" || ws.can("subscriptions:manage")) &&
+                        (x !== "settings" || p.can_manage),
+                    ).map((x) => {
+                      const Icon = TAB_ICON[x]
+                      return (
+                        <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />} data-tab={x}>
+                          <Icon />
+                          {t(TAB_LABEL[x])}
+                        </TabsTab>
+                      )
+                    })}
+                  </TabsList>
+                </Tabs>
+              </nav>
+            }
+          />
         </>
       )}
-      {p.archived_at ? <p className="mx-4 mt-2 rounded-lg border border-border bg-muted px-4 py-2 text-sm text-muted-foreground sm:mx-6">{t("project.archivedNotice")}</p> : null}
+      {p.archived_at ? (
+        <p className="mx-4 mt-2 rounded-lg border border-border bg-muted px-4 py-2 text-sm text-muted-foreground sm:mx-6">{t("project.archivedNotice")}</p>
+      ) : null}
       {children}
       <TaskSheet taskKey={taskKey} statuses={p.statuses} onClose={() => setTask(null)} onOpen={(k) => setTask(k)} onChanged={reload} />
     </ProjectContext.Provider>

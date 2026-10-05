@@ -2,20 +2,38 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { ChevronDownIcon, ExternalLinkIcon, RocketIcon } from "lucide-react"
-import { toast } from "@fadymondy/nasaq/web"
+import { ChevronDownIcon, GithubIcon, RocketIcon } from "lucide-react"
 
-import { Badge, Button, Collapsible, CollapsiblePanel, CollapsibleTrigger, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, RadioCard, RadioGroup, Skeleton, Tabs, TabsList, TabsPanel, TabsTab, Textarea } from "@fadymondy/nasaq/web"
-
-
-
-
-
-
-
-
+import {
+  Button,
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Field,
+  FieldLabel,
+  GithubActivity,
+  Input,
+  RadioCard,
+  RadioGroup,
+  Skeleton,
+  Textarea,
+  toast,
+  type DeploymentStatus,
+  type GithubCommit,
+  type GithubDeployment,
+  type GithubPull,
+  type GithubRun,
+  type RunStatus,
+} from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
+import { EmptyState } from "@/components/states"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -24,9 +42,10 @@ import { useDocumentTitle } from "@/lib/title"
 import { errorText, w } from "@/lib/work"
 
 /*
-The project's GitHub tab: commits (by branch), pull requests, workflow runs and deployments of
-the linked repository, and a Deploy button (workflow_dispatch, manager+). Members+ read; the
-endpoints check visibility and roles.
+The project's GitHub tab: the linked repository's commits, pull requests, workflow runs and
+deployments in Nasaq's GithubActivity (a merged timeline plus one list per feed), and Deploy
+(workflow_dispatch, github:deploy) opening the app picker. Members+ read; the endpoints check
+visibility and roles.
 */
 export default function ProjectGitHubPage() {
   const { t, locale } = useTranslations()
@@ -36,174 +55,151 @@ export default function ProjectGitHubPage() {
   const list = useIntegrations(ws.id, p.id)
   const gh = (list.data?.integrations ?? []).find((i) => i.provider === "github")
   const linked = !!gh?.config.repo && gh.status !== "disabled"
-  const [tab, setTab] = useState("commits")
-  const [branch, setBranch] = useState("")
+  const [deploying, setDeploying] = useState(false)
 
-  if (!list.data && !list.error) return <div className="space-y-2 p-6"><Skeleton className="h-6 w-64" /><Skeleton className="h-40 w-full" /></div>
+  if (!list.data && !list.error) {
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-3 p-4 sm:p-6">
+        <Skeleton className="h-10 w-72 max-w-full" />
+        <Skeleton className="h-96 w-full rounded-card" />
+      </div>
+    )
+  }
   if (!linked) {
     return (
-      <div className="px-6 py-8 text-sm">
-        <p className="text-muted-foreground">{t("gh.notLinked")}</p>
-        {p.can_manage ? (
-          <Button variant="secondary" className="mt-3" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/projects/${p.id}/settings?s=integrations`} />}>
-            {t("gh.goSettings")}
-          </Button>
-        ) : null}
+      <div className="mx-auto w-full max-w-3xl p-4 sm:p-6" data-github-unlinked>
+        <EmptyState
+          title={t("gh.notLinked")}
+          action={
+            p.can_manage ? (
+              <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/projects/${p.id}/settings?s=integrations`} />}>
+                <GithubIcon />
+                {t("gh.goSettings")}
+              </Button>
+            ) : null
+          }
+        />
       </div>
     )
   }
   const repo = gh!.config.repo!
+  const canDeploy = ws.can("github:deploy")
   return (
-    <div className="px-6 py-5">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <a href={`https://github.com/${repo}`} target="_blank" rel="noreferrer" dir="ltr" className="inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline">
-          {repo}
-          <ExternalLinkIcon className="size-3.5" />
-        </a>
-        {gh!.last_error ? <span className="text-sm text-destructive" dir="auto">{gh!.last_error}</span> : null}
-        <div className="flex-1" />
-        {ws.can("github:deploy") ? <DeployButton projectId={p.id} defaultRef={gh!.config.default_branch ?? "main"} /> : null}
-      </div>
-      <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
-        <TabsList variant="underline">
-          <TabsTab value="commits">{t("gh.commits")}</TabsTab>
-          <TabsTab value="pulls">{t("gh.pulls")}</TabsTab>
-          <TabsTab value="runs">{t("gh.runs")}</TabsTab>
-          <TabsTab value="deployments">{t("gh.deployments")}</TabsTab>
-        </TabsList>
-        <TabsPanel value="commits" className="pt-4">
-          <Input dir="ltr" className="mb-3 max-w-60" placeholder={`${t("gh.branch")} (${gh!.config.default_branch ?? "main"})`} value={branch} onChange={(e) => setBranch(e.target.value)} />
-          <Commits projectId={p.id} branch={branch.trim()} active={tab === "commits"} />
-        </TabsPanel>
-        <TabsPanel value="pulls" className="pt-4">
-          <Pulls projectId={p.id} active={tab === "pulls"} />
-        </TabsPanel>
-        <TabsPanel value="runs" className="pt-4">
-          <Runs projectId={p.id} active={tab === "runs"} />
-        </TabsPanel>
-        <TabsPanel value="deployments" className="pt-4">
-          <Deployments projectId={p.id} active={tab === "deployments"} />
-        </TabsPanel>
-      </Tabs>
+    <div className="mx-auto w-full max-w-6xl space-y-3 p-4 sm:p-6">
+      {gh!.last_error ? (
+        <p className="rounded-lg border border-nq-danger/40 bg-nq-danger/5 px-4 py-2 text-sm text-nq-danger-text" dir="auto">
+          {gh!.last_error}
+        </p>
+      ) : null}
+      <Feeds projectId={p.id} repo={repo} onDeploy={canDeploy ? async () => setDeploying(true) : undefined} />
+      {canDeploy ? <DeployDialog projectId={p.id} defaultRef={gh!.config.default_branch ?? "main"} open={deploying} onOpenChange={setDeploying} /> : null}
     </div>
   )
 }
 
-function State<T>({ q, render }: { q: { data?: T; error?: unknown }; render: (d: T) => React.ReactNode }) {
-  const { t } = useTranslations()
-  if (q.error) return <p className="text-sm text-destructive">{errorText(q.error, t("common.networkError"))}</p>
-  if (!q.data) return <Skeleton className="h-32 w-full" />
-  return <>{render(q.data)}</>
-}
+const actor = (login: string) => (login ? { login, avatar: `https://github.com/${login}.png?size=48`, href: `https://github.com/${login}` } : { login: "—" })
 
-function Rows({ children, empty }: { children: React.ReactNode[]; empty: boolean }) {
-  const { t } = useTranslations()
-  if (empty) return <p className="text-sm text-muted-foreground">{t("gh.empty")}</p>
-  return <ul className="divide-y divide-line border-y border-border">{children}</ul>
-}
-
-function Ext({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate hover:underline" dir="auto">
-      {children}
-    </a>
-  )
-}
-
-function Commits({ projectId, branch, active }: { projectId: string; branch: string; active: boolean }) {
-  const ws = useWorkspace()
-  const { formatDate } = useTranslations()
-  const q = useGitHub<{ commits: Commit[] | null }>(ws.id, projectId, active ? `commits${branch ? `?branch=${encodeURIComponent(branch)}` : ""}` : null)
-  return (
-    <State q={q} render={(d) => (
-      <Rows empty={!d.commits?.length}>
-        {(d.commits ?? []).map((c) => (
-          <li key={c.sha} className="flex items-center gap-3 py-2 text-sm">
-            <code className="text-xs text-muted-foreground" dir="ltr">{c.sha.slice(0, 7)}</code>
-            <Ext href={c.url}>{c.message}</Ext>
-            <span className="text-caption text-muted-foreground" dir="ltr">{c.author_login || c.author_name}</span>
-            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(c.date)}</span>
-          </li>
-        ))}
-      </Rows>
-    )} />
-  )
-}
-
-function Pulls({ projectId, active }: { projectId: string; active: boolean }) {
-  const ws = useWorkspace()
-  const { t, formatDate } = useTranslations()
-  const q = useGitHub<{ pulls: Pull[] | null }>(ws.id, projectId, active ? "pulls?state=all" : null)
-  return (
-    <State q={q} render={(d) => (
-      <Rows empty={!d.pulls?.length}>
-        {(d.pulls ?? []).map((x) => (
-          <li key={x.number} className="flex items-center gap-3 py-2 text-sm">
-            <span className="text-caption text-muted-foreground" dir="ltr">#{x.number}</span>
-            <Ext href={x.url}>{x.title}</Ext>
-            {x.merged_at ? <Badge variant="brand">{t("gh.merged")}</Badge> : x.draft ? <Badge variant="neutral">{t("gh.draft")}</Badge> : <Badge variant="outline">{x.state}</Badge>}
-            <span className="hidden text-caption text-muted-foreground sm:inline" dir="ltr">{x.head} → {x.base}</span>
-            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(x.updated_at)}</span>
-          </li>
-        ))}
-      </Rows>
-    )} />
-  )
-}
-
-function runVariant(r: { status: string; conclusion: string }) {
+function runStatus(r: { status: string; conclusion: string }): RunStatus {
+  if (r.status === "queued" || r.status === "waiting" || r.status === "pending" || r.status === "requested") return "queued"
+  if (r.status === "in_progress") return "in_progress"
   if (r.conclusion === "success") return "success"
-  if (r.conclusion === "failure" || r.conclusion === "cancelled" || r.conclusion === "timed_out") return "danger"
-  return "neutral"
+  if (r.conclusion === "cancelled") return "cancelled"
+  if (r.conclusion === "skipped" || r.conclusion === "neutral") return "skipped"
+  return "failure"
 }
 
-function Runs({ projectId, active }: { projectId: string; active: boolean }) {
+function deploymentStatus(state: string): DeploymentStatus {
+  if (state === "success") return "success"
+  if (state === "failure" || state === "error") return "failure"
+  if (state === "in_progress" || state === "queued") return "in_progress"
+  if (state === "inactive") return "inactive"
+  return "pending"
+}
+
+// Fetches the four feeds in parallel and hands them to GithubActivity, which owns the tabs,
+// the merged timeline and the filter box.
+function Feeds({ projectId, repo, onDeploy }: { projectId: string; repo: string; onDeploy?: () => Promise<void> }) {
   const ws = useWorkspace()
-  const { formatDate } = useTranslations()
-  const q = useGitHub<{ runs: Run[] | null }>(ws.id, projectId, active ? "runs" : null)
+  const { t } = useTranslations()
+  const commits = useGitHub<{ commits: Commit[] | null }>(ws.id, projectId, "commits")
+  const pulls = useGitHub<{ pulls: Pull[] | null }>(ws.id, projectId, "pulls?state=all")
+  const runs = useGitHub<{ runs: Run[] | null }>(ws.id, projectId, "runs")
+  const deployments = useGitHub<{ deployments: Deployment[] | null }>(ws.id, projectId, "deployments")
+  const [owner, name] = repo.split("/")
+  const failed = commits.error ?? pulls.error ?? runs.error ?? deployments.error
+  const loading = [commits, pulls, runs, deployments].some((q) => !q.data && !q.error)
+
   return (
-    <State q={q} render={(d) => (
-      <Rows empty={!d.runs?.length}>
-        {(d.runs ?? []).map((r) => (
-          <li key={r.id} className="flex items-center gap-3 py-2 text-sm">
-            <Badge variant={runVariant(r)} dir="ltr">{r.conclusion || r.status}</Badge>
-            <Ext href={r.url}>{r.name}</Ext>
-            <span className="text-caption text-muted-foreground" dir="ltr">{r.branch} · {r.event}</span>
-            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(r.created_at)}</span>
-          </li>
-        ))}
-      </Rows>
-    )} />
+    <>
+      {failed ? <p className="text-sm text-nq-danger-text">{errorText(failed, t("common.networkError"))}</p> : null}
+      <GithubActivity
+        repo={{ owner, name, href: `https://github.com/${repo}` }}
+        commits={(commits.data?.commits ?? []).map(
+          (c): GithubCommit => ({ id: c.sha, message: c.message, author: actor(c.author_login || c.author_name), date: c.date, href: c.url }),
+        )}
+        pulls={(pulls.data?.pulls ?? []).map(
+          (x): GithubPull => ({
+            id: String(x.number),
+            number: x.number,
+            title: x.title,
+            author: actor(x.author),
+            state: x.merged_at ? "merged" : x.draft ? "draft" : x.state === "closed" ? "closed" : "open",
+            createdAt: x.created_at,
+            mergedAt: x.merged_at,
+            href: x.url,
+            head: x.head,
+            base: x.base,
+          }),
+        )}
+        runs={(runs.data?.runs ?? []).map(
+          (r): GithubRun => ({
+            id: String(r.id),
+            name: r.name,
+            status: runStatus(r),
+            branch: r.branch,
+            sha: r.sha,
+            event: r.event,
+            actor: r.actor ? actor(r.actor) : undefined,
+            startedAt: r.created_at,
+            href: r.url,
+          }),
+        )}
+        deployments={(deployments.data?.deployments ?? []).map(
+          (d): GithubDeployment => ({
+            id: String(d.id),
+            environment: d.environment,
+            status: deploymentStatus(d.state),
+            ref: d.ref,
+            sha: d.sha,
+            creator: d.creator ? actor(d.creator) : undefined,
+            createdAt: d.created_at,
+            url: d.url || undefined,
+          }),
+        )}
+        loading={loading}
+        onRefresh={async () => {
+          await Promise.all([commits.mutate(), pulls.mutate(), runs.mutate(), deployments.mutate()])
+        }}
+        onDeploy={onDeploy}
+        data-github-activity
+      />
+    </>
   )
 }
 
-function Deployments({ projectId, active }: { projectId: string; active: boolean }) {
-  const ws = useWorkspace()
-  const { formatDate } = useTranslations()
-  const q = useGitHub<{ deployments: Deployment[] | null }>(ws.id, projectId, active ? "deployments" : null)
-  return (
-    <State q={q} render={(d) => (
-      <Rows empty={!d.deployments?.length}>
-        {(d.deployments ?? []).map((x) => (
-          <li key={x.id} className="flex items-center gap-3 py-2 text-sm">
-            <Badge variant={runVariant({ status: x.state, conclusion: x.state === "success" ? "success" : x.state === "failure" || x.state === "error" ? "failure" : "" })} dir="ltr">
-              {x.state || "—"}
-            </Badge>
-            <span className="min-w-0 flex-1 truncate font-medium" dir="ltr">{x.environment}</span>
-            <span className="text-caption text-muted-foreground" dir="ltr">{x.ref} · {x.sha.slice(0, 7)}</span>
-            {x.url ? <a href={x.url} target="_blank" rel="noreferrer" aria-label="log"><ExternalLinkIcon className="size-3.5" /></a> : null}
-            <span className="w-28 text-end text-caption text-muted-foreground">{formatDate(x.created_at)}</span>
-          </li>
-        ))}
-      </Rows>
-    )} />
-  )
-}
-
-function DeployButton({ projectId, defaultRef }: { projectId: string; defaultRef: string }) {
+function DeployDialog({
+  projectId,
+  defaultRef,
+  open,
+  onOpenChange: setOpen,
+}: {
+  projectId: string
+  defaultRef: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const { t } = useTranslations()
   const ws = useWorkspace()
-  const [open, setOpen] = useState(false)
   const [picked, setPicked] = useState("")
   const [ref, setRef] = useState(defaultRef)
   const [inputs, setInputs] = useState("")
@@ -236,76 +232,64 @@ function DeployButton({ projectId, defaultRef }: { projectId: string; defaultRef
     }
   }
   return (
-    <>
-      <Button variant="primary" onClick={() => setOpen(true)} data-deploy-now>
-        <RocketIcon />
-        {t("gh.deployNow")}
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("gh.deployNow")}</DialogTitle>
-            <DialogDescription>{t("gh.pickApp")}</DialogDescription>
-          </DialogHeader>
-          {flows.isLoading ? (
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-16 w-full rounded-lg" />
-              <Skeleton className="h-16 w-full rounded-lg" />
-            </div>
-          ) : flows.error ? (
-            <p className="text-sm text-nq-danger-text">{errorText(flows.error, t("common.networkError"))}</p>
-          ) : list.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{t("gh.noApps")}</p>
-          ) : (
-            <RadioGroup
-              value={workflow}
-              onValueChange={(v) => setPicked(String(v ?? ""))}
-              aria-label={t("gh.app")}
-              className="flex flex-col gap-2"
-              data-deploy-apps
-            >
-              {list.map((f) => (
-                <RadioCard
-                  key={f.id}
-                  value={String(f.id)}
-                  title={<span dir="auto">{f.name}</span>}
-                  description={
-                    <Ltr mono className="text-caption">
-                      {f.path.split("/").pop()}
-                    </Ltr>
-                  }
-                  meta={<RocketIcon className="size-4 text-muted-foreground" />}
-                />
-              ))}
-            </RadioGroup>
-          )}
-          <Field>
-            <FieldLabel htmlFor="gh-ref">{t("gh.ref")}</FieldLabel>
-            <Input id="gh-ref" dir="ltr" value={ref} onChange={(e) => setRef(e.target.value)} />
-          </Field>
-          <Collapsible>
-            <CollapsibleTrigger render={<Button variant="ghost" size="sm" className="-ms-2" />}>
-              <ChevronDownIcon className="transition-transform in-data-panel-open:rotate-180" />
-              {t("gh.advanced")}
-            </CollapsibleTrigger>
-            <CollapsiblePanel>
-              <Field className="pt-2">
-                <FieldLabel htmlFor="gh-inputs">{t("gh.inputs")}</FieldLabel>
-                <Textarea id="gh-inputs" dir="ltr" rows={3} placeholder="environment=production" value={inputs} onChange={(e) => setInputs(e.target.value)} />
-              </Field>
-            </CollapsiblePanel>
-          </Collapsible>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button variant="primary" disabled={!workflow || !ref.trim() || busy} onClick={submit} data-deploy-start>
-              <RocketIcon />
-              {app ? t("gh.deployApp", { app: app.name }) : t("gh.deployNow")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("gh.deployNow")}</DialogTitle>
+          <DialogDescription>{t("gh.pickApp")}</DialogDescription>
+        </DialogHeader>
+        {flows.isLoading ? (
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-16 w-full rounded-lg" />
+            <Skeleton className="h-16 w-full rounded-lg" />
+          </div>
+        ) : flows.error ? (
+          <p className="text-sm text-nq-danger-text">{errorText(flows.error, t("common.networkError"))}</p>
+        ) : list.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{t("gh.noApps")}</p>
+        ) : (
+          <RadioGroup value={workflow} onValueChange={(v) => setPicked(String(v ?? ""))} aria-label={t("gh.app")} className="flex flex-col gap-2" data-deploy-apps>
+            {list.map((f) => (
+              <RadioCard
+                key={f.id}
+                value={String(f.id)}
+                title={<span dir="auto">{f.name}</span>}
+                description={
+                  <Ltr mono className="text-caption">
+                    {f.path.split("/").pop()}
+                  </Ltr>
+                }
+                meta={<RocketIcon className="size-4 text-muted-foreground" />}
+              />
+            ))}
+          </RadioGroup>
+        )}
+        <Field>
+          <FieldLabel htmlFor="gh-ref">{t("gh.ref")}</FieldLabel>
+          <Input id="gh-ref" dir="ltr" value={ref} onChange={(e) => setRef(e.target.value)} />
+        </Field>
+        <Collapsible>
+          <CollapsibleTrigger render={<Button variant="ghost" size="sm" className="-ms-2" />}>
+            <ChevronDownIcon className="transition-transform in-data-panel-open:rotate-180" />
+            {t("gh.advanced")}
+          </CollapsibleTrigger>
+          <CollapsiblePanel>
+            <Field className="pt-2">
+              <FieldLabel htmlFor="gh-inputs">{t("gh.inputs")}</FieldLabel>
+              <Textarea id="gh-inputs" dir="ltr" rows={3} placeholder="environment=production" value={inputs} onChange={(e) => setInputs(e.target.value)} />
+            </Field>
+          </CollapsiblePanel>
+        </Collapsible>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button variant="primary" disabled={!workflow || !ref.trim() || busy} onClick={submit} data-deploy-start>
+            <RocketIcon />
+            {app ? t("gh.deployApp", { app: app.name }) : t("gh.deployNow")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
