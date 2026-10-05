@@ -36,6 +36,7 @@
   "common.networkError": "Couldn't reach the server. Check your connection and try again.",
   "common.optional": "optional",
   "common.revoke": "Revoke",
+  "common.loading": "Loading…",
   "common.working": "Working…",
   "feedback.report": "Report a problem",
   "feedback.sent": "Report sent",

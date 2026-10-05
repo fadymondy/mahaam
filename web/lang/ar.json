@@ -36,6 +36,7 @@
   "common.networkError": "تعذّر الوصول إلى الخادم. تحقّق من اتصالك وحاول مرة أخرى.",
   "common.optional": "اختياري",
   "common.revoke": "إلغاء الصلاحية",
+  "common.loading": "جارٍ التحميل…",
   "common.working": "جارٍ التنفيذ…",
   "feedback.report": "الإبلاغ عن مشكلة",
   "feedback.sent": "تم إرسال البلاغ",

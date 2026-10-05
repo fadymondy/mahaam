@@ -12,6 +12,7 @@ import { AlertTriangleIcon, CalendarClockIcon, CheckCircle2Icon, CircleDotIcon, 
 import { Attention, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, type AttentionItem } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
+import { DashboardSkeleton } from "@/components/home/dashboard-skeleton"
 import { Panel, PanelLink, StatTile } from "@/components/home/panels"
 import { PersonAvatar, AvatarStack, useDirectory, type Directory } from "@/components/work/people"
 import { ColorDot, solid } from "@/components/work/palette"
@@ -22,6 +23,7 @@ import { TimePanel } from "@/components/home/time-panel"
 import { useActivitySentence } from "@/components/work/activity-feed"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
+import { useTimesheet } from "@/lib/time"
 import { formatDateTime, formatDay, timeAgo } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
 import { useMe, useMembers } from "@/lib/queries"
@@ -65,6 +67,22 @@ export function HomeDashboard() {
   const ov = overview.data
   const name = me.data ? me.data.email.split("@")[0] : ""
   const loadingStats = projects.isLoading || overview.isLoading
+  // The panels' own queries, on the same SWR keys (no extra requests), so the page shows whole.
+  const showActivity = ws.can("activity:read")
+  const showTime = ws.can("time:track")
+  const activity = useWorkspaceActivity(ws.id, showActivity)
+  const sheet = useTimesheet(showTime ? ws.id : "")
+  const settled = (q: { data?: unknown; error?: unknown }) => q.data !== undefined || !!q.error
+  // One shimmer of the whole page until everything it shows has arrived (or failed).
+  const ready =
+    settled(me) &&
+    settled(projects) &&
+    settled(overview) &&
+    settled(members) &&
+    (!meId || settled(mine)) &&
+    (!showActivity || settled(activity)) &&
+    (!showTime || settled(sheet))
+  if (!ready) return <DashboardSkeleton panels={1 + Number(showActivity) + Number(showTime)} />
 
   return (
     <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-6 px-4 py-6 sm:px-6" data-home>
@@ -129,8 +147,8 @@ export function HomeDashboard() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <AttentionPanel onOpen={setTaskKey} />
-        {ws.can("activity:read") ? <ActivityPanel dir={dir} base={base} onOpen={setTaskKey} /> : null}
-        {ws.can("time:track") ? <TimePanel base={base} dir={dir} meId={meId} /> : null}
+        {showActivity ? <ActivityPanel dir={dir} base={base} onOpen={setTaskKey} /> : null}
+        {showTime ? <TimePanel base={base} dir={dir} meId={meId} /> : null}
       </div>
 
       <TaskSheet
