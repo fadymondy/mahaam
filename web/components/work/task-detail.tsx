@@ -65,6 +65,7 @@ import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { StartTimerButton } from "@/components/time/start-timer-button"
 import { ActivityFeed } from "@/components/work/activity-feed"
 import { AttachmentDropzone } from "@/components/work/attachment-dropzone"
+import { ProjectAvatar } from "@/components/work/project-avatar"
 import { DateField, LabelChips, LabelPicker, MemberPicker, PriorityIcon, PrioritySelect, StatusIcon, StatusSelect } from "@/components/work/fields"
 import { IssueAgentSettings } from "@/components/work/issues/fm/issue-agent-settings"
 import { IssueActionsMenu } from "@/components/work/issues/fm/issue-actions"
@@ -92,6 +93,7 @@ import {
   useIssue,
   useLabels,
   useProject,
+  useProjects,
   useTask,
   useTaskActivity,
   w,
@@ -1511,7 +1513,7 @@ function InfoCard({
           </div>
         </InfoRow>
         <InfoRow label={t("td.project")}>
-          <ColorDot color={d.project.color} square className="size-5" />
+          <TaskProjectAvatar project={d.project} className="size-5 text-[0.55rem]" />
           <span className="truncate text-sm">{d.project.name}</span>
         </InfoRow>
         <InfoRow label={t("td.list")}>
@@ -1573,6 +1575,14 @@ function InfoCard({
       </dl>
     </Card>
   )
+}
+
+/** The task's project as its avatar; the task payload has no avatar, so it comes from the (cached) project list. */
+function TaskProjectAvatar({ project, className }: { project: TaskDetailData["project"]; className?: string }) {
+  const ws = useWorkspace()
+  const list = useProjects(ws.id)
+  const avatar = list.data?.projects.find((p) => p.id === project.id)?.avatar
+  return <ProjectAvatar project={{ ...project, avatar }} className={className} />
 }
 
 function EstimateField({ d, can, patch }: { d: TaskDetailData; can: boolean; patch: (b: Record<string, unknown>) => Promise<boolean> }) {
@@ -1675,7 +1685,7 @@ function SheetBar({
         <PopoverContent align="start" className="flex max-h-[70dvh] w-80 flex-col gap-3 overflow-y-auto p-3">
           <dl className="flex flex-col">
             <InfoRow label={t("td.project")}>
-              <ColorDot color={d.project.color} square className="size-4" />
+              <TaskProjectAvatar project={d.project} className="size-5 text-[0.55rem]" />
               <span className="truncate text-sm">{d.project.name}</span>
             </InfoRow>
             <InfoRow label={t("task.estimate")} htmlFor="td-estimate">
