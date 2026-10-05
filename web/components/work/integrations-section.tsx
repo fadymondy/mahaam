@@ -40,12 +40,12 @@ export function IntegrationsSection({ projectId }: { projectId: string }) {
   const reload = () => void list.mutate()
 
   return (
-    <section id="integrations" className="border-b border-border">
-      <div className="px-6 pt-6 pb-3">
-        <h2 className="text-base font-medium">{t("int.title")}</h2>
+    <section id="integrations" className="overflow-hidden rounded-card border border-border bg-card">
+      <div className="px-6 pt-5 pb-3">
+        <h2 className="text-h3">{t("int.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("int.hint")}</p>
       </div>
-      <div className="divide-y divide-line border-y border-border">
+      <div className="divide-y divide-line border-t border-border">
         <GitHubCard projectId={projectId} it={by("github")} canManage={canManage} onChanged={reload} />
         <JiraCard projectId={projectId} it={by("jira")} canManage={canManage} onChanged={reload} />
         <LinearCard projectId={projectId} it={by("linear")} canManage={canManage} onChanged={reload} />

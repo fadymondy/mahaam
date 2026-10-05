@@ -47,9 +47,9 @@ export function ProjectLabelsSection({ projectId }: { projectId: string }) {
   }
 
   return (
-    <section className="border-b border-border">
-      <div className="px-6 pt-6 pb-3">
-        <h2 className="text-base font-medium">{t("projectLabels.title")}</h2>
+    <section className="overflow-hidden rounded-card border border-border bg-card">
+      <div className="px-6 pt-5 pb-3">
+        <h2 className="text-h3">{t("projectLabels.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("projectLabels.hint")}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2 px-6 pb-6">

@@ -842,5 +842,10 @@
   "td.running": "قيد التشغيل",
   "td.noTime": "لا وقت مسجّل على هذه المهمة بعد",
   "td.showMore": "عرض المزيد",
-  "td.showLess": "عرض أقل"
+  "td.showLess": "عرض أقل",
+  "settings.group.project": "المشروع",
+  "settings.group.people": "الأشخاص والمشاركة",
+  "settings.group.connect": "الاتصالات",
+  "settings.group.danger": "منطقة الخطر",
+  "settings.search": "ابحث في الإعدادات"
 }

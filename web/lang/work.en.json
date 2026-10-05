@@ -842,5 +842,10 @@
   "td.running": "Running",
   "td.noTime": "No time logged on this task yet",
   "td.showMore": "Show more",
-  "td.showLess": "Show less"
+  "td.showLess": "Show less",
+  "settings.group.project": "Project",
+  "settings.group.people": "People and sharing",
+  "settings.group.connect": "Connections",
+  "settings.group.danger": "Danger zone",
+  "settings.search": "Search settings"
 }
