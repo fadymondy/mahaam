@@ -15,7 +15,6 @@ import {
   FolderKanbanIcon,
   KeyRoundIcon,
   LayoutGridIcon,
-  PlugZapIcon,
   ReceiptTextIcon,
   TagIcon,
   UsersIcon,
@@ -52,7 +51,7 @@ import {
 
 import { ReportProblemDialog } from "@/components/feedback/report-problem";
 import { AppInstallDialog, useAutoOpenAppPrompt } from "@/components/app-install-dialog";
-import { ConnectAgentDialog } from "@/components/mcp/connect-agent-dialog";
+import { ConnectAgentButton, ConnectAgentSheet } from "@/components/mcp/connect-agent-sheet";
 import { NotFoundState } from "@/components/not-found-state";
 import { NavItem } from "@/components/shell/nav-item";
 import { GlobalSearch } from "@/components/shell/global-search";
@@ -209,19 +208,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <SidebarTrigger />
         {ctx ? <TimerBar /> : null}
         <div className="ms-auto flex items-center gap-1">
-          {ctx ? (
-            <Button variant="secondary" size="sm" className="hidden sm:inline-flex" onClick={() => setConnectOpen(true)} aria-label={t("mcp.connectTitle")}>
-              <PlugZapIcon />
-              <span className="hidden xl:inline">{t("mcp.connectAgent")}</span>
-            </Button>
-          ) : null}
+          {ctx ? <ConnectAgentButton onClick={() => setConnectOpen(true)} /> : null}
           {ctx ? <NotificationBell /> : null}
         </div>
       </AppHeader>
       <AppMain className="p-0">{body}</AppMain>
 
       <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
-      {ctx ? <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} /> : null}
+      {ctx ? <ConnectAgentSheet open={connectOpen} onOpenChange={setConnectOpen} /> : null}
       <ReportProblemDialog open={reporting} onOpenChange={setReporting} workspaceSlug={summary?.slug} />
     </AppShell>
   );

@@ -4,7 +4,7 @@
 // client the user runs — Claude Code, Claude Desktop, Cursor, or any other MCP client that
 // speaks streamable-HTTP with a bearer header. Opened from the header (any workspace member who
 // can hold a token) and from Settings → MCP tokens (the token list's "New token" button).
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, type ReactNode } from "react"
 import { CheckIcon, TriangleAlertIcon } from "lucide-react"
 
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
@@ -30,17 +30,20 @@ const EXPIRY = ["30", "90", "365", "never"] as const
 // still mint a narrower token from Settings → MCP tokens.
 const DEFAULT_SCOPES = ["projects:read", "tasks:read", "tasks:write", "issues:read", "issues:write", "time:read", "time:write"]
 
-export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated?: () => void }) {
+/**
+ * The token form on its own: name, scopes (a broad default unless "pick scopes"), projects and expiry.
+ * The dialog and the header's connect side-over both mint through it.
+ */
+export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted: (plaintext: string) => void; onCancel: () => void; header?: ReactNode; kit?: boolean }) {
   const { t } = useTranslations()
   const ws = useWorkspace()
-  const tokens = useMcpTokens(open ? ws.id : null)
+  const tokens = useMcpTokens(ws.id)
   const [name, setName] = useState("")
   const [chosen, setChosen] = useState<string[]>([])
   const [projectIds, setProjectIds] = useState<string[]>([])
   const [expiry, setExpiry] = useState<string>("90")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [plaintext, setPlaintext] = useState<string | null>(null)
   const [advanced, setAdvanced] = useState(false)
   const projects = useProjects(ws.id)
 
@@ -49,19 +52,6 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
   const scopes = (tokens.data?.scopes ?? []).filter((s) => s.allowed || ws.can("members:read"))
   const expiryItems = EXPIRY.map((v) => ({ value: v, label: v === "never" ? t("mcp.expiryNever") : t("mcp.expiryDays", { n: v }) }))
 
-  function reset() {
-    setName("")
-    setChosen([])
-    setProjectIds([])
-    setExpiry("90")
-    setError(null)
-    setPlaintext(null)
-    setAdvanced(false)
-  }
-  function handleOpenChange(next: boolean) {
-    onOpenChange(next)
-    if (!next) reset()
-  }
   function toggle(scope: string, on: boolean) {
     setChosen((prev) => (on ? [...prev, scope] : prev.filter((s) => s !== scope)))
   }
@@ -80,8 +70,7 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
       if (expiry !== "never") body.expires_in_days = Number(expiry)
       if (advanced && projectIds.length > 0) body.projects = projectIds
       const res = await api<{ token: McpToken; plaintext: string }>("/api/w/mcp_tokens", { json: body, workspaceId: ws.id })
-      setPlaintext(res.plaintext)
-      onCreated?.()
+      onMinted(res.plaintext)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("common.networkError"))
     } finally {
@@ -89,127 +78,149 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
     }
   }
 
+  if (tokens.isLoading) return <LoadingRows rows={3} />
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      {header}
+      {kit ? (
+        <details className="border border-border bg-card p-3">
+          <summary className="cursor-pointer text-sm font-medium text-foreground">{t("mcp.kitTitle")}</summary>
+          <div className="pt-3">
+            <AgentKitGuide />
+          </div>
+        </details>
+      ) : null}
+      <div className="flex flex-col gap-4">
+        <Field>
+          <FieldLabel htmlFor="ca-name">{t("mcp.name")}</FieldLabel>
+          <Input id="ca-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("mcp.connectDefaultName")} />
+        </Field>
+
+        {advanced ? (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
+            <FormHint>{t("mcp.scopesHint")}</FormHint>
+            <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-border">
+              {scopes.map((s) => {
+                const id = `ca-scope-${s.scope}`
+                return (
+                  <li key={s.scope} className={s.allowed ? "" : "bg-muted/50"}>
+                    <label htmlFor={id} className={`flex items-start gap-3 px-3 py-2.5 ${s.allowed ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                      <input
+                        id={id}
+                        type="checkbox"
+                        className="mt-0.5 size-4 shrink-0 accent-(--nq-action)"
+                        disabled={!s.allowed}
+                        checked={chosen.includes(s.scope)}
+                        onChange={(e) => toggle(s.scope, e.target.checked)}
+                      />
+                      <span className="min-w-0">
+                        <span dir="ltr" className="ltr-isolate block font-mono text-xs text-foreground">
+                          {s.scope}
+                        </span>
+                        <span className="block text-sm text-nq-fg-body">{s.description}</span>
+                      </span>
+                    </label>
+                  </li>
+                )
+              })}
+            </ul>
+          </fieldset>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {t("mcp.connectDefaultScopeHint")}{" "}
+            <button type="button" className="text-nq-accent-text hover:underline" onClick={() => setAdvanced(true)}>
+              {t("mcp.connectPickScopes")}
+            </button>
+          </p>
+        )}
+
+        {advanced ? (
+          <Field>
+            <FieldLabel>{t("mcp.projects")}</FieldLabel>
+            <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
+            <ul className="max-h-40 divide-y divide-line overflow-y-auto border border-border">
+              <li>
+                <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
+                  <input type="checkbox" className="size-4 shrink-0 accent-(--nq-action)" checked={projectIds.length === 0} onChange={() => setProjectIds([])} />
+                  <span className="text-sm text-foreground">{t("mcp.allProjects")}</span>
+                </label>
+              </li>
+              {(projects.data?.projects ?? []).map((p) => (
+                <li key={p.id}>
+                  <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      className="size-4 shrink-0 accent-(--nq-action)"
+                      checked={projectIds.includes(p.id)}
+                      onChange={(e) => setProjectIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)))}
+                    />
+                    <span className="truncate text-sm text-nq-fg-body" dir="auto">
+                      {p.name}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </Field>
+        ) : null}
+
+        <Field>
+          <FieldLabel htmlFor="ca-expiry">{t("mcp.expiry")}</FieldLabel>
+          <Select items={expiryItems} value={expiry} onValueChange={(v) => setExpiry(String(v ?? "90"))}>
+            <SelectTrigger id="ca-expiry" className="w-full sm:w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {expiryItems.map((e) => (
+                <SelectItem key={e.value} value={e.value}>
+                  {e.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        {error ? <FormError>{error}</FormError> : null}
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          {t("common.cancel")}
+        </Button>
+        <Button variant="primary" type="submit" disabled={busy}>
+          {busy ? t("common.working") : t("mcp.connectGo")}
+        </Button>
+      </DialogFooter>
+    </form>
+  )
+}
+
+export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated?: () => void }) {
+  const { t } = useTranslations()
+  const [plaintext, setPlaintext] = useState<string | null>(null)
+  function handleOpenChange(next: boolean) {
+    onOpenChange(next)
+    if (!next) setPlaintext(null)
+  }
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-xl">
         {plaintext ? (
           <TokenSnippets plaintext={plaintext} onDone={() => handleOpenChange(false)} />
-        ) : tokens.isLoading ? (
-          <LoadingRows rows={3} />
-        ) : (
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <DialogHeader>
-              <DialogTitle>{t("mcp.connectTitle")}</DialogTitle>
-              <DialogDescription>{t("mcp.connectHint")}</DialogDescription>
-            </DialogHeader>
-            <details className="border border-border bg-card p-3">
-              <summary className="cursor-pointer text-sm font-medium text-foreground">{t("mcp.kitTitle")}</summary>
-              <div className="pt-3">
-                <AgentKitGuide />
-              </div>
-            </details>
-            <div className="flex flex-col gap-4">
-              <Field>
-                <FieldLabel htmlFor="ca-name">{t("mcp.name")}</FieldLabel>
-                <Input id="ca-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("mcp.connectDefaultName")} />
-              </Field>
-
-              {advanced ? (
-                <fieldset className="flex flex-col gap-2">
-                  <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
-                  <FormHint>{t("mcp.scopesHint")}</FormHint>
-                  <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-border">
-                    {scopes.map((s) => {
-                      const id = `ca-scope-${s.scope}`
-                      return (
-                        <li key={s.scope} className={s.allowed ? "" : "bg-muted/50"}>
-                          <label htmlFor={id} className={`flex items-start gap-3 px-3 py-2.5 ${s.allowed ? "cursor-pointer" : "cursor-not-allowed"}`}>
-                            <input
-                              id={id}
-                              type="checkbox"
-                              className="mt-0.5 size-4 shrink-0 accent-(--nq-action)"
-                              disabled={!s.allowed}
-                              checked={chosen.includes(s.scope)}
-                              onChange={(e) => toggle(s.scope, e.target.checked)}
-                            />
-                            <span className="min-w-0">
-                              <span dir="ltr" className="ltr-isolate block font-mono text-xs text-foreground">
-                                {s.scope}
-                              </span>
-                              <span className="block text-sm text-nq-fg-body">{s.description}</span>
-                            </span>
-                          </label>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </fieldset>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {t("mcp.connectDefaultScopeHint")}{" "}
-                  <button type="button" className="text-nq-accent-text hover:underline" onClick={() => setAdvanced(true)}>
-                    {t("mcp.connectPickScopes")}
-                  </button>
-                </p>
-              )}
-
-              {advanced ? (
-                <Field>
-                  <FieldLabel>{t("mcp.projects")}</FieldLabel>
-                  <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
-                  <ul className="max-h-40 divide-y divide-line overflow-y-auto border border-border">
-                    <li>
-                      <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-                        <input type="checkbox" className="size-4 shrink-0 accent-(--nq-action)" checked={projectIds.length === 0} onChange={() => setProjectIds([])} />
-                        <span className="text-sm text-foreground">{t("mcp.allProjects")}</span>
-                      </label>
-                    </li>
-                    {(projects.data?.projects ?? []).map((p) => (
-                      <li key={p.id}>
-                        <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-                          <input
-                            type="checkbox"
-                            className="size-4 shrink-0 accent-(--nq-action)"
-                            checked={projectIds.includes(p.id)}
-                            onChange={(e) => setProjectIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)))}
-                          />
-                          <span className="truncate text-sm text-nq-fg-body" dir="auto">
-                            {p.name}
-                          </span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </Field>
-              ) : null}
-
-              <Field>
-                <FieldLabel htmlFor="ca-expiry">{t("mcp.expiry")}</FieldLabel>
-                <Select items={expiryItems} value={expiry} onValueChange={(v) => setExpiry(String(v ?? "90"))}>
-                  <SelectTrigger id="ca-expiry" className="w-full sm:w-56">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {expiryItems.map((e) => (
-                      <SelectItem key={e.value} value={e.value}>
-                        {e.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              {error ? <FormError>{error}</FormError> : null}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
-                {t("common.cancel")}
-              </Button>
-              <Button variant="primary" type="submit" disabled={busy}>
-                {busy ? t("common.working") : t("mcp.connectGo")}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+        ) : open ? (
+          <TokenForm
+            onMinted={(p) => {
+              setPlaintext(p)
+              onCreated?.()
+            }}
+            onCancel={() => handleOpenChange(false)}
+            header={
+              <DialogHeader>
+                <DialogTitle>{t("mcp.connectTitle")}</DialogTitle>
+                <DialogDescription>{t("mcp.connectHint")}</DialogDescription>
+              </DialogHeader>
+            }
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   )
