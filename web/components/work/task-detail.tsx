@@ -475,8 +475,8 @@ function Body({
         {issue && issue.project_id ? <ContextPanelCard issue={issue} /> : null}
 
         <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as SheetTab)} className="min-w-0" data-sheet-tabs>
-          <div className="overflow-x-auto border-b border-border">
-            <TabsList variant="underline" className="min-w-max">
+          <div className="overflow-x-auto">
+            <TabsList variant="segmented" className="min-w-max">
               {tabs.map((x) => {
                 const Icon = SHEET_TAB_ICON[x]
                 const n = x === "time" ? 0 : (counts[x] ?? 0)
@@ -529,8 +529,8 @@ function Body({
         {!page ? rail : null}
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="min-w-0">
-          <div className="overflow-x-auto border-b border-border">
-            <TabsList variant="underline" className="min-w-max">
+          <div className="overflow-x-auto">
+            <TabsList variant="segmented" className="min-w-max">
               {TABS.map((x) => (
                 <TabsTab key={x} value={x} className="gap-2">
                   {t(`td.tab.${x}`)}
@@ -817,12 +817,12 @@ function DescriptionCard({
   }
   if (bare) {
     return (
-      <section className="group/desc relative" data-description>
+      <section className="group/desc relative rounded-lg border border-border bg-card p-4 shadow-xs" data-description>
         {editable && !editing ? (
           <Button
             variant="ghost"
             size="icon-sm"
-            className="absolute end-0 top-0 z-10 opacity-0 group-hover/desc:opacity-100 focus-visible:opacity-100 max-lg:opacity-100"
+            className="absolute end-2 top-2 z-10 opacity-0 group-hover/desc:opacity-100 focus-visible:opacity-100 max-lg:opacity-100"
             aria-label={t("td.editDescription")}
             onClick={() => {
               setDraft(text)
@@ -932,7 +932,7 @@ function Clamp({ children, max = 320 }: { children: ReactNode; max?: number }) {
         <div ref={ref} className={cn(folded && "overflow-hidden")} style={folded ? { maxHeight: max } : undefined}>
           {children}
         </div>
-        {folded ? <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-popover to-transparent" /> : null}
+        {folded ? <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-card to-transparent" /> : null}
       </div>
       {long ? (
         <Button variant="ghost" size="sm" className="self-start" aria-expanded={open} onClick={() => setOpen(!open)} data-clamp-toggle>

@@ -183,6 +183,7 @@
   "task.noLabels": "بلا وسوم",
   "task.noSubtasks": "لا مهام فرعية.",
   "task.openFullPage": "فتح الصفحة كاملة",
+  "task.resizeSheet": "اسحب لتغيير العرض، انقر مرتين للإعادة",
   "task.notFound": "المهمة غير موجودة",
   "task.notFoundBody": "ربما حُذفت، أو أنها في مشروع لا يمكنك رؤيته.",
   "task.priority": "الأولوية",

@@ -183,6 +183,7 @@
   "task.noLabels": "No labels",
   "task.noSubtasks": "No subtasks.",
   "task.openFullPage": "Open full page",
+  "task.resizeSheet": "Drag to resize, double-click to reset",
   "task.notFound": "Task not found",
   "task.notFoundBody": "It may have been deleted, or it's in a project you can't see.",
   "task.priority": "Priority",
