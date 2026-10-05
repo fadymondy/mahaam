@@ -8,17 +8,13 @@ import {
   BriefcaseIcon,
   ChartColumnIcon,
   CalendarRangeIcon,
-  CircleHelpIcon,
   HomeIcon,
-  ScrollTextIcon,
   ClockIcon,
   CoinsIcon,
   TimerIcon,
   FolderKanbanIcon,
   KeyRoundIcon,
   LayoutGridIcon,
-  MessageSquarePlusIcon,
-  DownloadIcon,
   PlugZapIcon,
   ReceiptTextIcon,
   TagIcon,
@@ -37,12 +33,6 @@ import {
   AppShell,
   Button,
   Dialog,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  ThemeToggle,
   SidebarNest,
   DialogContent,
   DialogDescription,
@@ -57,6 +47,7 @@ import {
   SidebarHeader,
   SidebarTrigger,
   Skeleton,
+  WorkspaceSwitcher,
 } from "@fadymondy/nasaq/web";
 
 import { ReportProblemDialog } from "@/components/feedback/report-problem";
@@ -79,7 +70,8 @@ import { TimerBar } from "@/components/time/timer-bar";
 import { useLiveStream } from "@/lib/time";
 import { brandName } from "@/lib/brand-name";
 
-/** The sidebar: brand, workspace switcher (with create), the permission-gated navigation, the account menu. */
+/** The sidebar (Nasaq dashboard layout): brand, workspace switcher and search on top, the permission-gated
+ * navigation, then the plan card and the account menu (help, theme, language) at the bottom. */
 function ShellSidebar({
   base,
   summary,
@@ -87,6 +79,7 @@ function ShellSidebar({
   can,
   email,
   onReport,
+  onInstall,
 }: {
   base: string;
   summary?: WorkspaceSummary;
@@ -94,6 +87,7 @@ function ShellSidebar({
   can: string[];
   email?: string;
   onReport: () => void;
+  onInstall: () => void;
 }) {
   const { t, locale } = useTranslations();
   const router = useRouter();
@@ -115,7 +109,7 @@ function ShellSidebar({
   return (
     <Sidebar aria-label={t("shell.navigation")}>
       <SidebarHeader>
-        <Link href={`/${locale}/workspaces`} className="flex items-center gap-2.5 px-1" aria-label={brandName(locale)}>
+        <Link href={summary ? base : `/${locale}/workspaces`} className="flex items-center gap-2.5 px-1" aria-label={brandName(locale)}>
           <ProductMark brand="mahaam" size={28} title="" />
           <SidebarExpandedOnly>
             <span className="flex min-w-0 flex-col leading-tight">
@@ -126,22 +120,23 @@ function ShellSidebar({
             </span>
           </SidebarExpandedOnly>
         </Link>
-      </SidebarHeader>
-      <SidebarContent>{summary ? <ShellNav base={base} can={can} isOwner={summary.role === "owner" || summary.role === "admin"} /> : null}</SidebarContent>
-      <SidebarFooter>
         {summary && all ? (
-          <WorkspaceCard
-            summary={summary}
-            all={all}
-            base={base}
-            onSwitch={switchTo}
+          <WorkspaceSwitcher
+            workspaces={all.map((w) => ({ id: w.id, name: w.name, description: t(`role.${w.role}`), logoSrc: w.logo ?? undefined }))}
+            value={summary.id}
+            onValueChange={switchTo}
             onCreate={() => setCreating(true)}
-            canPlan={can.includes("workspace:update")}
+            labels={{ heading: t("shell.workspaces"), create: t("workspaces.create") }}
           />
         ) : (
           <Skeleton className="h-9 w-full" />
         )}
-        {email ? <UserMenu email={email} onReport={onReport} profileHref={summary ? `${base}/me` : undefined} /> : null}
+        {summary ? <GlobalSearch /> : null}
+      </SidebarHeader>
+      <SidebarContent>{summary ? <ShellNav base={base} can={can} isOwner={summary.role === "owner" || summary.role === "admin"} /> : null}</SidebarContent>
+      <SidebarFooter>
+        {summary ? <WorkspaceCard summary={summary} base={base} canPlan={can.includes("workspace:update")} /> : null}
+        {email ? <UserMenu email={email} onReport={onReport} onInstall={onInstall} profileHref={summary ? `${base}/me` : undefined} /> : null}
       </SidebarFooter>
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="sm:max-w-md">
@@ -211,12 +206,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           can={current.data?.can ?? []}
           email={me.data?.email}
           onReport={() => setReporting(true)}
+          onInstall={openApp}
         />
       }
     >
       <AppHeader data-live={live}>
         <SidebarTrigger />
-        {ctx ? <GlobalSearch /> : null}
         {ctx ? <TimerBar /> : null}
         <div className="ms-auto flex items-center gap-1">
           {ctx ? (
@@ -225,35 +220,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               <span className="hidden xl:inline">{t("mcp.connectAgent")}</span>
             </Button>
           ) : null}
-          {me.data ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t("shell.help")} title={t("shell.help")} data-help-menu />}>
-                <CircleHelpIcon />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setReporting(true)}>
-                  <MessageSquarePlusIcon />
-                  {t("feedback.report")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={openApp}>
-                  <DownloadIcon />
-                  {t("pwa.title")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem render={<Link href={`/${locale}/legal/terms`} />}>
-                  <ScrollTextIcon />
-                  {t("shell.helpDocs")}
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href={`/${locale}/legal/privacy`} />}>
-                  <ShieldCheckIcon />
-                  {t("shell.helpPrivacy")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-          <ThemeToggle aria-label={t("header.toggleTheme")} variant="ghost" size="icon-sm" />
           {ctx ? <NotificationBell /> : null}
-          {me.data ? <UserMenu email={me.data.email} variant="avatar" onReport={() => setReporting(true)} profileHref={summary ? `${base}/me` : undefined} /> : null}
         </div>
       </AppHeader>
       <AppMain className="p-0">{body}</AppMain>

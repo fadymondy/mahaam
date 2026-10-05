@@ -95,7 +95,7 @@ export function GlobalSearch() {
 
   return (
     <>
-      <SearchTrigger label={t("shell.search")} className="min-w-0 max-w-md flex-1" />
+      <SearchTrigger label={t("shell.search")} />
       <CommandPalette placeholder={t("shell.search")} emptyLabel={t("shell.searchEmpty")} labels={{ title: t("shell.searchLabel") }} />
     </>
   )

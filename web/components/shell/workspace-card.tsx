@@ -1,32 +1,17 @@
 "use client"
 
-// The sidebar's bottom card: the workspace switcher, then the plan and the most-used limit.
-// Plan and usage come from /api/w/plan, which only owners and admins may read; for everyone else
-// the card is just the switcher.
+// The sidebar's bottom card: the plan and the most-used limit. Plan and usage come from
+// /api/w/plan, which only owners and admins may read; for everyone else the card is hidden.
 import Link from "next/link"
 import { ArrowUpRightIcon } from "lucide-react"
-import { SidebarExpandedOnly, WorkspaceSwitcher } from "@fadymondy/nasaq/web"
+import { SidebarExpandedOnly } from "@fadymondy/nasaq/web"
 
 import { UsageBar } from "@/components/admin/usage"
 import { planName, usagePercent, useWorkspacePlan } from "@/lib/admin"
 import type { WorkspaceSummary } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 
-export function WorkspaceCard({
-  summary,
-  all,
-  base,
-  onSwitch,
-  onCreate,
-  canPlan,
-}: {
-  summary: WorkspaceSummary
-  all: WorkspaceSummary[]
-  base: string
-  onSwitch: (id: string) => void
-  onCreate: () => void
-  canPlan: boolean
-}) {
+export function WorkspaceCard({ summary, base, canPlan }: { summary: WorkspaceSummary; base: string; canPlan: boolean }) {
   const { t, locale } = useTranslations()
   const plan = useWorkspacePlan(canPlan ? summary.id : undefined)
   const report = plan.data
@@ -35,18 +20,10 @@ export function WorkspaceCard({
     .filter((i) => i.limit != null && !i.key.includes("per_minute"))
     .sort((a, b) => (usagePercent(b) ?? 0) - (usagePercent(a) ?? 0))[0]
 
+  if (!canPlan || !report) return null
   return (
-    <div className="flex flex-col gap-2" data-workspace-card>
-      <WorkspaceSwitcher
-        workspaces={all.map((w) => ({ id: w.id, name: w.name, description: t(`role.${w.role}`), logoSrc: w.logo ?? undefined }))}
-        value={summary.id}
-        onValueChange={onSwitch}
-        onCreate={onCreate}
-        labels={{ heading: t("shell.workspaces"), create: t("workspaces.create") }}
-      />
-      {canPlan && report ? (
-        <SidebarExpandedOnly>
-          <div className="flex flex-col gap-2 border border-border bg-background/60 px-3 py-2.5">
+    <SidebarExpandedOnly>
+          <div className="flex flex-col gap-2 border border-border bg-background/60 px-3 py-2.5" data-workspace-card>
             <div className="flex items-center justify-between gap-2">
               <span className="text-caption text-muted-foreground">{t("shell.planCard")}</span>
               <span className="truncate text-sm font-medium text-foreground" data-plan-name={report.plan.key}>
@@ -59,8 +36,6 @@ export function WorkspaceCard({
               <ArrowUpRightIcon className="size-3 rtl:-scale-x-100" />
             </Link>
           </div>
-        </SidebarExpandedOnly>
-      ) : null}
-    </div>
+    </SidebarExpandedOnly>
   )
 }

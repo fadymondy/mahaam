@@ -2,16 +2,17 @@
 
 import { useRouter } from "next/navigation"
 import { useSWRConfig } from "swr"
-import { CircleUserIcon, MessageSquarePlusIcon, ShieldIcon } from "lucide-react"
-import { DropdownMenuItem, UserMenu as NasaqUserMenu, toast } from "@fadymondy/nasaq/web"
+import { CircleUserIcon, DownloadIcon, MessageSquarePlusIcon, ScrollTextIcon, ShieldCheckIcon, ShieldIcon } from "lucide-react"
+import { DropdownMenuItem, DropdownMenuSeparator, UserMenu as NasaqUserMenu, toast } from "@fadymondy/nasaq/web"
 
 import { usePlatform } from "@/lib/admin"
 import { api, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 
-// The account menu (identity, profile, admin panel, report a problem, theme, language, sign out).
+// The account menu (identity, profile, admin panel, report a problem, install app, legal, theme,
+// language, sign out) — per the Nasaq dashboard, help and preferences live here, not in the header.
 // Nasaq's UserMenu owns the frame and the preferences; this supplies the product items and sign-out.
-export function UserMenu({ email, onReport, profileHref, variant }: { email: string; onReport?: () => void; profileHref?: string; variant?: "sidebar" | "avatar" }) {
+export function UserMenu({ email, onReport, onInstall, profileHref, variant }: { email: string; onReport?: () => void; onInstall?: () => void; profileHref?: string; variant?: "sidebar" | "avatar" }) {
   const { t, locale } = useTranslations()
   const router = useRouter()
   const { mutate } = useSWRConfig()
@@ -56,6 +57,21 @@ export function UserMenu({ email, onReport, profileHref, variant }: { email: str
           {t("feedback.report")}
         </DropdownMenuItem>
       ) : null}
+      {onInstall ? (
+        <DropdownMenuItem onClick={onInstall}>
+          <DownloadIcon />
+          {t("pwa.title")}
+        </DropdownMenuItem>
+      ) : null}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => router.push(`/${locale}/legal/terms`)}>
+        <ScrollTextIcon />
+        {t("shell.helpDocs")}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => router.push(`/${locale}/legal/privacy`)}>
+        <ShieldCheckIcon />
+        {t("shell.helpPrivacy")}
+      </DropdownMenuItem>
     </NasaqUserMenu>
   )
 }
