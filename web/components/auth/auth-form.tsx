@@ -16,10 +16,9 @@ import {
   OAuthButtons,
   OAuthDivider,
   PasswordInput,
+  ProductMark,
   type OAuthProvider as NqProvider,
 } from "@fadymondy/nasaq/web"
-
-import { CircleXOMark } from "@/components/auth/circlexo-mark"
 
 import { PublicFrame } from "@/components/public-frame"
 import { api, ApiError, resetCsrf } from "@/lib/api"
@@ -101,7 +100,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   })
   const hubLogin = hubConfig.data?.enabled ? hubConfig.data.login_url || "/auth/circlexo/login" : ""
 
-  // Nasaq's provider buttons: Google / GitHub with their own logos, then CircleXO with its logo.
+  // Nasaq's provider buttons: Google / GitHub with their own logos, then CircleXO with its Nasaq brand mark.
   const buttons: NqProvider[] = [
     ...providers.map((p) => p.id as "google" | "github"),
     ...(hubLogin
@@ -109,7 +108,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           {
             id: "circlexo",
             label: mode === "login" ? t("auth.signInCircleXO") : t("auth.continueWith", { provider: "CircleXO" }),
-            icon: <CircleXOMark />,
+            icon: <ProductMark brand="circlexo" size={18} title="" />,
           },
         ]
       : []),
