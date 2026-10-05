@@ -6,6 +6,12 @@ import { useMemo, useState } from "react"
 import {
   CalendarIcon,
   CheckIcon,
+  CircleCheckIcon,
+  CircleDashedIcon,
+  CircleDotIcon,
+  CircleEllipsisIcon,
+  CircleIcon,
+  CirclePauseIcon,
   MinusIcon,
   PlusIcon,
   SignalHighIcon,
@@ -25,7 +31,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 
 import { Ltr } from "@/components/copy-field"
-import { ColorChip, ColorDot } from "@/components/work/palette"
+import { ColorChip, ColorDot, solid } from "@/components/work/palette"
 import { AvatarStack, type Directory } from "@/components/work/people"
 import { formatDay } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
@@ -83,6 +89,24 @@ export function PrioritySelect({ value, onChange, disabled, id }: { value: Prior
 
 // ── status ──────────────────────────────────────────────────────────────────
 
+/** A column's state at a glance: the shape follows its workflow stage (or category), the colour is the column's. */
+export function StatusIcon({ status, className }: { status?: Pick<Status, "category" | "stage" | "color"> | null; className?: string }) {
+  const stage = status?.stage || (status?.category === "doing" ? "in_progress" : status?.category)
+  const Icon =
+    stage === "done"
+      ? CircleCheckIcon
+      : stage === "in_review"
+        ? CircleEllipsisIcon
+        : stage === "waiting_approval"
+          ? CirclePauseIcon
+          : stage === "in_progress"
+            ? CircleDotIcon
+            : stage === "backlog"
+              ? CircleDashedIcon
+              : CircleIcon
+  return <Icon aria-hidden data-stage={stage ?? ""} className={cn("size-4 shrink-0", className)} style={{ color: solid(status?.color) }} />
+}
+
 export function StatusSelect({
   statuses,
   value,
@@ -105,7 +129,7 @@ export function StatusSelect({
         <SelectValue>
           {(v: string) => (
             <span className="flex items-center gap-2">
-              <ColorDot color={byId.get(v)?.color} />
+              <StatusIcon status={byId.get(v)} />
               {byId.get(v)?.name ?? "—"}
             </span>
           )}
@@ -115,7 +139,7 @@ export function StatusSelect({
         {statuses.map((s) => (
           <SelectItem key={s.id} value={s.id}>
             <span className="flex min-w-0 items-center gap-2">
-              <ColorDot color={s.color} />
+              <StatusIcon status={s} />
               <span className="truncate">{s.name}</span>
             </span>
           </SelectItem>

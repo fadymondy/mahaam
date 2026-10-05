@@ -65,7 +65,7 @@ import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { StartTimerButton } from "@/components/time/start-timer-button"
 import { ActivityFeed } from "@/components/work/activity-feed"
 import { AttachmentDropzone } from "@/components/work/attachment-dropzone"
-import { DateField, LabelChips, LabelPicker, MemberPicker, PriorityIcon, PrioritySelect, StatusSelect } from "@/components/work/fields"
+import { DateField, LabelChips, LabelPicker, MemberPicker, PriorityIcon, PrioritySelect, StatusIcon, StatusSelect } from "@/components/work/fields"
 import { IssueAgentSettings } from "@/components/work/issues/fm/issue-agent-settings"
 import { IssueActionsMenu } from "@/components/work/issues/fm/issue-actions"
 import { useCommentAuthor, useCommentForm } from "@/components/work/issues/fm/issue-comments"
@@ -679,7 +679,7 @@ function Header({
         <Button
           variant="secondary"
           size="icon"
-          className={cn("size-9 shrink-0", done && "text-nq-ok-text")}
+          className="size-9 shrink-0 [&_svg]:size-5"
           disabled={!can || !canToggle}
           aria-pressed={done}
           aria-label={done ? t("td.reopen") : t("td.markDone")}
@@ -687,10 +687,15 @@ function Header({
           onClick={toggleDone}
           data-done-toggle
         >
-          {done ? <CheckCircle2Icon /> : <CircleIcon />}
+          <StatusIcon status={d.status} />
         </Button>
 
-        <div className={cn("min-w-0 flex-1", layout === "page" && "min-w-48 basis-64")}>
+        {/* The key is a fixed tag at the start of the title, not part of what you edit. */}
+        <div className={cn("flex min-w-0 flex-1 items-start gap-1", layout === "page" && "min-w-48 basis-64")}>
+          <Ltr mono className="mt-1.5 shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 text-sm leading-5 text-muted-foreground select-all" data-task-key>
+            {d.key}
+          </Ltr>
+          <div className="min-w-0 flex-1">
           {can ? (
             <Textarea
               aria-label={t("task.title")}
@@ -712,6 +717,7 @@ function Header({
               {d.title}
             </h1>
           )}
+          </div>
         </div>
 
         {layout === "page" ? (
@@ -754,11 +760,9 @@ function Header({
         ) : null}
       </div>
 
-      {/* key · labels (+) · parent — one baseline row, indented under the title */}
+      {/* labels (+) · parent — one row, indented under the title */}
+      {d.label_ids.length || d.parent || layout === "page" ? (
       <div className="flex flex-wrap items-center gap-2 ps-12">
-        <Ltr mono className="text-sm text-muted-foreground">
-          {d.key}
-        </Ltr>
         <LabelChips ids={d.label_ids} labels={labels} />
         {layout === "page" && (ws.can("labels:read") || can) ? (
           <LabelPicker
@@ -776,6 +780,7 @@ function Header({
           </button>
         ) : null}
       </div>
+      ) : null}
     </header>
   )
 }
