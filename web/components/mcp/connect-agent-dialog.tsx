@@ -39,17 +39,20 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
   const ws = useWorkspace()
   const tokens = useMcpTokens(ws.id)
   const [name, setName] = useState("")
-  const [chosen, setChosen] = useState<string[]>([])
+  // null until the first change: the broad default stays ticked, so "Connect" works without picking.
+  const [picked, setPicked] = useState<string[] | null>(null)
   const [projectIds, setProjectIds] = useState<string[]>([])
   const [expiry, setExpiry] = useState<string>("90")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [advanced, setAdvanced] = useState(false)
   const projects = useProjects(ws.id)
 
   // A customer sees only the scopes their role can hold; staff see the whole list (disallowed
   // ones greyed, so the hierarchy is visible when picking scopes for someone else's token).
   const scopes = (tokens.data?.scopes ?? []).filter((s) => s.allowed || ws.can("members:read"))
+  const defaults = scopes.filter((s) => s.allowed && DEFAULT_SCOPES.includes(s.scope)).map((s) => s.scope)
+  const chosen = picked ?? defaults
+  const setChosen = (next: string[] | ((prev: string[]) => string[])) => setPicked(typeof next === "function" ? next(chosen) : next)
   const allowedScopes = scopes.filter((s) => s.allowed).map((s) => s.scope)
   // Scopes are "area:action"; one group per area, in first-seen order.
   const scopeGroups = [...Map.groupBy(scopes, (s) => s.scope.split(":")[0]).entries()]
@@ -63,7 +66,7 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    const wanted = advanced ? chosen : scopes.filter((s) => s.allowed && DEFAULT_SCOPES.includes(s.scope)).map((s) => s.scope)
+    const wanted = chosen
     if (wanted.length === 0) {
       setError(t("mcp.pickScope"))
       return
@@ -72,7 +75,7 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
     try {
       const body: Record<string, unknown> = { name: name.trim() || t("mcp.connectDefaultName"), scopes: wanted }
       if (expiry !== "never") body.expires_in_days = Number(expiry)
-      if (advanced && projectIds.length > 0) body.projects = projectIds
+      if (projectIds.length > 0) body.projects = projectIds
       const res = await api<{ token: McpToken; plaintext: string }>("/api/w/mcp_tokens", { json: body, workspaceId: ws.id })
       onMinted(res.plaintext)
     } catch (err) {
@@ -100,7 +103,6 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
           <Input id="ca-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("mcp.connectDefaultName")} />
         </Field>
 
-        {advanced ? (
           <fieldset className="flex flex-col gap-2" data-scope-groups>
             <div className="flex items-center justify-between gap-2">
               <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
@@ -154,16 +156,7 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
               })}
             </div>
           </fieldset>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {t("mcp.connectDefaultScopeHint")}{" "}
-            <button type="button" className="text-nq-accent-text hover:underline" onClick={() => setAdvanced(true)}>
-              {t("mcp.connectPickScopes")}
-            </button>
-          </p>
-        )}
 
-        {advanced ? (
           <Field>
             <FieldLabel>{t("mcp.projects")}</FieldLabel>
             <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
@@ -197,7 +190,6 @@ export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted
               ))}
             </ul>
           </Field>
-        ) : null}
 
         <Field>
           <FieldLabel htmlFor="ca-expiry">{t("mcp.expiry")}</FieldLabel>
