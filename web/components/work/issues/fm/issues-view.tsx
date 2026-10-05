@@ -207,7 +207,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/30 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
           <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -274,7 +274,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
           onDragEnd={onDragEnd}
           onDragCancel={endDrag}
         >
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 gap-3 overflow-x-auto pt-3 pb-2">
           {columns.map((column) => {
             const status = column.id
             const cards = byStatus.get(status) ?? []
@@ -286,7 +286,8 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                 key={status}
                 status={status}
                 className={cn(
-                  "flex max-h-[calc(100dvh-14rem)] min-h-96 min-w-0 flex-1 basis-0 flex-col border-e border-border transition-colors last:border-e-0",
+                  // A fixed, roomy width per column (the row scrolls sideways) and a fixed height, so each list scrolls on its own.
+                  "flex h-[calc(100dvh-16rem)] min-h-96 w-80 shrink-0 flex-col overflow-hidden rounded-card bg-muted/40 transition-colors",
                   isTarget && "bg-nq-action/[0.06] inset-ring-1 inset-ring-nq-action/40",
                 )}
               >
@@ -300,7 +301,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                   </span>
                 </h2>
 
-                <div className="flex flex-1 flex-col divide-y divide-line overflow-y-auto">
+                <div className="flex min-h-0 flex-1 flex-col divide-y divide-line overflow-y-auto">
                   {cards.map((issue, index) => (
                     <DragCard key={issue.key} id={issue.key} status={status} index={index} disabled={!canWrite}>
                       {/* The landing line, drawn on the edge it would land on. */}
