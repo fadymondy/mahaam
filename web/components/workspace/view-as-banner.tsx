@@ -40,7 +40,7 @@ export function ViewAsBanner({
         tone="warning"
         icon={EyeIcon}
         // Flush across the top: no outer padding, rounding or side borders (MH-1180).
-        className="rounded-none border-x-0 border-t-0"
+        className="items-center rounded-none border-x-0 border-t-0 [&>svg]:mt-0"
         action={
           <Button variant="secondary" size="sm" onClick={() => exitViewAs(home)}>
             <LogOutIcon />
