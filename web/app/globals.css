@@ -14,3 +14,9 @@
   direction: ltr;
   unicode-bidi: isolate;
 }
+
+/* Connect button: a light sweep across the pill every few seconds (MH-1095). */
+@keyframes connect-sheen {
+  0%, 70% { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}

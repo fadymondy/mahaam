@@ -31,7 +31,7 @@ export function Providers({ locale, children }: { locale: string; children: Reac
   }
 
   return (
-    <NasaqProvider brand="mahaam" defaultTheme="system" locale={locale} onLocaleChange={switchLocale} locales={LOCALE_OPTIONS} density="compact">
+    <NasaqProvider brand="mahaam" defaultTheme="system" locale={locale} onLocaleChange={switchLocale} locales={LOCALE_OPTIONS} density="compact" expression="native">
       <I18nProvider locale={locale}>
         {children}
         <Toaster />

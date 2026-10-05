@@ -14,14 +14,25 @@ import { MCP_ORIGIN } from "@/lib/mcp-origin"
 import { cn } from "@/lib/utils"
 
 type App = "claude" | "chatgpt" | "claude-code" | "cursor" | "vscode" | "other"
-const APPS: { id: App; mark: string; token: boolean }[] = [
-  { id: "claude", mark: "C", token: false },
-  { id: "chatgpt", mark: "G", token: false },
-  { id: "claude-code", mark: ">_", token: false },
-  { id: "cursor", mark: "Cu", token: true },
-  { id: "vscode", mark: "VS", token: true },
-  { id: "other", mark: "…", token: true },
+// Brand marks live in public/apps. The monochrome ones (mono) flip in dark mode.
+const APPS: { id: App; logo: string; mono?: boolean; token: boolean }[] = [
+  { id: "claude", logo: "/apps/claude-color.svg", token: false },
+  { id: "chatgpt", logo: "/apps/openai.svg", mono: true, token: false },
+  { id: "claude-code", logo: "/apps/claudecode-color.svg", token: false },
+  { id: "cursor", logo: "/apps/cursor.svg", mono: true, token: true },
+  { id: "vscode", logo: "/apps/vscode.svg", token: true },
+  { id: "other", logo: "/apps/mcp.svg", mono: true, token: true },
 ]
+
+function AppLogo({ app, className }: { app: App; className?: string }) {
+  const a = APPS.find((x) => x.id === app)!
+  return (
+    <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background shadow-xs", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={a.logo} alt="" className={cn("size-6", a.mono && "dark:invert")} />
+    </span>
+  )
+}
 
 /** A big copy button: says "Copied" for a moment so nobody wonders whether it worked. */
 function CopyBig({ value, label }: { value: string; label: string }) {
@@ -87,17 +98,16 @@ export function ConnectSteps({ onClose }: { onClose: () => void }) {
           <p className="text-body-sm text-muted-foreground">{t("connect.pickHint")}</p>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {APPS.map((a) => (
+          {APPS.map((a, i) => (
             <button
               key={a.id}
               type="button"
               onClick={() => setApp(a.id)}
-              className="flex flex-col items-start gap-2 rounded-card border border-border bg-card p-4 text-start outline-none transition-colors hover:border-primary hover:bg-nq-hover focus-visible:outline-2 focus-visible:outline-nq-focus"
+              className="group flex flex-col items-start gap-2 rounded-card border border-border bg-card p-4 text-start outline-none transition-all duration-200 hover:border-primary hover:bg-nq-hover hover:shadow-md focus-visible:outline-2 focus-visible:outline-nq-focus motion-safe:hover:-translate-y-0.5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 fill-mode-both"
+              style={{ animationDelay: `${i * 40}ms` }}
               data-connect-app={a.id}
             >
-              <span dir="ltr" className="flex size-9 items-center justify-center rounded-full bg-muted font-mono text-sm font-semibold text-foreground">
-                {a.mark}
-              </span>
+              <AppLogo app={a.id} className="transition-transform duration-200 motion-safe:group-hover:scale-110" />
               <span className="text-label text-foreground">{t(`connect.app.${a.id}`)}</span>
               <span className="text-caption text-muted-foreground">{t(`connect.app.${a.id}.hint`)}</span>
             </button>
@@ -115,7 +125,12 @@ export function ConnectSteps({ onClose }: { onClose: () => void }) {
       {t("connect.otherApp")}
     </Button>
   )
-  const title = <h3 className="text-h4 text-foreground">{t("connect.setupTitle", { app: t(`connect.app.${app}`) })}</h3>
+  const title = (
+    <div className="flex items-center gap-3">
+      <AppLogo app={app} />
+      <h3 className="text-h4 text-foreground">{t("connect.setupTitle", { app: t(`connect.app.${app}`) })}</h3>
+    </div>
+  )
 
   if (needsToken && !token) {
     return (
@@ -199,7 +214,7 @@ export function ConnectSteps({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-4" data-connect-setup={app}>
+    <div className="flex flex-col gap-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-end-2" data-connect-setup={app}>
       {back}
       {title}
       {token ? <Alert tone="warning">{t("connect.keyOnce")}</Alert> : null}
