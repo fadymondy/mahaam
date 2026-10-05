@@ -148,7 +148,7 @@ function CatalogueFooter({ projectId, agents, skills, onAdded }: { projectId: st
         </button>
       </p>
       {open ? (
-        <div className="flex flex-col gap-2 border border-border p-2">
+        <div className="flex flex-col gap-2 rounded-lg border border-border p-2">
           <Select value={kind} onValueChange={(v) => setKind(v === "skill" ? "skill" : "agent")}>
             <SelectTrigger className="w-full">
               <SelectValue>{(v) => (v === "skill" ? t("issues.agent.skill") : t("issues.agent.agent"))}</SelectValue>

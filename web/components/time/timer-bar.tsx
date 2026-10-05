@@ -91,7 +91,7 @@ export function TimerBar() {
   return (
     <div data-timer-bar data-running={timer ? "true" : "false"} className="flex min-w-0 items-center">
       {timer ? (
-        <div className="flex h-8 min-w-0 items-center gap-2 border border-border bg-card ps-2.5 pe-0.5" data-timer-running={timer.id}>
+        <div className="flex h-8 min-w-0 items-center gap-2 rounded-md border border-border bg-card ps-2.5 pe-0.5" data-timer-running={timer.id}>
           <span className="relative flex size-2.5 shrink-0" aria-hidden>
             <span className="absolute inline-flex size-full animate-ping rounded-full opacity-60 motion-reduce:animate-none" style={{ background: "var(--nq-action)" }} />
             <ColorDot color={timer.project_color ?? "violet"} className="relative" />

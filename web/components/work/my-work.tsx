@@ -51,7 +51,7 @@ export function MyWork({ meId }: { meId: string | undefined }) {
         {tasks.data && open.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("overview.nothingAssigned")}</p>
         ) : (
-          <ul className="divide-y divide-line border border-border">
+          <ul className="divide-y divide-line overflow-hidden rounded-lg border border-border">
             {open.slice(0, 8).map((x) => (
               <li key={x.id}>
                 <button

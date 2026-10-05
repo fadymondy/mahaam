@@ -356,7 +356,7 @@ function Board({ projectId, onOpen }: { projectId: string; onOpen: (key: string)
         {columns.map((c) => {
           const col = tasks.filter((x) => x.status_id === c.id)
           return (
-            <section key={c.id} className="flex w-72 shrink-0 flex-col border border-border bg-muted" aria-label={c.name} data-category={c.category}>
+            <section key={c.id} className="flex w-72 shrink-0 flex-col overflow-hidden rounded-card border border-border bg-muted" aria-label={c.name} data-category={c.category}>
               <header className="flex items-center gap-2 border-b border-border px-3 py-2">
                 <ColorDot color={c.color} />
                 <h3 className="min-w-0 flex-1 truncate text-sm font-medium">{c.name}</h3>
@@ -387,7 +387,7 @@ function TaskCard({ task, onOpen }: { task: PortalTask; onOpen: () => void }) {
       type="button"
       onClick={onOpen}
       data-task-key={task.key}
-      className="w-full border border-border bg-card p-3 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action"
+      className="w-full rounded-lg border border-border bg-card p-3 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action"
     >
       <span className="flex items-center gap-2 text-caption text-muted-foreground">
         <Ltr mono>{task.key}</Ltr>

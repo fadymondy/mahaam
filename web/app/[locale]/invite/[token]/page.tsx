@@ -81,7 +81,7 @@ export default function InvitePage() {
         </div>
       ) : (
         <>
-          <dl className="divide-y divide-line border border-border text-sm">
+          <dl className="divide-y divide-line overflow-hidden rounded-lg border border-border text-sm">
             <div className="flex items-center justify-between gap-4 px-4 py-3">
               <dt className="text-muted-foreground">{t("invite.workspace")}</dt>
               <dd className="font-medium">{inv.workspace_name}</dd>

@@ -179,7 +179,7 @@ function Card({
     )
   }
   return (
-    <section className={cn("flex flex-col border border-border bg-card", className)}>
+    <section className={cn("flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs", className)}>
       {title ? (
         <header className="flex min-h-12 items-center gap-2 border-b border-border px-4">
           <h2 className="text-sm font-medium text-foreground">{title}</h2>
@@ -194,7 +194,7 @@ function Card({
 
 function CountPill({ n }: { n: number }) {
   return (
-    <span dir="ltr" className="inline-flex h-5 min-w-5 items-center justify-center bg-muted px-1.5 text-xs font-medium text-muted-foreground tabular-nums">
+    <span dir="ltr" className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground tabular-nums">
       {n}
     </span>
   )
@@ -503,7 +503,7 @@ function Body({
       <Trail d={d} />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-5">{main}</div>
-        <aside className="flex min-w-0 flex-col gap-4" data-task-sidebar>
+        <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto xl:overscroll-contain" data-task-sidebar>
           <InfoCard
             d={d}
             issue={issue}
@@ -985,11 +985,11 @@ function ImageThumb({ ws, a }: { ws: string; a: Attachment }) {
       .then((b) => b && setUrl(URL.createObjectURL(b)))
       .catch(() => {})
   }
-  if (!url) return <span className="size-10 shrink-0 animate-pulse border border-border bg-muted" aria-hidden />
+  if (!url) return <span className="size-10 shrink-0 animate-pulse rounded-md border border-border bg-muted" aria-hidden />
   return (
     <a href={url} target="_blank" rel="noreferrer" className="shrink-0" aria-label={a.file_name}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt={a.file_name} className="size-10 border border-border object-cover" />
+      <img src={url} alt={a.file_name} className="size-10 rounded-md border border-border object-cover" />
     </a>
   )
 }
@@ -1824,7 +1824,7 @@ function AgentCard({ issue, canIssue, patchIssue, bare }: { issue: Issue; canIss
   return (
     <Card title={bare ? undefined : t("issues.agent.title")} bare={bare}>
       <div className="flex flex-col gap-4">
-        <label className="flex items-start gap-3 border border-border p-3">
+        <label className="flex items-start gap-3 rounded-lg border border-border p-3">
           <Switch checked={issue.human_only} disabled={!canIssue} onCheckedChange={(v) => void patchIssue({ human_only: Boolean(v) })} />
           <span className="flex flex-col gap-1">
             <span className="flex items-center gap-1.5 text-sm">

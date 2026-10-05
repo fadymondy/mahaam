@@ -142,7 +142,7 @@ export default function TaskCard({
           listeners?.onKeyDown?.(e);
         }}
         className={cn(
-          "w-full border border-border bg-card p-3 pe-10 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action",
+          "w-full rounded-lg border border-border bg-card p-3 pe-10 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action",
           draggable && "cursor-grab touch-none active:cursor-grabbing",
           isDragging && "opacity-40",
         )}

@@ -25,7 +25,7 @@ export function CopyField({ value, label }: { value: string; label?: string }) {
   }
 
   return (
-    <div className="flex items-stretch border border-border bg-card">
+    <div className="flex items-stretch overflow-hidden rounded-md border border-border bg-card">
       <code
         dir="ltr"
         aria-label={label}

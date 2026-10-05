@@ -192,7 +192,7 @@ function InviteSection() {
       </form>
 
       {link ? (
-        <div className="mt-6 space-y-2 border border-border bg-card p-4" role="status">
+        <div className="mt-6 space-y-2 rounded-xl border border-border bg-card p-4" role="status">
           <p className="text-sm font-medium">
             {t("members.linkReady")} <Ltr>{link.email}</Ltr>
           </p>

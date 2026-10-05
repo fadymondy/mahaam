@@ -177,7 +177,7 @@ export default function KanbanBoard({
         </div>
         <DragOverlay>
           {active ? (
-            <div className="w-72 rotate-1 border border-border bg-card p-3 shadow-lg">
+            <div className="w-72 rotate-1 rounded-lg border border-border bg-card p-3 shadow-lg">
               <TaskCardBody task={active} dir={dir} labels={labels} />
             </div>
           ) : null}

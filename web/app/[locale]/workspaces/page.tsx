@@ -55,7 +55,7 @@ export default function WorkspacesPage() {
                 href={`/${locale}/w/${w.slug}`}
                 className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center border border-border bg-card text-sm font-medium text-nq-brand">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-sm font-medium text-nq-brand">
                   {w.name.slice(0, 1).toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1">

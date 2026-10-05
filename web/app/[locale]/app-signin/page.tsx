@@ -102,7 +102,7 @@ export default function AppSigninPage() {
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center border border-border bg-muted">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">
                   {phone ? <SmartphoneIcon className="size-5 text-nq-accent-text" /> : <LaptopIcon className="size-5 text-nq-accent-text" />}
                 </span>
                 <div className="min-w-0">

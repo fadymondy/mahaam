@@ -172,7 +172,7 @@ export function IssueBoard({
         </div>
         <DragOverlay>
           {active ? (
-            <div className="w-64 rotate-1 border border-border bg-card p-3 shadow-lg">
+            <div className="w-64 rotate-1 rounded-lg border border-border bg-card p-3 shadow-lg">
               <IssueCardBody issue={active} projectName={projectName} />
             </div>
           ) : null}
@@ -198,7 +198,7 @@ function IssueColumn({
   const label = t(`issues.status.${column.status}`)
   return (
     <section
-      className="flex w-64 shrink-0 flex-col border border-border bg-muted data-[over=true]:border-nq-action"
+      className="flex w-64 shrink-0 flex-col overflow-hidden rounded-card border border-border bg-muted data-[over=true]:border-nq-action"
       data-over={isOver}
       data-status={column.status}
       aria-label={label}
@@ -280,7 +280,7 @@ function IssueCard({
         if (Date.now() - lastDragEnd < 300) e.preventDefault()
       }}
       className={cn(
-        "block w-full border border-border bg-card p-3 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action",
+        "block w-full rounded-lg border border-border bg-card p-3 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action",
         draggable && "cursor-grab touch-none active:cursor-grabbing",
         isDragging && "opacity-40",
       )}

@@ -47,7 +47,7 @@ export default function KanbanColumn({ column, canWrite, dir, labels, onOpen, on
 
   return (
     <section
-      className="flex min-w-64 flex-1 basis-0 flex-col border border-border bg-muted data-[over=true]:border-nq-action"
+      className="flex min-w-64 flex-1 basis-0 flex-col overflow-hidden rounded-card border border-border bg-muted data-[over=true]:border-nq-action"
       data-over={isOver}
       data-status-id={column.status.id}
       data-category={column.status.category}
