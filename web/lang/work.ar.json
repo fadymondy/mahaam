@@ -854,5 +854,8 @@
   "settings.group.people": "الأشخاص والمشاركة",
   "settings.group.connect": "الاتصالات",
   "settings.group.danger": "منطقة الخطر",
-  "settings.search": "ابحث في الإعدادات"
+  "settings.search": "ابحث في الإعدادات",
+  "settings.wsGroup.workspace": "مساحة العمل",
+  "settings.wsGroup.people": "الأشخاص",
+  "settings.wsGroup.developers": "المطوّرون"
 }

@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   CalendarIcon,
   CheckIcon,
-  InboxIcon,
   ListTodoIcon,
   PanelRightOpenIcon,
   RotateCcwIcon,
@@ -22,6 +21,7 @@ import { Badge, Button, Field, FieldLabel, Select, SelectContent, SelectItem, Se
 
 
 import { NotFoundState } from "@/components/not-found-state"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { AuthImage, PromptDialog, RequestStateBadge, ScrollTabs } from "@/components/portal/portal-bits"
 import { IssuePriorityMark, IssueTypeIcon } from "@/components/work/issues/issue-bits"
@@ -69,16 +69,8 @@ export default function RequestsPage() {
   const rows = list.data?.requests ?? []
   const counts = list.data?.counts
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
-      <header className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-nq-action/10 text-nq-accent-text">
-          <InboxIcon className="size-5" />
-        </span>
-        <div>
-          <h1 className="text-xl font-semibold">{t("requests.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("requests.subtitle")}</p>
-        </div>
-      </header>
+    <Page>
+      <PageHeader title={t("requests.title")} description={t("requests.subtitle")} />
 
       <ScrollTabs
         value={state}
@@ -94,7 +86,8 @@ export default function RequestsPage() {
       ) : rows.length === 0 ? (
         <EmptyState title={t(`requests.empty.${state}`)} />
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-border bg-card" data-requests={rows.length}>
+        <Panel flush>
+        <ul className="divide-y divide-line" data-requests={rows.length}>
           {rows.map((r) => (
             <li key={r.key}>
               <button
@@ -126,6 +119,7 @@ export default function RequestsPage() {
             </li>
           ))}
         </ul>
+        </Panel>
       )}
 
       {openKey ? (
@@ -135,7 +129,7 @@ export default function RequestsPage() {
           onChanged={() => void list.mutate()}
         />
       ) : null}
-    </div>
+    </Page>
   )
 }
 

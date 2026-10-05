@@ -9,12 +9,10 @@ import { useRouter } from "next/navigation"
 import { Trash2Icon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 
-import { Button, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
-
-
+import { Button, Field, FieldLabel, Input, SettingsSection } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { SectionTitle } from "@/components/page"
 import { EmptyState } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { ApiError, api, type WorkspaceSummary } from "@/lib/api"
@@ -108,13 +106,10 @@ export default function WorkspaceSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <SectionHeader title={t("wsSettings.title")} description={t("wsSettings.description")} />
-      <form onSubmit={saveGeneral} noValidate className="space-y-4 border border-border p-5">
-        <div>
-          <h2 className="text-base font-medium">{t("wsSettings.general")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("wsSettings.generalHint")}</p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <SectionTitle title={t("wsSettings.title")} description={t("wsSettings.description")} />
+      <SettingsSection title={t("wsSettings.general")} description={t("wsSettings.generalHint")}>
+      <form onSubmit={saveGeneral} noValidate className="space-y-4">
         <div className="flex items-center gap-4">
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -179,12 +174,10 @@ export default function WorkspaceSettingsPage() {
           {t("wsSettings.save")}
         </Button>
       </form>
+      </SettingsSection>
       {isOwner ? (
-      <section className="space-y-4 border border-nq-danger/40 p-5">
-        <div>
-          <h2 className="text-base font-medium text-nq-danger-text">{t("wsSettings.dangerZone")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("wsSettings.deleteHint")}</p>
-        </div>
+      <SettingsSection tone="danger" title={t("wsSettings.dangerZone")} description={t("wsSettings.deleteHint")}>
+        <div className="space-y-4">
         <Field>
           <FieldLabel htmlFor="ws-confirm">
             {t("wsSettings.typeSlug")} <Ltr mono>{ws.slug}</Ltr>
@@ -202,7 +195,8 @@ export default function WorkspaceSettingsPage() {
         <Button variant="danger" disabled={busy || confirm.trim() !== ws.slug} onClick={() => void destroy()}>
           <Trash2Icon /> {t("wsSettings.delete")}
         </Button>
-      </section>
+        </div>
+      </SettingsSection>
       ) : null}
     </div>
   )

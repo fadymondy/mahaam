@@ -18,7 +18,7 @@ import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@
 
 
 
-import { SectionHeader } from "@/components/public-frame"
+import { Panel, SectionTitle } from "@/components/page"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { LOCALES, LOCALE_NAMES } from "@/lib/i18n-locale"
@@ -40,7 +40,7 @@ function zones(): string[] {
 
 function Row({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor?: string; children: ReactNode }) {
   return (
-    <div className="grid gap-2 border-b border-border px-6 py-5 md:grid-cols-[18rem_1fr] md:gap-8">
+    <div className="grid gap-2 border-b border-border px-4 py-5 md:grid-cols-[18rem_1fr] md:gap-8">
       <div>
         <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
           {label}
@@ -58,8 +58,8 @@ export default function TimeSettingsPage() {
   useDocumentTitle(`${t("timeSettings.title")} · ${ws.summary.name}`)
   const s = useTimeSettings(ws.id)
   return (
-    <>
-      <SectionHeader title={t("timeSettings.title")} description={t("timeSettings.hint")} />
+    <div className="flex flex-col gap-6">
+      <SectionTitle title={t("timeSettings.title")} description={t("timeSettings.hint")} />
       {s.error ? (
         <ErrorState error={s.error} />
       ) : !s.data ? (
@@ -67,7 +67,7 @@ export default function TimeSettingsPage() {
       ) : (
         <SettingsForm key={JSON.stringify(s.data)} initial={s.data} onSaved={() => void s.mutate()} />
       )}
-    </>
+    </div>
   )
 }
 
@@ -139,8 +139,9 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
   }
 
   return (
-    <form onSubmit={submit} className="border-t border-border" data-time-settings>
-      {!canEdit ? <p className="border-b border-border bg-muted px-6 py-3 text-sm text-nq-fg-body">{t("timeSettings.readOnly")}</p> : null}
+    <Panel flush>
+    <form onSubmit={submit} data-time-settings>
+      {!canEdit ? <p className="border-b border-border bg-muted px-4 py-3 text-sm text-nq-fg-body">{t("timeSettings.readOnly")}</p> : null}
       <fieldset disabled={!canEdit || busy} className="contents">
         <Row label={t("timeSettings.timezone")} hint={t("timeSettings.timezoneHint")} htmlFor="ts-tz">
           <Popover open={tzOpen} onOpenChange={setTzOpen}>
@@ -250,7 +251,7 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
         </Row>
       </fieldset>
       {canEdit ? (
-        <div className="flex items-center justify-end gap-3 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 px-4 py-4">
           {error ? <FormError className="me-auto">{error}</FormError> : null}
           <Button variant="primary" type="submit" disabled={busy} data-save-settings>
             {busy ? t("common.working") : t("common.save")}
@@ -258,5 +259,6 @@ function SettingsForm({ initial, onSaved }: { initial: TimeSettings; onSaved: ()
         </div>
       ) : null}
     </form>
+    </Panel>
   )
 }

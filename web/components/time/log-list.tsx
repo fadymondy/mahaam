@@ -45,7 +45,7 @@ export function LogList({
   const days = [...byDay.keys()].sort().reverse()
 
   return (
-    <div className="flex flex-col gap-6 px-6 pb-8" data-time-log>
+    <div className="flex flex-col gap-6" data-time-log>
       <div className="flex justify-end">
         <Button variant="primary" size="sm" onClick={() => onAdd(days.includes(today) ? today : (days[0] ?? today))} data-add-time>
           <PlusIcon />

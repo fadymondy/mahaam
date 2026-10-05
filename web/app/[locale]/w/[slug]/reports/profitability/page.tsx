@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Ltr } from "@/components/copy-field"
 import { ExportButtons, FilterBar, PrintButton, PrintHeader, ResetButton, useReportFilters } from "@/components/reports/filter-bar"
 import { SavedViews } from "@/components/reports/saved-views"
+import { Panel } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -39,11 +40,11 @@ function ProfitabilityView() {
   const res = useProfitability(ws.id, query, state.ready && allowed)
   const p = res.data
 
-  if (ws.current && !allowed) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("profit.noPermission")}</p>
+  if (ws.current && !allowed) return <p className="text-sm text-muted-foreground">{t("profit.noPermission")}</p>
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-3" data-print-hide data-report-toolbar>
+      <div className="flex flex-wrap items-center justify-between gap-2" data-print-hide data-report-toolbar>
         <div className="flex flex-wrap items-center gap-2">
           <SavedViews kind="profitability" filters={pf} base={`/${locale}/w/${ws.slug}/reports`} />
           <ResetButton onReset={state.reset} />
@@ -58,10 +59,10 @@ function ProfitabilityView() {
       ) : !p ? (
         <LoadingRows rows={4} />
       ) : (
-        <div data-profit-body className={cn(res.isValidating && "opacity-70 transition-opacity")}>
-          <p className="border-b border-border px-6 py-3 text-sm text-nq-fg-body">{t("profit.hint")}</p>
+        <div data-profit-body className={cn("flex flex-col gap-4", res.isValidating && "opacity-70 transition-opacity")}>
+          <p className="text-sm text-nq-fg-body">{t("profit.hint")}</p>
           {p.other_currency_entries ? (
-            <p className="border-b border-border bg-muted px-6 py-2.5 text-caption text-nq-fg-body">{t("reports.otherCurrency", { n: p.other_currency_entries })}</p>
+            <p className="rounded-lg bg-muted px-4 py-2.5 text-caption text-nq-fg-body">{t("reports.otherCurrency", { n: p.other_currency_entries })}</p>
           ) : null}
           <ProfitTable p={p} by="project" rows={p.projects} query={query} />
           <ProfitTable p={p} by="client" rows={p.clients} query={query} />
@@ -93,23 +94,27 @@ function ProfitTable({ p, by, rows, query }: { p: Profitability; by: "project" |
   ]
   const neg = (i: number, x: ProfitRow) => (i === 4 && x.profit_minor < 0) || (i === 5 && (x.margin_percent ?? 0) < 0)
   return (
-    <section className="print-block" data-profit-table={by}>
-      <div className="flex flex-wrap items-center justify-between gap-2 px-6 pt-6 pb-3">
-        <h2 className="text-base font-medium">{t(by === "project" ? "profit.byProject" : "profit.byClient")}</h2>
+    <Panel
+      flush
+      className="print-block"
+      data-profit-table={by}
+      title={t(by === "project" ? "profit.byProject" : "profit.byClient")}
+      actions={
         <div data-print-hide>
           <ExportButtons query={`${query}${query ? "&" : ""}kind=profitability&by=${by}&lang=${locale}`} id={by} />
         </div>
-      </div>
+      }
+    >
       {rows.length === 0 ? (
         <EmptyState title={t("profit.empty")} />
       ) : (
-        <div className="print-table border-t border-border">
+        <div className="print-table">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t(`reports.group.${by}`)}</TableHead>
+                <TableHead className="ps-4">{t(`reports.group.${by}`)}</TableHead>
                 {heads.map((h, i) => (
-                  <TableHead key={h} className={cn(num, i === heads.length - 1 && "pe-6")}>
+                  <TableHead key={h} className={cn(num, i === heads.length - 1 && "pe-4")}>
                     {h}
                   </TableHead>
                 ))}
@@ -118,7 +123,7 @@ function ProfitTable({ p, by, rows, query }: { p: Profitability; by: "project" |
             <TableBody>
               {rows.map((x) => (
                 <TableRow key={x.key || "none"} data-row={x.key || "none"}>
-                  <TableCell className="max-w-72 ps-6">
+                  <TableCell className="max-w-72 ps-4">
                     {x.key ? (
                       <span className="flex min-w-0 items-center gap-2">
                         {x.color ? <ColorDot color={x.color} /> : null}
@@ -133,7 +138,7 @@ function ProfitTable({ p, by, rows, query }: { p: Profitability; by: "project" |
                     )}
                   </TableCell>
                   {cells(x).map((c, i, all) => (
-                    <TableCell key={i} className={cn(num, i === all.length - 1 && "pe-6", neg(i, x) && "text-(--nq-danger-text)")}>
+                    <TableCell key={i} className={cn(num, i === all.length - 1 && "pe-4", neg(i, x) && "text-(--nq-danger-text)")}>
                       <Ltr mono data-cell>
                         {c || "—"}
                       </Ltr>
@@ -144,9 +149,9 @@ function ProfitTable({ p, by, rows, query }: { p: Profitability; by: "project" |
             </TableBody>
             <TableFooter>
               <TableRow data-row="total">
-                <TableCell className="ps-6 font-semibold">{t("reports.total")}</TableCell>
+                <TableCell className="ps-4 font-semibold">{t("reports.total")}</TableCell>
                 {cells(p.total).map((c, i, all) => (
-                  <TableCell key={i} className={cn(num, "font-semibold", i === all.length - 1 && "pe-6")}>
+                  <TableCell key={i} className={cn(num, "font-semibold", i === all.length - 1 && "pe-4")}>
                     <Ltr mono data-cell>
                       {c || "—"}
                     </Ltr>
@@ -157,6 +162,6 @@ function ProfitTable({ p, by, rows, query }: { p: Profitability; by: "project" |
           </Table>
         </div>
       )}
-    </section>
+    </Panel>
   )
 }

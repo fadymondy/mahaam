@@ -2,12 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronLeftIcon } from "lucide-react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { RangePicker } from "@/components/kpi/kpi-dashboard"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -19,7 +18,7 @@ import { useDocumentTitle } from "@/lib/title"
 
 // The team KPI table (manager+): one headline row per employee; each row opens their dashboard.
 export default function TeamKpiPage() {
-  const { t, locale, isRtl } = useTranslations()
+  const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const allowed = ws.can("kpi:all")
   const [range, setRange] = useState(defaultRange)
@@ -30,20 +29,15 @@ export default function TeamKpiPage() {
   const rows = team.data?.rows ?? []
   const num = "text-end tabular-nums"
   return (
-    <>
-      <div className="px-6 pt-5">
-        <Link href={base} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
-          <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
-          {t("nav.members")}
-        </Link>
-      </div>
-      <SectionHeader
+    <Page wide>
+      <PageHeader
+        breadcrumbs={[{ label: t("nav.members"), href: base }, { label: t("kpi.teamTitle") }]}
         title={t("kpi.teamTitle")}
         description={t("kpi.teamHint")}
-        action={allowed ? <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} /> : null}
+        actions={allowed ? <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} /> : null}
       />
       {!allowed ? (
-        <p className="px-6 py-6 text-sm text-muted-foreground">{t("kpi.teamNoPermission")}</p>
+        <p className="text-sm text-muted-foreground">{t("kpi.teamNoPermission")}</p>
       ) : team.error ? (
         <ErrorState error={team.error} />
       ) : !team.data ? (
@@ -51,11 +45,11 @@ export default function TeamKpiPage() {
       ) : rows.length === 0 ? (
         <EmptyState title={t("kpi.teamEmpty")} />
       ) : (
-        <div className="overflow-x-auto border-y border-border">
+        <Panel flush>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("kpi.member")}</TableHead>
+                <TableHead className="ps-4">{t("kpi.member")}</TableHead>
                 <TableHead className={num}>{t("kpi.hours")}</TableHead>
                 <TableHead className={num}>{t("kpi.billable")}</TableHead>
                 <TableHead className={num}>{t("kpi.daysTracked")}</TableHead>
@@ -67,13 +61,13 @@ export default function TeamKpiPage() {
                 <TableHead className={num}>{t("kpi.commits")}</TableHead>
                 <TableHead className={num}>{t("kpi.prsMerged")}</TableHead>
                 <TableHead className={num}>{t("kpi.mcp")}</TableHead>
-                <TableHead className={`${num} pe-6`}>{t("kpi.rating")}</TableHead>
+                <TableHead className={`${num} pe-4`}>{t("kpi.rating")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((r) => (
                 <TableRow key={r.member.user_id}>
-                  <TableCell className="ps-6">
+                  <TableCell className="ps-4">
                     <Link href={`${base}/${r.member.user_id}`} className="font-medium text-foreground hover:underline">
                       <Ltr>{r.member.email}</Ltr>
                     </Link>
@@ -102,13 +96,13 @@ export default function TeamKpiPage() {
                   </TableCell>
                   <TableCell className={num}>{r.github_login ? r.prs_merged : "—"}</TableCell>
                   <TableCell className={num}>{r.mcp_actions}</TableCell>
-                  <TableCell className={`${num} pe-6`}>{r.avg_rating != null ? r.avg_rating.toFixed(1) : "—"}</TableCell>
+                  <TableCell className={`${num} pe-4`}>{r.avg_rating != null ? r.avg_rating.toFixed(1) : "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
-    </>
+    </Page>
   )
 }

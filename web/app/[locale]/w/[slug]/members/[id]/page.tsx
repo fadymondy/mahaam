@@ -2,13 +2,11 @@
 
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ChevronLeftIcon } from "lucide-react"
 
-import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
-
+import { Badge, Card, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { NotFoundState } from "@/components/not-found-state"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { ColorDot } from "@/components/work/palette"
@@ -24,7 +22,7 @@ import { KpiDashboard } from "@/components/kpi/kpi-dashboard"
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { t, locale, isRtl } = useTranslations()
+  const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const me = useMe()
   const dir = useDirectory(me.data ? String(me.data.id) : undefined)
@@ -52,14 +50,9 @@ export default function MemberDetailPage() {
   const rateFor = (minor: number | null) => (minor != null ? money(minor, cur, locale) : t("memberDetail.rateDefault"))
 
   return (
-    <>
-      <div className="px-6 pt-5">
-        <Link href={back} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
-          <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
-          {t("nav.members")}
-        </Link>
-      </div>
-      <SectionHeader
+    <Page wide>
+      <PageHeader
+        breadcrumbs={[{ label: t("nav.members"), href: back }, { label: member.email }]}
         title={
           <span className="flex flex-wrap items-center gap-3">
             <PersonAvatar id={id} dir={dir} size="md" />
@@ -69,61 +62,61 @@ export default function MemberDetailPage() {
         }
       />
 
-      <div className="grid gap-px border-y border-border bg-border lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* main */}
-        <div className="min-w-0 bg-background">
-          <dl className="grid grid-cols-2 gap-px border-b border-border bg-border text-sm">
-            <div className="bg-background px-6 py-3">
-              <dt className="text-eyebrow uppercase mb-1">{t("members.role")}</dt>
+        <div className="flex min-w-0 flex-col gap-6">
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <Card className="gap-1 px-4">
+              <dt className="text-label text-muted-foreground">{t("members.role")}</dt>
               <dd className="text-foreground">{t(`role.${member.role}`)}</dd>
-            </div>
-            <div className="bg-background px-6 py-3">
-              <dt className="text-eyebrow uppercase mb-1">{t("members.joined")}</dt>
+            </Card>
+            <Card className="gap-1 px-4">
+              <dt className="text-label text-muted-foreground">{t("members.joined")}</dt>
               <dd className="text-foreground">{member.joined_at ? <Ltr>{formatDay(member.joined_at, locale)}</Ltr> : "—"}</dd>
-            </div>
+            </Card>
           </dl>
 
-          <h2 className="px-6 pt-6 pb-3 text-base font-medium">{t("memberDetail.teams")}</h2>
-          {teams.error ? (
-            <ErrorState error={teams.error} />
-          ) : memberTeams.length === 0 ? (
-            <EmptyState title={t("memberDetail.noTeams")} />
-          ) : (
-            <ul className="divide-y divide-line border-y border-border">
-              {memberTeams.map((tm) => (
-                <li key={tm.id}>
-                  <Link href={`/${locale}/w/${ws.slug}/teams/${tm.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-muted">
-                    <ColorDot color={tm.color} className="size-3" />
-                    <span className="min-w-0 flex-1 truncate font-medium text-foreground">{tm.name}</span>
-                    <span className="text-caption text-muted-foreground">{t("teams.memberCount", { n: tm.member_ids.length })}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          <Panel flush title={t("memberDetail.teams")}>
+            {teams.error ? (
+              <ErrorState error={teams.error} />
+            ) : memberTeams.length === 0 ? (
+              <EmptyState title={t("memberDetail.noTeams")} />
+            ) : (
+              <ul className="divide-y divide-line">
+                {memberTeams.map((tm) => (
+                  <li key={tm.id}>
+                    <Link href={`/${locale}/w/${ws.slug}/teams/${tm.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted">
+                      <ColorDot color={tm.color} className="size-3" />
+                      <span className="min-w-0 flex-1 truncate font-medium text-foreground">{tm.name}</span>
+                      <span className="text-caption text-muted-foreground">{t("teams.memberCount", { n: tm.member_ids.length })}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
 
-          <h2 className="px-6 pt-6 pb-3 text-base font-medium">{t("memberDetail.recentTime")}</h2>
-          {!canTime ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">{t("memberDetail.timeNoPermission")}</p>
-          ) : sheet.error ? (
-            <ErrorState error={sheet.error} />
-          ) : !sheet.data ? (
-            <LoadingRows rows={2} />
-          ) : sheet.data.rows.length === 0 ? (
-            <EmptyState title={t("memberDetail.noTime")} />
-          ) : (
-            <div className="border-y border-border">
+          <Panel flush title={t("memberDetail.recentTime")}>
+            {!canTime ? (
+              <p className="px-4 py-4 text-sm text-muted-foreground">{t("memberDetail.timeNoPermission")}</p>
+            ) : sheet.error ? (
+              <ErrorState error={sheet.error} />
+            ) : !sheet.data ? (
+              <LoadingRows rows={2} />
+            ) : sheet.data.rows.length === 0 ? (
+              <EmptyState title={t("memberDetail.noTime")} />
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="ps-6">{t("nav.projects")}</TableHead>
-                    <TableHead className="pe-6 text-end">{t("memberDetail.tracked")}</TableHead>
+                    <TableHead className="ps-4">{t("nav.projects")}</TableHead>
+                    <TableHead className="pe-4 text-end">{t("memberDetail.tracked")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sheet.data.rows.map((row, i) => (
                     <TableRow key={`${row.project_id}-${row.task_id}-${i}`}>
-                      <TableCell className="ps-6">
+                      <TableCell className="ps-4">
                         <span className="flex min-w-0 items-center gap-2">
                           {row.project_color ? <ColorDot color={row.project_color} /> : null}
                           <span className="min-w-0 truncate text-foreground">
@@ -132,45 +125,44 @@ export default function MemberDetailPage() {
                           </span>
                         </span>
                       </TableCell>
-                      <TableCell className="pe-6 text-end tabular-nums">
+                      <TableCell className="pe-4 text-end tabular-nums">
                         <Ltr mono>{hm(row.total_s, "0:00")}</Ltr>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
+            )}
+          </Panel>
         </div>
 
         {/* side rail: rates (managers only) */}
-        <aside className="min-w-0 bg-background">
-          <h2 className="px-6 pt-5 pb-3 text-base font-medium">{t("memberDetail.rates")}</h2>
+        <Panel flush title={t("memberDetail.rates")} className="self-start">
           {!canRates ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">{t("memberDetail.ratesNoPermission")}</p>
+            <p className="px-4 py-4 text-sm text-muted-foreground">{t("memberDetail.ratesNoPermission")}</p>
           ) : rates.error ? (
             <ErrorState error={rates.error} />
           ) : !rates.data ? (
             <LoadingRows rows={2} />
           ) : (
             <>
-              <dl className="grid grid-cols-2 gap-px border-y border-border bg-border text-sm">
-                <div className="bg-background px-6 py-3">
-                  <dt className="text-eyebrow uppercase mb-1">{t("memberDetail.billRate")}</dt>
+              <dl className="grid grid-cols-2 gap-px border-b border-border bg-border text-sm">
+                <div className="bg-card px-4 py-3">
+                  <dt className="mb-1 text-label text-muted-foreground">{t("memberDetail.billRate")}</dt>
                   <dd className="text-foreground"><Ltr>{rateFor(rateEntry?.current?.bill_rate_minor ?? null)}</Ltr></dd>
                 </div>
-                <div className="bg-background px-6 py-3">
-                  <dt className="text-eyebrow uppercase mb-1">{t("memberDetail.costRate")}</dt>
+                <div className="bg-card px-4 py-3">
+                  <dt className="mb-1 text-label text-muted-foreground">{t("memberDetail.costRate")}</dt>
                   <dd className="text-foreground"><Ltr>{rateFor(rateEntry?.current?.cost_rate_minor ?? null)}</Ltr></dd>
                 </div>
               </dl>
-              <h3 className="px-6 pt-5 pb-2 text-sm font-medium">{t("memberDetail.rateHistory")}</h3>
+              <h3 className="px-4 pt-4 pb-2 text-sm font-medium">{t("memberDetail.rateHistory")}</h3>
               {!rateEntry || rateEntry.history.length === 0 ? (
-                <p className="px-6 pb-6 text-sm text-muted-foreground">{t("memberDetail.noRateHistory")}</p>
+                <p className="px-4 pb-4 text-sm text-muted-foreground">{t("memberDetail.noRateHistory")}</p>
               ) : (
-                <ul className="divide-y divide-line border-y border-border text-sm">
+                <ul className="divide-y divide-line border-t border-border text-sm">
                   {rateEntry.history.map((h) => (
-                    <li key={h.id} className="flex flex-wrap items-baseline justify-between gap-2 px-6 py-2.5">
+                    <li key={h.id} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2.5">
                       <span className="text-muted-foreground"><Ltr>{formatDay(h.effective_from, locale)}</Ltr></span>
                       <span className="tabular-nums text-foreground">
                         <Ltr>{money(h.bill_rate_minor, h.currency, locale)}</Ltr>
@@ -182,15 +174,11 @@ export default function MemberDetailPage() {
               )}
             </>
           )}
-        </aside>
+        </Panel>
       </div>
 
       {/* the employee KPI: your own, or anyone's as a manager (clients have none) */}
-      {member.role !== "client" && (isSelf || ws.can("kpi:all")) ? (
-        <div className="pt-6 pb-8">
-          <KpiDashboard userId={id} isSelf={isSelf} />
-        </div>
-      ) : null}
-    </>
+      {member.role !== "client" && (isSelf || ws.can("kpi:all")) ? <KpiDashboard userId={id} isSelf={isSelf} /> : null}
+    </Page>
   )
 }

@@ -11,6 +11,7 @@ import { Badge, Button } from "@fadymondy/nasaq/web"
 
 
 import { Ltr } from "@/components/copy-field"
+import { Panel } from "@/components/page"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -47,7 +48,7 @@ export function GitHubConnectCard() {
 
   const acc = status.data?.account
   return (
-    <section className="border-y border-border px-6 py-5">
+    <Panel>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-base font-medium">
@@ -96,6 +97,6 @@ export function GitHubConnectCard() {
           <p className="text-sm text-muted-foreground">{status.data.oauth_available ? t("kpi.notConnectedBody") : t("kpi.oauthOff")}</p>
         )}
       </div>
-    </section>
+    </Panel>
   )
 }

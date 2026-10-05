@@ -8,12 +8,7 @@ import { FormError } from "@/components/form-text"
 
 import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
-
-
-
-
-
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { CopyField, Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -33,11 +28,11 @@ export default function MembersPage() {
   const invitations = useInvitations(ws.id, canInvite)
 
   return (
-    <>
-      <SectionHeader
+    <Page>
+      <PageHeader
         title={t("nav.members")}
         description={t("members.hint")}
-        action={
+        actions={
           ws.can("kpi:all") ? (
             <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
               {t("kpi.teamTitle")}
@@ -53,20 +48,20 @@ export default function MembersPage() {
       ) : (members.data?.members ?? []).length === 0 ? (
         <EmptyState title={t("members.empty")} />
       ) : (
-        <div className="border-y border-border">
+        <Panel flush>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("members.email")}</TableHead>
+                <TableHead className="ps-4">{t("members.email")}</TableHead>
                 <TableHead>{t("members.role")}</TableHead>
                 <TableHead>{t("members.status")}</TableHead>
-                <TableHead className="pe-6">{t("members.joined")}</TableHead>
+                <TableHead className="pe-4">{t("members.joined")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(members.data?.members ?? []).map((m) => (
                 <TableRow key={m.user_id}>
-                  <TableCell className="ps-6">
+                  <TableCell className="ps-4">
                     <Link href={`/${locale}/w/${ws.slug}/members/${m.user_id}`} className="hover:underline">
                       <Ltr>{m.email}</Ltr>
                     </Link>
@@ -75,19 +70,18 @@ export default function MembersPage() {
                     <Badge variant="outline">{t(`role.${m.role}`)}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{t(`status.${m.status}`)}</TableCell>
-                  <TableCell className="pe-6 text-muted-foreground">
+                  <TableCell className="pe-4 text-muted-foreground">
                     <Ltr>{formatDate(m.joined_at)}</Ltr>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
 
       {canInvite ? (
         <>
-          <div className="border-t border-border  mt-8" aria-hidden />
           <InviteSection />
           <PendingInvitations
             loading={invitations.isLoading}
@@ -98,9 +92,9 @@ export default function MembersPage() {
           />
         </>
       ) : ws.current ? (
-        <p className="px-6 py-6 text-sm text-muted-foreground">{t("members.noInvitePermission")}</p>
+        <p className="text-sm text-muted-foreground">{t("members.noInvitePermission")}</p>
       ) : null}
-    </>
+    </Page>
   )
 }
 
@@ -137,13 +131,16 @@ function InviteSection() {
   }
 
   return (
-    <section className="px-6 py-6">
-      <h2 className="text-base font-medium">{t("members.inviteTitle")}</h2>
-      {/* P0 sends no email — say so plainly instead of implying it does. */}
-      <p className="mt-1 mb-5 flex items-start gap-2 text-sm text-muted-foreground">
-        <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-nq-warn-text" />
-        {t("members.noEmail")}
-      </p>
+    <Panel
+      title={t("members.inviteTitle")}
+      // P0 sends no email — say so plainly instead of implying it does.
+      description={
+        <span className="flex items-start gap-2">
+          <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-nq-warn-text" />
+          {t("members.noEmail")}
+        </span>
+      }
+    >
       <form onSubmit={onSubmit} noValidate>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <Field className="sm:flex-1">
@@ -194,7 +191,7 @@ function InviteSection() {
           </div>
         </div>
       ) : null}
-    </section>
+    </Panel>
   )
 }
 
@@ -225,8 +222,7 @@ function PendingInvitations({
   }
 
   return (
-    <section className="pb-8">
-      <h2 className="px-6 pb-3 text-base font-medium">{t("members.pending")}</h2>
+    <Panel flush title={t("members.pending")}>
       {error ? (
         <ErrorState error={error} />
       ) : loading ? (
@@ -234,14 +230,14 @@ function PendingInvitations({
       ) : items.length === 0 ? (
         <EmptyState title={t("members.noPending")} />
       ) : (
-        <div className="border-y border-border">
+        <>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("members.email")}</TableHead>
+                <TableHead className="ps-4">{t("members.email")}</TableHead>
                 <TableHead>{t("members.role")}</TableHead>
                 <TableHead>{t("members.expires")}</TableHead>
-                <TableHead className="pe-6 text-end">
+                <TableHead className="pe-4 text-end">
                   <span className="sr-only">{t("common.actions")}</span>
                 </TableHead>
               </TableRow>
@@ -249,7 +245,7 @@ function PendingInvitations({
             <TableBody>
               {items.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="ps-6">
+                  <TableCell className="ps-4">
                     <Ltr>{inv.email}</Ltr>
                   </TableCell>
                   <TableCell>
@@ -258,7 +254,7 @@ function PendingInvitations({
                   <TableCell className="text-muted-foreground">
                     <Ltr>{formatDate(inv.expires_at)}</Ltr>
                   </TableCell>
-                  <TableCell className="pe-6 text-end">
+                  <TableCell className="pe-4 text-end">
                     <ConfirmButton
                       label={t("common.revoke")}
                       title={t("members.revokeTitle")}
@@ -271,8 +267,8 @@ function PendingInvitations({
               ))}
             </TableBody>
           </Table>
-        </div>
+        </>
       )}
-    </section>
+    </Panel>
   )
 }

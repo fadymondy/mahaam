@@ -9,14 +9,7 @@ import { FormError } from "@/components/form-text"
 
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Switch, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
 
-
-
-
-
-
-
-
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { Ltr } from "@/components/copy-field"
 import { ClientImportDialog } from "@/components/work/client-import-dialog"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -67,7 +60,11 @@ export default function ClientsPage() {
     }
   }, [])
 
-  if (ws.current && !ws.can("clients:read")) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("clients.noPermission")}</p>
+  if (ws.current && !ws.can("clients:read")) return (
+      <Page>
+        <p className="text-sm text-muted-foreground">{t("clients.noPermission")}</p>
+      </Page>
+    )
 
   async function toggleArchive(c: Client) {
     try {
@@ -80,11 +77,11 @@ export default function ClientsPage() {
   }
 
   return (
-    <>
-      <SectionHeader
+    <Page wide>
+      <PageHeader
         title={t("nav.clients")}
         description={t("clients.hint")}
-        action={
+        actions={
           canWrite ? (
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => setImporting(true)} data-client-import-open>
@@ -99,7 +96,7 @@ export default function ClientsPage() {
           ) : null
         }
       />
-      <div className="flex flex-wrap items-center gap-2 border-t border-border px-6 py-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
           <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("clients.search")} aria-label={t("clients.search")} className="h-9 ps-8" dir="auto" />
@@ -121,15 +118,15 @@ export default function ClientsPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("clients.empty")} body={canWrite ? t("clients.emptyBody") : undefined} />
       ) : (
-        <div className="border-y border-border">
+        <Panel flush>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("clients.name")}</TableHead>
+                <TableHead className="ps-4">{t("clients.name")}</TableHead>
                 <TableHead className="hidden md:table-cell">{t("clients.email")}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t("clients.rate")}</TableHead>
                 <TableHead>{t("clients.projects")}</TableHead>
-                <TableHead className="pe-6 text-end">
+                <TableHead className="pe-4 text-end">
                   <span className="sr-only">{t("common.actions")}</span>
                 </TableHead>
               </TableRow>
@@ -137,7 +134,7 @@ export default function ClientsPage() {
             <TableBody>
               {list.map((c) => (
                 <TableRow key={c.id} data-client={c.id}>
-                  <TableCell className="ps-6 font-medium">
+                  <TableCell className="ps-4 font-medium">
                     <Link href={`/${locale}/w/${ws.slug}/clients/${c.id}`} className="hover:underline">
                       {c.name}
                     </Link>
@@ -160,7 +157,7 @@ export default function ClientsPage() {
                   <TableCell className="text-muted-foreground">
                     <Ltr>{c.project_count}</Ltr>
                   </TableCell>
-                  <TableCell className="pe-6 text-end">
+                  <TableCell className="pe-4 text-end">
                     {canWrite ? (
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => setEditing(c)}>
@@ -176,7 +173,7 @@ export default function ClientsPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
 
       {canWrite ? (
@@ -208,7 +205,7 @@ export default function ClientsPage() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </>
+    </Page>
   )
 }
 

@@ -8,11 +8,7 @@ import { FormError } from "@/components/form-text"
 
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
 
-
-
-
-
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { MemberPicker } from "@/components/work/fields"
@@ -35,14 +31,18 @@ export default function TeamsPage() {
   const [editing, setEditing] = useState<Team | "new" | null>(null)
   const list = teams.data?.teams ?? []
 
-  if (ws.current && !ws.can("teams:read")) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("teams.noPermission")}</p>
+  if (ws.current && !ws.can("teams:read")) return (
+      <Page>
+        <p className="text-sm text-muted-foreground">{t("teams.noPermission")}</p>
+      </Page>
+    )
 
   return (
-    <>
-      <SectionHeader
+    <Page>
+      <PageHeader
         title={t("nav.teams")}
         description={t("teams.hint")}
-        action={
+        actions={
           canWrite ? (
             <Button variant="primary" onClick={() => setEditing("new")}>
               <PlusIcon />
@@ -58,9 +58,10 @@ export default function TeamsPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("teams.empty")} body={canWrite ? t("teams.emptyBody") : undefined} />
       ) : (
-        <ul className="divide-y divide-line border-y border-border">
+        <Panel flush>
+        <ul className="divide-y divide-line">
           {list.map((team) => (
-            <li key={team.id} className="flex flex-wrap items-center gap-3 px-6 py-3" data-team={team.id}>
+            <li key={team.id} className="flex flex-wrap items-center gap-3 px-4 py-3" data-team={team.id}>
               <ColorDot color={team.color} className="size-3" />
               <div className="min-w-0 flex-1">
                 <Link href={`/${locale}/w/${ws.slug}/teams/${team.id}`} className="block truncate font-medium text-foreground hover:underline">
@@ -96,6 +97,7 @@ export default function TeamsPage() {
             </li>
           ))}
         </ul>
+        </Panel>
       )}
 
       <TeamDialog
@@ -107,7 +109,7 @@ export default function TeamsPage() {
           void teams.mutate()
         }}
       />
-    </>
+    </Page>
   )
 }
 

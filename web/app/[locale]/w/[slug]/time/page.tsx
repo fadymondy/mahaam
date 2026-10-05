@@ -4,14 +4,13 @@
 // grid, and the period's report. Days are cut at midnight in the WORKSPACE timezone by the server
 // (a 23:00–01:00 entry shows an hour on each day). A manager opens a member's time with ?user=.
 // The URL is the state: ?tab=&range=week|month&ref=&source=. Every tab updates live.
-import Link from "next/link"
 import { Suspense, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "@fadymondy/nasaq/web"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
 
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader } from "@/components/page"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { EntryForm } from "@/components/time/entry-form"
 import { LogList } from "@/components/time/log-list"
@@ -70,7 +69,11 @@ function TimeView() {
   const { start, stop: stopMine, busy } = useTimerActions()
   const [editing, setEditing] = useState<{ entry: TimeEntry | null; day: string } | null>(null)
 
-  if (ws.current && !canTrack) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("time.noPermission")}</p>
+  if (ws.current && !canTrack) return (
+      <Page>
+        <p className="text-sm text-muted-foreground">{t("time.noPermission")}</p>
+      </Page>
+    )
 
   function setQuery(next: Record<string, string | null>) {
     const q = new URLSearchParams(params.toString())
@@ -136,20 +139,13 @@ function TimeView() {
   }
 
   return (
-    <>
-      <SectionHeader
-        micro={
-          viewingOther ? (
-            <Link href={`/${locale}/w/${ws.slug}/time`} className="underline-offset-4 hover:underline">
-              {t("time.backToMine")}
-            </Link>
-          ) : (
-            ws.summary.name
-          )
-        }
+    <Page wide>
+      <PageHeader
+        backHref={viewingOther ? `/${locale}/w/${ws.slug}/time` : undefined}
+        labels={{ back: t("time.backToMine") }}
         title={title}
         description={t(viewingOther ? "time.hintOf" : "time.hint", { tz })}
-        action={
+        actions={
           <RangeNav
             kind={kind}
             period={current}
@@ -161,7 +157,7 @@ function TimeView() {
         }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs value={tab} onValueChange={(v) => setQuery({ tab: v === "overview" ? null : String(v) })}>
           <TabsList data-time-tabs>
             {TABS.map((k) => (
@@ -249,6 +245,6 @@ function TimeView() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </>
+    </Page>
   )
 }

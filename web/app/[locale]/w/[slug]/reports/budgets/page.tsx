@@ -7,10 +7,10 @@ import { Suspense } from "react"
 
 import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
-
 import { BudgetMeters, LevelBadge } from "@/components/reports/budget-meter"
 import { PrintButton, PrintHeader } from "@/components/reports/filter-bar"
 import { SavedViews } from "@/components/reports/saved-views"
+import { Panel } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { ColorDot } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -39,9 +39,9 @@ function BudgetsView() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-3" data-print-hide data-report-toolbar>
+      <div className="flex flex-wrap items-center justify-between gap-2" data-print-hide data-report-toolbar>
         <div className="min-w-0">
-          <h2 className="text-sm font-medium">{t("budget.allTitle")}</h2>
+          <h2 className="text-h4">{t("budget.allTitle")}</h2>
           <p className="text-caption text-muted-foreground">
             {t("budget.allHint", { money: data?.finance ? t("budget.allHintMoney") : "" })} {t("budget.levels")}
           </p>
@@ -60,19 +60,19 @@ function BudgetsView() {
       ) : budgets.length === 0 ? (
         <EmptyState title={t("budget.empty")} body={t("budget.emptyBody")} />
       ) : (
-        <div className="print-table" data-budget-table data-finance={data.finance}>
+        <Panel flush className="print-table" data-budget-table data-finance={data.finance}>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("budget.project")}</TableHead>
+                <TableHead className="ps-4">{t("budget.project")}</TableHead>
                 <TableHead className="w-40">{t("budget.status")}</TableHead>
-                <TableHead className="w-[45%] pe-6">{t("budget.spentLabel")}</TableHead>
+                <TableHead className="w-[45%] pe-4">{t("budget.spentLabel")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {budgets.map((b) => (
                 <TableRow key={b.project_id} data-budget={b.project_id} data-level={b.level}>
-                  <TableCell className="max-w-0 ps-6 align-top">
+                  <TableCell className="max-w-0 ps-4 align-top">
                     <Link href={`${base}/projects/${b.project_id}`} className="flex min-w-0 items-center gap-2 font-medium hover:underline">
                       <ColorDot color={b.project_color} />
                       <span className="truncate" dir="auto">
@@ -88,14 +88,14 @@ function BudgetsView() {
                   <TableCell className="align-top">
                     <LevelBadge level={b.level} />
                   </TableCell>
-                  <TableCell className="pe-6 align-top whitespace-normal">
+                  <TableCell className="pe-4 align-top whitespace-normal">
                     <BudgetMeters b={b} finance={data.finance} />
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
     </>
   )

@@ -10,15 +10,8 @@ import { FormError } from "@/components/form-text"
 
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from "@fadymondy/nasaq/web"
 
-
-
-
-
-
-
-
 import { DateField } from "@/components/work/fields"
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -85,14 +78,18 @@ export default function InvoicesPage() {
   }, [all, q, client, due])
   const filtered = !!(q.trim() || client || due)
 
-  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("invoices.noPermission")}</p>
+  if (ws.current && !canRead) return (
+      <Page>
+        <p className="text-sm text-muted-foreground">{t("invoices.noPermission")}</p>
+      </Page>
+    )
 
   return (
-    <>
-      <SectionHeader
+    <Page wide>
+      <PageHeader
         title={t("invoices.title")}
         description={t("invoices.hint")}
-        action={
+        actions={
           canWrite ? (
             <Button variant="primary" onClick={() => setCreating(true)} data-new-invoice>
               <PlusIcon />
@@ -101,7 +98,7 @@ export default function InvoicesPage() {
           ) : null
         }
       />
-      <div className="flex flex-wrap items-center gap-2 border-t border-border px-6 py-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
           <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("invoices.search")} aria-label={t("invoices.search")} className="h-9 ps-8" dir="auto" />
@@ -131,21 +128,21 @@ export default function InvoicesPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("invoices.none")} body={canWrite ? t("invoices.noneHint") : undefined} />
       ) : (
-        <div className="border-y border-border">
+        <Panel flush>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("invoices.col.number")}</TableHead>
+                <TableHead className="ps-4">{t("invoices.col.number")}</TableHead>
                 <TableHead>{t("invoices.col.client")}</TableHead>
                 <TableHead>{t("invoices.col.status")}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t("invoices.col.issued")}</TableHead>
-                <TableHead className="pe-6 text-end">{t("invoices.col.total")}</TableHead>
+                <TableHead className="pe-4 text-end">{t("invoices.col.total")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.map((iv) => (
                 <TableRow key={iv.id} data-invoice={iv.number}>
-                  <TableCell className="ps-6 font-medium">
+                  <TableCell className="ps-4 font-medium">
                     <Link href={`/${locale}/w/${ws.slug}/invoices/${iv.number}`} className="hover:underline">
                       <Ltr mono>{iv.number}</Ltr>
                     </Link>
@@ -157,14 +154,14 @@ export default function InvoicesPage() {
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
                     <Ltr mono>{iv.issue_date}</Ltr>
                   </TableCell>
-                  <TableCell className="pe-6 text-end tabular-nums">
+                  <TableCell className="pe-4 text-end tabular-nums">
                     <Ltr>{money(iv.total_minor, iv.currency, locale)}</Ltr>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
@@ -184,7 +181,7 @@ export default function InvoicesPage() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </>
+    </Page>
   )
 }
 

@@ -9,10 +9,8 @@ import { ChevronRightIcon } from "lucide-react"
 
 import { Badge, Button, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
-
-
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { WeekNav } from "@/components/time/week-nav"
 import { PersonAvatar, useDirectory } from "@/components/work/people"
@@ -44,7 +42,11 @@ function TeamView() {
   const week = params.get("week")
   const team = useTeamTimesheet(ws.id, week, manage)
 
-  if (ws.current && !manage) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("team.noPermission")}</p>
+  if (ws.current && !manage) return (
+      <Page>
+        <p className="text-sm text-muted-foreground">{t("team.noPermission")}</p>
+      </Page>
+    )
 
   const tt = team.data
   const tz = tt?.timezone ?? ws.current?.workspace.timezone ?? "UTC"
@@ -53,11 +55,11 @@ function TeamView() {
   const open = (user: string) => `/${locale}/w/${ws.slug}/time?user=${encodeURIComponent(user)}${week ? `&week=${week}` : ""}`
 
   return (
-    <>
-      <SectionHeader
+    <Page wide>
+      <PageHeader
         title={t("team.title")}
         description={t("team.hint", { tz })}
-        action={<WeekNav days={tt?.days} isCurrent={days.includes(today)} onWeek={(ref) => router.replace(`${pathname}${ref ? `?week=${ref}` : ""}`)} />}
+        actions={<WeekNav days={tt?.days} isCurrent={days.includes(today)} onWeek={(ref) => router.replace(`${pathname}${ref ? `?week=${ref}` : ""}`)} />}
       />
       {team.error ? (
         <ErrorState error={team.error} />
@@ -66,11 +68,11 @@ function TeamView() {
       ) : tt.members.length === 0 ? (
         <EmptyState title={t("team.empty")} />
       ) : (
-        <div className="border-y border-border" data-team-grid>
+        <Panel flush data-team-grid>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("team.member")}</TableHead>
+                <TableHead className="ps-4">{t("team.member")}</TableHead>
                 {days.map((d) => (
                   <TableHead key={d} className={cn("hidden w-[7%] text-end md:table-cell", d === today && "text-foreground")}>
                     <span className="block text-xs font-normal text-muted-foreground">{weekdayShort(d, locale)}</span>
@@ -79,7 +81,7 @@ function TeamView() {
                 ))}
                 <TableHead className="text-end">{t("time.total")}</TableHead>
                 <TableHead className="hidden text-end sm:table-cell">{t("time.billable")}</TableHead>
-                <TableHead className="pe-6 text-end">
+                <TableHead className="pe-4 text-end">
                   <span className="sr-only">{t("team.open")}</span>
                 </TableHead>
               </TableRow>
@@ -87,7 +89,7 @@ function TeamView() {
             <TableBody>
               {tt.members.map((m) => (
                 <TableRow key={m.user_id} data-team-member={m.user_id}>
-                  <TableCell className="max-w-0 ps-6">
+                  <TableCell className="max-w-0 ps-4">
                     <span className="flex min-w-0 items-center gap-2.5">
                       <PersonAvatar id={m.user_id} dir={dir} />
                       <span className="min-w-0">
@@ -117,7 +119,7 @@ function TeamView() {
                   <TableCell className="hidden text-end text-muted-foreground tabular-nums sm:table-cell">
                     <Ltr mono>{hm(m.billable_s, "0:00")}</Ltr>
                   </TableCell>
-                  <TableCell className="pe-6 text-end">
+                  <TableCell className="pe-4 text-end">
                     <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={open(m.user_id)} />} data-open-member={m.user_id}>
                       {t("team.open")}
                       {isRtl ? <ChevronRightIcon className="rotate-180" /> : <ChevronRightIcon />}
@@ -128,7 +130,7 @@ function TeamView() {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell className="ps-6 font-medium">{t("time.dayTotal")}</TableCell>
+                <TableCell className="ps-4 font-medium">{t("time.dayTotal")}</TableCell>
                 {days.map((d, i) => (
                   <TableCell key={d} className="hidden text-end font-medium tabular-nums md:table-cell">
                     <Ltr mono>{hm(tt.day_totals[i], "0:00")}</Ltr>
@@ -140,12 +142,12 @@ function TeamView() {
                 <TableCell className="hidden text-end tabular-nums sm:table-cell">
                   <Ltr mono>{hm(tt.billable_s, "0:00")}</Ltr>
                 </TableCell>
-                <TableCell className="pe-6" />
+                <TableCell className="pe-4" />
               </TableRow>
             </TableFooter>
           </Table>
-        </div>
+        </Panel>
       )}
-    </>
+    </Page>
   )
 }

@@ -16,6 +16,7 @@ import { Button, Field, FieldDescription, FieldLabel, Input, Select, SelectConte
 
 
 import { Ltr } from "@/components/copy-field"
+import { Panel } from "@/components/page"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -46,10 +47,8 @@ export function AccountCard() {
   const profile = useSWR<Profile>(PROFILE, (p: string) => api<Profile>(p))
 
   return (
-    <section className="border-y border-border px-6 py-5" data-account-card>
-      <h2 className="text-base font-medium">{t("account.title")}</h2>
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("account.hint")}</p>
-      <div className="mt-5">
+    <Panel title={t("account.title")} description={t("account.hint")} data-account-card>
+      <div>
         {profile.error ? (
           <ErrorState error={profile.error} />
         ) : !profile.data ? (
@@ -66,7 +65,7 @@ export function AccountCard() {
           </>
         )}
       </div>
-    </section>
+    </Panel>
   )
 }
 

@@ -18,7 +18,7 @@ import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, 
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { Panel, SectionTitle } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { DateField } from "@/components/work/fields"
 import { PersonAvatar, useDirectory } from "@/components/work/people"
@@ -41,7 +41,7 @@ export default function RatesPage() {
   const [editing, setEditing] = useState<MemberRates | null>(null)
   const [history, setHistory] = useState<MemberRates | null>(null)
 
-  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-muted-foreground">{t("rates.noPermission")}</p>
+  if (ws.current && !canRead) return <p className="text-sm text-muted-foreground">{t("rates.noPermission")}</p>
 
   const rs = sheet.data
   const rate = (v: number | null | undefined, cur: string) =>
@@ -56,15 +56,15 @@ export default function RatesPage() {
   const upcoming = (m: MemberRates, today: string) => m.history.find((h) => h.effective_from > today)
 
   return (
-    <>
-      <SectionHeader title={t("rates.title")} description={t("rates.hint")} />
+    <div className="flex flex-col gap-6">
+      <SectionTitle title={t("rates.title")} description={t("rates.hint")} />
       {sheet.error ? (
         <ErrorState error={sheet.error} />
       ) : !rs ? (
         <LoadingRows />
       ) : (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/50 px-6 py-3 text-sm" data-rate-defaults>
+        <Panel flush>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/50 px-4 py-3 text-sm" data-rate-defaults>
             <span className="text-nq-fg-body">
               <span className="font-medium text-foreground">{t("rates.defaults")}: </span>
               {t("rates.defaultsHint", {
@@ -76,19 +76,18 @@ export default function RatesPage() {
               {t("rates.defaultsLink")}
             </Link>
           </div>
-          {!rs.can_manage ? <p className="border-t border-border px-6 py-3 text-sm text-muted-foreground">{t("rates.readOnly")}</p> : null}
+          {!rs.can_manage ? <p className="border-b border-border px-4 py-3 text-sm text-muted-foreground">{t("rates.readOnly")}</p> : null}
           {rs.members.length === 0 ? (
             <EmptyState title={t("team.empty")} />
           ) : (
-            <div className="border-y border-border">
-              <Table>
+            <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="ps-6">{t("rates.member")}</TableHead>
+                    <TableHead className="ps-4">{t("rates.member")}</TableHead>
                     <TableHead>{t("rates.bill")}</TableHead>
                     <TableHead className="hidden sm:table-cell">{t("rates.cost")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("rates.since")}</TableHead>
-                    <TableHead className="pe-6 text-end">
+                    <TableHead className="pe-4 text-end">
                       <span className="sr-only">{t("common.actions")}</span>
                     </TableHead>
                   </TableRow>
@@ -98,7 +97,7 @@ export default function RatesPage() {
                     const next = upcoming(m, rs.today)
                     return (
                       <TableRow key={m.user_id} data-rate-member={m.user_id}>
-                        <TableCell className="max-w-0 ps-6">
+                        <TableCell className="max-w-0 ps-4">
                           <span className="flex min-w-0 items-center gap-2.5">
                             <PersonAvatar id={m.user_id} dir={dir} />
                             <span className="min-w-0">
@@ -117,7 +116,7 @@ export default function RatesPage() {
                             </Badge>
                           ) : null}
                         </TableCell>
-                        <TableCell className="pe-6 text-end">
+                        <TableCell className="pe-4 text-end">
                           <div className="flex justify-end gap-1">
                             {m.history.length ? (
                               <Button variant="ghost" size="sm" onClick={() => setHistory(m)}>
@@ -138,10 +137,9 @@ export default function RatesPage() {
                     )
                   })}
                 </TableBody>
-              </Table>
-            </div>
+            </Table>
           )}
-        </>
+        </Panel>
       )}
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
@@ -200,7 +198,7 @@ export default function RatesPage() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }
 

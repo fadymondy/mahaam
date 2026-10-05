@@ -11,7 +11,7 @@ import { Button } from "@fadymondy/nasaq/web"
 
 import { EstimateStrip, FeatureList, UsageTable } from "@/components/admin/usage"
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { Panel, SectionTitle } from "@/components/page"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { BillingStatusBadge } from "@/components/admin/billing"
@@ -30,18 +30,21 @@ export default function PlanSettingsPage() {
 
   let body
   if (plan.error instanceof ApiError && plan.error.status === 403 && !plan.error.code)
-    body = <p className="border-t border-border px-6 py-6 text-sm text-muted-foreground" data-plan-forbidden>{t("plan.noPermission")}</p>
+    body = <p className="text-sm text-muted-foreground" data-plan-forbidden>{t("plan.noPermission")}</p>
   else if (plan.error) body = <ErrorState error={plan.error} />
   else if (!plan.data) body = <LoadingRows rows={5} />
   else body = <PlanBody r={plan.data} workspaceId={ws.id} />
 
   return (
-    <>
-      <SectionHeader title={t("plan.title")} description={t("plan.hint")} />
+    <div className="flex flex-col gap-6">
+      <SectionTitle title={t("plan.title")} description={t("plan.hint")} />
       {body}
-    </>
+    </div>
   )
 }
+
+// The shared usage blocks run edge to edge with their own top/bottom rule; inside a card the card is the rule.
+const EDGE = "*:border-y-0"
 
 function upgradeHref(contact: string): string | null {
   const c = contact.trim()
@@ -71,14 +74,15 @@ function PlanBody({ r, workspaceId }: { r: UsageReport; workspaceId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   return (
-    <div className="space-y-8 pb-10" data-plan-page>
+    <div className="flex flex-col gap-6" data-plan-page>
       {paid ? (
-        <p role="status" className="flex items-center gap-2 border-y border-border bg-muted/50 px-6 py-3 text-sm text-(--nq-ok-text)" data-paid>
+        <p role="status" className="flex items-center gap-2 rounded-card bg-muted/50 px-4 py-3 text-sm text-(--nq-ok-text)" data-paid>
           <CircleCheckIcon className="size-4 shrink-0" />
           {t("billing.paid")}
         </p>
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-y border-border bg-muted/50 px-6 py-4">
+      <Panel>
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <p className="text-eyebrow uppercase">{t("plan.current")}</p>
           <p className="text-lg font-semibold text-foreground" data-plan-name={r.plan.key}>
@@ -95,24 +99,21 @@ function PlanBody({ r, workspaceId }: { r: UsageReport; workspaceId: string }) {
           </Button>
         ) : null}
       </div>
+      </Panel>
 
       <BillingSection workspaceId={workspaceId} current={r.plan.key} contact={href} billing={billing} />
 
-      <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-foreground">{t("plan.thisMonth")}</h2>
+      <Panel flush title={t("plan.thisMonth")} description={t("plan.estimateHint")} contentClassName={EDGE}>
         <EstimateStrip report={r} />
-        <p className="px-6 text-caption text-muted-foreground">{t("plan.estimateHint")}</p>
-      </section>
+      </Panel>
 
-      <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-foreground">{t("plan.usage")}</h2>
+      <Panel flush title={t("plan.usage")} contentClassName={EDGE}>
         <UsageTable report={r} />
-      </section>
+      </Panel>
 
-      <section className="space-y-3">
-        <h2 className="px-6 text-sm font-medium text-foreground">{t("plan.features")}</h2>
+      <Panel flush title={t("plan.features")} contentClassName={EDGE}>
         <FeatureList features={r.features} />
-      </section>
+      </Panel>
     </div>
   )
 }
@@ -152,44 +153,49 @@ function BillingSection({
 
   if (data.hub_linked) {
     return (
-      <section className="space-y-3" data-billing data-billing-hub>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-6">
-          <div className="min-w-0">
-            <h2 className="text-sm font-medium text-foreground">{t("billing.title")}</h2>
-            <p className="text-sm text-muted-foreground">{t("plan.hubBilling")}</p>
-          </div>
-          {data.hub_billing_url ? (
+      <Panel
+        data-billing
+        data-billing-hub
+        title={t("billing.title")}
+        description={t("plan.hubBilling")}
+        actions={
+          data.hub_billing_url ? (
             <Button variant="secondary" size="sm" nativeButton={false} render={<a href={data.hub_billing_url} target="_blank" rel="noreferrer" />} data-manage-billing>
               <CreditCardIcon />
               {t("plan.hubBillingOpen")}
             </Button>
-          ) : null}
-        </div>
-      </section>
+          ) : null
+        }
+      />
     )
   }
 
   return (
-    <section className="space-y-3" data-billing>
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-sm font-medium text-foreground">{t("billing.title")}</h2>
+    <Panel
+      flush
+      data-billing
+      title={
+        <span className="flex flex-wrap items-center gap-3">
+          {t("billing.title")}
           <BillingStatusBadge billing={b} />
-        </div>
-        {b?.polar_customer_id ? (
+        </span>
+      }
+      description={!data.configured ? t("billing.notConfigured") : undefined}
+      actions={
+        b?.polar_customer_id ? (
           <Button variant="secondary" size="sm" disabled={!!busy} onClick={() => go("portal", () => billingApi.portal(workspaceId))} data-manage-billing>
             <CreditCardIcon />
             {busy === "portal" ? t("common.working") : t("billing.manage")}
           </Button>
-        ) : null}
-      </div>
-      {!data.configured ? <p className="px-6 text-sm text-muted-foreground">{t("billing.notConfigured")}</p> : null}
+        ) : null
+      }
+    >
       {plans.length ? (
-        <ul className="divide-y divide-line border-y border-border" data-billing-plans>
+        <ul className="divide-y divide-line" data-billing-plans>
           {plans.map((p) => {
             const isCurrent = p.key === current
             return (
-              <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3" data-billing-plan={p.key}>
+              <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" data-billing-plan={p.key}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">
                     {planName(p, locale)}
@@ -214,6 +220,6 @@ function BillingSection({
           })}
         </ul>
       ) : null}
-    </section>
+    </Panel>
   )
 }

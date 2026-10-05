@@ -7,10 +7,7 @@ import useSWR from "swr"
 
 import { Badge, Button, Field, FieldLabel, Input } from "@fadymondy/nasaq/web"
 
-
-
-
-import { SectionHeader } from "@/components/public-frame"
+import { Panel, SectionTitle } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useDirectory } from "@/components/work/people"
@@ -80,10 +77,11 @@ export default function AccessPage() {
   const list = grants.data?.grants ?? []
 
   return (
-    <div className="space-y-6 p-6">
-      <SectionHeader title={t("access.title")} description={t("access.description")} />
+    <div className="flex flex-col gap-6">
+      <SectionTitle title={t("access.title")} description={t("access.description")} />
 
-      <form onSubmit={add} className="grid gap-3 border border-border p-4 md:grid-cols-[repeat(4,minmax(0,1fr))_auto] md:items-end">
+      <Panel>
+      <form onSubmit={add} className="grid gap-3 md:grid-cols-[repeat(4,minmax(0,1fr))_auto] md:items-end">
         <Field>
           <FieldLabel htmlFor="g-subject-type">{t("access.who")}</FieldLabel>
           <select
@@ -150,6 +148,7 @@ export default function AccessPage() {
           <PlusIcon /> {t("access.grant")}
         </Button>
       </form>
+      </Panel>
 
       {grants.error ? (
         <ErrorState error={grants.error} />
@@ -158,7 +157,8 @@ export default function AccessPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("access.empty")} body={t("access.emptyBody")} />
       ) : (
-        <ul className="divide-y divide-line border border-border">
+        <Panel flush>
+        <ul className="divide-y divide-line">
           {list.map((g) => (
             <li key={g.id} className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
               <Badge variant="neutral">{g.subject_type === "team" ? t("access.team") : t("access.employee")}</Badge>
@@ -189,6 +189,7 @@ export default function AccessPage() {
             </li>
           ))}
         </ul>
+        </Panel>
       )}
     </div>
   )

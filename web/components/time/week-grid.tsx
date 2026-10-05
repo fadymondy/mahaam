@@ -133,7 +133,7 @@ export function WeekGrid({ parts, period, weekStart, running, fetchedAt, now, tz
   const drift = running ? Math.max(0, Math.floor((now - Date.parse(fetchedAt)) / 1000)) : 0
   const weeks = weeksOf(period, weekStart).filter((days) => parts.some((x) => days.includes(x.slice.day)))
   return (
-    <div className="flex flex-col gap-6 px-6 pb-8" data-time-weeks aria-label={t("time.grid")}>
+    <div className="flex flex-col gap-6" data-time-weeks aria-label={t("time.grid")}>
       {weeks.length === 0 ? (
         <EmptyState title={t("time.noTime")} body={t("time.noTimeBody")} />
       ) : (

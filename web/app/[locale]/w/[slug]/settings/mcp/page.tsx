@@ -6,10 +6,7 @@ import { toast } from "@fadymondy/nasaq/web"
 
 import { Badge, Button, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
 
-
-
-
-import { SectionHeader } from "@/components/public-frame"
+import { Panel, SectionTitle } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
@@ -43,11 +40,11 @@ export default function McpTokensPage() {
   const list = tokens.data?.tokens ?? []
 
   return (
-    <>
-      <SectionHeader
+    <div className="flex flex-col gap-6">
+      <SectionTitle
         title={t("nav.mcpTokens")}
         description={t("mcp.hint")}
-        action={
+        actions={
           <Button variant="primary" onClick={() => setCreating(true)} disabled={!tokens.data}>
             <PlusIcon />
             {t("mcp.create")}
@@ -62,16 +59,16 @@ export default function McpTokensPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("mcp.empty")} body={t("mcp.emptyBody")} />
       ) : (
-        <div className="border-y border-border">
+        <Panel flush>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="ps-6">{t("mcp.name")}</TableHead>
+                <TableHead className="ps-4">{t("mcp.name")}</TableHead>
                 <TableHead>{t("mcp.prefix")}</TableHead>
                 <TableHead>{t("mcp.scopes")}</TableHead>
                 <TableHead>{t("mcp.lastUsed")}</TableHead>
                 <TableHead>{t("mcp.expires")}</TableHead>
-                <TableHead className="pe-6 text-end">
+                <TableHead className="pe-4 text-end">
                   <span className="sr-only">{t("common.actions")}</span>
                 </TableHead>
               </TableRow>
@@ -82,16 +79,15 @@ export default function McpTokensPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
 
-      <section className="border-b border-border px-6 py-6">
-        <h2 className="mb-3 text-base font-medium text-foreground">{t("mcp.kitTitle")}</h2>
+      <Panel title={t("mcp.kitTitle")}>
         <AgentKitGuide />
-      </section>
+      </Panel>
 
       <ConnectAgentDialog open={creating} onOpenChange={setCreating} onCreated={() => tokens.mutate()} />
-    </>
+    </div>
   )
 }
 
@@ -100,7 +96,7 @@ function TokenRow({ tok, formatDate, onRevoke }: { tok: McpToken; formatDate: (v
   const expired = !!tok.expires_at && new Date(tok.expires_at).getTime() < Date.now()
   return (
     <TableRow className={tok.revoked_at || expired ? "opacity-60" : undefined}>
-      <TableCell className="ps-6 font-medium">{tok.name}</TableCell>
+      <TableCell className="ps-4 font-medium">{tok.name}</TableCell>
       <TableCell>
         <Ltr mono className="text-xs">
           {tok.prefix}…
@@ -119,7 +115,7 @@ function TokenRow({ tok, formatDate, onRevoke }: { tok: McpToken; formatDate: (v
       <TableCell className="text-muted-foreground">
         {tok.expires_at ? <Ltr>{formatDate(tok.expires_at)}</Ltr> : t("mcp.noExpiry")}
       </TableCell>
-      <TableCell className="pe-6 text-end">
+      <TableCell className="pe-4 text-end">
         {tok.revoked_at ? (
           <Badge variant="neutral">{t("mcp.revokedBadge")}</Badge>
         ) : expired ? (

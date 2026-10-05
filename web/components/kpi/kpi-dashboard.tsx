@@ -7,15 +7,11 @@ import { useState, type FormEvent, type ReactNode } from "react"
 import { ClipboardCopyIcon, GitBranchIcon, PlusIcon, StarIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
-
-
-
-
-
+import { Badge, Button, Card, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
+import { Panel, SectionTitle } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { money } from "@/lib/format"
@@ -42,11 +38,11 @@ export function RangePicker({ from, to, onChange }: { from: string; to: string; 
 
 function Tile({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="bg-background px-5 py-4">
-      <div className="text-eyebrow uppercase mb-1">{label}</div>
-      <div className="text-xl font-medium tabular-nums text-foreground">{value}</div>
-      {hint ? <div className="mt-0.5 text-caption text-muted-foreground">{hint}</div> : null}
-    </div>
+    <Card className="min-w-0 gap-1 px-4">
+      <div className="text-label text-muted-foreground">{label}</div>
+      <div className="text-h3 tabular-nums text-foreground">{value}</div>
+      {hint ? <div className="text-caption text-muted-foreground">{hint}</div> : null}
+    </Card>
   )
 }
 
@@ -72,13 +68,9 @@ function Bars({ items, value, label, render }: { items: KPIKeyed[]; value: (k: K
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="space-y-3 bg-background px-6 py-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">{title}</h3>
-        {action}
-      </div>
+    <Panel title={title} actions={action} contentClassName="space-y-3">
       {children}
-    </section>
+    </Panel>
   )
 }
 
@@ -105,27 +97,27 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
 
   const k = kpi.data
   return (
-    <div className="border-y border-border">
-      <div className="flex flex-wrap items-end justify-between gap-3 px-6 py-4">
-        <div>
-          <h2 className="text-base font-medium">{t("kpi.title")}</h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("kpi.hint")}</p>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} />
-          <Button variant="secondary" onClick={() => void copyPrompt()} disabled={!k}>
-            <ClipboardCopyIcon /> {t("kpi.copyPrompt")}
-          </Button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <SectionTitle
+        title={t("kpi.title")}
+        description={t("kpi.hint")}
+        actions={
+          <div className="flex flex-wrap items-end gap-2">
+            <RangePicker from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} />
+            <Button variant="secondary" onClick={() => void copyPrompt()} disabled={!k}>
+              <ClipboardCopyIcon /> {t("kpi.copyPrompt")}
+            </Button>
+          </div>
+        }
+      />
 
       {kpi.error ? (
         <ErrorState error={kpi.error} />
       ) : !k ? (
         <LoadingRows rows={4} />
       ) : (
-        <div className="grid gap-px border-t border-border bg-border">
-          <div className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <Tile label={t("kpi.hours")} value={<Ltr mono>{hm(k.time.tracked_s, "0:00")}</Ltr>} hint={t("kpi.billableHours", { h: hm(k.time.billable_s, "0:00") })} />
             <Tile label={t("kpi.daysTracked")} value={k.time.days_tracked} />
             <Tile label={t("kpi.tasksDone")} value={k.tasks.completed} hint={t("kpi.tasksOpen", { open: k.tasks.open_assigned, overdue: k.tasks.overdue })} />
@@ -142,7 +134,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
             />
           </div>
 
-          <div className="grid gap-px lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             <Section title={t("kpi.hoursByWeek")}>
               {(k.time.by_week ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("kpi.noTime")}</p>
@@ -254,7 +246,7 @@ export function KpiDashboard({ userId, isSelf }: { userId: string; isSelf: boole
                     <StarIcon className="size-3.5" aria-hidden /> {t("kpi.avgRating", { r: k.reviews.avg_rating.toFixed(1) })}
                   </p>
                 ) : null}
-                <ul className="divide-y divide-line border-y border-border">
+                <ul className="divide-y divide-line">
                   {(k.reviews.items ?? []).map((r) => (
                     <li key={r.id} className="space-y-1 py-3">
                       <div className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">

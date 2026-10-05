@@ -23,7 +23,7 @@ export function ReportsTab({ period, userId }: { period: Period; userId: string 
   const report = useTimeReport(ws.id, q)
   const r = report.data
   return (
-    <div className="flex flex-col gap-6 px-6 pb-8" data-time-reports>
+    <div className="flex flex-col gap-6" data-time-reports>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{r?.rounding_minutes ? t("time.rounded", { minutes: r.rounding_minutes }) : t("timeSettings.roundingNone")}</p>
         <Button variant="secondary" size="sm" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/reports?${filterQuery({ from: period.from, to: period.to, group_by: "project", users: userId ? [userId] : undefined })}`} />}>

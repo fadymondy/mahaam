@@ -854,5 +854,8 @@
   "settings.group.people": "People and sharing",
   "settings.group.connect": "Connections",
   "settings.group.danger": "Danger zone",
-  "settings.search": "Search settings"
+  "settings.search": "Search settings",
+  "settings.wsGroup.workspace": "Workspace",
+  "settings.wsGroup.people": "People",
+  "settings.wsGroup.developers": "Developers"
 }

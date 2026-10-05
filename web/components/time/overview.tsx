@@ -124,7 +124,7 @@ export function TimeOverview(p: OverviewProps) {
   const avg = cur.activeDays ? cur.total / cur.activeDays : 0
 
   return (
-    <div className="grid gap-6 px-6 pb-8 xl:grid-cols-[minmax(0,1fr)_20rem]" data-time-overview>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]" data-time-overview>
       <div className="flex min-w-0 flex-col gap-6">
         <div className="grid grid-cols-2 items-stretch gap-4 lg:grid-cols-4" data-time-totals>
           <Kpi
