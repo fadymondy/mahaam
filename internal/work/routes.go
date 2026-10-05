@@ -44,6 +44,7 @@ func Register(api huma.API, a *app.App) {
 	r.monitorKeys()   // per-project backend error-monitoring DSN keys
 	r.sync()          // delta sync for offline clients: rows + tombstones since a cursor
 	r.widgets()       // MH-355: project progress + the running timer, for home-screen widgets
+	r.viewAs()        // MH-1159: owners/admins view the workspace as a member (read-only)
 }
 
 type routes struct {

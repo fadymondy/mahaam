@@ -1,6 +1,8 @@
 // The one fetch wrapper for the Mahaam API. Same origin (next.config.mjs proxies /api), session
 // cookie `togo_session`, CSRF token on every mutating request, X-Workspace-ID when scoped.
 
+import { viewAsFor } from "@/lib/view-as"
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -88,7 +90,11 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
   const send = async (forceCsrf: boolean) => {
     const headers: Record<string, string> = { Accept: "application/json" }
     if (opts.json !== undefined) headers["Content-Type"] = "application/json"
-    if (opts.workspaceId) headers["X-Workspace-ID"] = opts.workspaceId
+    if (opts.workspaceId) {
+      headers["X-Workspace-ID"] = opts.workspaceId
+      const as = viewAsFor(opts.workspaceId)
+      if (as) headers["X-View-As"] = as
+    }
     if (mutating) headers["X-CSRF-Token"] = await getCsrf(forceCsrf)
     return fetch(path, {
       method,
@@ -129,6 +135,8 @@ export type CurrentWorkspace = {
   workspace: { id: string; slug: string; name: string; locale?: string; timezone?: string; currency?: string }
   role: Role
   can: string[]
+  /** Set while an owner/admin views the workspace as this member (read-only, MH-1159). */
+  viewing_as?: { user_id: string; email: string; role: Role; by: string }
 }
 
 export type Member = { user_id: string; email: string; role: Role; status: string; joined_at: string | null }

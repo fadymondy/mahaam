@@ -115,9 +115,18 @@ func Require(sys *sql.DB) func(http.Handler) http.Handler {
 				return
 			}
 			s.Via = "session"
+			if s = viewAs(w, r, sys, s); s == nil {
+				return
+			}
 			next.ServeHTTP(w, r.WithContext(With(r.Context(), s)))
 		})
 	}
+}
+
+func writeCode(w http.ResponseWriter, status int, msg, code string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg, "code": code})
 }
 
 func writeErr(w http.ResponseWriter, status int, msg string) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   BriefcaseIcon,
@@ -53,7 +53,9 @@ import { ErrorState } from "@/components/states";
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
 import { UserMenu } from "@/components/workspace/user-menu";
 import { WorkspaceContext, type WorkspaceCtx } from "@/components/workspace/workspace-context";
-import { suspensionCode, type WorkspaceSummary } from "@/lib/api";
+import { ViewAsBanner } from "@/components/workspace/view-as-banner";
+import { ApiError, suspensionCode, type WorkspaceSummary } from "@/lib/api";
+import { clearViewAs } from "@/lib/view-as";
 import { useTranslations } from "@/lib/i18n";
 import { useCurrentWorkspace, useMyWorkspaces } from "@/lib/queries";
 import { useRequireAuth } from "@/lib/use-require-auth";
@@ -164,6 +166,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   // The per-user realtime stream: mounted once per tab, it keeps every view of the timer in step.
   const live = useLiveStream(summary?.id);
 
+  // A stale view-as (the member left or now outranks you): drop it and load your own view.
+  const viewAsDenied = current.error instanceof ApiError && current.error.code === "view_as_denied";
+  useEffect(() => {
+    if (!viewAsDenied) return;
+    clearViewAs();
+    window.location.reload();
+  }, [viewAsDenied]);
+
   const suspended = suspensionCode(me.error) ?? suspensionCode(list.error) ?? suspensionCode(current.error);
 
   // Until we know who you are, which workspaces you have and what you can do here, show Nasaq's boot
@@ -209,7 +219,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           {ctx ? <NotificationBell /> : null}
         </div>
       </AppHeader>
-      <AppMain className="p-0">{body}</AppMain>
+      <AppMain className="p-0">
+        {current.data?.viewing_as ? <ViewAsBanner viewing={current.data.viewing_as} home={base} /> : null}
+        {body}
+      </AppMain>
 
       <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
       {ctx ? <ConnectAgentSheet open={connectOpen} onOpenChange={setConnectOpen} /> : null}

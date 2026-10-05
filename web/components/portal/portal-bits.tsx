@@ -21,6 +21,7 @@ import { useTranslations } from "@/lib/i18n"
 import { REQUEST_KINDS, hours, portalApi, type PortalWeek, type RequestState } from "@/lib/portal"
 import { cn } from "@/lib/utils"
 import { errorText } from "@/lib/work"
+import { wsHeaders } from "@/lib/view-as"
 
 /** A labelled progress bar; value 0–100. `warn` paints it in the danger colour (over budget). */
 export function Meter({ value, label, warn }: { value: number; label?: string; warn?: boolean }) {
@@ -328,7 +329,7 @@ export function AuthImage({ src, alt, className }: { src: string; alt: string; c
   useEffect(() => {
     let gone = false
     let made: string | null = null
-    fetch(src, { headers: { "X-Workspace-ID": ws.id }, credentials: "same-origin" })
+    fetch(src, { headers: wsHeaders(ws.id), credentials: "same-origin" })
       .then((res) => (res.ok ? res.blob() : Promise.reject(new Error(String(res.status)))))
       .then((b) => {
         if (gone) return

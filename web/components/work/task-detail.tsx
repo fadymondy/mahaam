@@ -88,6 +88,7 @@ import { useTranslations } from "@/lib/i18n"
 import { useMe } from "@/lib/queries"
 import { useRunning, type TimeEntry } from "@/lib/time"
 import { cn } from "@/lib/utils"
+import { wsHeaders } from "@/lib/view-as"
 import {
   ISSUE_PRIORITIES,
   ISSUE_TYPES,
@@ -980,7 +981,7 @@ function ImageThumb({ ws, a }: { ws: string; a: Attachment }) {
   const started = useRef<string | null>(null)
   if (started.current !== a.id && typeof window !== "undefined") {
     started.current = a.id
-    fetch(`/api/w/attachments/${encodeURIComponent(a.id)}`, { headers: { "X-Workspace-ID": ws }, credentials: "same-origin" })
+    fetch(`/api/w/attachments/${encodeURIComponent(a.id)}`, { headers: wsHeaders(ws), credentials: "same-origin" })
       .then((r) => (r.ok ? r.blob() : null))
       .then((b) => b && setUrl(URL.createObjectURL(b)))
       .catch(() => {})
@@ -996,7 +997,7 @@ function ImageThumb({ ws, a }: { ws: string; a: Attachment }) {
 
 async function download(ws: string, a: Attachment, failed: string) {
   try {
-    const res = await fetch(`/api/w/attachments/${encodeURIComponent(a.id)}`, { headers: { "X-Workspace-ID": ws }, credentials: "same-origin", cache: "no-store" })
+    const res = await fetch(`/api/w/attachments/${encodeURIComponent(a.id)}`, { headers: wsHeaders(ws), credentials: "same-origin", cache: "no-store" })
     if (!res.ok) throw new Error(String(res.status))
     const url = URL.createObjectURL(await res.blob())
     const link = document.createElement("a")
