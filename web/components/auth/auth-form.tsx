@@ -13,10 +13,14 @@ import {
   FieldLabel,
   Input,
   LoginForm,
+  OAuthButtons,
+  OAuthDivider,
   PasswordInput,
-  Separator,
   TwoFactorChallenge,
+  type OAuthProvider as NqProvider,
 } from "@fadymondy/nasaq/web"
+
+import { CircleXOMark } from "@/components/auth/circlexo-mark"
 
 import { PublicFrame } from "@/components/public-frame"
 import { api, ApiError, resetCsrf } from "@/lib/api"
@@ -101,7 +105,26 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   })
   const hubLogin = hubConfig.data?.enabled ? hubConfig.data.login_url || "/auth/circlexo/login" : ""
 
+  // Nasaq's provider buttons: Google / GitHub with their own logos, then CircleXO with its logo.
+  const buttons: NqProvider[] = [
+    ...providers.map((p) => p.id as "google" | "github"),
+    ...(hubLogin
+      ? [
+          {
+            id: "circlexo",
+            label: mode === "login" ? t("auth.signInCircleXO") : t("auth.continueWith", { provider: "CircleXO" }),
+            icon: <CircleXOMark />,
+          },
+        ]
+      : []),
+  ]
+
   function goOAuth(id: string) {
+    // CircleXO is a chain of redirects through the API: a full page load.
+    if (id === "circlexo" && hubLogin) {
+      window.location.assign(`${hubLogin}?return_to=${encodeURIComponent(next)}`)
+      return
+    }
     const p = providers.find((x) => x.id === id)
     if (!p) return
     window.location.assign(`${p.href}${p.href.includes("?") ? "&" : "?"}next=${encodeURIComponent(next)}`)
@@ -159,8 +182,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <PublicFrame
+      split
       title={mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
       description={mode === "login" ? t("auth.signInHint") : t("auth.registerHint")}
+      prompt={
+        <>
+          {mode === "login" ? t("auth.noAccount") : t("auth.haveAccount")} <Link href={otherHref}>{mode === "login" ? t("auth.createAccount") : t("auth.signIn")}</Link>
+        </>
+      }
     >
       <div className="flex flex-col gap-4" data-auth-form>
         {notice ? (
@@ -190,34 +219,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                 {t("auth.forgotPassword")}
               </Link>
             }
-            oauthProviders={providers.map((p) => p.id as "google" | "github")}
+            oauthProviders={buttons}
             onOAuth={goOAuth}
             onSubmit={signIn}
           />
         ) : (
-          <RegisterFields providers={providers} onDone={finish} onOAuth={goOAuth} />
+          <RegisterFields providers={buttons} onDone={finish} onOAuth={goOAuth} />
         )}
-
-        {hubLogin && !challenge ? (
-          <div className="flex flex-col gap-3">
-            {mode === "register" || providers.length === 0 ? (
-              <div className="flex items-center gap-3">
-                <Separator className="flex-1" />
-                <span className="text-eyebrow uppercase text-muted-foreground">{t("auth.or")}</span>
-                <Separator className="flex-1" />
-              </div>
-            ) : null}
-            <Button
-              variant="secondary"
-              size="lg"
-              className="w-full"
-              nativeButton={false}
-              render={<a href={`${hubLogin}?return_to=${encodeURIComponent(next)}`} />}
-            >
-              {t("auth.signInCircleXO")}
-            </Button>
-          </div>
-        ) : null}
 
         {mode === "register" ? (
           // Links rather than a checkbox: submitting the form is the agreement, and a box that
@@ -240,12 +248,6 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               )}
           </p>
         ) : null}
-        <p className="text-center text-body-sm text-muted-foreground">
-          {mode === "login" ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
-          <Link href={otherHref} className="font-medium text-foreground underline underline-offset-4">
-            {mode === "login" ? t("auth.createAccount") : t("auth.signIn")}
-          </Link>
-        </p>
       </div>
     </PublicFrame>
   )
@@ -260,7 +262,7 @@ function RegisterFields({
   onDone,
   onOAuth,
 }: {
-  providers: OAuthProvider[]
+  providers: NqProvider[]
   onDone: () => Promise<void>
   onOAuth: (id: string) => void
 }) {
@@ -325,11 +327,12 @@ function RegisterFields({
       <Button variant="primary" type="submit" size="lg" disabled={busy || !email || !password}>
         {busy ? t("common.working") : t("auth.createAccount")}
       </Button>
-      {providers.map((p) => (
-        <Button key={p.id} type="button" variant="secondary" size="lg" className="w-full" onClick={() => onOAuth(p.id)}>
-          {t("auth.continueWith", { provider: p.label })}
-        </Button>
-      ))}
+      {providers.length ? (
+        <>
+          <OAuthDivider />
+          <OAuthButtons providers={providers} intent="signup" onSelect={onOAuth} />
+        </>
+      ) : null}
     </form>
   )
 }

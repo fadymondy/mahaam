@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { AuthFooter, AuthLayout, ProductMark } from "@fadymondy/nasaq/web"
+import { AuthEmblem, AuthFooter, AuthLayout, ProductLogo, ProductMark } from "@fadymondy/nasaq/web"
 
 import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls"
 import { brandName } from "@/lib/brand-name"
@@ -10,26 +10,43 @@ import { useTranslations } from "@/lib/i18n"
 /*
   The signed-out frame: Nasaq AuthLayout (main landmark, mark, h1, footer) with the legal links and
   the language/theme controls in the footer. `wide` widens the column for reading pages (legal,
-  workspace picker).
+  workspace picker). `split` is the sign-in look: the brand panel on the inline start (the Mahaam
+  logo), the form on the other side under the animated emblem (the mark turns into a lock and
+  scans while a sign-in request runs), and `prompt` under the form ("No account? Create one").
 */
 export function PublicFrame({
   eyebrow,
   title,
   description,
   wide,
+  split,
+  prompt,
   children,
 }: {
   eyebrow?: ReactNode
   title?: ReactNode
   description?: ReactNode
   wide?: boolean
+  split?: boolean
+  prompt?: ReactNode
   children: ReactNode
 }) {
   const { t, locale } = useTranslations()
   return (
     <AuthLayout
+      variant={split ? "split" : "card"}
       className={wide ? "[&>main]:max-w-3xl [&>div:last-child]:max-w-3xl" : undefined}
-      mark={<ProductMark brand="mahaam" size={32} title={brandName(locale)} />}
+      mark={
+        split ? (
+          <AuthEmblem size={104}>
+            <ProductMark brand="mahaam" size={31} title="" />
+          </AuthEmblem>
+        ) : (
+          <ProductMark brand="mahaam" size={32} title={brandName(locale)} />
+        )
+      }
+      logo={<ProductLogo brand="mahaam" size={56} />}
+      prompt={prompt}
       title={title}
       description={description}
       footer={

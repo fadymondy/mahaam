@@ -88,7 +88,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <PublicFrame eyebrow={t("auth.resetEyebrow")} title={t("auth.resetTitle")} description={t("auth.resetHint")}>
+    <PublicFrame split eyebrow={t("auth.resetEyebrow")} title={t("auth.resetTitle")} description={t("auth.resetHint")}>
       <div data-reset-form>
           {step === "email" ? (
             <form onSubmit={requestCode} noValidate>
