@@ -207,7 +207,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/30 px-4 py-3">
         <div className="relative min-w-48 flex-1">
           <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -286,7 +286,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
                 key={status}
                 status={status}
                 className={cn(
-                  "flex max-h-[calc(100vh-12rem)] min-w-0 flex-1 basis-0 flex-col border-e border-border transition-colors last:border-e-0",
+                  "flex max-h-[calc(100dvh-14rem)] min-h-96 min-w-0 flex-1 basis-0 flex-col border-e border-border transition-colors last:border-e-0",
                   isTarget && "bg-nq-action/[0.06] inset-ring-1 inset-ring-nq-action/40",
                 )}
               >
