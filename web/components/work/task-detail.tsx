@@ -324,6 +324,7 @@ function Body({
   mutateIssue: (next: Issue & { comments: IssueComment[] }) => unknown
 }) {
   const { t, locale } = useTranslations()
+  const router = useRouter()
   const ws = useWorkspace()
   const me = useMe()
   const dir = useDirectory(me.data ? String(me.data.id) : undefined)
@@ -398,7 +399,7 @@ function Body({
           if (await call(() => w.del(ws.id, `/api/w/tasks/${d.id}`))) {
             toast.success(t("task.deleted", { key: d.key }))
             if (onClose) onClose()
-            else window.location.assign(`/${locale}/w/${ws.slug}/projects/${d.project_id}/board`)
+            else router.push(`/${locale}/w/${ws.slug}/projects/${d.project_id}/board`)
           }
         }}
       />
