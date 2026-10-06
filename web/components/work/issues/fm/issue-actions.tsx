@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type ReactElement, type ReactNode } from "react"
+import Link from "next/link"
 import { ExternalLinkIcon, LinkIcon, LockIcon, PencilIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 
@@ -64,10 +65,10 @@ function IssueMenuItems({ issue, parts, actions, showOpen }: { issue: Issue; par
         <>
           <Item
             render={
-              <a href={actions.href}>
+              <Link href={actions.href}>
                 <ExternalLinkIcon />
                 {t("issues.action.open")}
-              </a>
+              </Link>
             }
           />
           <Item onClick={actions.copyLink}>

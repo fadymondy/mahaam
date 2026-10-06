@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { ChevronLeftIcon, DownloadIcon, PrinterIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import { FormError } from "@/components/form-text"
@@ -31,6 +31,7 @@ import { StatusBadge } from "../page"
 
 export default function InvoiceDetailPage() {
   const { number } = useParams<{ number: string }>()
+  const router = useRouter()
   const { t, locale, isRtl } = useTranslations()
   const ws = useWorkspace()
   const canRead = ws.can("invoices:read")
@@ -77,7 +78,7 @@ export default function InvoiceDetailPage() {
     try {
       await invoicesApi.del(ws.id, iv!.number)
       toast.success(t("invoiceDetail.delete"))
-      window.location.href = back
+      router.push(back)
     } catch (err) {
       toast.error(errorText(err, t("common.networkError")))
       setBusy(false)
