@@ -103,7 +103,7 @@ describe("time math", () => {
 
 describe("board order", () => {
   const st = (id: string, category: Status["category"], position: number): Status =>
-    ({ id, name: id, color: "", category, position, project_id: "p", stage: category, task_count: 0 });
+    ({ id, name: id, color: "", icon: "", labels: {}, category, position, project_id: "p", stage: category, task_count: 0 });
   const task = (key: string, status_id: string, position: number): Task =>
     ({ id: key, key, title: key, project_id: "p", status_id, position, priority: "none", completed_at: null }) as Task;
 
