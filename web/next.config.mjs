@@ -1,6 +1,19 @@
 /** @type {import('next').NextConfig} */
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:8110";
 
+// Security headers on every response (MH-1253): pin HTTPS, no MIME sniffing, no full-URL referrers,
+// and the app can only be framed by itself (clickjacking). Nothing embeds these pages cross-origin.
+const SECURITY_HEADERS = {
+  source: "/:path*",
+  headers: [
+    { key: "Strict-Transport-Security", value: "max-age=31536000" },
+    { key: "X-Content-Type-Options", value: "nosniff" },
+    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+    { key: "X-Frame-Options", value: "SAMEORIGIN" },
+    { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+  ],
+};
+
 const nextConfig = {
   // A self-contained server (.next/standalone) for the production image: web/Dockerfile copies
   // only it, .next/static and public, so the image carries no node_modules tree.
@@ -56,8 +69,9 @@ const nextConfig = {
         { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
       ],
     };
-    if (process.env.NODE_ENV !== "development") return [sw, fonts];
+    if (process.env.NODE_ENV !== "development") return [SECURITY_HEADERS, sw, fonts];
     return [
+      SECURITY_HEADERS,
       sw,
       fonts,
       {
