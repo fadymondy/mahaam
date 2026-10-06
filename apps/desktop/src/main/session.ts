@@ -104,7 +104,7 @@ async function settle(c: MahaamClient): Promise<void> {
   c.setWorkspace(ws?.id ?? null);
 }
 
-const pick = (w: Workspace): Workspace => ({ id: w.id, slug: w.slug, name: w.name, role: w.role, locale: w.locale });
+const pick = (w: Workspace): Workspace => ({ id: w.id, slug: w.slug, name: w.name, role: w.role, locale: w.locale, logo: w.logo });
 
 /** On launch: resume the stored session, if the token still works. */
 export async function restore(): Promise<void> {
