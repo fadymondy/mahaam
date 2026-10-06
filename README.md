@@ -391,8 +391,13 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   on the projects `visibleClause` gives them, and nothing wider. Matrix: `tasks:read|write`, `feedback:read|write`,
   `labels:create` are Client+. The issue tracker (`internal/reports` `customer()`) limits `List`/`Find` to visible
   projects and refuses a project-less `Create`. `GET /api/w/people` is their directory (names on their projects; never the
-  member list). Still member+: members, teams, clients, reports, time tracking, rates, vault, integrations. The
+  member list). Still member+: members, teams, clients, reports, time tracking, rates. The
   `/portal/projects` pages redirect to the app's; the portal panel endpoints above stay for the dashboard, MCP and mobile.
+- **Customer project tabs (MH-1190)**: every tab but Settings. `integrations:read`, `vault:read|write` are Client+ (all
+  go through `FindProject`); connecting/deploying and vault secrets stay manager+ or the lead. Billing is `billing:read`
+  (Client role only — members keep none): `GET /api/w/ai-usage` and `/api/w/subscriptions` need `?project=` and return
+  billed prices (`cost_minor` = cost × markup; subscriptions billable only, cost 0, no notes); the markup stays manager+.
+  The Hosting tab opens the panel with the customer's one-time link. MCP scopes are unchanged (vault/integrations member+).
 - **Customer issue control**: `PATCH /api/w/portal/issues/{key}` allows exactly accept (in_review → done), reopen
   (done | in_review → todo) and priority; `POST …/comments` replies. The general `PATCH /api/w/issues/{key}` is unchanged.
 - **Requests**: a reports row with `request_state` (`pending | accepted | declined | converted`), `request_kind`

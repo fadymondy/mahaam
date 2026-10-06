@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
+import { CheckIcon, ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
 import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
@@ -422,9 +422,10 @@ function LinearCard({ projectId, it, canManage, onChanged }: { projectId: string
 }
 
 // Hosbah connects over OAuth: through the manager's CircleXO account (back here with a sealed
-// sign-in in the URL fragment, the apps they can see on Hosbah are listed and they pick one; Hosbah
-// mints a token for that app alone) or through Hosbah's own consent screen, where the app is picked
-// on Hosbah and the project comes back linked. Linking another app replaces the first.
+// sign-in in the URL fragment, the apps they can see on Hosbah are listed and they pick some — a
+// project's web, api and mcp can each be an app (MH-1194); Hosbah mints a token per app) or through
+// Hosbah's own consent screen, where the apps are picked on Hosbah and the project comes back
+// linked. Linking replaces the linked set.
 function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string; it?: Integration; canManage: boolean; onChanged: () => void }) {
   const { t, locale } = useTranslations()
   const ws = useWorkspace()
@@ -435,7 +436,8 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
   )
   const [pending, setPending] = useState("")
   const [apps, setApps] = useState<HosbahApp[] | null>(null)
-  const [pick, setPick] = useState("")
+  const [picks, setPicks] = useState<string[]>([])
+  const toggle = (id: string) => setPicks((ps) => (ps.includes(id) ? ps.filter((p) => p !== id) : [...ps, id]))
   const [q, setQ] = useState("")
   const [busy, setBusy] = useState(false)
 
@@ -469,10 +471,11 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
   const link = async (close: () => void) => {
     setBusy(true)
     try {
-      await w.put(ws.id, `/api/w/projects/${projectId}/integrations/hosbah`, { pending, app: pick })
+      await w.put(ws.id, `/api/w/projects/${projectId}/integrations/hosbah`, { pending, apps: picks })
       toast.success(t("int.hosbah.linked"))
       setPending("")
       setApps(null)
+      setPicks([])
       onChanged()
       close()
     } catch (err) {
@@ -484,7 +487,9 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
   const title = (a: HosbahApp) => (a.title?.trim() ? a.title : a.name)
   const needle = q.trim().toLowerCase()
   const shown = (apps ?? []).filter((a) => !needle || `${a.name} ${a.title ?? ""} ${a.server_name ?? ""}`.toLowerCase().includes(needle))
-  const current = it?.config.app_title || it?.config.app_name
+  // The linked apps (config.apps; a link from before MH-1194 has only the top-level fields).
+  const linkedApps = Array.isArray(it?.config.apps) ? (it.config.apps as HosbahApp[]) : []
+  const current = linkedApps.length > 1 ? linkedApps.map(title).join(" · ") : it?.config.app_title || it?.config.app_name
   const m = methods.data
   return (
     <IntegrationCard
@@ -499,7 +504,7 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
       summary={
         current ? (
           <p className="flex min-w-0 items-center gap-1.5">
-            {it?.config.panel_url ? (
+            {it?.config.panel_url && linkedApps.length <= 1 ? (
               <a className="inline-flex min-w-0 items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline" href={it.config.panel_url} target="_blank" rel="noreferrer">
                 <span className="truncate" dir="auto">
                   {current}
@@ -511,7 +516,7 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
                 {current}
               </span>
             )}
-            {it?.config.server_name ? (
+            {it?.config.server_name && linkedApps.length <= 1 ? (
               <span className="shrink-0 truncate" dir="ltr">
                 · {it.config.server_name}
               </span>
@@ -524,7 +529,7 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
         <div className="grid gap-3">
           {current ? (
             <p className="text-sm">
-              {t("int.hosbah.app")}:{" "}
+              {linkedApps.length > 1 ? t("int.hosbah.apps") : t("int.hosbah.app")}:{" "}
               <span className="font-medium" dir="auto">
                 {current}
               </span>
@@ -535,15 +540,21 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
               <div className="space-y-2" data-hosbah-apps={apps.length}>
                 <p className="text-sm text-muted-foreground">{t("int.hosbah.pickApp")}</p>
                 <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("int.hosbah.searchApp")} aria-label={t("int.hosbah.searchApp")} />
-                <ul role="listbox" aria-label={t("int.hosbah.app")} className="max-h-60 overflow-y-auto rounded-md border border-border">
+                <ul role="listbox" aria-multiselectable="true" aria-label={t("int.hosbah.apps")} className="max-h-60 overflow-y-auto rounded-md border border-border">
                   {shown.length ? (
                     shown.slice(0, 200).map((a) => (
-                      <li key={a.id} role="option" aria-selected={a.id === pick}>
+                      <li key={a.id} role="option" aria-selected={picks.includes(a.id)}>
                         <button
                           type="button"
-                          onClick={() => setPick(a.id)}
-                          className={`flex w-full items-center gap-2 px-3 py-1.5 text-start text-sm hover:bg-muted ${a.id === pick ? "bg-muted font-medium" : ""}`}
+                          onClick={() => toggle(a.id)}
+                          className={`flex w-full items-center gap-2 px-3 py-1.5 text-start text-sm hover:bg-muted ${picks.includes(a.id) ? "bg-muted font-medium" : ""}`}
                         >
+                          <span
+                            aria-hidden
+                            className={`flex size-4 shrink-0 items-center justify-center rounded-sm border ${picks.includes(a.id) ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+                          >
+                            {picks.includes(a.id) ? <CheckIcon className="size-3" /> : null}
+                          </span>
                           <span className="min-w-0 flex-1 truncate" dir="auto">
                             {title(a)}
                           </span>
@@ -560,9 +571,12 @@ function HosbahCard({ projectId, it, canManage, onChanged }: { projectId: string
                     <li className="px-3 py-2 text-sm text-muted-foreground">{t("int.hosbah.noMatch")}</li>
                   )}
                 </ul>
-                <Button variant="primary" disabled={busy || !pick} onClick={() => void link(close)}>
-                  {it ? t("int.hosbah.relink") : t("int.hosbah.link")}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button variant="primary" disabled={busy || !picks.length} onClick={() => void link(close)}>
+                    {it ? t("int.hosbah.relink") : t("int.hosbah.link")}
+                  </Button>
+                  {picks.length ? <span className="text-caption text-muted-foreground">{t("int.hosbah.picked", { n: picks.length })}</span> : null}
+                </div>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">{t("int.hosbah.noApps")}</p>

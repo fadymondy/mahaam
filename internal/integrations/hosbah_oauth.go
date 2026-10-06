@@ -32,11 +32,11 @@ Connecting Hosbah is OAuth; nobody pastes a token. Two ways, both authorization 
     account linked to the hub). Mahaam sends the manager to the hub, trades the code for their hub
     access token (audience Mahaam), checks the hub subject is the same person, then exchanges it
     (RFC 8693) for a token whose audience is Hosbah, with Mahaam as the actor. That token lists the
-    manager's Hosbah apps; they pick one in Mahaam and Hosbah mints the app token. Between the
+    manager's Hosbah apps; they pick some (web, api, mcp…) in Mahaam and Hosbah mints a token per app. Between the
     callback and the pick the exchanged token travels sealed (secretbox, bound to workspace,
     project and user, 10 minutes) in the settings URL's fragment, never in a query string.
   - via=hosbah (HOSBAH_CLIENT_ID / HOSBAH_CLIENT_SECRET): Hosbah's own authorization server. The
-    app is picked on Hosbah's consent screen and /oauth/token answers with the app token itself.
+    apps are picked on Hosbah's consent screen and /oauth/token answers with one app token each.
 
 POST …/integrations/hosbah/authorize (manager+) returns the authorization URL and sets an HttpOnly
 nonce cookie scoped to the callback, so a flow started in one browser cannot finish in another.
@@ -350,11 +350,11 @@ func (sv *Service) finishHosbah(ctx context.Context, st *hosbahState, code strin
 		}
 		return "#hosbah=" + url.QueryEscape(sealed), nil
 	case "hosbah":
-		appTok, app, err := sv.hosbahCodeToken(ctx, code, verifier)
+		links, err := sv.hosbahCodeToken(ctx, code, verifier)
 		if err != nil {
 			return "", err
 		}
-		if _, err := sv.linkHosbah(ctx, s, p.ID, hosbahURL(), appTok, app); err != nil {
+		if _, err := sv.linkHosbah(ctx, s, p.ID, hosbahURL(), links); err != nil {
 			return "", err
 		}
 		return "&integration=hosbah", nil
@@ -362,32 +362,37 @@ func (sv *Service) finishHosbah(ctx context.Context, st *hosbahState, code strin
 	return "", invalid("the Hosbah sign-in is invalid — start again from the project settings")
 }
 
-// hosbahCodeToken trades a Hosbah authorization code for the app token and its app.
-func (sv *Service) hosbahCodeToken(ctx context.Context, code, verifier string) (string, *HosbahApp, error) {
+// hosbahCodeToken trades a Hosbah authorization code for the picked apps and their app tokens
+// (apps; a Hosbah from before MH-1194 answers with access_token/app alone).
+func (sv *Service) hosbahCodeToken(ctx context.Context, code, verifier string) ([]hosbahLinked, error) {
 	id, secret, ok := hosbahClientCreds()
 	base := hosbahURL()
 	if !ok || base == "" {
-		return "", nil, conflict("Hosbah OAuth is not configured on this server")
+		return nil, conflict("Hosbah OAuth is not configured on this server")
 	}
 	form := url.Values{"grant_type": {"authorization_code"}, "code": {code}, "redirect_uri": {hosbahRedirectURL()},
 		"code_verifier": {verifier}, "client_id": {id}, "client_secret": {secret}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/oauth/token", strings.NewReader(form.Encode()))
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 	res, err := sv.HTTP.Do(req)
 	if err != nil {
-		return "", nil, upstream(&UpstreamError{Status: http.StatusBadGateway, Msg: "Hosbah is unreachable"})
+		return nil, upstream(&UpstreamError{Status: http.StatusBadGateway, Msg: "Hosbah is unreachable"})
 	}
 	defer res.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
 	var out struct {
 		AccessToken string     `json:"access_token"`
 		App         *HosbahApp `json:"app"`
-		Error       string     `json:"error"`
-		Description string     `json:"error_description"`
+		Apps        []struct {
+			AccessToken string     `json:"access_token"`
+			App         *HosbahApp `json:"app"`
+		} `json:"apps"`
+		Error       string `json:"error"`
+		Description string `json:"error_description"`
 	}
 	_ = json.Unmarshal(raw, &out)
 	if res.StatusCode >= 300 || out.AccessToken == "" {
@@ -398,17 +403,32 @@ func (sv *Service) hosbahCodeToken(ctx context.Context, code, verifier string) (
 		if msg == "" {
 			msg = "no app token returned"
 		}
-		return "", nil, upstream(&UpstreamError{Status: http.StatusBadGateway, Msg: "Hosbah: " + msg})
+		return nil, upstream(&UpstreamError{Status: http.StatusBadGateway, Msg: "Hosbah: " + msg})
 	}
-	if out.App == nil || out.App.ID == "" {
-		h, err := sv.hosbah(base, out.AccessToken).app(ctx)
-		if err != nil {
-			return "", nil, upstream(err)
+	if len(out.Apps) == 0 {
+		out.Apps = append(out.Apps, struct {
+			AccessToken string     `json:"access_token"`
+			App         *HosbahApp `json:"app"`
+		}{out.AccessToken, out.App})
+	}
+	links := make([]hosbahLinked, 0, len(out.Apps))
+	for _, l := range out.Apps {
+		if l.AccessToken == "" {
+			continue
 		}
-		out.App = &h.App
+		if l.App == nil || l.App.ID == "" {
+			h, err := sv.hosbah(base, l.AccessToken).app(ctx)
+			if err != nil {
+				return nil, upstream(err)
+			}
+			l.App = &h.App
+		}
+		links = append(links, hosbahLinked{Token: l.AccessToken, App: normApps([]HosbahApp{*l.App})[0]})
 	}
-	a := normApps([]HosbahApp{*out.App})[0]
-	return out.AccessToken, &a, nil
+	if len(links) == 0 {
+		return nil, upstream(&UpstreamError{Status: http.StatusBadGateway, Msg: "Hosbah: no app token returned"})
+	}
+	return links, nil
 }
 
 // asMsg is the user-facing message of a domain error.

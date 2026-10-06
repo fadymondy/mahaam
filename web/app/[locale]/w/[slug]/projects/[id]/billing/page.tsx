@@ -79,11 +79,14 @@ export default function BillingPage() {
   const ws = useWorkspace()
   const { project } = useProjectCtx()
   useDocumentTitle(`${t("projectTab.billing")} · ${project.name}`)
+  // A customer reads the tab at the prices they pay (MH-1190): the server swaps cost for the billed
+  // price and leaves out cost and notes, and there is no markup or subscription editing.
+  const staff = ws.can("subscriptions:manage")
   const fetcher = <T,>([p, id]: [string, string]) => api<T>(p, { workspaceId: id })
   const usage = useSWR<{ rows: UsageRow[] | null }>([`/api/w/ai-usage?project=${project.id}&group_by=model`, ws.id], fetcher<any>)
   const daily = useSWR<{ rows: UsageRow[] | null }>([`/api/w/ai-usage?project=${project.id}&group_by=day`, ws.id], fetcher<any>)
   const subs = useSWR<{ subscriptions: Sub[] | null }>([`/api/w/subscriptions?project=${project.id}`, ws.id], fetcher<any>)
-  const markupNow = useSWR<{ ai_markup_bp: number }>([`/api/w/projects/${project.id}/ai-markup`, ws.id], fetcher<any>)
+  const markupNow = useSWR<{ ai_markup_bp: number }>(staff ? [`/api/w/projects/${project.id}/ai-markup`, ws.id] : null, fetcher<any>)
   const [markup, setMarkup] = useState<string | null>(null)
   const markupValue = markup ?? (markupNow.data ? String(markupNow.data.ai_markup_bp / 100) : "")
   const [editing, setEditing] = useState<(Partial<Sub> & { price?: string; cost?: string }) | null>(null)
@@ -121,15 +124,17 @@ export default function BillingPage() {
           title={t("billing.aiTitle")}
           description={t("billing.aiHint")}
           action={
-            <div className="flex items-end gap-2">
-              <Field>
-                <FieldLabel htmlFor="markup">{t("billing.markup")}</FieldLabel>
-                <Input id="markup" dir="ltr" inputMode="decimal" className="w-24" placeholder="0" value={markupValue} onChange={(e) => setMarkup(e.target.value)} />
-              </Field>
-              <Button variant="secondary" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
-                {t("billing.saveMarkup")}
-              </Button>
-            </div>
+            staff ? (
+              <div className="flex items-end gap-2">
+                <Field>
+                  <FieldLabel htmlFor="markup">{t("billing.markup")}</FieldLabel>
+                  <Input id="markup" dir="ltr" inputMode="decimal" className="w-24" placeholder="0" value={markupValue} onChange={(e) => setMarkup(e.target.value)} />
+                </Field>
+                <Button variant="secondary" onClick={() => void saveMarkup()} disabled={markup === null || !markup.trim()}>
+                  {t("billing.saveMarkup")}
+                </Button>
+              </div>
+            ) : undefined
           }
         />
         {usage.error ? (
@@ -154,12 +159,14 @@ export default function BillingPage() {
           title={t("billing.subsTitle")}
           description={t("billing.subsHint")}
           action={
-            <Button
-              variant="primary"
-              onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: project.currency || "USD" })}
-            >
-              <PlusIcon /> {t("billing.addSub")}
-            </Button>
+            staff ? (
+              <Button
+                variant="primary"
+                onClick={() => setEditing({ category: "infrastructure", interval: "month", billable: true, active: true, currency: project.currency || "USD" })}
+              >
+                <PlusIcon /> {t("billing.addSub")}
+              </Button>
+            ) : undefined
           }
         />
         {subs.error ? (
@@ -196,16 +203,18 @@ export default function BillingPage() {
                       <Ltr>{money(x.price_minor, x.currency, locale)}</Ltr>
                       <span className="text-caption font-normal text-muted-foreground"> / {t(`billing.int.${x.interval}`)}</span>
                     </div>
-                    <div className="text-caption text-muted-foreground">{t("billing.costIs", { cost: money(x.cost_minor, x.currency, locale) })}</div>
+                    {staff ? <div className="text-caption text-muted-foreground">{t("billing.costIs", { cost: money(x.cost_minor, x.currency, locale) })}</div> : null}
                   </div>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("billing.edit")}
-                    onClick={() => setEditing({ ...x, price: (x.price_minor / 100).toFixed(2), cost: (x.cost_minor / 100).toFixed(2) })}
-                  >
-                    <PencilIcon />
-                  </Button>
+                  {staff ? (
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={t("billing.edit")}
+                      onClick={() => setEditing({ ...x, price: (x.price_minor / 100).toFixed(2), cost: (x.cost_minor / 100).toFixed(2) })}
+                    >
+                      <PencilIcon />
+                    </Button>
+                  ) : null}
                 </li>
               ))}
             </ul>

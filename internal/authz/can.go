@@ -109,7 +109,8 @@ const (
 	// Project vault. Memory (notes about the project) is read and written by anyone working
 	// on it (members+, on a project they can see). Secrets: members see that a secret exists
 	// (title + hint), but only managers+ (or the project lead) store, change or reveal one,
-	// and every reveal is recorded. Clients never see the vault.
+	// and every reveal is recorded. A customer works the vault of their own projects like a
+	// member (MH-1190): memory and secret titles, never a secret's value.
 	VaultRead    = "vault:read"
 	VaultWrite   = "vault:write"
 	VaultSecrets = "vault:secrets"
@@ -131,6 +132,10 @@ const (
 	AIUsageRecord       = "ai_usage:record"
 	AIUsageRead         = "ai_usage:read"
 	SubscriptionsManage = "subscriptions:manage"
+	// BillingRead: a project's Billing tab as its customer sees it (MH-1190) — AI usage at the
+	// billed price and the billable subscriptions' prices, on a project the caller can see; never
+	// our cost, the markup or notes.
+	BillingRead = "billing:read"
 
 	// Employee KPI (internal/work/kpi.go). KPIRead: your own KPI dossier and GitHub account
 	// (member+); KPIAll: anyone's, the team table, and mapping a member's GitHub account;
@@ -164,7 +169,8 @@ var Matrix = map[string]Role{
 	ProjectsManage: Manager, // or the project's lead
 	// A customer (client) gets the full project — board, tasks, issues — with a member's
 	// rights, on the projects they can see (visibleClause / taskClause) and nothing wider
-	// (MH-1176). Rates, time tracking, the vault, members and the workspace areas stay member+.
+	// (MH-1176), and every project tab but Settings: GitHub, Hosting, Vault and Billing read
+	// (MH-1190). Rates, time tracking, members and the workspace areas stay member+.
 	TasksRead:        Client,
 	TasksWrite:       Client,
 	ClientsRead:      Member,
@@ -193,13 +199,13 @@ var Matrix = map[string]Role{
 	FeedbackKeysRead:     Manager,
 	FeedbackKeysManage:   Manager,
 
-	IntegrationsRead:   Member,
+	IntegrationsRead:   Client, // on a project they can see (integrations.project → FindProject)
 	IntegrationsManage: Manager,
 	GitHubIssueWrite:   Member,
 	GitHubDeploy:       Manager,
 
-	VaultRead:    Member,
-	VaultWrite:   Member,
+	VaultRead:    Client, // on a project they can see (vaultProject → FindProject)
+	VaultWrite:   Client,
 	VaultSecrets: Manager, // or the project's lead (internal/work/vault.go)
 
 	AccessManage: Manager,
@@ -207,6 +213,7 @@ var Matrix = map[string]Role{
 	AIUsageRecord:       Member,
 	AIUsageRead:         Manager,
 	SubscriptionsManage: Manager,
+	BillingRead:         Client,
 
 	KPIRead:   Member,
 	KPIAll:    Manager,
