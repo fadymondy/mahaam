@@ -456,7 +456,7 @@ function registerIpc(): void {
   });
   handle("mgy:selectWorkspace", (ws: Workspace) => {
     if (!client || !stored) throw new Error("not signed in");
-    stored.workspace = { id: ws.id, slug: ws.slug, name: ws.name, role: ws.role, locale: ws.locale };
+    stored.workspace = { id: ws.id, slug: ws.slug, name: ws.name, role: ws.role, locale: ws.locale, logo: ws.logo };
     client.setWorkspace(ws.id);
     persist();
     startLive();
