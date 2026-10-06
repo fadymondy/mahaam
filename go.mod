@@ -16,7 +16,7 @@ require (
 require (
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/sqlc-dev/pqtype v0.3.0
-	github.com/togo-framework/auth v0.8.0
+	github.com/togo-framework/auth v0.8.2
 	github.com/togo-framework/auth-oauth v0.2.0
 	github.com/togo-framework/cache v0.3.0
 	github.com/togo-framework/db-postgres v0.1.0
