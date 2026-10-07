@@ -21,6 +21,7 @@ import (
 	"github.com/fadymondy/mahaam/internal/limits"
 	"github.com/fadymondy/mahaam/internal/mailer"
 	"github.com/fadymondy/mahaam/internal/platform"
+	"github.com/fadymondy/mahaam/internal/reports"
 	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
@@ -209,6 +210,10 @@ func installGuard(k *togo.Kernel, a *app.App) {
 				writeError(w, http.StatusNotFound, "not found")
 			case tierPublic:
 				switch {
+				case r.URL.Path == "/api/feedback/embed" && r.Method == http.MethodOptions:
+					// Before the auth plugin's CORS, which would answer with its own header list (MH-727).
+					reports.EmbedPreflight(w, r)
+					return
 				case r.URL.Path == "/api/auth/login" && r.Method == http.MethodPost:
 					// A suspended account cannot sign in (the plugin's handler knows nothing of it).
 					if refuseSuspendedLogin(w, r, a) {

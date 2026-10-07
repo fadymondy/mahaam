@@ -19,6 +19,12 @@ endpoint. Boots the real stack (bootStack) on the throwaway test database.
 // used to exercise the public embed endpoint the way the SDK does.
 func postForm(t *testing.T, url, origin string, fields map[string]string) (int, map[string]any) {
 	t.Helper()
+	return postFormH(t, url, origin, fields, nil)
+}
+
+// postFormH is postForm with extra request headers (the feedback-core snippets send X-Mahaam-Key).
+func postFormH(t *testing.T, url, origin string, fields, headers map[string]string) (int, map[string]any) {
+	t.Helper()
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 	for k, v := range fields {
@@ -29,6 +35,9 @@ func postForm(t *testing.T, url, origin string, fields map[string]string) (int, 
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	if origin != "" {
 		req.Header.Set("Origin", origin)
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -94,6 +103,30 @@ func TestP7EmbedAndPortal(t *testing.T) {
 		t.Fatalf("embed no key: got %d want 403", code)
 	}
 
+	// MH-727: the key in the X-Mahaam-Key header (the install snippets) works like the form field,
+	// still behind the origin allowlist, and the preflight allows that header with credentials.
+	if code, out := postFormH(t, embed, "https://client.test", map[string]string{"title": "Header key"}, map[string]string{"X-Mahaam-Key": pk}); code != 201 {
+		t.Fatalf("embed header key: got %d %v", code, out)
+	}
+	if code, _ := postFormH(t, embed, "https://evil.test", map[string]string{"title": "x"}, map[string]string{"X-Mahaam-Key": pk}); code != 403 {
+		t.Fatalf("embed header key wrong origin: got %d want 403", code)
+	}
+	pre, _ := http.NewRequest(http.MethodOptions, embed, nil)
+	pre.Header.Set("Origin", "https://client.test")
+	pre.Header.Set("Access-Control-Request-Method", "POST")
+	pre.Header.Set("Access-Control-Request-Headers", "x-mahaam-key")
+	preRes, err := http.DefaultClient.Do(pre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	preRes.Body.Close()
+	if h := preRes.Header.Get("Access-Control-Allow-Headers"); !strings.Contains(h, "X-Mahaam-Key") {
+		t.Fatalf("preflight Allow-Headers = %q, want X-Mahaam-Key", h)
+	}
+	if preRes.Header.Get("Access-Control-Allow-Credentials") != "true" {
+		t.Fatalf("preflight should allow credentials (feedback-core sends credentials: include)")
+	}
+
 	// Revoke -> the key is refused afterwards.
 	owner.must("POST", "/api/w/feedback-keys/"+keyID+"/revoke", nil, 204)
 	if code, _ := postForm(t, embed, "https://client.test", map[string]string{"public_key": pk, "title": "after revoke"}); code != 403 {
@@ -144,8 +177,19 @@ func TestP7EmbedAndPortal(t *testing.T) {
 		t.Fatalf("client should see their one filed issue, got %d", len(issues))
 	}
 
-	// Restricted: tasks, time, rates, members, other clients are all denied.
-	for _, p := range []string{"/api/w/tasks", "/api/w/time/entries", "/api/w/rates", "/api/w/members", "/api/w/clients"} {
+	// Tasks are readable on their own project only (MH-1176), never on an internal one.
+	ownTask := owner.must("POST", "/api/w/projects/"+prID+"/tasks", map[string]any{"title": "Shared task"}, 201)["id"].(string)
+	internalTask := owner.must("POST", "/api/w/projects/"+otherPr+"/tasks", map[string]any{"title": "Internal task"}, 201)["id"].(string)
+	tasks := mustString(t, client, "GET", "/api/w/tasks")
+	if !strings.Contains(tasks, ownTask) || strings.Contains(tasks, internalTask) {
+		t.Fatalf("client tasks should hold %s and not %s: %s", ownTask, internalTask, tasks)
+	}
+	if code, _ := client.do("GET", "/api/w/tasks/"+internalTask, nil); code == 200 {
+		t.Errorf("client opened a task of the internal project")
+	}
+
+	// Restricted: time, rates, members, other clients are all denied.
+	for _, p := range []string{"/api/w/time/entries", "/api/w/rates", "/api/w/members", "/api/w/clients"} {
 		if code, _ := client.do("GET", p, nil); code == 200 {
 			t.Errorf("client reached %s (got 200) — it must be denied", p)
 		}
