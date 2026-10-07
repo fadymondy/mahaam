@@ -12,10 +12,6 @@ github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsVi
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
-github.com/circlexo/circlexo-go v0.1.0 h1:xn9kV+d4vw3Bax8WN9U51qDteOWukjuLZUozPHfHTXM=
-github.com/circlexo/circlexo-go v0.1.0/go.mod h1:8owk1RIM0vdyUFE1kqqQ1ZGhof7uQ7xAxm5AaW8xMGQ=
-github.com/circlexo/circlexo-go v0.1.1 h1:8eaNPmDozUNNXOSeNHH5F+z58Eq8KikfQhwYt7W25ak=
-github.com/circlexo/circlexo-go v0.1.1/go.mod h1:8owk1RIM0vdyUFE1kqqQ1ZGhof7uQ7xAxm5AaW8xMGQ=
 github.com/circlexo/circlexo-go v0.2.0 h1:pLAQQ+1QK5erWrfx8oSu6jT5Dac6KHuvoOxSNNCXmRA=
 github.com/circlexo/circlexo-go v0.2.0/go.mod h1:8owk1RIM0vdyUFE1kqqQ1ZGhof7uQ7xAxm5AaW8xMGQ=
 github.com/cpuguy83/go-md2man/v2 v2.0.5 h1:ZtcqGrnekaHpVLArFSe4HK5DoKx1T0rq2DwVB0alcyc=
@@ -57,8 +53,8 @@ github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsI
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761/go.mod h1:5TJZWKEWniPve33vlWYSoGYefn3gLQRzjfDlhSJ9ZKM=
-github.com/jackc/pgx/v5 v5.7.1 h1:x7SYsPBYDkHDksogeSmZZ5xzThcTgRz++I5E+ePFUcs=
-github.com/jackc/pgx/v5 v5.7.1/go.mod h1:e7O26IywZZ+naJtWWos6i6fvWK+29etgITqrqHLfoZA=
+github.com/jackc/pgx/v5 v5.11.0 h1:IzBBtyK9AHqf98cctWFifYSci2hgQR/cd56wB4p+ogg=
+github.com/jackc/pgx/v5 v5.11.0/go.mod h1:mal1tBGAFfLHvZzaYh77YS/eC6IX9OWbRV1QIIM0Jn4=
 github.com/jackc/puddle/v2 v2.2.2 h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo=
 github.com/jackc/puddle/v2 v2.2.2/go.mod h1:vriiEXHvEE654aYKXXjOvZM39qJ0q+azkZFrfEOc3H4=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
@@ -97,10 +93,8 @@ github.com/sqlc-dev/pqtype v0.3.0/go.mod h1:oyUjp5981ctiL9UYvj1bVvCKi8OXkCa0u645
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
-github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/togo-framework/auth v0.8.0 h1:wpbR6x50gbvZZ3pcZYOripRxs+yO2vHqycH3MpqHA6c=
-github.com/togo-framework/auth v0.8.0/go.mod h1:dPa8CdFlMGggb/PSHlhhqJvEqBelgf36t+qP/vkq2vQ=
+github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
+github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/togo-framework/auth v0.8.2 h1:s0zKF5/a59w6AtjMFzAuMfoB/qdAf4Vh5n9BYJxCTgI=
 github.com/togo-framework/auth v0.8.2/go.mod h1:dPa8CdFlMGggb/PSHlhhqJvEqBelgf36t+qP/vkq2vQ=
 github.com/togo-framework/auth-oauth v0.2.0 h1:PAxwiiXF/7Hh0NJNtzNMqky8+zv7mpv5eJMiqWSyjk8=
