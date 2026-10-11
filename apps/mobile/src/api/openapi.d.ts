@@ -6390,6 +6390,7 @@ export interface components {
             email: string;
             guard: string;
             id: string;
+            impersonator?: string;
             permissions: string[] | null;
             roles: string[] | null;
         };

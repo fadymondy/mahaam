@@ -57,7 +57,7 @@ func TestTwoFactor(t *testing.T) {
 	}
 
 	// 0. The plugin's own TOTP routes are closed: plain-text secrets, never checked at sign-in.
-	for _, p := range []string{"/api/auth/2fa/enroll", "/api/auth/2fa/verify"} {
+	for _, p := range []string{"/api/auth/2fa/enroll", "/api/auth/2fa/verify", "/api/auth/2fa/disable"} {
 		if code, _ := alice.do("POST", p, map[string]string{}); code != 404 {
 			t.Errorf("%s: %d, want 404", p, code)
 		}

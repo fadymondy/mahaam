@@ -95,10 +95,10 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/togo-framework/auth v0.8.2 h1:s0zKF5/a59w6AtjMFzAuMfoB/qdAf4Vh5n9BYJxCTgI=
-github.com/togo-framework/auth v0.8.2/go.mod h1:dPa8CdFlMGggb/PSHlhhqJvEqBelgf36t+qP/vkq2vQ=
-github.com/togo-framework/auth-oauth v0.2.0 h1:PAxwiiXF/7Hh0NJNtzNMqky8+zv7mpv5eJMiqWSyjk8=
-github.com/togo-framework/auth-oauth v0.2.0/go.mod h1:WD59z6wBKPT6BPbP4DyF7NeDxnR69dE9LYPrpeR1c6Q=
+github.com/togo-framework/auth v0.10.0 h1:eFZVnAiQ5zqFFvwB8TriwZIu8UVMcjuVU0KdsQL9ZAk=
+github.com/togo-framework/auth v0.10.0/go.mod h1:7rvnIe3YweUjp2JS0tBINDQB78YC5FToAYq6j2VUtuM=
+github.com/togo-framework/auth-oauth v0.2.1 h1:CAi9yNwVifPRdoUf+43fYKeC9Bd0kZLL9bwYettEfC4=
+github.com/togo-framework/auth-oauth v0.2.1/go.mod h1:WD59z6wBKPT6BPbP4DyF7NeDxnR69dE9LYPrpeR1c6Q=
 github.com/togo-framework/cache v0.3.0 h1:COOKnJ+uo6lbhYOYugOwi/0BS7cwb9B45cRrmTkQc9Q=
 github.com/togo-framework/cache v0.3.0/go.mod h1:ctBGrqfx7/zK+Zrt269Etxa5VR9HBHpFl8usgWlXC4U=
 github.com/togo-framework/db-postgres v0.1.0 h1:6uNo5LVcRm2hRI7nW+YvQEV3Yo9FkfGCR0gPTtgSXEQ=
@@ -119,8 +119,8 @@ github.com/togo-framework/queue v0.3.0 h1:l6NrDeJIhqgyTVOxok197vVVr5aV5Len7naT02
 github.com/togo-framework/queue v0.3.0/go.mod h1:HsjBEk31j+z/4yGZRHqxNxaYvRorUCaJzZsjWzQdKk0=
 github.com/togo-framework/ratelimit v0.1.0 h1:zSYAaEkXAWAsEO3c+oB9UtGm7ckNGo4/eh9yN311pu4=
 github.com/togo-framework/ratelimit v0.1.0/go.mod h1:T78mTs7xc/cFT6gEC0MZaPDRDP7HL9PzGevpqVH7XGw=
-github.com/togo-framework/realtime v0.2.0 h1:ejT+Z40ukumu5QWPRzgbFfCyAoVtidLfD/snQnPZPso=
-github.com/togo-framework/realtime v0.2.0/go.mod h1:saQu84DVN19AjtlUqf6nHvJ1zgtt17rV7R7vs/JfSXY=
+github.com/togo-framework/realtime v0.2.1 h1:N+wnogccG27MlWjfnmM7wceE2BtCh07LrzCo0pdFSO0=
+github.com/togo-framework/realtime v0.2.1/go.mod h1:saQu84DVN19AjtlUqf6nHvJ1zgtt17rV7R7vs/JfSXY=
 github.com/togo-framework/scheduler v0.1.0 h1:eJBTSPix7JXKCRXenr3ahyUhOwpJOUhINPH0KLAgUVs=
 github.com/togo-framework/scheduler v0.1.0/go.mod h1:uv6HpvLHZSKnl207E4ltVQl2EeRAuGlGmvz7ZxzFJn0=
 github.com/togo-framework/settings v0.1.1 h1:7m1Ou7hoYIIJg/bmTs5h0SyzmZChjCetXgq5WSeInpc=
