@@ -72,6 +72,16 @@ func classify(r *http.Request) tier {
 		// ever checked it. Mahaam's is /api/me/2fa/* and /api/auth/2fa/challenge (MH-341).
 		"/api/auth/2fa/enroll",
 		"/api/auth/2fa/verify",
+		// auth v0.9.0 added the plugin's code-gated disable for that same TOTP; with enrolment
+		// blocked there is nothing for it to disable. Mahaam's is /api/me/2fa/disable.
+		"/api/auth/2fa/disable",
+		// auth v0.10.0's admin API: user CRUD, impersonation, admin reset and magic links for any
+		// account whose users.roles holds "admin", which is exactly a Mahaam platform admin. It
+		// bypasses everything the panel does around those actions (suspension, sole-owner checks,
+		// the admin audit), and a magic link is the vulnerability class blocked above. The
+		// platform admin panel is /api/admin/* (internal/admin).
+		"/api/auth/admin/",
+		"/api/auth/impersonation/",
 		// togo-framework/settings arrives transitively (queue -> providers -> settings) and its
 		// init() mounts GET/PUT/DELETE /api/settings/{scope}/{key} over one GLOBAL table, the
 		// scope taken from the path, with no authentication or tenant of its own. Workspace
@@ -169,8 +179,12 @@ func classify(r *http.Request) tier {
 	if path == "/api/auth/tokens" || strings.HasPrefix(path, "/api/auth/tokens/") {
 		return tierSignedIn
 	}
+	// The auth plugin guards its own routes. Since auth v0.9.0 it also mounts POST
+	// /api/auth/password/forgot, /api/auth/password/reset and /api/auth/2fa/challenge; Mahaam's own
+	// handlers for those paths (internal/account) are registered after the kernel's providers run,
+	// so they replace the plugin's on the shared chi tree (TestAuthPluginSurface).
 	if strings.HasPrefix(path, "/api/auth/") {
-		return tierPublic // the auth plugin guards its own routes
+		return tierPublic
 	}
 	if strings.HasPrefix(path, "/api/me/") {
 		return tierSignedIn
