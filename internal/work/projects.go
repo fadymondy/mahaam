@@ -649,11 +649,22 @@ func (sv *Service) CreateProject(ctx context.Context, in ProjectInput) (*Project
 			s.WorkspaceID, id, s.UserID); err != nil {
 			return err
 		}
+		// A project-scoped MCP token would not see the project it just made (GetProject below
+		// answered "project not found" after the commit), so the token gains it.
+		if len(s.ProjectIDs) > 0 && s.TokenID != "" {
+			if _, err := tx.ExecContext(ctx, `UPDATE mcp_tokens SET project_ids = (project_ids::jsonb || to_jsonb($3::text))::text,
+				updated_at = now() WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, s.TokenID, id); err != nil {
+				return err
+			}
+		}
 		delete(p.changes, "created_by")
 		return record(ctx, tx, s, entry{ProjectID: id, Action: "project.created", SubjectType: "project", SubjectID: id, Changes: p.changes})
 	})
 	if err != nil {
 		return nil, err
+	}
+	if len(s.ProjectIDs) > 0 {
+		s.ProjectIDs = append(s.ProjectIDs[:len(s.ProjectIDs):len(s.ProjectIDs)], id)
 	}
 	return sv.GetProject(ctx, id)
 }

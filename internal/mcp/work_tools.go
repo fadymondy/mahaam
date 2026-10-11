@@ -76,7 +76,7 @@ func WorkTools() []Tool {
 		},
 		{
 			Name:        "create_project",
-			Description: "Create a project. It gets the default columns (To do, In progress, In review, Done) and you become its lead.",
+			Description: "Create a project. It gets the default columns (Backlog, To do, In progress, Waiting approval, In review, Done) and you become its lead; change them with the *_project_status tools.",
 			Scope:       "projects:write",
 			InputSchema: schema([]string{"name"}, projectProps(false)),
 			Run: func(ctx context.Context, a *app.App, raw json.RawMessage) (string, error) {

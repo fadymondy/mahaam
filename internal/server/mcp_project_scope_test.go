@@ -4,7 +4,9 @@ package server
 TestMCPProjectScope — a project-scoped MCP token (Settings → MCP tokens → Projects) sees and files
 issues and projects only inside its projects: list_issues hides the other project's and the
 workspace-level issues, get_issue on them fails, create_issue defaults to its single project,
-list_projects shows only it. An unscoped token still sees everything.
+list_projects shows only it. An unscoped token still sees everything. create_project with a
+scoped token succeeds and the token gains the new project (it used to answer "project not found"
+after committing an orphan), and the *_project_status tools rebuild its board columns.
 
 	TEST_DATABASE_URL=… TEST_APP_DATABASE_URL=… go test -count=1 ./internal/server/ -run MCPProjectScope -v
 */
@@ -28,7 +30,7 @@ func TestMCPProjectScope(t *testing.T) {
 	inBeta := owner.must("POST", "/api/w/issues", map[string]any{"title": "beta bug", "project": betaID}, 201)["key"].(string)
 	loose := owner.must("POST", "/api/w/issues", map[string]any{"title": "workspace bug"}, 201)["key"].(string)
 
-	scopes := []string{"projects:read", "issues:read", "issues:write"}
+	scopes := []string{"projects:read", "projects:write", "issues:read", "issues:write"}
 	tok := owner.must("POST", "/api/w/mcp_tokens", map[string]any{"name": "alpha agent", "scopes": scopes, "projects": []string{alphaID}}, 201)
 	if ids, _ := tok["token"].(map[string]any)["project_ids"].([]any); len(ids) != 1 || ids[0] != alphaID {
 		t.Fatalf("token project_ids = %v", tok["token"])
@@ -68,6 +70,43 @@ func TestMCPProjectScope(t *testing.T) {
 	}
 	if text, _ := call(agent, "list_projects", map[string]any{}); strings.Contains(text, beta["name"].(string)) {
 		t.Errorf("scoped list_projects shows Beta: %q", text)
+	}
+
+	// A scoped token creates a project and keeps working in it.
+	gamma := "Gamma " + rnd()
+	text, isErr = call(agent, "create_project", map[string]any{"name": gamma})
+	if isErr || !strings.Contains(text, gamma) {
+		t.Fatalf("scoped create_project: %v %q", isErr, text)
+	}
+	if text, _ := call(agent, "list_projects", map[string]any{}); !strings.Contains(text, gamma) || strings.Contains(text, beta["name"].(string)) {
+		t.Errorf("scoped list_projects after create: %q", text)
+	}
+	var stored string
+	if err := a.SysDB.QueryRow(`SELECT project_ids FROM mcp_tokens WHERE id = $1`, tok["token"].(map[string]any)["id"]).Scan(&stored); err != nil ||
+		!strings.Contains(stored, alphaID) || strings.Count(stored, ",") != 1 {
+		t.Errorf("token project_ids after create = %q (%v)", stored, err)
+	}
+	if _, isErr := call(agent, "create_project_status", map[string]any{"project": gamma, "name": "Needs Fady", "category": "doing", "index": 0}); isErr {
+		t.Fatal("create_project_status failed")
+	}
+	if _, isErr := call(agent, "update_project_status", map[string]any{"project": gamma, "status": "to do", "name": "Todo"}); isErr {
+		t.Fatal("update_project_status (rename) failed")
+	}
+	if _, isErr := call(agent, "delete_project_status", map[string]any{"project": gamma, "status": "Backlog"}); isErr {
+		t.Fatal("delete_project_status failed")
+	}
+	if _, isErr := call(agent, "reorder_project_statuses", map[string]any{"project": gamma, "order": []string{"Todo", "In progress", "Needs Fady"}}); isErr {
+		t.Fatal("reorder_project_statuses failed")
+	}
+	text, _ = call(agent, "list_project_statuses", map[string]any{"project": gamma})
+	want := []string{"0. Todo ", "1. In progress ", "2. Needs Fady ", "3. Waiting approval ", "4. In review ", "5. Done "}
+	for _, w := range want {
+		if !strings.Contains(text, w) {
+			t.Errorf("columns after edits lack %q: %q", w, text)
+		}
+	}
+	if strings.Contains(text, "Backlog") {
+		t.Errorf("Backlog still there: %q", text)
 	}
 
 	text, _ = call(full, "list_issues", map[string]any{})
