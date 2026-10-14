@@ -40,8 +40,11 @@ export default function Details() {
   });
   const avatar = useMutation({
     mutationFn: async () => {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) throw new Error(t("file.permission"));
+      // Android's system photo picker needs no storage permission (blocked in app.config.ts).
+      if (Platform.OS !== "android") {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) throw new Error(t("file.permission"));
+      }
       const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8, allowsEditing: true, aspect: [1, 1], exif: false });
       if (r.canceled || !r.assets[0]) return null;
       const a = r.assets[0];

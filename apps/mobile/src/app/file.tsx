@@ -46,8 +46,12 @@ export default function FileScreen() {
 
   const pick = async (camera: boolean) => {
     setNote(null);
-    const perm = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return setNote(t("file.permission"));
+    // Android's system photo picker needs no storage permission (and the legacy storage
+    // permissions are blocked in app.config.ts), so the library is only asked for on iOS.
+    if (camera || Platform.OS !== "android") {
+      const perm = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return setNote(t("file.permission"));
+    }
     const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.7, exif: false };
     const res = camera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
     if (!res.canceled && res.assets[0]) setPhoto(res.assets[0]);
