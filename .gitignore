@@ -23,3 +23,6 @@ deploy/lxc/.env.prod
 
 # Credentials (Firebase service account, APNs keys) — never committed
 /secrets/
+
+# Self-host secrets (docker-compose.selfhost.yml)
+.env.selfhost

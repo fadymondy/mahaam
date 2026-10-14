@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and help
+    url: https://github.com/fadymondy/mahaam/discussions/categories/q-a
+    about: Ask and answer questions in GitHub Discussions.
+  - name: Discord
+    url: https://discord.gg/a59RzxnB2H
+    about: Chat with the Mahaam community.
+  - name: Report a security vulnerability
+    url: https://github.com/fadymondy/mahaam/security/advisories/new
+    about: Please report security issues privately (or email info@3x1.io), never as a public issue.

@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Contribution rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Mahaam: project management and time tracking. It's built on the togo framework (Go: chi + Huma REST + gqlgen + sqlc + Postgres) with a Next.js 16 frontend in `web/`. `README.md` is the detailed design record. It has per-phase invariants (P0–P7) and a numbered list of **togo framework defects and workarounds**. Read the relevant section before you change tenancy, time tracking, reports, MCP or codegen. Project conventions are in `.claude/rules/conventions.md`.
+Mahaam: project management and time tracking. It's built on the togo framework (Go: chi + Huma REST + gqlgen + sqlc + Postgres) with a Next.js 16 frontend in `web/`. `docs/architecture.md` is the detailed design record. It has per-phase invariants (P0–P7) and a numbered list of **togo framework defects and workarounds**. Read the relevant section before you change tenancy, time tracking, reports, MCP or codegen. Project conventions are in `.claude/rules/conventions.md`.
 
 ## Commands
 
@@ -40,6 +40,6 @@ Admin bootstrap: `go run ./cmd/mahaam-admin promote <email>`, then `go run ./cmd
 
 ## Codegen ownership
 
-- Add entities with `togo make:resource`; `togo.resources.yaml` is the source of truth. Expect to fix its known defects, which are listed in the README togo notes.
+- Add entities with `togo make:resource`; `togo.resources.yaml` is the source of truth. Expect to fix its known defects, which are listed in the togo notes in `docs/architecture.md`.
 - Never hand-edit `*.gen.go` registries or `internal/**/gen/` (sqlc/gqlgen output). Exception: `plugins.gen.go` has a hand-written header that `togo install` strips, so re-add it after every install.
 - Every resource is exposed over both GraphQL and REST/OpenAPI. Config comes from `togo.yaml` + `.env`, loaded by `internal/envfile` because the kernel doesn't read `.env`. Never hard-code URLs or connections.

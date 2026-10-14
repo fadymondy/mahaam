@@ -126,3 +126,26 @@ jobs:
             || { echo '::error::apps/mobile/src/api/openapi.d.ts is stale — run `npm run gen:types` there and commit it'; exit 1; }
       - run: npx tsc --noEmit
       - run: npx jest --ci
+
+  selfhost:
+    # The one-command self-host path in the README must keep working.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Throwaway secrets
+        run: |
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
+            echo "MAHAAM_APP_DB_PASSWORD=$(openssl rand -hex 16)"
+            echo "AUTH_SECRET=$(openssl rand -hex 32)"
+            echo "MAHAAM_SECRET_KEY=$(openssl rand -base64 32)"
+          } > .env.selfhost
+      - name: Build and start the stack
+        run: docker compose -f docker-compose.selfhost.yml --env-file .env.selfhost up -d --build --wait --wait-timeout 300
+      - name: Smoke test
+        run: |
+          curl -fsS http://localhost:3010/api/health
+          curl -fsS -o /dev/null http://localhost:3010/en/login
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.selfhost.yml --env-file .env.selfhost logs --no-color | tail -200
