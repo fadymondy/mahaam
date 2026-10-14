@@ -33,6 +33,10 @@ const nextConfig = {
     return [
       { source: "/dashboard", destination: "/", permanent: false },
       { source: "/:locale(en|ar)/dashboard", destination: "/:locale", permanent: false },
+      // The published Terms and Privacy Policy live on mahaam.app (the store listings link there).
+      // The console's own copy is still a draft (LEGAL_REVIEWED = false), so the app's in-app
+      // links and any old link land on the published text instead of a page marked "Draft".
+      { source: "/:locale(en|ar)/legal/:doc(terms|privacy)", destination: "https://mahaam.app/:locale/:doc", permanent: true },
     ]
   },
 
