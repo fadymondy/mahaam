@@ -2163,6 +2163,23 @@ export interface paths {
         patch: operations["w-edit-comment"];
         trace?: never;
     };
+    "/api/w/comments/{comment}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report a comment you can see (task, issue or portal thread) to the workspace owners and support */
+        post: operations["w-report-comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/current": {
         parameters: {
             query?: never;
@@ -2401,6 +2418,23 @@ export interface paths {
         /** Reply on an issue (any member) */
         post: operations["w-comment-issue"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/issues/{key}/comments/{comment}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete your reply on an issue (managers: any) */
+        delete: operations["w-delete-issue-comment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2852,6 +2886,23 @@ export interface paths {
         /** Reply on an issue of your project */
         post: operations["w-portal-comment-issue"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/portal/issues/{key}/comments/{comment}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete your own reply on an issue of your project */
+        delete: operations["w-portal-delete-issue-comment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5439,6 +5490,25 @@ export interface components {
              */
             readonly $schema?: string;
             comments: components["schemas"]["Comment"][] | null;
+        };
+        CommentReportInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CommentReportInput.json
+             */
+            readonly $schema?: string;
+            /** @description Why the comment is reported (optional) */
+            reason?: string;
+        };
+        CommentReported: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CommentReported.json
+             */
+            readonly $schema?: string;
+            reported: boolean;
         };
         Commit: {
             author_email: string;
@@ -18514,6 +18584,44 @@ export interface operations {
             };
         };
     };
+    "w-report-comment": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                comment: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CommentReportInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentReported"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "current-workspace": {
         parameters: {
             query?: never;
@@ -19199,6 +19307,40 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["IssueComment"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-delete-issue-comment": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                /** @description MG-12 or the issue id */
+                key: string;
+                comment: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
@@ -20405,6 +20547,40 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PortalComment"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-portal-delete-issue-comment": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                /** @description MG-12 or the issue id */
+                key: string;
+                comment: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

@@ -67,13 +67,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const ok = await client.restore();
-      const raw = await AsyncStorage.getItem(WS_KEY);
-      if (ok) {
-        setUser(client.user);
-        setWorkspace(raw && client.workspace ? (JSON.parse(raw) as Workspace) : null);
-        setStatus("signedIn");
-      } else setStatus("signedOut");
+      // A keychain or storage error (e.g. an unsigned build without keychain access) must land on
+      // sign-in, never leave the app on a blank "loading" screen.
+      try {
+        const ok = await client.restore();
+        const raw = await AsyncStorage.getItem(WS_KEY);
+        if (ok) {
+          setUser(client.user);
+          setWorkspace(raw && client.workspace ? (JSON.parse(raw) as Workspace) : null);
+          setStatus("signedIn");
+          return;
+        }
+      } catch {
+        // fall through to signed out
+      }
+      setStatus("signedOut");
     })();
   }, []);
 

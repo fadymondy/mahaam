@@ -32,6 +32,13 @@ describe("social providers", () => {
     expect(visibleProviders(parseProviders(methods("native")), "ios", false).appleNative).toBe(false);
   });
 
+  it("iOS (App Store 4.8): no Google or GitHub unless Sign in with Apple is shown too", () => {
+    expect(visibleProviders(parseProviders(methods(null)), "ios", true)).toEqual({ appleNative: false, browser: [] });
+    expect(visibleProviders(parseProviders(methods("oauth")), "ios", false)).toEqual({ appleNative: false, browser: [] });
+    // The same server config on Android still offers the browser providers.
+    expect(visibleProviders(parseProviders(methods(null)), "android", false).browser.map((p) => p.name)).toEqual(["google", "github"]);
+  });
+
   it("Android: Apple through the browser only when the web flow is configured", () => {
     expect(visibleProviders(parseProviders(methods("oauth")), "android", false).browser.map((p) => p.name)).toEqual(["apple", "google", "github"]);
     const v = visibleProviders(parseProviders(methods("native")), "android", false);

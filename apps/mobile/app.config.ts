@@ -33,6 +33,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSPhotoLibraryUsageDescription: "Attach a photo to an issue or request you file.",
       NSCameraUsageDescription: "Take a photo to attach to an issue or request you file.",
       ITSAppUsesNonExemptEncryption: false,
+      // The app is fully bilingual: declaring both makes the App Store list Arabic as a language
+      // and lets iOS use the ar.lproj permission prompts (locales/ar.json, below).
+      CFBundleDevelopmentRegion: "en",
+      CFBundleLocalizations: ["en", "ar"],
     },
     usesAppleSignIn: true,
     // What the app collects and why (App Store privacy manifest). Everything is linked to the
@@ -54,6 +58,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         ["NSPrivacyCollectedDataTypeOtherUserContent", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
         ["NSPrivacyCollectedDataTypeCrashData", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
         ["NSPrivacyCollectedDataTypePerformanceData", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
+        // "Report a problem" sends device info and console / network logs with the report.
+        ["NSPrivacyCollectedDataTypeOtherDiagnosticData", ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]],
       ].map(([type, purposes]) => ({
         NSPrivacyCollectedDataType: type as string,
         NSPrivacyCollectedDataTypeLinked: true,
@@ -76,6 +82,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // tooling) and the fingerprint API that USE_BIOMETRIC replaced. Play flags unused permissions.
     blockedPermissions: ["android.permission.RECORD_AUDIO", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.USE_FINGERPRINT"],
   },
+  // Localised InfoPlist strings (the app name and every permission prompt) in English and Arabic.
+  // Keep them in step with ios.infoPlist above and the plugin permission strings below.
+  locales: { en: "./locales/en.json", ar: "./locales/ar.json" },
   web: { output: "single", favicon: asset("favicon") },
   plugins: [
     "expo-router",

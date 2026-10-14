@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "مهام",
+  "NSCameraUsageDescription": "التقط صورة لإرفاقها بمشكلة أو طلب تقدّمه.",
+  "NSPhotoLibraryUsageDescription": "أرفق صورة بمشكلة أو طلب تقدّمه.",
+  "NSFaceIDUsageDescription": "افتح مهام ببصمة الوجه. بيانات وجهك لا تغادر هذا الجهاز."
+}

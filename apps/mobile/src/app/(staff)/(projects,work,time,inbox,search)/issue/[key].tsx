@@ -56,7 +56,7 @@ export default function TeamIssueScreen() {
   const ws = useWs();
   const qc = useQueryClient();
   const errText = useErrorText();
-  const { workspace } = useSession();
+  const { workspace, user } = useSession();
   const running = useRunning();
   const start = useStartTimer();
   const members = useMembers();
@@ -213,10 +213,18 @@ export default function TeamIssueScreen() {
             ) : null}
 
             <Thread
-              comments={(i.comments ?? []).map((cm) => ({ id: cm.id, body: cm.body, created_at: cm.created_at, agent: cm.author_kind === "agent" }))}
+              comments={(i.comments ?? []).map((cm) => ({
+                id: cm.id,
+                body: cm.body,
+                created_at: cm.created_at,
+                agent: cm.author_kind === "agent",
+                mine: !!user && cm.author_id === user.id && cm.author_kind !== "agent",
+              }))}
               onSend={(b) => comment.mutateAsync(b)}
               sending={comment.isPending}
               error={comment.error}
+              onDelete={(id) => mahaam.issues.deleteComment(key, id).then(refresh)}
+              onReport={(id) => mahaam.reportComment(id)}
             />
           </>
         ) : null}

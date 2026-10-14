@@ -22,6 +22,7 @@ over HTTPS.
 | Identifiers → User ID | yes | yes | App Functionality |
 | Diagnostics → Crash Data (JavaScript errors, device model, OS version) | yes | yes | App Functionality |
 | Diagnostics → Performance Data | yes | yes | App Functionality |
+| Diagnostics → Other Diagnostic Data (Report a problem: device info, console and network logs) | yes | yes | App Functionality |
 | Contact Info → Phone Number, Physical Address, Other | no | | |
 | Health & Fitness, Financial Info, Location, Sensitive Info, Contacts, Browsing/Search History, Purchases, Usage Data, Audio | no | | |
 

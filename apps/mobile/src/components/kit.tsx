@@ -11,6 +11,7 @@ import { ApiError } from "@/api/client";
 import { AppText, fonts, Header, IconButton, metrics, useColors, usePrefs } from "@/grid";
 import { useT, type TKey } from "@/i18n";
 import { useWs } from "@/lib/hooks";
+import { isPlanRefusal } from "@/lib/plan";
 import { qk } from "@/lib/query";
 import { mahaam } from "@/lib/session";
 import { fs } from "@/lib/type-scale";
@@ -41,8 +42,12 @@ export function useErrorText() {
   return (e: unknown, hints: ErrorHints = {}): string => {
     if (e instanceof ApiError) {
       if (e.isNetwork) return t("common.networkError");
-      if (e.status === 429) return t("common.rateLimited");
       const code = (e.body as { code?: string } | undefined)?.code;
+      // A plan limit or plan feature (402, codes plan_*): the server's sentence names the plan and
+      // says "upgrade in Settings → Plan". Plans are managed on the web, so the app never repeats
+      // that; it says what happened and who can act (App Store 3.1.1).
+      if (isPlanRefusal(e.status, code)) return t("common.planLimit");
+      if (e.status === 429) return t("common.rateLimited");
       if (code === "account_suspended") return t("common.suspended");
       if (code === "invalid_code") return t("common.codeInvalid");
       if (code === "reauth_required") return t("account.reauth.required");
