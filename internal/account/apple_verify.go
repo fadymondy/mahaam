@@ -108,6 +108,15 @@ func (v *AppleVerifier) now() time.Time {
 // Verify checks token and returns its claims. rawNonce is the value whose SHA-256 hex the app put
 // in the authorization request.
 func (v *AppleVerifier) Verify(ctx context.Context, token, rawNonce string) (*AppleClaims, error) {
+	return v.verify(ctx, token, rawNonce, v.ClientIDs)
+}
+
+// VerifyFor is Verify with the audience fixed to clientID (the web flow's Services ID).
+func (v *AppleVerifier) VerifyFor(ctx context.Context, token, rawNonce, clientID string) (*AppleClaims, error) {
+	return v.verify(ctx, token, rawNonce, []string{clientID})
+}
+
+func (v *AppleVerifier) verify(ctx context.Context, token, rawNonce string, clientIDs []string) (*AppleClaims, error) {
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		kid, _ := t.Header["kid"].(string)
@@ -130,7 +139,7 @@ func (v *AppleVerifier) Verify(ctx context.Context, token, rawNonce string) (*Ap
 	aud, _ := claims.GetAudience()
 	match := ""
 	for _, a := range aud {
-		for _, id := range v.ClientIDs {
+		for _, id := range clientIDs {
 			if a == id {
 				match = a
 			}

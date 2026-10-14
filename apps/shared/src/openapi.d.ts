@@ -4963,6 +4963,8 @@ export interface components {
              * @example https://example.com/schemas/AppleInBody.json
              */
             readonly $schema?: string;
+            /** @description The authorizationCode from the Apple authorization. Lets account deletion revoke the Sign in with Apple grant. */
+            authorization_code?: string;
             /** @description Set it to also get access_token: a personal access token named for this device. */
             device_name?: string;
             /** @description The identityToken from the Apple authorization. */

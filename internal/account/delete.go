@@ -171,6 +171,9 @@ func (s *Service) RequestDeletion(ctx context.Context, userID, password, emailCo
 		return time.Time{}, err
 	}
 	platform.Invalidate(userID)
+	// Sign in with Apple grants end with the request, not the purge (5.1.1(v)). Signing in again to
+	// cancel makes a fresh grant.
+	s.RevokeApple(ctx, userID)
 	s.mailAsync(deletionScheduledMail(email, purge, locale), "deletion scheduled", userID)
 	return purge, nil
 }
@@ -233,6 +236,8 @@ func (s *Service) PurgeDue(ctx context.Context, now time.Time) (int, error) {
 }
 
 func (s *Service) purge(ctx context.Context, userID string) error {
+	// Anything kept since the request (there should be nothing) is revoked before the links go.
+	s.RevokeApple(ctx, userID)
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -265,7 +270,7 @@ func (s *Service) purge(ctx context.Context, userID string) error {
 		`DELETE FROM notifications WHERE user_id = $1`,
 		`DELETE FROM notification_prefs WHERE user_id = $1`,
 		`DELETE FROM user_github_accounts WHERE user_id = $1`,
-		// Sign in with Apple links: an anonymised row must not be reachable by its old Apple ID.
+		// Apple / Google / GitHub links: an anonymised row must not be reachable by its old provider account.
 		`DELETE FROM user_identities WHERE user_id = $1`,
 		`DELETE FROM account_codes WHERE user_id = $1`,
 		// Minted during the grace period and never used to sign in are not possible (that would

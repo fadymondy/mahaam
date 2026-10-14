@@ -17,7 +17,6 @@ package account
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
@@ -34,8 +33,8 @@ import (
 var applePerIP = ratelimit.Rate("apple-signin-ip", 30, 15*time.Minute)
 
 var (
-	errAppleNoEmail    = errors.New("Apple did not share an email address; allow it when you sign in, or sign in another way")
-	errAppleEmailTaken = errors.New("an account with this email already exists; sign in to it another way")
+	errAppleNoEmail    = ErrSocialNoEmail
+	errAppleEmailTaken = ErrSocialEmailTaken
 )
 
 // AppleName is the name Apple shares on the first authorization only.
@@ -51,6 +50,10 @@ type appleIn struct {
 		Name          *AppleName `json:"name,omitempty" doc:"fullName from the authorization. Apple sends it the first time only."`
 		DeviceName    string     `json:"device_name,omitempty" maxLength:"200" doc:"Set it to also get access_token: a personal access token named for this device."`
 		Locale        string     `json:"locale,omitempty" enum:"en,ar," doc:"Saved on a new account's profile."`
+		// The server trades it for a refresh token, kept only to revoke the grant when the account
+		// is deleted (App Store 5.1.1(v)). Optional: without it, or without the Apple key configured,
+		// sign-in works and deletion can't revoke.
+		AuthorizationCode string `json:"authorization_code,omitempty" maxLength:"4096" doc:"The authorizationCode from the Apple authorization. Lets account deletion revoke the Sign in with Apple grant."`
 	}
 }
 
@@ -129,6 +132,8 @@ func RegisterApple(api huma.API, s *Service) {
 				return nil, huma.Error500InternalServerError("something went wrong")
 			}
 
+			s.KeepAppleToken(ctx, c.Subject, c.Audience, in.Body.AuthorizationCode, "")
+
 			// The same gates as a password sign-in (server/guard.go): suspended accounts don't get in,
 			// and a second factor is asked for before any token is issued.
 			u, err := platform.Load(ctx, s.DB, userID)
@@ -186,78 +191,10 @@ func (s *Service) spendNonce(ctx context.Context, nonceHash string, exp time.Tim
 	return n == 1, nil
 }
 
-// appleAccount finds the account for a verified Apple identity, linking or creating one the first
-// time the subject is seen.
+// appleAccount finds the account for a verified Apple identity (identities.go).
 func (s *Service) appleAccount(ctx context.Context, c *AppleClaims, name, locale string) (userID string, created bool, err error) {
-	tx, err := s.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return "", false, err
-	}
-	defer func() { _ = tx.Rollback() }()
-	// One first sign-in per subject at a time: two racing must not make two accounts.
-	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtext('apple:' || $1::text))`, c.Subject); err != nil {
-		return "", false, err
-	}
-	err = tx.QueryRowContext(ctx, `SELECT user_id FROM user_identities WHERE provider = 'apple' AND subject = $1`, c.Subject).Scan(&userID)
-	switch {
-	case err == nil:
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE user_identities SET last_used_at = now(), email = CASE WHEN $2 = '' THEN email ELSE $2 END
-			WHERE provider = 'apple' AND subject = $1`, c.Subject, c.Email); err != nil {
-			return "", false, err
-		}
-	case errors.Is(err, sql.ErrNoRows):
-		if c.Email == "" {
-			return "", false, errAppleNoEmail
-		}
-		err = tx.QueryRowContext(ctx, `SELECT id FROM users WHERE lower(email) = lower($1)`, c.Email).Scan(&userID)
-		switch {
-		case err == nil:
-			// Linking to an existing account is only safe on an address Apple verified: otherwise
-			// anyone could claim an account by typing its address into their Apple ID.
-			if !c.EmailVerified {
-				return "", false, errAppleEmailTaken
-			}
-		case errors.Is(err, sql.ErrNoRows):
-			userID, created = randHex(16), true
-			if _, err := tx.ExecContext(ctx, `
-				INSERT INTO users (id, email, password_hash, roles, permissions, created_at) VALUES ($1, $2, '!sso', '', '', $3)`,
-				userID, c.Email, time.Now().UTC().Format(time.RFC3339)); err != nil {
-				return "", false, err
-			}
-			var loc any
-			if locale == "en" || locale == "ar" {
-				loc = locale
-			}
-			if _, err := tx.ExecContext(ctx, `INSERT INTO user_profiles (user_id, name, locale) VALUES ($1, $2, $3)`, userID, name, loc); err != nil {
-				return "", false, err
-			}
-		default:
-			return "", false, err
-		}
-		if c.EmailVerified {
-			if err := markVerified(ctx, tx, userID); err != nil {
-				return "", false, err
-			}
-		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO user_identities (provider, subject, user_id, email) VALUES ('apple', $1, $2, $3)`,
-			c.Subject, userID, c.Email); err != nil {
-			return "", false, err
-		}
-	default:
-		return "", false, err
-	}
-	// Apple shares the name on the first authorization only: it fills an empty profile name and
-	// never replaces one the person chose.
-	if !created && name != "" {
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO user_profiles (user_id, name) VALUES ($1, $2)
-			ON CONFLICT (user_id) DO UPDATE SET name = EXCLUDED.name, updated_at = now() WHERE user_profiles.name = ''`,
-			userID, name); err != nil {
-			return "", false, err
-		}
-	}
-	return userID, created, tx.Commit()
+	return s.SocialAccount(ctx, SocialIdentity{Provider: "apple", Subject: c.Subject, Email: c.Email,
+		EmailVerified: c.EmailVerified, Name: name}, locale)
 }
 
 // cleanName drops control characters and caps the length at the profile's 120.
