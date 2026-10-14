@@ -72,7 +72,7 @@ function oauthProviders(data: unknown): OAuthProvider[] {
 /*
   Google/GitHub/Apple sign-ins that can't finish come back here (internal/server/oauth_return.go):
     /login?error=account_suspended
-    /login?error=oauth_failed
+    /login?error=oauth_failed | account_exists | email_required | oauth_cancelled
     /login?error=mfa_required&next=<path>#mfa_challenge=<challenge>
   The provider was only the first factor; the challenge in the fragment is the same one a right
   password gets, so the page goes straight to the two-factor step. The fragment never reaches a
@@ -82,6 +82,9 @@ function oauthErrorKey(code: string | null): string | null {
   if (code === "account_suspended") return "auth.accountSuspended"
   if (code === "oauth_failed") return "auth.oauthFailed"
   if (code === "mfa_required") return "auth.oauthMfaExpired"
+  if (code === "account_exists") return "auth.oauthAccountExists"
+  if (code === "email_required") return "auth.oauthEmailRequired"
+  // oauth_cancelled: they said no at the provider; nothing to explain.
   return null
 }
 
