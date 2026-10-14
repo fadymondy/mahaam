@@ -138,6 +138,8 @@ export function api(c: MahaamClient) {
       get: (key: string) => c.get<TaskDetail>(`/api/w/tasks/${e(key)}`),
       comments: (key: string) => c.get<{ comments: Comment[] | null }>(`/api/w/tasks/${e(key)}/comments`),
       comment: (key: string, body: string) => c.post<Comment>(`/api/w/tasks/${e(key)}/comments`, { body }),
+      /** Your own comment (managers: any). */
+      deleteComment: (id: string) => c.del<unknown>(`/api/w/comments/${e(id)}`),
       toggleChecklist: (item: string, done: boolean) => c.patch<ChecklistItem>(`/api/w/checklist/${e(item)}`, { done }),
     },
 
@@ -174,10 +176,14 @@ export function api(c: MahaamClient) {
       // client was missing them.
       get: (key: string) => c.get<IssueDetail>(`/api/w/issues/${e(key)}`),
       comment: (key: string, body: string) => c.post<unknown>(`/api/w/issues/${e(key)}/comments`, { body }),
+      deleteComment: (key: string, id: string) => c.del<unknown>(`/api/w/issues/${e(key)}/comments/${e(id)}`),
       move: (key: string, status: string) => c.patch<IssueDetail>(`/api/w/issues/${e(key)}`, { status }),
       create: (input: { title: string; body?: string; project?: string; issue_type?: string; priority?: string; status?: string }) =>
         c.post<IssueDetail>("/api/w/issues", input),
     },
+
+    /** Any comment you can see (task, issue or portal thread), to the workspace owners and support. */
+    reportComment: (id: string, reason?: string) => c.post<{ reported: boolean }>(`/api/w/comments/${e(id)}/report`, reason ? { reason } : {}),
 
     notifications: {
       list: () => c.get<Inbox>("/api/w/notifications?limit=50"),
@@ -194,6 +200,7 @@ export function api(c: MahaamClient) {
       issue: (key: string) => c.optional<PortalIssueDetail>(`/api/w/portal/issues/${e(key)}`),
       updateIssue: (key: string, status: "done" | "todo") => c.patch<PortalIssueDetail>(`/api/w/portal/issues/${e(key)}`, { status }),
       commentIssue: (key: string, body: string) => c.post<PortalComment>(`/api/w/portal/issues/${e(key)}/comments`, { body }),
+      deleteComment: (key: string, id: string) => c.del<unknown>(`/api/w/portal/issues/${e(key)}/comments/${e(id)}`),
       requests: (project?: string) => c.optional<{ requests: PortalRequest[] | null }>(`/api/w/portal/requests${q({ project })}`),
       board: (project: string) => c.optional<PortalBoard>(`/api/w/portal/projects/${e(project)}/tasks`),
       time: (project: string) => c.optional<PortalTimeReport>(`/api/w/portal/projects/${e(project)}/time`),

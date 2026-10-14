@@ -55,10 +55,13 @@ export default function PortalIssueScreen() {
                 created_at: cm.created_at,
                 author: cm.mine ? t("portal.mine") : null,
                 agent: cm.author_kind === "agent",
+                mine: cm.mine,
               }))}
               onSend={(body) => comment.mutateAsync(body)}
               sending={comment.isPending}
               error={comment.error}
+              onDelete={(id) => mahaam.portal.deleteComment(key, id).then(() => qc.invalidateQueries({ queryKey: qk.portalIssue(ws, key) }))}
+              onReport={(id) => mahaam.reportComment(id)}
             />
           </>
         ) : null}

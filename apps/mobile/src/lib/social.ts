@@ -61,10 +61,15 @@ export function parseProviders(methods: { name?: string; label?: string; url?: s
 /**
  * What this device shows: on iOS, Apple natively (whenever the server lists Apple at all) and the
  * other providers in the browser; on Android, every browser provider, Apple included.
+ *
+ * App Store 4.8: on iOS a third-party sign-in (Google, GitHub…) is only ever offered next to Sign in
+ * with Apple. If the server stops listing Apple, or the device can't do it natively, every
+ * third-party button is hidden and email + password is what remains.
  */
 export function visibleProviders(list: Provider[], os: string, appleNative: boolean): { appleNative: boolean; browser: Provider[] } {
   if (os === "ios") {
-    return { appleNative: appleNative && list.some((p) => p.name === "apple"), browser: list.filter((p) => p.name !== "apple" && p.type === "oauth") };
+    const apple = appleNative && list.some((p) => p.name === "apple");
+    return { appleNative: apple, browser: apple ? list.filter((p) => p.name !== "apple" && p.type === "oauth") : [] };
   }
   return { appleNative: false, browser: list.filter((p) => p.type === "oauth") };
 }

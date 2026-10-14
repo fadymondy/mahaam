@@ -30,10 +30,17 @@ Other things you may want to check:
   changes) the app emails a 6-digit code to the account's address instead.
 - Account deletion: profile (the gear at the top of any tab) → Delete account. Deletion is
   immediate for sign-in and completes after 14 days. Signing in again within 14 days cancels it.
+  The demo workspace has a second owner, so deleting the staff demo account is not refused (the
+  last owner of a workspace has to hand it over or delete it first).
   For an account that used Sign in with Apple, deleting it also revokes the app's Sign in with
   Apple authorization (Apple's token revocation endpoint).
+- Comments are shared only inside the invite-only workspace. Every comment has a "…" menu: Delete
+  on your own comments, Report on anyone else's. A report hides the comment for the reporter at
+  once and is emailed to the workspace owners and to us; we review reports within 24 hours (Terms →
+  Acceptable use). Owners and managers can delete any comment and remove members.
 - There are no purchases in the app. Workspaces are billed on the web by their owners, and the app
-  does not link to billing.
+  does not link to billing or mention prices; if a workspace reaches a plan limit, the app only says
+  so and suggests contacting the workspace owner.
 - Camera and photos are only used to attach images to issues and requests. Face ID is only used to
   unlock the app, and only if the person turns it on.
 

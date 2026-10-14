@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "Mahaam",
+  "NSCameraUsageDescription": "Take a photo to attach to an issue or request you file.",
+  "NSPhotoLibraryUsageDescription": "Attach a photo to an issue or request you file.",
+  "NSFaceIDUsageDescription": "Unlock Mahaam with Face ID. Your face data never leaves this device."
+}

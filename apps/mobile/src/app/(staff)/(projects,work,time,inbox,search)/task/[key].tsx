@@ -11,7 +11,7 @@ import { AppText, Checkbox, ErrorLine, fonts, Markdown, Meta, PrimaryButton, Row
 import { useFormat, useT } from "@/i18n";
 import { useWs } from "@/lib/hooks";
 import { qk } from "@/lib/query";
-import { mahaam } from "@/lib/session";
+import { mahaam, useSession } from "@/lib/session";
 import { fs } from "@/lib/type-scale";
 
 export default function TaskScreen() {
@@ -56,6 +56,8 @@ export default function TaskScreen() {
     mutationFn: (body: string) => mahaam.tasks.comment(key, body),
     onSuccess: () => void qc.invalidateQueries({ queryKey: qk.comments(ws, key) }),
   });
+  const { user } = useSession();
+  const removeComment = (id: string) => mahaam.tasks.deleteComment(id).then(() => qc.invalidateQueries({ queryKey: qk.comments(ws, key) }));
 
   const d = task.data;
   const isRunning = !!d && running.data?.task_key === d.key;
@@ -109,11 +111,19 @@ export default function TaskScreen() {
             </Row>
 
             <Thread
-              comments={(comments.data ?? []).map((cm) => ({ id: cm.id, body: cm.body, created_at: cm.created_at, agent: cm.author_kind === "agent" }))}
+              comments={(comments.data ?? []).map((cm) => ({
+                id: cm.id,
+                body: cm.body,
+                created_at: cm.created_at,
+                agent: cm.author_kind === "agent",
+                mine: !!user && cm.author_id === user.id && cm.author_kind !== "agent",
+              }))}
               onSend={(body) => comment.mutateAsync(body)}
               sending={comment.isPending}
               error={comment.error}
               canWrite={d.can_write}
+              onDelete={removeComment}
+              onReport={(id) => mahaam.reportComment(id)}
             />
           </>
         ) : null}

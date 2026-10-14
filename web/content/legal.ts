@@ -15,7 +15,7 @@
 import en from "@/lang/legal.en.json"
 import ar from "@/lang/legal.ar.json"
 
-export const LEGAL_UPDATED = "2026-09-23"
+export const LEGAL_UPDATED = "2026-10-14"
 export const LEGAL_REVIEWED = false
 
 export type LegalDoc = "terms" | "privacy"

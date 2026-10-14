@@ -332,6 +332,7 @@ func RegisterPortalPanel(api huma.API, a *app.App) {
 		h.db = a.SQLDB
 		h.log = a.Log
 	}
+	registerCommentModeration(api, h) // delete / report on shared threads (comment_moderation.go)
 	const portalTag, reqTag = "Client portal", "Requests"
 	reg := func(op huma.Operation, tag string) huma.Operation {
 		op.Tags = []string{tag}
