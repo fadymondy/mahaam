@@ -6,8 +6,10 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
 
 import { ApiError } from "@/api/client";
+import { secondFactor, SecondFactorField, secondFactorReady, type SecondFactor } from "@/components/second-factor";
 import { useErrorText } from "@/components/kit";
-import { useTwoFA } from "@/features/account";
+import { EMPTY_REAUTH, ReauthField, reauthBody, reauthReady, type ReauthValue } from "@/components/reauth";
+import { useProfile, useTwoFA } from "@/features/account";
 import { AppText, Checkbox, ErrorLine, fonts, OtpField, PasswordField, Row, Rows, Screen, StackHeader, useColors } from "@/grid";
 import { useFormat, useI18n } from "@/i18n";
 import { client, mahaam, useSession } from "@/lib/session";
@@ -21,8 +23,10 @@ export default function DeleteAccount() {
   const errText = useErrorText();
   const { signOut } = useSession();
   const twoFA = useTwoFA();
-  const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
+  const profile = useProfile();
+  const hasPassword = profile.data?.has_password !== false;
+  const [reauth, setReauth] = useState<ReauthValue>(EMPTY_REAUTH);
+  const [factor, setFactor] = useState<SecondFactor>({ value: "", recovery: false });
   const [sure, setSure] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +37,7 @@ export default function DeleteAccount() {
     setBusy(true);
     setError(null);
     try {
-      const r = await mahaam.me.deleteAccount({ password, code: needsCode ? code : undefined, locale });
+      const r = await mahaam.me.deleteAccount({ ...reauthBody(reauth, hasPassword), ...(needsCode ? secondFactor(factor) : {}), locale });
       setDone(r.purge_after);
       // The server has revoked every token already; clear this device.
       await client.logout();
@@ -41,8 +45,7 @@ export default function DeleteAccount() {
     } catch (e) {
       const body = e instanceof ApiError ? (e.body as { code?: string; workspaces?: { name: string }[] } | undefined) : undefined;
       if (body?.code === "sole_owner") setError(t("account.delete.soleOwner", { names: (body.workspaces ?? []).map((w) => w.name).join(", ") }));
-      else if (e instanceof ApiError && (e.status === 401 || e.status === 403 || e.status === 422)) setError(t("account.twofa.wrong"));
-      else setError(errText(e));
+      else setError(errText(e, { password: true, code: true }));
     } finally {
       setBusy(false);
     }
@@ -61,13 +64,13 @@ export default function DeleteAccount() {
             </Row>
           ) : (
             <Row>
-              <PasswordField label={t("auth.password")} value={password} onChangeText={setPassword} />
-              {needsCode ? <OtpField label={t("auth.mfa.code")} value={code} onChange={setCode} /> : null}
+              <ReauthField hasPassword={hasPassword} value={reauth} onChange={setReauth} />
+              {needsCode ? <SecondFactorField value={factor} onChange={setFactor} /> : null}
               <Checkbox checked={sure} onChange={setSure} large>
                 <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, lineHeight: lh(fs.meta), color: c.body }}>{t("account.delete.confirm")}</AppText>
               </Checkbox>
               {error ? <ErrorLine text={error} /> : null}
-              <DangerButton label={t("account.delete.submit")} disabled={busy || !sure || !password || (needsCode && code.length < 6)} onPress={() => void submit()} />
+              <DangerButton label={t("account.delete.submit")} disabled={busy || !sure || !reauthReady(reauth, hasPassword) || (needsCode && !secondFactorReady(factor))} onPress={() => void submit()} />
             </Row>
           )}
         </Rows>

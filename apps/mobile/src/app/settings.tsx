@@ -12,6 +12,7 @@ import {
   LifeBuoy,
   MessageSquareWarning,
   Mail,
+  MonitorSmartphone,
   Palette,
   ScanFace,
   Shield,
@@ -29,7 +30,7 @@ import { useProfile, useTwoFA } from "@/features/account";
 import { AppText, fonts, Meta, Row, Rows, Screen, StackHeader, useColors, usePrefs } from "@/grid";
 import { useI18n } from "@/i18n";
 import { useBiometric } from "@/lib/biometric";
-import { legalUrl, supportEmail } from "@/lib/links";
+import { legalUrl, supportEmail, supportUrl } from "@/lib/links";
 import { FEEDBACK_ENABLED } from "@/lib/monitor";
 import { useSession } from "@/lib/session";
 import { fs } from "@/lib/type-scale";
@@ -86,8 +87,8 @@ export default function ProfileHub() {
             label={t(bio.available === "face" ? "account.biometric.face" : "account.biometric.finger")}
             value={bio.available === "none" ? t("account.biometric.unavailable") : t(bio.enabled ? "account.on" : "account.off")}
             onPress={bio.available === "none" ? undefined : () => router.push("/account/security")}
-            last
           />
+          <HubItem Icon={MonitorSmartphone} label={t("account.devices.title")} onPress={() => router.push("/account/devices")} last />
         </HubGroup>
 
         <HubGroup title={t("account.group.preferences")}>
@@ -114,7 +115,8 @@ export default function ProfileHub() {
           <HubItem Icon={FileText} label={t("legal.terms")} onPress={() => void WebBrowser.openBrowserAsync(legalUrl("terms", locale))} />
           <HubItem Icon={FileText} label={t("legal.privacy")} onPress={() => void WebBrowser.openBrowserAsync(legalUrl("privacy", locale))} />
           {FEEDBACK_ENABLED ? <HubItem Icon={MessageSquareWarning} label={t("account.report")} onPress={() => setReporting(true)} /> : null}
-          <HubItem Icon={LifeBuoy} label={t("account.support")} value={supportEmail} onPress={() => void Linking.openURL(`mailto:${supportEmail}`)} last />
+          <HubItem Icon={LifeBuoy} label={t("account.help")} onPress={() => void WebBrowser.openBrowserAsync(supportUrl(locale))} />
+          <HubItem Icon={Mail} label={t("account.support")} value={supportEmail} onPress={() => void Linking.openURL(`mailto:${supportEmail}`)} last />
         </HubGroup>
 
         <HubGroup title={t("account.group.danger")}>

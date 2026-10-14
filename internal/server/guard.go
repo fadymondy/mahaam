@@ -216,6 +216,10 @@ func installGuard(k *togo.Kernel, a *app.App) {
 		workspace := svc.Middleware(csrf(gate(tenant.Require(a.SysDB)(meter(generatedAuthz(next))))))
 		admin := hideUnauthorized(svc.Middleware(csrf(gate(requirePlatformAdmin(a, next)))))
 		me := svc.Middleware(gate(currentIdentity(a)))
+		// Apple / Google / GitHub in a browser: our own flow, with `next`, suspension and the
+		// second factor (oauth_return.go). The auth-oauth plugin's routes are never reached.
+		social := socialRoutes(svc, a, acct)
+		methods := loginMethods(next)
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			stripUntrustedForwarding(trusted, r) // proxies.go: forwarding headers are client-settable
@@ -242,7 +246,16 @@ func installGuard(k *togo.Kernel, a *app.App) {
 					// The session probe: a suspended or signed-out-by-an-admin session fails here too.
 					me.ServeHTTP(w, r)
 					return
+				case strings.HasPrefix(r.URL.Path, oauthPrefix):
+					social.ServeHTTP(w, r)
+					return
+				case r.URL.Path == "/api/auth/methods" && r.Method == http.MethodGet:
+					methods.ServeHTTP(w, r)
+					return
 				}
+				// POST /api/auth/apple (account/apple.go) needs nothing here: it is a JSON call from a
+				// native app with no cookies, so no CSRF applies (like /api/auth/app/token and
+				// /api/auth/2fa/challenge), and it makes its own suspension and 2FA checks.
 				next.ServeHTTP(w, r)
 			case tierSignedIn:
 				if r.URL.Path == "/api/auth/tokens" && r.Method == http.MethodPost && refuseScopedToken(w, r) {

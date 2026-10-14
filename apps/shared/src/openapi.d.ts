@@ -459,6 +459,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/apple": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with Apple (native apps)
+         * @description For the iOS app's native Sign in with Apple. Send the identity token and the raw nonce (the authorization request carries its SHA-256, lowercase hex). Returns {token, user} like POST /api/auth/login; with device_name, also access_token (a personal access token for this device). An account with two-factor sign-in answers 401 {code: mfa_required, challenge}: finish at POST /api/auth/2fa/challenge. A suspended account gets 403 account_suspended. A token is accepted once.
+         */
+        post: operations["auth-apple"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/password/forgot": {
         parameters: {
             query?: never;
@@ -726,7 +746,7 @@ export interface paths {
         put?: never;
         /**
          * Turn two-factor sign-in off
-         * @description Needs your password and a current code (or a recovery code).
+         * @description Needs your password (an account without one: email_code, from POST /api/me/reauth/code) and a current code (or a recovery code).
          */
         post: operations["me-2fa-disable"];
         delete?: never;
@@ -746,7 +766,7 @@ export interface paths {
         put?: never;
         /**
          * Start setting up two-factor sign-in
-         * @description Needs your password. Returns the secret and an otpauth:// link (show it as a QR code, or open it on the same phone). Nothing is enforced until /api/me/2fa/confirm.
+         * @description Needs your password (an account without one: email_code, from POST /api/me/reauth/code). Returns the secret and an otpauth:// link (show it as a QR code, or open it on the same phone). Nothing is enforced until /api/me/2fa/confirm.
          */
         post: operations["me-2fa-enroll"];
         delete?: never;
@@ -764,7 +784,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Replace your recovery codes */
+        /**
+         * Replace your recovery codes
+         * @description Needs your password (an account without one: email_code, from POST /api/me/reauth/code) and a current code.
+         */
         post: operations["me-2fa-recovery"];
         delete?: never;
         options?: never;
@@ -824,7 +847,7 @@ export interface paths {
         put?: never;
         /**
          * Delete your account
-         * @description Needs your password. Refused (409, code sole_owner, with the list) while you are the only owner of a workspace. Otherwise every session and token ends now, and the account is anonymised after the grace period (purge_after). Signing in again before then cancels the deletion.
+         * @description Needs your password; an account without one (has_password false) sends email_code, from POST /api/me/reauth/code. With two-factor sign-in on, code or recovery_code as well. Refused (409, code sole_owner, with the list) while you are the only owner of a workspace. Otherwise every session and token ends now, and the account is anonymised after the grace period (purge_after). Signing in again before then cancels the deletion.
          */
         post: operations["me-delete"];
         delete?: never;
@@ -902,7 +925,7 @@ export interface paths {
         put?: never;
         /**
          * Move your account to a new email address
-         * @description Needs your password. A six-digit code goes to the NEW address; confirm it with /api/me/email/confirm. Nothing changes until then.
+         * @description Needs your password (an account without one: email_code, from POST /api/me/reauth/code). A six-digit code goes to the NEW address; confirm it with /api/me/email/confirm. Nothing changes until then.
          */
         post: operations["me-email-change"];
         delete?: never;
@@ -977,6 +1000,26 @@ export interface paths {
         post: operations["me-push-subscribe"];
         /** Stop push notifications on this device */
         delete: operations["me-push-unsubscribe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/reauth/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email a code that confirms it's you (accounts without a password)
+         * @description For accounts made with Apple, Google or GitHub, which have no password (GET /api/me/profile has_password false). Mails a six-digit code to the account's address; send it as email_code to POST /api/me/delete, /api/me/email, /api/me/2fa/enroll, /api/me/2fa/disable or /api/me/2fa/recovery-codes. It works once, for 10 minutes and 5 tries; asking again replaces it. An account with a password gets 409 has_password: those routes take the password.
+         */
+        post: operations["me-reauth-code"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4913,6 +4956,48 @@ export interface components {
             /** @description This device's personal access token. Returned once. */
             token: string;
         };
+        AppleInBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AppleInBody.json
+             */
+            readonly $schema?: string;
+            /** @description The authorizationCode from the Apple authorization. Lets account deletion revoke the Sign in with Apple grant. */
+            authorization_code?: string;
+            /** @description Set it to also get access_token: a personal access token named for this device. */
+            device_name?: string;
+            /** @description The identityToken from the Apple authorization. */
+            identity_token: string;
+            /**
+             * @description Saved on a new account's profile.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            /** @description fullName from the authorization. Apple sends it the first time only. */
+            name?: components["schemas"]["AppleName"];
+            /** @description The RAW nonce. The authorization request must have carried its SHA-256, lowercase hex. */
+            nonce: string;
+        };
+        AppleName: {
+            family?: string;
+            given?: string;
+        };
+        AppleOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AppleOutBody.json
+             */
+            readonly $schema?: string;
+            /** @description Only with device_name: this device's personal access token, returned once. Hold it instead of the session token. */
+            access_token?: string;
+            /** @description A new account was made by this sign-in. */
+            created: boolean;
+            /** @description The session token (JWT), as POST /api/auth/login returns it. Use it as a Bearer token. */
+            token: string;
+            user: components["schemas"]["Identity"];
+        };
         Attachment: {
             /**
              * Format: uri
@@ -7238,7 +7323,10 @@ export interface components {
              */
             readonly $schema?: string;
             code?: string;
-            password: string;
+            /** @description Instead of the password, for an account without one: the code from POST /api/me/reauth/code */
+            email_code?: string;
+            /** @description Required when the account has a password */
+            password?: string;
             recovery_code?: string;
         };
         "Me-2fa-enrollRequest": {
@@ -7248,7 +7336,10 @@ export interface components {
              * @example https://example.com/schemas/Me-2fa-enrollRequest.json
              */
             readonly $schema?: string;
-            password: string;
+            /** @description Instead of the password, for an account without one: the code from POST /api/me/reauth/code */
+            email_code?: string;
+            /** @description Required when the account has a password */
+            password?: string;
         };
         "Me-2fa-enrollResponse": {
             /**
@@ -7269,7 +7360,10 @@ export interface components {
              */
             readonly $schema?: string;
             code: string;
-            password: string;
+            /** @description Instead of the password, for an account without one: the code from POST /api/me/reauth/code */
+            email_code?: string;
+            /** @description Required when the account has a password */
+            password?: string;
         };
         "Me-app-signinRequest": {
             /**
@@ -7294,9 +7388,12 @@ export interface components {
             readonly $schema?: string;
             /** @description Required when two-factor sign-in is on */
             code?: string;
+            /** @description Instead of the password, for an account without one: the code from POST /api/me/reauth/code */
+            email_code?: string;
             /** @enum {string} */
             locale?: "en" | "ar" | "";
-            password: string;
+            /** @description Required when the account has a password */
+            password?: string;
             recovery_code?: string;
         };
         "Me-device-live-activityRequest": {
@@ -7320,9 +7417,12 @@ export interface components {
             readonly $schema?: string;
             /** Format: email */
             email: string;
+            /** @description Instead of the password, for an account without one: the code from POST /api/me/reauth/code */
+            email_code?: string;
             /** @enum {string} */
             locale?: "en" | "ar" | "";
-            password: string;
+            /** @description Required when the account has a password */
+            password?: string;
         };
         "Me-email-confirmRequest": {
             /**
@@ -7354,6 +7454,19 @@ export interface components {
              */
             readonly $schema?: string;
             endpoint: string;
+        };
+        "Me-reauth-codeRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Me-reauth-codeRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Language of the email. Default en.
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
         };
         "Me-verify-email-resendRequest": {
             /**
@@ -8257,6 +8370,8 @@ export interface components {
             created_at: string;
             email: string;
             email_verified: boolean;
+            /** @description false: an Apple/Google/GitHub account. Confirm with email_code (POST /api/me/reauth/code) where others give the password */
+            has_password: boolean;
             id: string;
             /** @description en or ar; null: follow the device */
             locale: string | null;
@@ -8665,6 +8780,21 @@ export interface components {
              */
             readonly $schema?: string;
             reason?: string;
+        };
+        ReauthOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReauthOutBody.json
+             */
+            readonly $schema?: string;
+            /** @description Where the code went: the account's address */
+            email: string;
+            /**
+             * Format: int64
+             * @description Seconds the code works for
+             */
+            expires_in: number;
         };
         RecoveryOutBody: {
             /**
@@ -12632,6 +12762,93 @@ export interface operations {
             };
         };
     };
+    "auth-apple": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppleInBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppleOutBody"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "password-forgot": {
         parameters: {
             query?: never;
@@ -14078,6 +14295,66 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "me-reauth-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Me-reauth-codeRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReauthOutBody"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

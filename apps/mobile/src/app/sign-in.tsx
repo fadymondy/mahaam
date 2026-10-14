@@ -1,7 +1,9 @@
 // Sign in / create account, on the grid's sign-in shapes, with the second step for accounts that
 // have two-factor on (an authenticator code, or one of the recovery codes). This is the app's root
 // when signed out, so it has no back button: the mark, the product name and one line of intro head
-// it instead. Registering continues to the email code (verify-email).
+// it instead. Registering continues to the email code (verify-email). Apple / Google / GitHub
+// (components/social-sign-in.tsx) sit under the form in both modes; a provider sign-in on an account
+// with two-factor on comes to the same second step.
 import * as WebBrowser from "expo-web-browser";
 import { Redirect, router } from "expo-router";
 import { KeyRound, Lock, Mail, ShieldCheck, User, UserPlus } from "lucide-react-native";
@@ -10,6 +12,7 @@ import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 
 import { ApiError } from "@/api/client";
 import { useErrorText } from "@/components/kit";
+import { SocialSignIn } from "@/components/social-sign-in";
 import {
   AppText,
   Checkbox,
@@ -52,8 +55,10 @@ export default function SignIn() {
   const [recovery, setRecovery] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState(false);
 
-  if (status === "signedIn") return <Redirect href="/" />;
+  // A new account goes on to prove its email; a returning one goes home.
+  if (status === "signedIn") return <Redirect href={registered ? "/verify-email" : "/"} />;
 
   const up = mode === "up";
   const score = passwordScore(password);
@@ -65,13 +70,13 @@ export default function SignIn() {
     try {
       await fn();
     } catch (e) {
-      setError(
-        e instanceof ApiError && (e.status === 401 || e.status === 422) && mode === "in"
-          ? t("auth.invalid")
-          : e instanceof ApiError && e.status === 422 && mode === "mfa"
-            ? t("auth.mfa.wrong")
-            : errText(e),
-      );
+      // An expired two-factor challenge (401) means starting over from the password.
+      if (mode === "mfa" && e instanceof ApiError && e.status === 401) {
+        setMode("in");
+        setError(t("auth.sessionLost"));
+      } else {
+        setError(mode === "in" ? errText(e, { login: true }) : mode === "mfa" ? errText(e, { code: true }) : errText(e, { email: true, newPassword: true }));
+      }
     } finally {
       setBusy(false);
     }
@@ -82,8 +87,13 @@ export default function SignIn() {
     !busy &&
     run(async () => {
       if (up) {
-        await register(name, email, password);
-        router.replace("/verify-email");
+        setRegistered(true);
+        try {
+          await register(name, email, password);
+        } catch (e) {
+          setRegistered(false);
+          throw e;
+        }
         return;
       }
       const r = await signIn(email, password);
@@ -126,7 +136,7 @@ export default function SignIn() {
                   onChangeText={setCode}
                   placeholder="xxxx-xxxx"
                   autoCapitalize="none"
-                  maxLength={32}
+                  maxLength={20}
                   ltr
                   autoFocus
                   icon={<KeyRound size={17} color={c.muted} strokeWidth={1.6} />}
@@ -214,6 +224,16 @@ export default function SignIn() {
                 onPress={() => void submit()}
               />
               {!up ? <TextButton label={t("auth.forgot")} onPress={() => router.push({ pathname: "/forgot", params: { email } })} /> : null}
+              <SocialSignIn
+                disabled={busy}
+                onMfa={(mfa) => {
+                  setChallenge(mfa);
+                  setCode("");
+                  setRecovery(false);
+                  setError(null);
+                  setMode("mfa");
+                }}
+              />
             </Row>
           )}
 

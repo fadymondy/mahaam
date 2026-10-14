@@ -32,6 +32,8 @@ export type Profile = {
   locale: "en" | "ar" | null
   timezone: string | null
   created_at: string
+  // false for an account made with Apple, Google or GitHub: it confirms with an emailed code.
+  has_password?: boolean
 }
 
 const PROFILE = "/api/me/profile"
@@ -61,7 +63,7 @@ export function AccountCard() {
               <PasswordForm />
             </div>
             <TwoFactor />
-            <DeleteAccount />
+            <DeleteAccount hasPassword={profile.data.has_password !== false} />
           </>
         )}
       </div>
@@ -407,11 +409,17 @@ type OwnedWorkspace = { id: string; slug: string; name: string }
 // Deleting the account (MH-344). The API refuses while the person is the only owner of a
 // workspace and sends the list, so each is a link rather than a sentence to go and act on. On
 // success every session has already ended server-side; this page only has to leave.
-function DeleteAccount() {
+//
+// An account without a password (Apple, Google, GitHub) confirms with a code emailed to it
+// (POST /api/me/reauth/code, then email_code), as the mobile app does.
+function DeleteAccount({ hasPassword }: { hasPassword: boolean }) {
   const { t, locale } = useTranslations()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [password, setPassword] = useState("")
+  const [emailCode, setEmailCode] = useState("")
+  const [sentTo, setSentTo] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [owned, setOwned] = useState<OwnedWorkspace[] | null>(null)
@@ -419,14 +427,29 @@ function DeleteAccount() {
   const twofa = useTwoFactor()
   const [code, setCode] = useState("")
 
+  async function sendCode() {
+    setError(null)
+    setSending(true)
+    try {
+      const out = await api<{ email: string }>("/api/me/reauth/code", { json: { locale } })
+      setSentTo(out.email)
+      setEmailCode("")
+    } catch (err) {
+      setError(err instanceof ApiError && err.status === 429 ? t("account.reauthTooMany") : errorText(err, t("common.networkError")))
+    } finally {
+      setSending(false)
+    }
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setOwned(null)
     setBusy(true)
+    const proof = hasPassword ? { password } : { email_code: emailCode }
     try {
       const out = await api<{ purge_after: string }>("/api/me/delete", {
-        json: twofa.data?.enabled ? { password, locale, code } : { password, locale },
+        json: twofa.data?.enabled ? { ...proof, locale, code } : { ...proof, locale },
       })
       // The session is already revoked; this only clears the cookie, so it may well 401.
       await api("/api/auth/logout", { method: "POST" }).catch(() => undefined)
@@ -438,6 +461,10 @@ function DeleteAccount() {
         setOwned(((err.data as { workspaces?: OwnedWorkspace[] })?.workspaces ?? []) as OwnedWorkspace[])
       } else if (err instanceof ApiError && err.code === "mfa_required") {
         setError(t("auth.mfaHint"))
+      } else if (err instanceof ApiError && err.code === "invalid_code") {
+        setError(t("account.reauthWrong"))
+      } else if (err instanceof ApiError && err.code === "reauth_required") {
+        setError(t("account.reauthRequired"))
       } else if (err instanceof ApiError && err.status === 400) {
         setError(t("auth.mfaWrong"))
       } else if (err instanceof ApiError && err.status === 403) {
@@ -459,18 +486,46 @@ function DeleteAccount() {
       ) : (
         <form onSubmit={submit} noValidate className="mt-4 max-w-sm">
           <div className="flex flex-col gap-4">
-            <Field data-invalid={!!error || undefined}>
-              <FieldLabel htmlFor="acc-delete-pw">{t("account.currentPassword")}</FieldLabel>
-              <Input
-                id="acc-delete-pw"
-                type="password"
-                dir="ltr"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <FieldDescription>{t("account.deleteConfirmHint")}</FieldDescription>
-            </Field>
+            {hasPassword ? (
+              <Field data-invalid={!!error || undefined}>
+                <FieldLabel htmlFor="acc-delete-pw">{t("account.currentPassword")}</FieldLabel>
+                <Input
+                  id="acc-delete-pw"
+                  type="password"
+                  dir="ltr"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <FieldDescription>{t("account.deleteConfirmHint")}</FieldDescription>
+              </Field>
+            ) : (
+              <div className="flex flex-col gap-3" data-delete-reauth>
+                <p className="text-sm text-muted-foreground">{t("account.reauthBody")}</p>
+                <div>
+                  <Button type="button" variant="secondary" size="sm" disabled={sending} onClick={() => void sendCode()} data-reauth-send>
+                    {sending ? t("common.working") : sentTo ? t("account.reauthResend") : t("account.reauthSend")}
+                  </Button>
+                </div>
+                {sentTo ? (
+                  <Field data-invalid={!!error || undefined}>
+                    <FieldLabel htmlFor="acc-delete-email-code">{t("account.reauthCode")}</FieldLabel>
+                    <Input
+                      id="acc-delete-email-code"
+                      dir="ltr"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={emailCode}
+                      onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      className="font-mono tracking-[0.4em]"
+                      placeholder="000000"
+                    />
+                    <FieldDescription>{t("account.reauthSent", { email: sentTo })}</FieldDescription>
+                  </Field>
+                ) : null}
+              </div>
+            )}
             {twofa.data?.enabled ? (
               <Field>
                 <FieldLabel htmlFor="acc-delete-code">{t("auth.mfaLabel")}</FieldLabel>
@@ -503,7 +558,10 @@ function DeleteAccount() {
               </div>
             ) : null}
             <div className="flex gap-2">
-              <Button type="submit" variant="danger" disabled={busy || !password || (!!twofa.data?.enabled && code.length !== 6)}>
+              <Button type="submit" variant="danger" disabled={
+                  busy || (hasPassword ? !password : emailCode.length !== 6) || (!!twofa.data?.enabled && code.length !== 6)
+                }
+              >
                 {busy ? t("common.working") : t("account.deleteSubmit")}
               </Button>
               <Button type="button" variant="ghost" disabled={busy} onClick={() => setOpen(false)}>

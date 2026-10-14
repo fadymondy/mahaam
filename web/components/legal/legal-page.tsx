@@ -9,6 +9,7 @@ import { Markdown } from "@fadymondy/nasaq/web"
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { LEGAL_DOCS, LEGAL_REVIEWED, LEGAL_UPDATED, legalText, type LegalDoc } from "@/content/legal"
 import { useTranslations } from "@/lib/i18n"
+import { TRUSTED_MARKDOWN } from "@/lib/trusted-markdown"
 import { useDocumentTitle } from "@/lib/title"
 import { cn } from "@/lib/utils"
 
@@ -52,7 +53,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
                   {s.heading}
                 </a>
               </h2>
-              <Markdown>{s.body}</Markdown>
+              <Markdown components={TRUSTED_MARKDOWN}>{s.body}</Markdown>
             </section>
           ))}
         </article>

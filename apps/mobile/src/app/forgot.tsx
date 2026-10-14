@@ -30,7 +30,7 @@ export default function Forgot() {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof ApiError && e.status === 422 ? t("auth.reset.invalid") : errText(e));
+      setError(errText(e, { code: true, newPassword: step === "code" && e instanceof ApiError && e.status === 422 && /password/i.test(e.message) }));
     } finally {
       setBusy(false);
     }

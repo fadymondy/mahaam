@@ -725,6 +725,19 @@ Found building P3/P5:
 21. `make:resource` types a nullable `date` field as `String!` in GraphQL and a non-pointer `time.Time` in the
     resource and handler (retyped).
 
+Found building native sign-in:
+
+22. `auth-oauth` v0.2.0's callback always redirects to a hard-coded `/dashboard` (oauth.go:147): it ignores
+    `?next=`, and Mahaam has no `/dashboard`, so a Google/GitHub sign-in ended on the web's 404 and an app
+    sign-in started in the system browser never got back to `/app-signin`. It also issued the session without
+    checking suspension or 2FA. The guard wraps both routes (`internal/server/oauth_return.go`): the start
+    route keeps a same-origin `next` in an HttpOnly cookie (`mahaam_oauth_next`, path `/api/auth/oauth/`,
+    10 min); the callback's 302 to `/dashboard` is rewritten to `WEB_URL` + that path (or `/`). A suspended
+    account's new session is withdrawn (→ `/login?error=account_suspended`); an account with 2FA gets no
+    session either (→ `/login?error=mfa_required&next=…#mfa_challenge=<challenge>`, finished at
+    `POST /api/auth/2fa/challenge`). A Google/GitHub sign-in counts as the first factor only. The plugin
+    matches accounts by email and does not check Google's `verified_email`.
+
 ## Clients — mobile apps
 
 `apps/mobile` is one Expo codebase (SDK 57, expo-router, TypeScript strict) that ships as two store apps. `APP_VARIANT`
@@ -744,6 +757,28 @@ npm run export:web:client && npm run serve:web -- client  # :8092
 npm run icons                        # regenerate icons and splash from the mark
 ```
 
+- **Sign in with Apple** (iOS, App Store guideline 4.8): `POST /api/auth/apple {identity_token, nonce, name?,
+  device_name?, locale?}`, public, no CSRF (a native call with no cookies), 30 per 15 min per IP. The app makes a
+  random raw nonce, passes `sha256hex(raw)` (expo-crypto `digestStringAsync`, hex) as `nonce` to
+  `AppleAuthentication.signInAsync` with the FULL_NAME and EMAIL scopes, and sends us the token and the RAW nonce.
+  The server checks RS256 against Apple's JWKS (cached, refetched on an unknown `kid` at most every 30 s),
+  `iss`, `aud` ∈ `APPLE_CLIENT_IDS`, `exp`, and `nonce == sha256hex(raw)`; each token is accepted once
+  (`signin_nonces`). The person is Apple's `sub` in `user_identities`; the first time, a matching account is
+  linked only on `email_verified`, else a passwordless account (`!sso`) is made with Apple's name (sent on the
+  first authorization only) and the email marked verified (it may be a private relay address). Answers like
+  login: `{token, user}` (plus `access_token`, a device PAT, when `device_name` is sent), 401 `mfa_required`
+  with a `challenge` for `/api/auth/2fa/challenge`, 403 `account_suspended`; 400 `email_required`, 409
+  `account_exists` (an unverified email that belongs to another account). `TestAppleSignIn`.
+- **Accounts without a password** (Apple, Google, GitHub; `password_hash` `!sso`; App Store 5.1.1(v)):
+  `GET /api/me/profile` carries `has_password`. Where a password account sends `password`, they send
+  `email_code`, from `POST /api/me/reauth/code {locale?}` → 202 `{email, expires_in}` (a six-digit code mailed
+  to the account's address, en/ar; `account_codes` purpose `reauth`: 10 min, 5 tries, one live code, spent by
+  the one action; 5 per 15 min per user). Accepted by `POST /api/me/delete`, `/api/me/email`,
+  `/api/me/2fa/enroll`, `/api/me/2fa/disable`, `/api/me/2fa/recovery-codes`; the 2FA code is still required
+  when 2FA is on, and refusals that need nothing spent (missing 2FA code, sole owner, same address, 2FA already
+  on/off) come before the code is spent. Errors: 403 `reauth_required` (no code sent), 403 `invalid_code`
+  (wrong, expired, used, burned). Password accounts are unchanged, and asking for a code answers 409
+  `has_password`. Setting a password is the forgot/reset flow. `TestPasswordlessAccount`.
 - **Auth**: `POST /api/auth/login` with the double-submit CSRF token (`togo_csrf` cookie + `X-CSRF-Token`). After that,
   every call sends `Authorization: Bearer <jwt>` and `X-Workspace-ID`. The email and password are kept in
   expo-secure-store. On a 401, or when the JWT is about to expire, the client signs in again silently. Concurrent

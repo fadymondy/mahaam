@@ -56,6 +56,8 @@ export function PublicFrame({
           links={[
             { label: t("legal.terms"), href: `/${locale}/legal/terms` },
             { label: t("legal.privacy"), href: `/${locale}/legal/privacy` },
+            { label: t("footer.support"), href: `/${locale}/support` },
+            { label: t("footer.deleteAccount"), href: `/${locale}/delete-account` },
           ]}
           end={
             <>

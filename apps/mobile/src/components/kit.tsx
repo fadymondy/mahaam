@@ -24,12 +24,33 @@ const PROJECT: Record<string, string> = {
 export const projectColor = (c?: string | null) => (c && (c.startsWith("#") ? c : PROJECT[c])) || "#8C3FB5";
 
 /** An API or network error as a sentence the user can act on. */
+/**
+ * What the failed request means, in the person's language. The server's own message is English, so
+ * the statuses a screen expects are named by `hints`:
+ *   login     401/422 → wrong email or password
+ *   code      400/422 → the emailed or authenticator code is wrong or expired
+ *   password  401/403 → the password is wrong
+ *   newPassword 422   → the new password is too short
+ *   email     409     → the address belongs to another account
+ * Network, rate limits (429) and suspended accounts are always translated.
+ */
+export type ErrorHints = { login?: boolean; code?: boolean; password?: boolean; newPassword?: boolean; email?: boolean };
+
 export function useErrorText() {
   const t = useT();
-  return (e: unknown): string => {
+  return (e: unknown, hints: ErrorHints = {}): string => {
     if (e instanceof ApiError) {
       if (e.isNetwork) return t("common.networkError");
       if (e.status === 429) return t("common.rateLimited");
+      const code = (e.body as { code?: string } | undefined)?.code;
+      if (code === "account_suspended") return t("common.suspended");
+      if (code === "invalid_code") return t("common.codeInvalid");
+      if (code === "reauth_required") return t("account.reauth.required");
+      if (hints.login && (e.status === 401 || e.status === 422)) return t("auth.invalid");
+      if (hints.password && (e.status === 401 || e.status === 403)) return t("common.passwordWrong");
+      if (hints.newPassword && e.status === 422) return t("common.passwordShort");
+      if (hints.code && (e.status === 400 || e.status === 422)) return t("common.codeInvalid");
+      if (hints.email && e.status === 409) return t("common.emailTaken");
       return e.message || t("common.error");
     }
     return (e as Error)?.message || t("common.error");

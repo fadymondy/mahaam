@@ -1,11 +1,22 @@
 "use client"
 
 // App sign-in: where the Mahaam desktop and mobile apps send the SYSTEM browser to sign in with
-// Google, GitHub or Apple (RFC 8252 — never an embedded web view). By the time this renders the
-// person is signed in on the web (proxy.ts sent them through login and back). They confirm which
-// app and which account; the API mints a one-time code bound to the app's PKCE challenge
-// (internal/account/appsignin.go) and the browser is sent back to the app's redirect — a loopback
-// port on the desktop, mahaam://auth/callback on a phone — where the app trades it for its token.
+// Google or GitHub (RFC 8252 — never an embedded web view). Apple isn't offered on the web: Sign
+// in with Apple is native, in the iOS app only (POST /api/auth/apple), and never comes here.
+//
+// The app opens /{locale}/app-signin?redirect_uri=…&code_challenge=…&code_challenge_method=S256
+// &state=…[&device=…], or goes straight to /api/auth/oauth/<provider>?next=<that URL>. Either way
+// the person reaches this page signed in on the web:
+//   - signed out, proxy.ts sends them to /{locale}/login?next=<this URL with its query>, and the
+//     login page's Google/GitHub buttons carry that `next` to /api/auth/oauth/<provider>?next=…;
+//     the API keeps it in a cookie and its callback redirects back here (a password sign-in
+//     comes back the same way through router.replace(next));
+//   - with two-factor on, the callback stops at /login?error=mfa_required&next=…#mfa_challenge=…,
+//     the login page asks for the code, then continues here.
+// They confirm which app and which account; the API mints a one-time code bound to the app's PKCE
+// challenge (internal/account/appsignin.go) and the browser is sent back to the app's redirect — a
+// loopback port on the desktop, mahaam://auth/callback on a phone — where the app trades it for
+// its token.
 import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { LaptopIcon, LogOutIcon, SmartphoneIcon } from "lucide-react"

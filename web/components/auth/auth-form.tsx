@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRef, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 
@@ -13,6 +13,7 @@ import {
   FieldLabel,
   Input,
   SignInFlow,
+  TwoFactorChallenge,
   OAuthButtons,
   OAuthDivider,
   PasswordInput,
@@ -28,7 +29,8 @@ import { useDocumentTitle } from "@/lib/title"
 
 type OAuthProvider = { id: string; label: string; href: string }
 
-const KNOWN: Record<string, string> = { google: "Google", github: "GitHub" }
+// Display order: Apple, Google, GitHub (the order the apps use too).
+const KNOWN: Record<string, string> = { apple: "Apple", google: "Google", github: "GitHub" }
 
 /*
   GET /api/auth/methods lists what the togo auth plugin has enabled. Its exact shape is read
@@ -51,7 +53,7 @@ function oauthProviders(data: unknown): OAuthProvider[] {
     let id = ""
     let href = ""
     if (typeof item === "string") {
-      const m = /^(?:oauth[:/])?(google|github)$/i.exec(item)
+      const m = /^(?:oauth[:/])?(apple|google|github)$/i.exec(item)
       if (m) id = m[1].toLowerCase()
     } else if (item && typeof item === "object") {
       const o = item as Record<string, unknown>
@@ -64,7 +66,26 @@ function oauthProviders(data: unknown): OAuthProvider[] {
       out.push({ id, label: KNOWN[id], href: href || `/api/auth/oauth/${id}` })
     }
   }
-  return out
+  return out.sort((a, b) => Object.keys(KNOWN).indexOf(a.id) - Object.keys(KNOWN).indexOf(b.id))
+}
+
+/*
+  Google/GitHub/Apple sign-ins that can't finish come back here (internal/server/oauth_return.go):
+    /login?error=account_suspended
+    /login?error=oauth_failed | account_exists | email_required | oauth_cancelled
+    /login?error=mfa_required&next=<path>#mfa_challenge=<challenge>
+  The provider was only the first factor; the challenge in the fragment is the same one a right
+  password gets, so the page goes straight to the two-factor step. The fragment never reaches a
+  server, and it's stripped from the address bar once read.
+*/
+function oauthErrorKey(code: string | null): string | null {
+  if (code === "account_suspended") return "auth.accountSuspended"
+  if (code === "oauth_failed") return "auth.oauthFailed"
+  if (code === "mfa_required") return "auth.oauthMfaExpired"
+  if (code === "account_exists") return "auth.oauthAccountExists"
+  if (code === "email_required") return "auth.oauthEmailRequired"
+  // oauth_cancelled: they said no at the provider; nothing to explain.
+  return null
 }
 
 const HUB_ERRORS = ["failed", "email_unverified", "account_conflict", "suspended", "no_email", "not_member", "unavailable"]
@@ -86,7 +107,33 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   // A refused CircleXO sign-in comes back as /login?circlexo_error=<code>.
   const hubError = params.get("circlexo_error")
-  const [notice, setNotice] = useState<string | null>(hubError ? hubErrorMessage(t, hubError) : null)
+  const oauthError = mode === "login" ? oauthErrorKey(params.get("error")) : null
+  const [notice, setNotice] = useState<string | null>(() => {
+    if (hubError) return hubErrorMessage(t, hubError)
+    // mfa_required is only an error when no challenge came with it (read below, after mount).
+    return oauthError && oauthError !== "auth.oauthMfaExpired" ? t(oauthError) : null
+  })
+  // A provider sign-in that still needs the second factor: its challenge, from the URL fragment.
+  const [oauthChallenge, setOAuthChallenge] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (mode !== "login" || params.get("error") !== "mfa_required") return
+    const hash = new URLSearchParams(window.location.hash.slice(1))
+    const fromOAuth = hash.get("mfa_challenge")
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search)
+    }
+    // setState in an effect on purpose: the fragment exists only in the browser.
+    if (fromOAuth) {
+      pending.current = fromOAuth
+      setOAuthChallenge(fromOAuth)
+      setNotice(null)
+    } else {
+      setNotice(t("auth.oauthMfaExpired"))
+    }
+    // Once, on arrival; params and t are stable for this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const methods = useSWR("/api/auth/methods", (p: string) => api<unknown>(p), {
     revalidateOnFocus: false,
@@ -102,7 +149,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   // Nasaq's provider buttons: Google / GitHub with their own logos, then CircleXO with its Nasaq brand mark.
   const buttons: NqProvider[] = [
-    ...providers.map((p) => p.id as "google" | "github"),
+    ...providers.map((p) => p.id as "apple" | "google" | "github"),
     ...(hubLogin
       ? [
           {
@@ -166,7 +213,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       await finish()
     } catch (err) {
       // The challenge expired (five minutes) or the password changed: say so; "Change" starts over.
-      if (err instanceof ApiError && err.status === 401) return { error: t("auth.mfaExpired") }
+      if (err instanceof ApiError && err.status === 401) {
+        if (oauthChallenge) {
+          // A provider's challenge can't be restarted here: back to the buttons, with the reason.
+          setOAuthChallenge(null)
+          setNotice(t("auth.oauthMfaExpired"))
+        }
+        return { error: t("auth.mfaExpired") }
+      }
       if (err instanceof ApiError && err.status === 429) return { error: t("auth.mfaLocked") }
       if (err instanceof ApiError && err.status === 400) return { error: t("auth.mfaWrong") }
       return { error: err instanceof ApiError ? err.message : t("common.networkError") }
@@ -191,6 +245,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         {notice ? (
           <Alert tone="danger" data-auth-error>
             {notice}
+            {notice === t("auth.accountSuspended") ? (
+              <>
+                {" "}
+                <Link href={`/${locale}/support`} className="underline underline-offset-4" data-suspended-support>
+                  {t("footer.support")}
+                </Link>
+              </>
+            ) : null}
           </Alert>
         ) : null}
         {mode === "login" && params.get("deleted") ? (
@@ -200,7 +262,30 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           </Alert>
         ) : null}
 
-        {mode === "login" ? (
+        {mode === "login" && oauthChallenge ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground" data-oauth-mfa>
+              {t("auth.oauthMfaHint")}
+            </p>
+            <TwoFactorChallenge
+              data-mfa-form
+              showTrustDevice={false}
+              onSubmit={(v) => flowSecondFactor({ code: v.code, method: v.method })}
+              footer={
+                <button
+                  type="button"
+                  className="text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  onClick={() => {
+                    pending.current = null
+                    setOAuthChallenge(null)
+                  }}
+                >
+                  {t("auth.backToSignIn")}
+                </button>
+              }
+            />
+          </div>
+        ) : mode === "login" ? (
           <SignInFlow
             showRemember={false}
             forgotPassword={

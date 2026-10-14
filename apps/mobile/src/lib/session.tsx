@@ -2,6 +2,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import * as Device from "expo-device";
 import { Platform } from "react-native";
 
 import { MahaamClient, MfaRequired } from "@/api/client";
@@ -12,8 +13,15 @@ import { apiUrl } from "@/config";
 
 let lost: (() => void) | null = null;
 
+/**
+ * This phone's token name, as the devices list shows it ("Mahaam for iOS — iPhone 17 Pro"): every
+ * phone used to be "Mahaam mobile", so a list could not tell them apart or mark this one.
+ */
+export const DEVICE_NAME = `Mahaam for ${Platform.OS === "ios" ? "iOS" : Platform.OS === "android" ? "Android" : "web"} — ${Device.modelName ?? Device.deviceName ?? "phone"}`;
+
 export const client = new MahaamClient({
   baseUrl: apiUrl,
+  deviceName: DEVICE_NAME,
   store: secureStore,
   setCsrfCookie:
     Platform.OS === "web"
@@ -39,6 +47,11 @@ interface SessionCtx {
   signIn(email: string, password: string): Promise<{ mfa?: string }>;
   completeMfa(challenge: string, answer: { code: string } | { recovery_code: string }): Promise<void>;
   register(name: string, email: string, password: string): Promise<void>;
+  /**
+   * A passwordless sign-in (lib/social.ts: Apple, or a provider in the browser). Resolves "mfa"
+   * with the challenge when the account has two-factor on, and {} when the person cancelled.
+   */
+  signInSocial(run: () => Promise<User | null>): Promise<{ mfa?: string; canceled?: boolean }>;
   signOut(): Promise<void>;
   chooseWorkspace(ws: Workspace | null): Promise<void>;
 }
@@ -100,6 +113,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           throw e;
         }
       },
+      async signInSocial(run) {
+        try {
+          const u = await run();
+          if (!u) return { canceled: true };
+          setNotice(null);
+          setUser(u);
+          setStatus("signedIn");
+          return {};
+        } catch (e) {
+          if (e instanceof MfaRequired) return { mfa: e.challenge };
+          throw e;
+        }
+      },
       async completeMfa(challenge, answer) {
         const u = await client.completeMfa(challenge, answer);
         setNotice(null);
@@ -108,6 +134,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       },
       async register(name, email, password) {
         const u = await client.register(name.trim(), email.trim(), password);
+        // The server's sign-up takes only email and password: the name (and the phone's time zone)
+        // go on the profile straight after. A failure here must not undo the new account.
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        await mahaam.me.update({ name: name.trim(), ...(timezone ? { timezone } : {}) }).catch(() => undefined);
         setNotice(null);
         setUser(u);
         setStatus("signedIn");
