@@ -80,7 +80,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     permissions: ["POST_NOTIFICATIONS"],
     // Pulled in by dependencies but never used: audio (image picker), drawing over other apps (dev
     // tooling) and the fingerprint API that USE_BIOMETRIC replaced. Play flags unused permissions.
-    blockedPermissions: ["android.permission.RECORD_AUDIO", "android.permission.SYSTEM_ALERT_WINDOW", "android.permission.USE_FINGERPRINT"],
+    blockedPermissions: [
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.USE_FINGERPRINT",
+      // Play flags legacy storage; the system photo picker needs no permission.
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+    ],
   },
   // Localised InfoPlist strings (the app name and every permission prompt) in English and Arabic.
   // Keep them in step with ios.infoPlist above and the plugin permission strings below.
