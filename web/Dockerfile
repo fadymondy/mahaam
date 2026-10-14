@@ -1,5 +1,5 @@
-# Mahaam web — production Next.js, built in the container (the host Turbopack build trips on
-# the out-of-root symlinks; see the fadymondy.com-v2 memory "Prod build fails silently").
+# Mahaam web — production Next.js, built in the container (the host Turbopack build can trip on
+# out-of-root symlinks).
 # Multi-stage: `next build` with output: "standalone" (next.config.mjs), then a runtime image
 # with only .next/standalone, .next/static and public — no node_modules tree, several times smaller.
 # NOTE: do NOT set NODE_ENV=production before `npm ci` — it drops devDependencies

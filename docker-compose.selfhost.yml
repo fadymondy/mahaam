@@ -1,0 +1,103 @@
+# Self-host Mahaam with one command:
+#
+#   cp .env.selfhost.example .env.selfhost   # fill in the four secrets
+#   docker compose -f docker-compose.selfhost.yml --env-file .env.selfhost up -d --build
+#
+# Then open http://localhost:3010, register, and create a workspace.
+# Put a TLS-terminating reverse proxy in front for anything public and set
+# APP_URL / WEB_URL / CORS_ORIGINS to the public origin and COOKIE_SECURE=1.
+name: mahaam
+
+x-db-env: &db-env
+  # Owner role (migrations, auth, tenant resolution). The postgres superuser is fine here.
+  DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mahaam?sslmode=disable
+  # App role: created by /app/migrate with this password; RLS-enforced, never BYPASSRLS.
+  APP_DATABASE_URL: postgres://mahaam_app:${MAHAAM_APP_DB_PASSWORD:?set MAHAAM_APP_DB_PASSWORD}@db:5432/mahaam?sslmode=disable
+  DB_DRIVER: pgx
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: mahaam
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Schema, app role, constraints and RLS. Idempotent; runs on every `up`.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: mahaam-api
+    command: ["/app/migrate"]
+    environment:
+      <<: *db-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: mahaam-api
+    environment:
+      <<: *db-env
+      APP_ENV: production
+      APP_URL: ${APP_URL:-http://localhost:3010}
+      WEB_URL: ${APP_URL:-http://localhost:3010}
+      CORS_ORIGINS: ${APP_URL:-http://localhost:3010}
+      ADDR: ":8110"
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+      MAHAAM_SECRET_KEY: ${MAHAAM_SECRET_KEY:?set MAHAAM_SECRET_KEY}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+      SESSION_DRIVER: cookie
+      LOCALE: en
+      LOCALE_DIR: lang
+      STORAGE_DIR: storage
+      CACHE_DRIVER: memory
+      MAIL_DRIVER: file
+      PLAN_DEFAULT: ${PLAN_DEFAULT:-unlimited}
+    volumes:
+      - storage:/app/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8110/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: mahaam-web
+    environment:
+      NODE_ENV: production
+      API_ORIGIN: http://api:8110
+    ports:
+      - "${WEB_PORT:-3010}:3010"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3010/en/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  storage:

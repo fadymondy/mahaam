@@ -1,6 +1,6 @@
-# Mahaam PRODUCTION on Proxmox LXC 116 (10.10.10.116). Images built on the
-# workstation and loaded via `docker load` (no registry/GitHub auth needed).
-# NPM host 60 forwards console.mahaam.app (and the old managy-app.fadymondy.com) -> 10.10.10.116:3010 (web).
+# Mahaam PRODUCTION on a single container host. Images are built elsewhere and
+# loaded via `docker load` (no registry auth needed).
+# A reverse proxy in front forwards the public host (e.g. console.mahaam.app) -> <host>:3010 (web).
 # web (next start) proxies /api,/graphql,/embed to the api container.
 name: mahaam-prod
 services:

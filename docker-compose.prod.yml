@@ -1,8 +1,8 @@
-# Mahaam PRODUCTION — persistent local containers on think-station, replacing the
-# dev servers (`go run ./cmd/api`, `next dev`) on the SAME ports so the reverse SSH
-# tunnel + NPM host 60 + Cloudflare path (managy-app.fadymondy.com) is untouched.
+# Mahaam PRODUCTION — persistent containers on one machine, replacing the dev
+# servers (`go run ./cmd/api`, `next dev`) on the SAME ports, so whatever reverse
+# proxy / tunnel already points at :3010 keeps working.
 #
-#   web  127.0.0.1:3010  <- tunnel target (10.10.10.1:4620)
+#   web  127.0.0.1:3010  <- reverse proxy / tunnel target
 #   api  127.0.0.1:8110  <- reachable by the owner on the host; web proxies to it in-network
 #   db   the EXISTING external mahaam-postgres container (host :55460) — NOT recreated here.
 #
