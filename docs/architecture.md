@@ -228,7 +228,7 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
 
 - **Widget** (`embed/src/widget.ts` → `make embed` → `/embed/v1.js`): the feedback-sdk ReportDialog anatomy
   (title · type + priority · details · Attach: Screenshot / Select element / Image · selector · preview) in a Shadow
-  DOM on the grid tokens and the Mahaam brand. Lusail comes from the widget's origin, light/dark follows the host
+  DOM on the grid tokens and the Mahaam brand. Inter and IBM Plex Sans Arabic come from the widget's origin, light/dark follows the host
   (`data-theme` overrides it), and it works in en/ar with RTL. A floating launcher (`data-position`, `data-launcher="false"` +
   `window.MahaamFeedback.open()`) and a "Powered by Mahaam" footer. Capture, picker and diagnostics are the shared
   `web/lib/feedback/core`. The intake now takes `priority`.
@@ -799,7 +799,7 @@ configured, prebuilds (for the native fingerprint), and runs `cmpatch release-re
 Android against the `version` in `app.config.ts`, signing each release. `PATCH_MANDATORY=true` makes
 it a required update. Anything native needs a store build and a new version instead.
 - **Not done yet**: device builds, store submission and remote push notifications. Reminders are local notifications
-  only. The apps use the system font because Lusail ships in the repo only as woff2, with no licence file.
+  only. The apps use the system font because the shared woff2 files are web-only.
 
 ## Clients — tray app and Chrome extension
 

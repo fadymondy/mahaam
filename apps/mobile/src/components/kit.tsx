@@ -72,7 +72,7 @@ export function FullLoading() {
   );
 }
 
-/** The section micro-label (mono uppercase in English, Lusail 11.5 in Arabic). */
+/** The section micro-label (mono uppercase in English, IBM Plex Sans Arabic 11.5 in Arabic). */
 export function Micro({ children, style }: { children: ReactNode; style?: object }) {
   return (
     <AppText variant="micro" style={style}>

@@ -204,8 +204,8 @@ const CSS = LAUNCHER_CSS + `
   --fg: #0e1a3c; --body: #4a4438; --muted: #6e6551; --hover: #efe9dd;
   --action: #8c3fb5; --on-action: #f0ebe1; --brand: #8c3fb5; --accent: #c9a227;
   --danger: #a8233b; --ok: #33702a;
-  --sans: "Lusail", "Alexandria", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", "Lusail", ui-monospace, monospace;
+  --sans: "Inter", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", "IBM Plex Sans Arabic", ui-monospace, monospace;
   font-family: var(--sans); color: var(--fg); font-size: 14px; line-height: 1.5;
 }
 .root.dark {
@@ -291,15 +291,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--action); }
 `
 
 // @font-face does not apply inside a shadow root in every engine; declare the brand
-// face once on the host document, served from the widget's own origin.
+// faces once on the host document, served from the widget's own origin.
 function installFonts(origin: string) {
   if (!origin || document.getElementById("mahaam-feedback-fonts")) return
-  const css = [300, 400, 500]
-    .map((w) => {
-      const file = { 300: "Light", 400: "Regular", 500: "Medium" }[w]
-      return `@font-face{font-family:"Lusail";src:url("${origin}/fonts/lusail/Lusail-${file}.woff2?v=2") format("woff2");font-weight:${w};font-style:normal;font-display:swap}`
-    })
-    .join("")
+  const arabic = "U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC"
+  const latin = "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+  const latinExt = "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+  const inter = (file: string, range: string) =>
+    `@font-face{font-family:"Inter";src:url("${origin}/fonts/inter/${file}.woff2") format("woff2-variations");font-weight:100 900;font-style:normal;font-display:swap;unicode-range:${range}}`
+  const plex = [300, 400, 500].map(
+    (w) =>
+      `@font-face{font-family:"IBM Plex Sans Arabic";src:url("${origin}/fonts/ibm-plex-sans-arabic/IBMPlexSansArabic-${w}.woff2") format("woff2");font-weight:${w};font-style:normal;font-display:swap;unicode-range:${arabic}}`,
+  )
+  const css = [inter("inter-latin-ext-wght-normal", latinExt), inter("inter-latin-wght-normal", latin), ...plex].join("")
   const st = document.createElement("style")
   st.id = "mahaam-feedback-fonts"
   st.textContent = css

@@ -1,7 +1,7 @@
 // Readable type, everywhere (owner request: "make the font size readable as UX everywhere").
 //
 // The rule: nothing a person reads is below 12pt (uppercase micro-labels: 11.5); body and row titles
-// are 15–16 on a phone; meta and secondary text at least 13; Arabic (Lusail) one point up, because
+// are 15–16 on a phone; meta and secondary text at least 13; Arabic (IBM Plex Sans Arabic) one point up, because
 // its glyphs sit smaller than Inter's at the same size.
 //
 // Three layers, all outside the generated grid (src/grid is never edited here):
@@ -11,7 +11,7 @@
 //  2. `fs` below: the sizes Mahaam's own screens use instead of inline numbers.
 //  3. A floor under every <Text>: a few grid blocks hard-code 10.5–11.5 (StackHeader's subtitle,
 //     Meta's items, Field labels, form captions). Those are raised to 12 (11.5 for uppercase
-//     labels; 13 for Lusail in the Arabic UI, where Meta's Arabic items are 12). It never touches
+//     labels; 13 for IBM Plex Sans Arabic in the Arabic UI, where Meta's Arabic items are 12). It never touches
 //     text that is already large enough. Remove it once the grid's own sizes
 //     (fadymondy.com-v2 packages/grid-native) meet the rule.
 //
@@ -59,7 +59,7 @@ export const lh = (size: number) => Math.round(size * (arabicUi ? 1.85 : 1.6));
 
 export const MIN_TEXT = 12;
 export const MIN_UPPERCASE = 11.5;
-/** Lusail in the Arabic UI: the Latin floor plus one. Mono (Latin digits and codes) keeps 12. */
+/** IBM Plex Sans Arabic in the Arabic UI: the Latin floor plus one. Mono (Latin digits and codes) keeps 12. */
 export const MIN_ARABIC = 13;
 
 /**

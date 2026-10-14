@@ -37,7 +37,7 @@ function inline(tokens: Token[] | undefined, ctx: Ctx, key = 'i'): ReactNode[] {
           </Text>
         );
       case 'em':
-        // Lusail ships no italic; Android would swap in its default face mid-sentence. Emphasis is
+        // IBM Plex Sans Arabic ships no italic here; Android would swap in its default face mid-sentence. Emphasis is
         // the brighter text colour instead.
         return (
           <Text key={k} style={{ fontFamily: fonts.regular, color: c.fg }}>

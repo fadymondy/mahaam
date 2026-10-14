@@ -44,7 +44,7 @@ describe("textFloor", () => {
     expect(textFloor([{ fontSize: 11 }, { letterSpacing: 1 }])).toEqual({ fontSize: 12 });
     expect(textFloor({ fontSize: 10.5, textTransform: "uppercase" })).toEqual({ fontSize: 11.5 });
   });
-  it("lifts Lusail one point further in the Arabic UI, but not mono", () => {
+  it("lifts IBM Plex Sans Arabic one point further in the Arabic UI, but not mono", () => {
     expect(textFloor({ fontSize: 12 }, true)).toEqual({ fontSize: 13 });
     expect(textFloor({ fontSize: 12, fontFamily: "JetBrainsMono_400Regular" }, true)).toBeNull();
     expect(textFloor({ fontSize: 11, fontFamily: "JetBrainsMono_400Regular" }, true)).toEqual({ fontSize: 12 });
