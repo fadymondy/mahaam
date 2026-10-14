@@ -6,6 +6,8 @@
 
 **Open-source project management for agencies and product teams: projects, issues, time tracking, invoices, a customer portal, and AI agents that work your board over MCP.**
 
+[![Built with ToGO](https://img.shields.io/badge/built%20with-ToGO-00ADD8?logo=go&logoColor=white)](https://to-go.dev)
+[![ToGO on GitHub](https://img.shields.io/github/stars/togo-framework/togo?label=ToGO&logo=github&style=social)](https://github.com/togo-framework/togo)
 [![CI](https://github.com/fadymondy/mahaam/actions/workflows/ci.yml/badge.svg)](https://github.com/fadymondy/mahaam/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Discord](https://img.shields.io/badge/chat-Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/a59RzxnB2H)
@@ -107,9 +109,33 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#local-setup). In short: `make db migrate a
 | `apps/` | Electron tray app, desktop app, Chrome extension, Expo mobile apps |
 | `embed/` | The embeddable feedback widget (`/embed/v1.js`) |
 
-Built on [ToGO](https://github.com/togo-framework), an API-first Go + React framework. The full
-engineering notebook — tenancy, RLS, time-tracking invariants, MCP scopes and the framework notes —
-is in **[docs/architecture.md](docs/architecture.md)**.
+The full engineering notebook — tenancy, RLS, time-tracking invariants, MCP scopes and the framework notes — is in **[docs/architecture.md](docs/architecture.md)**.
+
+### Built on ToGO
+
+Mahaam is built on **[ToGO](https://to-go.dev)** ([GitHub](https://github.com/togo-framework/togo)), the
+open-source, API-first framework for Go + sqlc + Atlas + GraphQL/OpenAPI + Next.js with a
+Laravel-style CLI. The kernel is small and everything else is a plugin; these are the pieces
+Mahaam uses:
+
+| ToGO piece | What it does in Mahaam |
+|---|---|
+| [Kernel](https://github.com/togo-framework/togo) | Config, the hook/event bus, the plugin registry and server bootstrap |
+| [CLI](https://github.com/togo-framework/cli) | `togo generate` (sqlc → gqlgen → Atlas → OpenAPI), migrations, `togo serve` |
+| [auth](https://github.com/togo-framework/auth) | Sign-in, JWT sessions, roles and API tokens |
+| [auth-oauth](https://github.com/togo-framework/auth-oauth) | Social sign-in |
+| [orm](https://github.com/togo-framework/orm) | Query building in the domain services |
+| [validation](https://github.com/togo-framework/validation) | Laravel-style request validation |
+| [ratelimit](https://github.com/togo-framework/ratelimit) | Throttling for the API and MCP endpoints |
+| [mail](https://github.com/togo-framework/mail) | Transactional email |
+| [import-export](https://github.com/togo-framework/import-export) | CSV and Excel import and export |
+| [scheduler](https://github.com/togo-framework/scheduler) | Recurring jobs over the queue |
+| [queue · cache · storage · realtime · i18n](https://github.com/togo-framework) | Background work, caching, file uploads, live updates and EN/AR |
+| [db-postgres](https://github.com/togo-framework/db-postgres) | The Postgres driver |
+| [faker](https://github.com/togo-framework/faker) | Factories and seed data for tests |
+
+Want the same foundation for your own app? Run `go install github.com/togo-framework/cli@latest && togo new myapp`,
+then read the [ToGO docs](https://to-go.dev/en/docs) and browse the [plugin marketplace](https://to-go.dev/marketplace).
 
 ## Documentation
 
