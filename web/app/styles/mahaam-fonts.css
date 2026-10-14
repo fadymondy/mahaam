@@ -1,25 +1,30 @@
-/* Repo-owned: font files for Nasaq's font stacks (--nq-font-sans starts with Inter, --nq-font-arabic with
-   Lusail, --nq-font-mono with JetBrains Mono). Nasaq ships no @font-face, so the app serves them. */
+/* Repo-owned: font files for Nasaq's font stacks (--nq-font-sans starts with Inter, --nq-font-mono with
+   JetBrains Mono). Nasaq ships no @font-face, so the app serves them. Arabic is IBM Plex Sans Arabic
+   (SIL OFL); --nq-font-arabic is pinned to it below so no stack depends on a font that is not served. */
+
+:root {
+  --nq-font-arabic: "IBM Plex Sans Arabic", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
 
 @font-face {
-  font-family: "Lusail";
-  src: url("./fonts/Lusail-Light.woff2") format("woff2");
+  font-family: "IBM Plex Sans Arabic";
+  src: url("./fonts/IBMPlexSansArabic-300.woff2") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Lusail";
-  src: url("./fonts/Lusail-Medium.woff2") format("woff2");
+  font-family: "IBM Plex Sans Arabic";
+  src: url("./fonts/IBMPlexSansArabic-500.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Lusail";
-  src: url("./fonts/Lusail-Regular.woff2") format("woff2");
+  font-family: "IBM Plex Sans Arabic";
+  src: url("./fonts/IBMPlexSansArabic-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;

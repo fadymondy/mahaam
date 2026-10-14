@@ -1,4 +1,4 @@
-// Inter for the English UI; Arabic stays in Lusail (the grid's face for both scripts).
+// Inter for the English UI; Arabic stays in IBM Plex Sans Arabic (the grid's face for both scripts).
 //
 // The grid (src/grid, generated — never edited here) names its faces in one constant, `fonts`,
 // read at render time everywhere. English is always left-to-right and a language switch reloads

@@ -90,13 +90,13 @@ export function palettesFor(app: Pick<GridApp, 'mark' | 'action' | 'onAction'>):
   return { dark: make('dark'), light: make('light') };
 }
 
-// Lusail carries Arabic and Latin. It ships no 600, and 700 is banned by the design, so 600
-// headings use Medium.
+// IBM Plex Sans Arabic carries Arabic and Latin. 600 and 700 exceed the design's weight ceiling
+// (500), so 600 headings use Medium.
 export const fonts = {
-  light: 'Lusail-Light',
-  regular: 'Lusail-Regular',
-  medium: 'Lusail-Medium',
-  semibold: 'Lusail-Medium',
+  light: 'IBMPlexSansArabic-Light',
+  regular: 'IBMPlexSansArabic-Regular',
+  medium: 'IBMPlexSansArabic-Medium',
+  semibold: 'IBMPlexSansArabic-Medium',
   mono: 'JetBrainsMono_400Regular',
   monoMedium: 'JetBrainsMono_500Medium',
 } as const;

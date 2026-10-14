@@ -213,7 +213,7 @@ export function AwaitNote({ text }: { text: string }) {
 }
 
 // Meta items separated by 3px dots. Dates, counts and codes are mono; an item written in Arabic
-// (a category, a branch name) is set in Lusail instead — Arabic is never mono.
+// (a category, a branch name) is set in IBM Plex Sans Arabic instead — Arabic is never mono.
 const ARABIC = /[؀-ۿݐ-ݿࢠ-ࣿ]/;
 
 export function Meta({ items }: { items: string[] }) {

@@ -3,14 +3,15 @@
 import { JetBrainsMono_400Regular, JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono';
 import { useFonts } from 'expo-font';
 
-// Lusail carries Arabic and Latin; JetBrains Mono is for meta, counts, dates, paths and Latin
-// micro-labels only. The sync script copies the Lusail files into the app's assets and rewrites
-// the paths below to point at them.
+// IBM Plex Sans Arabic carries Arabic and Latin (React Native cannot fall back per glyph, so one
+// face sets both); JetBrains Mono is for meta, counts, dates, paths and Latin micro-labels only.
+// The sync script copies the Plex files (and their OFL) into the app's assets and rewrites the
+// paths below to point at them.
 export function useGridFonts() {
   const [loaded] = useFonts({
-    'Lusail-Light': require('../../assets/fonts/Lusail-Light.ttf'),
-    'Lusail-Regular': require('../../assets/fonts/Lusail-Regular.ttf'),
-    'Lusail-Medium': require('../../assets/fonts/Lusail-Medium.ttf'),
+    'IBMPlexSansArabic-Light': require('../../assets/fonts/IBMPlexSansArabic-Light.ttf'),
+    'IBMPlexSansArabic-Regular': require('../../assets/fonts/IBMPlexSansArabic-Regular.ttf'),
+    'IBMPlexSansArabic-Medium': require('../../assets/fonts/IBMPlexSansArabic-Medium.ttf'),
     JetBrainsMono_400Regular,
     JetBrainsMono_500Medium,
   });
