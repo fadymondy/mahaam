@@ -3,10 +3,12 @@ package work
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/limits"
@@ -39,6 +41,10 @@ func visibleClause(s *tenant.Scope, args *[]any) string {
 	return roleVisibleClause(s, args)
 }
 
+// VisibleProjectsSQL is visibleClause for packages outside work (the issue tracker in
+// internal/reports): a predicate over `projects p`, its parameters appended to args.
+func VisibleProjectsSQL(s *tenant.Scope, args *[]any) string { return visibleClause(s, args) }
+
 func roleVisibleClause(s *tenant.Scope, args *[]any) string {
 	if atLeast(s, authz.Manager) {
 		return "TRUE"
@@ -49,8 +55,8 @@ func roleVisibleClause(s *tenant.Scope, args *[]any) string {
 	// account is a contact of — nothing wider, and project_members/teams never apply.
 	// A customer (client role) sees the projects of the client record they are a portal
 	// contact of, plus any project they were added to directly or through a team — the
-	// way a manager naturally "gives the customer access to the project". Tasks stay
-	// hidden either way (authz.TasksRead is member+); the portal shows aggregates only.
+	// way a manager naturally "gives the customer access to the project". On those
+	// projects they work tasks and issues like a member (MH-1176).
 	if !atLeast(s, authz.Member) {
 		return fmt.Sprintf(`((p.client_id IS NOT NULL AND EXISTS (
 			SELECT 1 FROM client_contacts cc
@@ -103,7 +109,7 @@ func taskClause(s *tenant.Scope, args *[]any) string {
 		return "TRUE"
 	}
 	if !atLeast(s, authz.Member) {
-		return visibleClause(s, args) // clients never read tasks (authz.TasksRead); kept for completeness
+		return visibleClause(s, args) // a customer: every task of the projects they can see (MH-1176)
 	}
 	*args = append(*args, s.UserID)
 	u := len(*args)
@@ -126,27 +132,28 @@ func hasFullAccess(ctx context.Context, q querier, s *tenant.Scope, projectID st
 
 // Project is a project as listed.
 type Project struct {
-	ID            string     `json:"id"`
-	Name          string     `json:"name"`
-	Description   *string    `json:"description"`
-	Color         string     `json:"color"`
-	Status        string     `json:"status" enum:"planned,active,on_hold,completed,cancelled" doc:"planned, active, on_hold, completed, cancelled"`
-	BillingMode   string     `json:"billing_mode" enum:"non_billable,hourly,fixed" doc:"non_billable, hourly, fixed"`
-	BudgetMinutes *int64     `json:"budget_minutes"`
-	BudgetMinor   *int64     `json:"budget_minor" doc:"Budget in minor units of currency"`
-	Currency      *string    `json:"currency"`
-	Visibility    string     `json:"visibility" doc:"workspace (every member) or members (only people on the project)"`
-	StartsOn      *string    `json:"starts_on" doc:"YYYY-MM-DD"`
-	EndsOn        *string    `json:"ends_on" doc:"YYYY-MM-DD"`
-	ArchivedAt    *time.Time `json:"archived_at"`
-	ClientID      *string    `json:"client_id"`
-	ClientName    *string    `json:"client_name"`
-	CreatedBy     string     `json:"created_by"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	Tasks         TaskCounts `json:"tasks"`
-	MemberCount   int        `json:"member_count"`
-	Avatar        *string    `json:"avatar" doc:"data: URL of the project's image; null = coloured initials"`
+	ID             string     `json:"id"`
+	Name           string     `json:"name"`
+	Description    *string    `json:"description"`
+	Color          string     `json:"color"`
+	Status         string     `json:"status" enum:"planned,active,on_hold,completed,cancelled" doc:"planned, active, on_hold, completed, cancelled"`
+	BillingMode    string     `json:"billing_mode" enum:"non_billable,hourly,fixed" doc:"non_billable, hourly, fixed"`
+	BudgetMinutes  *int64     `json:"budget_minutes"`
+	BudgetMinor    *int64     `json:"budget_minor" doc:"Budget in minor units of currency"`
+	Currency       *string    `json:"currency"`
+	Visibility     string     `json:"visibility" doc:"workspace (every member) or members (only people on the project)"`
+	StartsOn       *string    `json:"starts_on" doc:"YYYY-MM-DD"`
+	EndsOn         *string    `json:"ends_on" doc:"YYYY-MM-DD"`
+	ArchivedAt     *time.Time `json:"archived_at"`
+	ClientID       *string    `json:"client_id"`
+	ClientName     *string    `json:"client_name"`
+	CreatedBy      string     `json:"created_by"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	Tasks          TaskCounts `json:"tasks"`
+	MemberCount    int        `json:"member_count"`
+	LastActivityAt *time.Time `json:"last_activity_at,omitempty" doc:"when anything last happened in the project (newest of its activity log, tasks and issues); list only"`
+	Avatar         *string    `json:"avatar" doc:"data: URL of the project's image; null = coloured initials"`
 	// Issues counts the project's items by issue status (the board's columns); only in lists.
 	Issues map[string]int `json:"issues,omitempty" doc:"Items per status: backlog, todo, in_progress, waiting_approval, in_review, done"`
 	// What the project's customer sees in the portal (19c_portal_share.sql).
@@ -304,7 +311,33 @@ func (sv *Service) ListProjects(ctx context.Context, f ProjectFilter) ([]Project
 		}
 		out[at[pid]].Issues[st] = n
 	}
-	return out, cr.Err()
+	if err := cr.Err(); err != nil {
+		return nil, err
+	}
+	cr.Close()
+	// Last activity per project, for "most recently active first" views: the newest of its activity
+	// log, its tasks and its issues — an issue edited outside /api/w (portal, agents, the widget)
+	// leaves no activity row but still counts.
+	lr, err := sv.DB.QueryContext(ctx, `SELECT project_id, max(at) FROM (
+		SELECT project_id, max(created_at) AS at FROM activity_logs WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id
+		UNION ALL
+		SELECT project_id, max(updated_at) FROM tasks WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id
+		UNION ALL
+		SELECT project_id, max(updated_at) FROM reports WHERE workspace_id = $1 AND project_id = ANY($2) GROUP BY project_id
+	) x GROUP BY project_id`, s.WorkspaceID, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer lr.Close()
+	for lr.Next() {
+		var pid string
+		var t time.Time
+		if err := lr.Scan(&pid, &t); err != nil {
+			return nil, err
+		}
+		out[at[pid]].LastActivityAt = &t
+	}
+	return out, lr.Err()
 }
 
 // FindProject resolves an id or an exact name (case-insensitive) — for MCP callers.
@@ -606,8 +639,9 @@ func (sv *Service) CreateProject(ctx context.Context, in ProjectInput) (*Project
 			return err
 		}
 		for i, st := range names {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage)
-				VALUES ($1, $2, $3, $4, $5, $6, $7)`, s.WorkspaceID, id, st[0], defaultStatusColors[i], st[1], float64(i+1)*1024, st[2]); err != nil {
+			labels, _ := json.Marshal(map[string]string{"en": defaultStatuses["en"][i][0], "ar": defaultStatuses["ar"][i][0]})
+			if _, err := tx.ExecContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage, labels)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, s.WorkspaceID, id, st[0], defaultStatusColors[i], st[1], float64(i+1)*1024, st[2], string(labels)); err != nil {
 				return err
 			}
 		}
@@ -615,11 +649,22 @@ func (sv *Service) CreateProject(ctx context.Context, in ProjectInput) (*Project
 			s.WorkspaceID, id, s.UserID); err != nil {
 			return err
 		}
+		// A project-scoped MCP token would not see the project it just made (GetProject below
+		// answered "project not found" after the commit), so the token gains it.
+		if len(s.ProjectIDs) > 0 && s.TokenID != "" {
+			if _, err := tx.ExecContext(ctx, `UPDATE mcp_tokens SET project_ids = (project_ids::jsonb || to_jsonb($3::text))::text,
+				updated_at = now() WHERE workspace_id = $1 AND id = $2`, s.WorkspaceID, s.TokenID, id); err != nil {
+				return err
+			}
+		}
 		delete(p.changes, "created_by")
 		return record(ctx, tx, s, entry{ProjectID: id, Action: "project.created", SubjectType: "project", SubjectID: id, Changes: p.changes})
 	})
 	if err != nil {
 		return nil, err
+	}
+	if len(s.ProjectIDs) > 0 {
+		s.ProjectIDs = append(s.ProjectIDs[:len(s.ProjectIDs):len(s.ProjectIDs)], id)
 	}
 	return sv.GetProject(ctx, id)
 }
@@ -823,23 +868,30 @@ func (sv *Service) teamLink(ctx context.Context, projectID, teamID string, attac
 
 // Status is a kanban column of a project.
 type Status struct {
-	ID        string  `json:"id"`
-	ProjectID string  `json:"project_id"`
-	Name      string  `json:"name"`
-	Color     string  `json:"color"`
-	Category  string  `json:"category" doc:"todo, doing or done"`
-	Stage     string  `json:"stage" doc:"Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review or done"`
-	Position  float64 `json:"position"`
-	TaskCount int     `json:"task_count"`
+	ID        string            `json:"id"`
+	ProjectID string            `json:"project_id"`
+	Name      string            `json:"name"`
+	Color     string            `json:"color"`
+	Category  string            `json:"category" doc:"todo, doing or done"`
+	Stage     string            `json:"stage" doc:"Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review or done"`
+	Labels    map[string]string `json:"labels" doc:"The column's name per locale (en, ar); name is the fallback"`
+	Icon      string            `json:"icon" doc:"Lucide icon name; empty means the stage's default icon"`
+	Position  float64           `json:"position"`
+	TaskCount int               `json:"task_count"`
 }
 
-const statusCols = `st.id, st.project_id, st.name, st.color, st.category, COALESCE(st.stage, CASE st.category WHEN 'doing' THEN 'in_progress' WHEN 'done' THEN 'done' ELSE 'todo' END), st.position,
+const statusCols = `st.id, st.project_id, st.name, st.color, st.category, COALESCE(st.stage, CASE st.category WHEN 'doing' THEN 'in_progress' WHEN 'done' THEN 'done' ELSE 'todo' END), st.labels, COALESCE(st.icon, ''), st.position,
 	(SELECT count(*) FROM tasks t WHERE t.workspace_id = st.workspace_id AND t.status_id = st.id)`
 
 func scanStatus(r scanner) (*Status, error) {
 	st := &Status{}
-	err := r.Scan(&st.ID, &st.ProjectID, &st.Name, &st.Color, &st.Category, &st.Stage, &st.Position, &st.TaskCount)
-	return st, err
+	var labels []byte
+	if err := r.Scan(&st.ID, &st.ProjectID, &st.Name, &st.Color, &st.Category, &st.Stage, &labels, &st.Icon, &st.Position, &st.TaskCount); err != nil {
+		return st, err
+	}
+	st.Labels = map[string]string{}
+	_ = json.Unmarshal(labels, &st.Labels)
+	return st, nil
 }
 
 func listStatuses(ctx context.Context, q querier, ws, projectID string) ([]Status, error) {
@@ -884,6 +936,51 @@ type StatusInput struct {
 	Category *string `json:"category,omitempty" enum:"todo,doing,done"`
 	Stage    *string `json:"stage,omitempty" enum:"backlog,todo,in_progress,waiting_approval,in_review,done" doc:"Workflow stage; sets the category too"`
 	Index    *int    `json:"index,omitempty" minimum:"0"`
+	// Labels replaces the per-locale names (en, ar); an empty value drops that locale.
+	Labels map[string]string `json:"labels,omitempty" doc:"The column's name per locale: en, ar"`
+	Icon   *string           `json:"icon,omitempty" doc:"Lucide icon name (see StatusIcons); empty resets to the stage's default"`
+}
+
+// StatusLocales are the locales a column can be labelled in.
+var StatusLocales = []string{"en", "ar"}
+
+// StatusIcons are the icons a column can show (lucide names, the web's allow-list).
+var StatusIcons = []string{
+	"inbox", "list-todo", "circle", "circle-dashed", "circle-dot", "circle-pause", "circle-ellipsis", "loader", "timer", "hourglass", "pause",
+	"eye", "search-check", "shield-check", "circle-check", "check-check", "flag", "rocket", "bug", "sparkles",
+	"star", "archive", "ban", "clipboard-list", "message-square", "git-pull-request", "test-tube", "package",
+}
+
+// statusLabels validates per-locale names: known locales only, each at most 60 characters; blanks drop out.
+func statusLabels(in map[string]string) ([]byte, map[string]string, error) {
+	out := map[string]string{}
+	for k, v := range in {
+		k = strings.ToLower(strings.TrimSpace(k))
+		if err := oneOf("labels locale", k, StatusLocales...); err != nil {
+			return nil, nil, err
+		}
+		v = strings.TrimSpace(v)
+		if utf8.RuneCountInString(v) > 60 {
+			return nil, nil, invalid("the %s label is longer than 60 characters", k)
+		}
+		if v != "" {
+			out[k] = v
+		}
+	}
+	b, err := json.Marshal(out)
+	return b, out, err
+}
+
+// statusIcon validates an icon name; "" clears it (NULL).
+func statusIcon(in string) (any, error) {
+	in = strings.ToLower(strings.TrimSpace(in))
+	if in == "" {
+		return nil, nil
+	}
+	if err := oneOf("icon", in, StatusIcons...); err != nil {
+		return nil, err
+	}
+	return in, nil
 }
 
 func loadStatus(ctx context.Context, q querier, s *tenant.Scope, id string) (*Status, *Project, error) {
@@ -915,9 +1012,25 @@ func (sv *Service) CreateStatus(ctx context.Context, projectID string, in Status
 	if err := requireManage(ctx, sv.DB, s, p.ID); err != nil {
 		return nil, err
 	}
+	labels, labelMap, err := statusLabels(in.Labels)
+	if err != nil {
+		return nil, err
+	}
 	name, _ := trimmed(in.Name)
+	if name == "" { // a column labelled only per locale takes its English (else any) label as its name
+		name = labelMap["en"]
+		if name == "" {
+			name = labelMap["ar"]
+		}
+	}
 	if name == "" {
 		return nil, invalid("a status needs a name")
+	}
+	var icon any
+	if in.Icon != nil {
+		if icon, err = statusIcon(*in.Icon); err != nil {
+			return nil, err
+		}
 	}
 	cat := "doing"
 	if v, ok := trimmed(in.Category); ok && v != "" {
@@ -939,9 +1052,9 @@ func (sv *Service) CreateStatus(ctx context.Context, projectID string, in Status
 	}
 	var id string
 	err = sv.tx(ctx, func(tx *sql.Tx) error {
-		if err := tx.QueryRowContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage)
-			VALUES ($1, $2, $3, $4, $5, (SELECT COALESCE(MAX(position), 0) + 1024 FROM task_statuses WHERE workspace_id = $1 AND project_id = $2), $6)
-			RETURNING id`, s.WorkspaceID, p.ID, name, color, cat, stage).Scan(&id); err != nil {
+		if err := tx.QueryRowContext(ctx, `INSERT INTO task_statuses (workspace_id, project_id, name, color, category, position, stage, labels, icon)
+			VALUES ($1, $2, $3, $4, $5, (SELECT COALESCE(MAX(position), 0) + 1024 FROM task_statuses WHERE workspace_id = $1 AND project_id = $2), $6, $7, $8)
+			RETURNING id`, s.WorkspaceID, p.ID, name, color, cat, stage, string(labels), icon).Scan(&id); err != nil {
 			return err
 		}
 		return record(ctx, tx, s, entry{ProjectID: p.ID, Action: "status.created", SubjectType: "status", SubjectID: id,
@@ -981,6 +1094,21 @@ func (sv *Service) UpdateStatus(ctx context.Context, id string, in StatusInput) 
 			return nil, err
 		}
 		pt.set("color", c)
+	}
+	if in.Labels != nil {
+		b, m, err := statusLabels(in.Labels)
+		if err != nil {
+			return nil, err
+		}
+		pt.set("labels", string(b))
+		pt.changes["labels"] = m // the activity log shows the map, not the JSON bytes
+	}
+	if in.Icon != nil {
+		icon, err := statusIcon(*in.Icon)
+		if err != nil {
+			return nil, err
+		}
+		pt.set("icon", icon)
 	}
 	if v, ok := trimmed(in.Category); ok && v != st.Category {
 		if err := oneOf("category", v, "todo", "doing", "done"); err != nil {

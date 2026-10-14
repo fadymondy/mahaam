@@ -2,9 +2,8 @@
 
 import Link from "next/link"
 
-import { Button } from "@/components/ui/button"
-import { CubeMark } from "@/components/brand/cube-mark"
-import { MAHAAM_MARK } from "@/lib/brand/mark"
+import { Button, ProductMark } from "@fadymondy/nasaq/web"
+
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
 
@@ -25,11 +24,11 @@ export function NotFoundState({
 
   return (
     <div className="flex flex-col items-center gap-4 px-6 py-20 text-center">
-      <CubeMark mark={MAHAAM_MARK} size={40} />
-      <p className="grid-micro">404</p>
-      <h1 className="grid-title text-2xl">{title ?? t("notFound.title")}</h1>
-      <p className="grid-body max-w-md text-sm">{body ?? t("notFound.body")}</p>
-      <Button variant="outline" nativeButton={false} render={<Link href={backHref ?? `/${locale}/workspaces`} />}>
+      <ProductMark brand="mahaam" size={40} title="" />
+      <p className="text-eyebrow uppercase">404</p>
+      <h1 className="text-h2 text-2xl">{title ?? t("notFound.title")}</h1>
+      <p className="text-body text-nq-fg-body max-w-md text-sm">{body ?? t("notFound.body")}</p>
+      <Button variant="secondary" nativeButton={false} render={<Link href={backHref ?? `/${locale}/workspaces`} />}>
         {backLabel ?? t("notFound.back")}
       </Button>
     </div>

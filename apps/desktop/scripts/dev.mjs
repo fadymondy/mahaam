@@ -8,7 +8,11 @@ const url = server.resolvedUrls.local[0];
 const main = spawn(process.execPath, ["scripts/build-main.mjs", "--watch"], { stdio: "inherit" });
 await new Promise((r) => setTimeout(r, 800));
 const { ELECTRON_RUN_AS_NODE: _drop, ...env } = process.env;
-const electron = spawn(process.platform === "win32" ? "npx.cmd" : "npx", ["electron", ".", ...process.argv.slice(2)], {
+// The electron package's default export is the path of its binary. Spawning that directly works
+// everywhere; spawning npx.cmd fails with EINVAL on Windows under Node >= 18.20.2, which refuses
+// .cmd files without a shell (CVE-2024-27980).
+const { default: electronPath } = await import("electron");
+const electron = spawn(electronPath, [".", ...process.argv.slice(2)], {
   stdio: "inherit",
   env: { ...env, MAHAAM_DEV_URL: url },
 });

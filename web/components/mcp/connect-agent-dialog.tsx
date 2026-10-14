@@ -4,15 +4,18 @@
 // client the user runs — Claude Code, Claude Desktop, Cursor, or any other MCP client that
 // speaks streamable-HTTP with a bearer header. Opened from the header (any workspace member who
 // can hold a token) and from Settings → MCP tokens (the token list's "New token" button).
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, type ReactNode } from "react"
 import { CheckIcon, TriangleAlertIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button, Checkbox, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+import { FormError, FormHint } from "@/components/form-text"
+
+
+
+
+
 import { CopyField, Ltr } from "@/components/copy-field"
+import { AgentKitGuide } from "@/components/mcp/agent-kit-guide"
 import { LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError, type McpToken } from "@/lib/api"
@@ -20,45 +23,44 @@ import { useTranslations } from "@/lib/i18n"
 import { useMcpTokens } from "@/lib/queries"
 import { useProjects } from "@/lib/work"
 
-export const MCP_ORIGIN = process.env.NEXT_PUBLIC_MCP_ORIGIN ?? "http://localhost:8110"
+import { MCP_ORIGIN } from "@/lib/mcp-origin"
+
+export { MCP_ORIGIN }
 
 const EXPIRY = ["30", "90", "365", "never"] as const
 // A broad default so "Connect" works without making someone read the scope list first; they can
 // still mint a narrower token from Settings → MCP tokens.
 const DEFAULT_SCOPES = ["projects:read", "tasks:read", "tasks:write", "issues:read", "issues:write", "time:read", "time:write"]
 
-export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated?: () => void }) {
+/**
+ * The token form on its own: name, scopes (a broad default unless "pick scopes"), projects and expiry.
+ * The dialog and the header's connect side-over both mint through it.
+ */
+export function TokenForm({ onMinted, onCancel, header, kit = true }: { onMinted: (plaintext: string) => void; onCancel: () => void; header?: ReactNode; kit?: boolean }) {
   const { t } = useTranslations()
   const ws = useWorkspace()
-  const tokens = useMcpTokens(open ? ws.id : null)
+  const tokens = useMcpTokens(ws.id)
   const [name, setName] = useState("")
-  const [chosen, setChosen] = useState<string[]>([])
+  // null until the first change: the broad default stays ticked, so "Connect" works without picking.
+  const [picked, setPicked] = useState<string[] | null>(null)
   const [projectIds, setProjectIds] = useState<string[]>([])
   const [expiry, setExpiry] = useState<string>("90")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [plaintext, setPlaintext] = useState<string | null>(null)
-  const [advanced, setAdvanced] = useState(false)
   const projects = useProjects(ws.id)
 
   // A customer sees only the scopes their role can hold; staff see the whole list (disallowed
   // ones greyed, so the hierarchy is visible when picking scopes for someone else's token).
   const scopes = (tokens.data?.scopes ?? []).filter((s) => s.allowed || ws.can("members:read"))
+  const defaults = scopes.filter((s) => s.allowed && DEFAULT_SCOPES.includes(s.scope)).map((s) => s.scope)
+  const chosen = picked ?? defaults
+  const setChosen = (next: string[] | ((prev: string[]) => string[])) => setPicked(typeof next === "function" ? next(chosen) : next)
+  const allowedScopes = scopes.filter((s) => s.allowed).map((s) => s.scope)
+  // Scopes are "area:action"; one group per area, in first-seen order.
+  const scopeGroups = [...Map.groupBy(scopes, (s) => s.scope.split(":")[0]).entries()]
+  const projectList = projects.data?.projects ?? []
   const expiryItems = EXPIRY.map((v) => ({ value: v, label: v === "never" ? t("mcp.expiryNever") : t("mcp.expiryDays", { n: v }) }))
 
-  function reset() {
-    setName("")
-    setChosen([])
-    setProjectIds([])
-    setExpiry("90")
-    setError(null)
-    setPlaintext(null)
-    setAdvanced(false)
-  }
-  function handleOpenChange(next: boolean) {
-    onOpenChange(next)
-    if (!next) reset()
-  }
   function toggle(scope: string, on: boolean) {
     setChosen((prev) => (on ? [...prev, scope] : prev.filter((s) => s !== scope)))
   }
@@ -66,7 +68,7 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    const wanted = advanced ? chosen : scopes.filter((s) => s.allowed && DEFAULT_SCOPES.includes(s.scope)).map((s) => s.scope)
+    const wanted = chosen
     if (wanted.length === 0) {
       setError(t("mcp.pickScope"))
       return
@@ -75,10 +77,9 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
     try {
       const body: Record<string, unknown> = { name: name.trim() || t("mcp.connectDefaultName"), scopes: wanted }
       if (expiry !== "never") body.expires_in_days = Number(expiry)
-      if (advanced && projectIds.length > 0) body.projects = projectIds
+      if (projectIds.length > 0) body.projects = projectIds
       const res = await api<{ token: McpToken; plaintext: string }>("/api/w/mcp_tokens", { json: body, workspaceId: ws.id })
-      setPlaintext(res.plaintext)
-      onCreated?.()
+      onMinted(res.plaintext)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("common.networkError"))
     } finally {
@@ -86,121 +87,168 @@ export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: bo
     }
   }
 
+  if (tokens.isLoading) return <LoadingRows rows={3} />
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      {header}
+      {kit ? (
+        <details className="rounded-card border border-border bg-card p-3">
+          <summary className="cursor-pointer text-sm font-medium text-foreground">{t("mcp.kitTitle")}</summary>
+          <div className="pt-3">
+            <AgentKitGuide />
+          </div>
+        </details>
+      ) : null}
+      <div className="flex flex-col gap-4">
+        <Field>
+          <FieldLabel htmlFor="ca-name">{t("mcp.name")}</FieldLabel>
+          <Input id="ca-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("mcp.connectDefaultName")} />
+        </Field>
+
+          <fieldset className="flex flex-col gap-2" data-scope-groups>
+            <div className="flex items-center justify-between gap-2">
+              <legend className="text-label font-medium">{t("mcp.scopes")}</legend>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                <Checkbox
+                  checked={allowedScopes.length > 0 && chosen.length === allowedScopes.length}
+                  indeterminate={chosen.length > 0 && chosen.length < allowedScopes.length}
+                  onCheckedChange={(on) => setChosen(on ? allowedScopes : [])}
+                />
+                {t("mcp.selectAll")}
+              </label>
+            </div>
+            <FormHint>{t("mcp.scopesHint")}</FormHint>
+            <div className="max-h-80 divide-y divide-line overflow-y-auto rounded-card border border-border">
+              {scopeGroups.map(([group, items]) => {
+                const pickable = items.filter((s) => s.allowed).map((s) => s.scope)
+                const picked = pickable.filter((x) => chosen.includes(x)).length
+                return (
+                  <div key={group} data-scope-group={group}>
+                    <label className="sticky top-0 z-10 flex cursor-pointer items-center gap-3 bg-muted px-3 py-2">
+                      <Checkbox
+                        disabled={pickable.length === 0}
+                        checked={pickable.length > 0 && picked === pickable.length}
+                        indeterminate={picked > 0 && picked < pickable.length}
+                        onCheckedChange={(on) => setChosen((prev) => (on ? [...new Set([...prev, ...pickable])] : prev.filter((x) => !pickable.includes(x))))}
+                      />
+                      <span dir="ltr" className="ltr-isolate flex-1 font-mono text-xs font-semibold text-foreground">
+                        {group}
+                      </span>
+                      <span className="text-caption text-muted-foreground tabular-nums" dir="ltr">
+                        {picked}/{pickable.length}
+                      </span>
+                    </label>
+                    <ul className="divide-y divide-line">
+                      {items.map((s) => (
+                        <li key={s.scope} className={s.allowed ? "" : "bg-muted/50"}>
+                          <label className={`flex items-start gap-3 py-2 ps-9 pe-3 ${s.allowed ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                            <Checkbox className="mt-0.5" disabled={!s.allowed} checked={chosen.includes(s.scope)} onCheckedChange={(on) => toggle(s.scope, on)} />
+                            <span className="min-w-0">
+                              <span dir="ltr" className="ltr-isolate block font-mono text-xs text-foreground">
+                                {s.scope.slice(group.length + 1) || s.scope}
+                              </span>
+                              <span className="block text-sm text-nq-fg-body">{s.description}</span>
+                            </span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })}
+            </div>
+          </fieldset>
+
+          <Field>
+            <FieldLabel>{t("mcp.projects")}</FieldLabel>
+            <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
+            <ul className="max-h-48 divide-y divide-line overflow-y-auto rounded-card border border-border">
+              <li className="sticky top-0 z-10 bg-muted">
+                <label className="flex cursor-pointer items-center gap-3 px-3 py-2">
+                  <Checkbox checked={projectIds.length === 0} onCheckedChange={(on) => on && setProjectIds([])} />
+                  <span className="flex-1 text-sm font-medium text-foreground">{t("mcp.allProjects")}</span>
+                  <span className="text-caption text-muted-foreground">{t("mcp.allProjectsHint")}</span>
+                </label>
+              </li>
+              {projectList.map((p) => (
+                <li key={p.id}>
+                  <label className="flex cursor-pointer items-center gap-3 py-2 ps-9 pe-3">
+                    <Checkbox
+                      checked={projectIds.length === 0 || projectIds.includes(p.id)}
+                      onCheckedChange={(on) =>
+                        setProjectIds((prev) => {
+                          // From "all", unticking one keeps every other project.
+                          const base = prev.length === 0 ? projectList.map((x) => x.id) : prev
+                          const next = on ? [...base, p.id] : base.filter((x) => x !== p.id)
+                          return next.length === projectList.length ? [] : next
+                        })
+                      }
+                    />
+                    <span className="truncate text-sm text-nq-fg-body" dir="auto">
+                      {p.name}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </Field>
+
+        <Field>
+          <FieldLabel htmlFor="ca-expiry">{t("mcp.expiry")}</FieldLabel>
+          <Select items={expiryItems} value={expiry} onValueChange={(v) => setExpiry(String(v ?? "90"))}>
+            <SelectTrigger id="ca-expiry" className="w-full sm:w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {expiryItems.map((e) => (
+                <SelectItem key={e.value} value={e.value}>
+                  {e.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        {error ? <FormError>{error}</FormError> : null}
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          {t("common.cancel")}
+        </Button>
+        <Button variant="primary" type="submit" disabled={busy}>
+          {busy ? t("common.working") : t("mcp.connectGo")}
+        </Button>
+      </DialogFooter>
+    </form>
+  )
+}
+
+export function ConnectAgentDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated?: () => void }) {
+  const { t } = useTranslations()
+  const [plaintext, setPlaintext] = useState<string | null>(null)
+  function handleOpenChange(next: boolean) {
+    onOpenChange(next)
+    if (!next) setPlaintext(null)
+  }
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-xl">
         {plaintext ? (
           <TokenSnippets plaintext={plaintext} onDone={() => handleOpenChange(false)} />
-        ) : tokens.isLoading ? (
-          <LoadingRows rows={3} />
-        ) : (
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <DialogHeader>
-              <DialogTitle>{t("mcp.connectTitle")}</DialogTitle>
-              <DialogDescription>{t("mcp.connectHint")}</DialogDescription>
-            </DialogHeader>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="ca-name">{t("mcp.name")}</FieldLabel>
-                <Input id="ca-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("mcp.connectDefaultName")} />
-              </Field>
-
-              {advanced ? (
-                <FieldSet>
-                  <FieldLegend variant="label">{t("mcp.scopes")}</FieldLegend>
-                  <FieldDescription>{t("mcp.scopesHint")}</FieldDescription>
-                  <ul className="max-h-64 divide-y divide-line overflow-y-auto border border-line">
-                    {scopes.map((s) => {
-                      const id = `ca-scope-${s.scope}`
-                      return (
-                        <li key={s.scope} className={s.allowed ? "" : "bg-grid-soft/50"}>
-                          <label htmlFor={id} className={`flex items-start gap-3 px-3 py-2.5 ${s.allowed ? "cursor-pointer" : "cursor-not-allowed"}`}>
-                            <input
-                              id={id}
-                              type="checkbox"
-                              className="mt-0.5 size-4 shrink-0 accent-(--grid-action)"
-                              disabled={!s.allowed}
-                              checked={chosen.includes(s.scope)}
-                              onChange={(e) => toggle(s.scope, e.target.checked)}
-                            />
-                            <span className="min-w-0">
-                              <span dir="ltr" className="ltr-isolate block font-mono text-xs text-grid-fg">
-                                {s.scope}
-                              </span>
-                              <span className="block text-sm text-grid-body">{s.description}</span>
-                            </span>
-                          </label>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </FieldSet>
-              ) : (
-                <p className="text-sm text-grid-muted">
-                  {t("mcp.connectDefaultScopeHint")}{" "}
-                  <button type="button" className="text-grid-action hover:underline" onClick={() => setAdvanced(true)}>
-                    {t("mcp.connectPickScopes")}
-                  </button>
-                </p>
-              )}
-
-              {advanced ? (
-                <Field>
-                  <FieldLabel>{t("mcp.projects")}</FieldLabel>
-                  <FieldDescription>{t("mcp.projectsHint")}</FieldDescription>
-                  <ul className="max-h-40 divide-y divide-line overflow-y-auto border border-line">
-                    <li>
-                      <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-                        <input type="checkbox" className="size-4 shrink-0 accent-(--grid-action)" checked={projectIds.length === 0} onChange={() => setProjectIds([])} />
-                        <span className="text-sm text-grid-fg">{t("mcp.allProjects")}</span>
-                      </label>
-                    </li>
-                    {(projects.data?.projects ?? []).map((p) => (
-                      <li key={p.id}>
-                        <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-                          <input
-                            type="checkbox"
-                            className="size-4 shrink-0 accent-(--grid-action)"
-                            checked={projectIds.includes(p.id)}
-                            onChange={(e) => setProjectIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)))}
-                          />
-                          <span className="truncate text-sm text-grid-body" dir="auto">
-                            {p.name}
-                          </span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </Field>
-              ) : null}
-
-              <Field>
-                <FieldLabel htmlFor="ca-expiry">{t("mcp.expiry")}</FieldLabel>
-                <Select items={expiryItems} value={expiry} onValueChange={(v) => setExpiry(String(v ?? "90"))}>
-                  <SelectTrigger id="ca-expiry" className="w-full sm:w-56">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {expiryItems.map((e) => (
-                      <SelectItem key={e.value} value={e.value}>
-                        {e.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              {error ? <FieldError>{error}</FieldError> : null}
-            </FieldGroup>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                {t("common.cancel")}
-              </Button>
-              <Button type="submit" disabled={busy}>
-                {busy ? t("common.working") : t("mcp.connectGo")}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+        ) : open ? (
+          <TokenForm
+            onMinted={(p) => {
+              setPlaintext(p)
+              onCreated?.()
+            }}
+            onCancel={() => handleOpenChange(false)}
+            header={
+              <DialogHeader>
+                <DialogTitle>{t("mcp.connectTitle")}</DialogTitle>
+                <DialogDescription>{t("mcp.connectHint")}</DialogDescription>
+              </DialogHeader>
+            }
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   )
@@ -220,30 +268,30 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
         <DialogTitle>{t("mcp.createdTitle")}</DialogTitle>
         <DialogDescription>{t("mcp.createdHint")}</DialogDescription>
       </DialogHeader>
-      <p className="flex items-start gap-2 border border-line bg-grid-card p-3 text-sm text-grid-warn-text" role="alert">
+      <p className="flex items-start gap-2 rounded-card border border-border bg-card p-3 text-sm text-nq-warn-text" role="alert">
         <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
         {t("mcp.shownOnce")}
       </p>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.token")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.token")}</p>
         <CopyField value={plaintext} label={t("mcp.token")} />
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.claudeCode")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.claudeCode")}</p>
         <CopyField value={`claude mcp add --transport http mahaam ${MCP_ORIGIN}/api/mcp --header "Authorization: Bearer ${plaintext}"`} label={t("mcp.claudeCode")} />
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.claudeDesktopCursor")}</p>
+        <p className="text-eyebrow uppercase">{t("mcp.claudeDesktopCursor")}</p>
         <CopyField value={desktopConfig} label={t("mcp.claudeDesktopCursor")} />
-        <p className="text-meta text-grid-muted">{t("mcp.claudeDesktopCursorHint")}</p>
+        <p className="text-caption text-muted-foreground">{t("mcp.claudeDesktopCursorHint")}</p>
       </div>
 
       <div className="space-y-1.5">
-        <p className="grid-micro">{t("mcp.genericClient")}</p>
-        <div className="space-y-1 text-meta text-grid-muted">
+        <p className="text-eyebrow uppercase">{t("mcp.genericClient")}</p>
+        <div className="space-y-1 text-caption text-muted-foreground">
           <p>
             {t("mcp.serverUrl")}: <Ltr mono>{MCP_ORIGIN}/api/mcp</Ltr>
           </p>
@@ -253,13 +301,13 @@ function TokenSnippets({ plaintext, onDone }: { plaintext: string; onDone: () =>
         </div>
       </div>
 
-      <p className="flex items-start gap-2 text-meta text-grid-muted">
+      <p className="flex items-start gap-2 text-caption text-muted-foreground">
         <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
         {t("mcp.oauthClientsHint")}
       </p>
 
       <DialogFooter>
-        <Button onClick={onDone}>
+        <Button variant="primary" onClick={onDone}>
           <CheckIcon />
           {t("mcp.savedIt")}
         </Button>

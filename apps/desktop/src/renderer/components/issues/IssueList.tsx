@@ -3,7 +3,7 @@
 // status, priority, assignee and label menus, T starts a timer, ⌘⇧C copies the key, ⌘⌫ deletes.
 // Hovering moves the focus too, so the keyboard carries on from wherever the pointer is.
 import { ChevronDownIcon, GitBranchIcon, PlusIcon, UserIcon } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
 
 import type { Label, Member, Project, Status, Task } from "../../../shared/types";
 import { AvatarStack, LtrText, PriorityIcon, ProjectMark, StatusIcon } from "@/components/kit";
@@ -137,6 +137,41 @@ export function IssueList({
     escape: () => setFocusId(null),
   });
 
+  // Drag a row to another place in its group or into another status group (the same move as the
+  // board: moveTask with the index among that column's other issues). Only groups that are one
+  // status of the dragged issue's project take a drop.
+  const [drag, setDrag] = useState<{ id: string; group: string | null; index: number } | null>(null);
+  const dropTarget = (g: IssueGroup, task: Task) => {
+    const sid = g.add?.statusId;
+    if (!sid || g.add!.projectId !== task.project_id) return undefined;
+    return statusesFor(task).find((x) => x.id === sid);
+  };
+  const drop = (g: IssueGroup, at: number) => {
+    const task = drag && byId.get(drag.id);
+    setDrag(null);
+    if (!task) return;
+    const status = dropTarget(g, task);
+    if (!status) return;
+    const others = g.tasks.filter((x) => x.id !== task.id);
+    const before = g.tasks.slice(0, at).filter((x) => x.id !== task.id).length;
+    if (task.status_id === status.id && g.tasks[at]?.id === task.id) return;
+    if (task.status_id === status.id && g.tasks.findIndex((x) => x.id === task.id) === before) return;
+    const prev = others[before - 1]?.position;
+    const next = others[before]?.position;
+    const position = prev !== undefined && next !== undefined ? (prev + next) / 2 : prev !== undefined ? prev + 1 : next !== undefined ? next - 1 : 0;
+    void actions.move(task, status, before, position);
+  };
+  const dragOver = (g: IssueGroup, index: number) => (e: DragEvent<HTMLElement>) => {
+    const task = drag && byId.get(drag.id);
+    if (!task || !dropTarget(g, task)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    const box = e.currentTarget.getBoundingClientRect();
+    const at = index < 0 ? g.tasks.length : e.clientY > box.top + box.height / 2 ? index + 1 : index;
+    if (drag.group !== g.id || drag.index !== at) setDrag({ ...drag, group: g.id, index: at });
+  };
+
   const onHover = useCallback((id: string) => setFocusId((cur) => (cur === id ? cur : id)), []);
   const onMenu = useCallback((id: string, kind: RowMenu | null) => {
     setFocusId(id);
@@ -162,13 +197,39 @@ export function IssueList({
         {shown.map((g) => {
           const isCollapsed = collapsed.has(g.id);
           return (
-            <section key={g.id} data-group={g.id} aria-label={g.title}>
+            <section
+              key={g.id}
+              data-group={g.id}
+              aria-label={g.title}
+              onDragOver={dragOver(g, -1)}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (drag?.group === g.id) drop(g, drag.index);
+              }}
+              className={cn(drag?.group === g.id && isCollapsed && "bg-grid-soft")}
+            >
               <GroupHeader group={g} collapsed={isCollapsed} onToggle={() => toggleGroup(g.id)} onAdd={g.add ? () => openCreateIn(shell.openCreate, g.add!.projectId, g.add!.statusId) : undefined} />
               {isCollapsed
                 ? null
-                : g.tasks.map((task) => (
-                    <IssueRow
+                : g.tasks.map((task, i) => (
+                    <div
                       key={task.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", task.key);
+                        setDrag({ id: task.id, group: null, index: -1 });
+                      }}
+                      onDragEnd={() => setDrag(null)}
+                      onDragOver={dragOver(g, i)}
+                      className={cn(
+                        "relative",
+                        drag?.id === task.id && "opacity-40",
+                        drag?.group === g.id && drag.index === i && "before:absolute before:inset-x-0 before:top-0 before:z-[3] before:h-0.5 before:bg-grid-action",
+                        drag?.group === g.id && drag.index === i + 1 && i === g.tasks.length - 1 && "after:absolute after:inset-x-0 after:bottom-0 after:z-[3] after:h-0.5 after:bg-grid-action",
+                      )}
+                    >
+                    <IssueRow
                       task={task}
                       status={statusOf(task)}
                       statuses={statusesFor(task)}
@@ -185,6 +246,7 @@ export function IssueList({
                       onHover={onHover}
                       onMenu={onMenu}
                     />
+                    </div>
                   ))}
             </section>
           );

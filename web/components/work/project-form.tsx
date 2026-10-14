@@ -4,11 +4,13 @@
 // the API's units (minutes, minor units); 0 or empty clears them.
 import { useState, type FormEvent } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+import { FormError, FormHint } from "@/components/form-text"
+
+
+
+
+
 import { DateField } from "@/components/work/fields"
 import { ColorPicker } from "@/components/work/palette"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -121,14 +123,14 @@ export function ProjectForm({ project, onSaved, onCancel }: { project?: ProjectD
 
   return (
     <form onSubmit={submit} noValidate>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="p-name">{t("project.name")}</FieldLabel>
           <Input id="p-name" autoFocus value={v.name} onChange={(e) => set("name", e.target.value)} placeholder={t("project.namePlaceholder")} />
         </Field>
         <Field>
           <FieldLabel htmlFor="p-desc">
-            {t("project.description")} <span className="text-grid-muted">({t("common.optional")})</span>
+            {t("project.description")} <span className="text-muted-foreground">({t("common.optional")})</span>
           </FieldLabel>
           <Textarea id="p-desc" rows={3} value={v.description} onChange={(e) => set("description", e.target.value)} />
         </Field>
@@ -170,19 +172,19 @@ export function ProjectForm({ project, onSaved, onCancel }: { project?: ProjectD
             <DateField id="p-end" value={v.ends_on} onChange={(x) => set("ends_on", x)} />
           </Field>
         </div>
-        <FieldDescription>{t("project.visibilityHint")}</FieldDescription>
-        {error ? <FieldError>{error}</FieldError> : null}
+        <FormHint>{t("project.visibilityHint")}</FormHint>
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end gap-2">
           {onCancel ? (
             <Button type="button" variant="ghost" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
           ) : null}
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : project ? t("common.save") : t("project.create")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

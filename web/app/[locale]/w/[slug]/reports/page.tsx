@@ -6,8 +6,10 @@
 import { Suspense, type ReactNode } from "react"
 import { InfoIcon } from "lucide-react"
 
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { StatCard, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
+import { Panel } from "@/components/page"
 import { BreakdownChart, SeriesChart } from "@/components/reports/report-charts"
 import { ExportButtons, FilterBar, PrintButton, PrintHeader, ResetButton, useReportFilters } from "@/components/reports/filter-bar"
 import { SavedViews } from "@/components/reports/saved-views"
@@ -30,17 +32,14 @@ export default function TimeReportPage() {
 
 function Stat({ label, children, data }: { label: string; children: ReactNode; data?: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 bg-grid-bg px-6 py-4" data-stat={data}>
-      <dt className="grid-micro">{label}</dt>
-      <dd className="truncate text-xl font-medium tabular-nums">{children}</dd>
-    </div>
+    <StatCard label={label} value={children} data-stat={data} />
   )
 }
 
 function Note({ children, data }: { children: ReactNode; data?: string }) {
   return (
-    <p className="flex items-start gap-2 border-b border-line bg-grid-soft px-6 py-2.5 text-meta text-grid-body" data-note={data}>
-      <InfoIcon className="mt-px size-3.5 shrink-0 text-grid-muted" />
+    <p className="flex items-start gap-2 rounded-lg bg-muted px-4 py-2.5 text-caption text-nq-fg-body" data-note={data}>
+      <InfoIcon className="mt-px size-3.5 shrink-0 text-muted-foreground" />
       <span>{children}</span>
     </p>
   )
@@ -61,7 +60,7 @@ function TimeReportView() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-6 py-3" data-print-hide data-report-toolbar>
+      <div className="flex flex-wrap items-center justify-between gap-2" data-print-hide data-report-toolbar>
         <div className="flex flex-wrap items-center gap-2">
           <SavedViews kind="time" filters={filters} base={base} />
           <ResetButton onReset={state.reset} />
@@ -85,8 +84,8 @@ function TimeReportView() {
       ) : !r ? (
         <LoadingRows rows={5} />
       ) : (
-        <div data-report-body data-group={r.group_by} data-from={r.from} data-to={r.to} className={cn(report.isValidating && "opacity-70 transition-opacity")}>
-          <dl className={cn("grid grid-cols-2 gap-px border-b border-line bg-grid-line", r.finance ? "md:grid-cols-5" : "md:grid-cols-3")} data-report-summary>
+        <div data-report-body data-group={r.group_by} data-from={r.from} data-to={r.to} className={cn("flex flex-col gap-4", report.isValidating && "opacity-70 transition-opacity")}>
+          <div className={cn("grid grid-cols-2 gap-4", r.finance ? "md:grid-cols-5" : "md:grid-cols-3")} data-report-summary>
             <Stat label={t("reports.summary.tracked")} data="tracked">
               <Ltr mono>{hmCell(r.total.seconds)}</Ltr>
             </Stat>
@@ -100,17 +99,17 @@ function TimeReportView() {
               <>
                 <Stat label={t("reports.summary.billableValue")} data="value">
                   <Ltr mono>
-                    {moneyCell(r.total.billable_minor ?? 0)} <span className="text-sm text-grid-muted">{cur}</span>
+                    {moneyCell(r.total.billable_minor ?? 0)} <span className="text-sm text-muted-foreground">{cur}</span>
                   </Ltr>
                 </Stat>
                 <Stat label={t("reports.summary.profit")} data="profit">
                   <Ltr mono>
-                    {moneyCell(r.total.profit_minor ?? 0)} <span className="text-sm text-grid-muted">{cur}</span>
+                    {moneyCell(r.total.profit_minor ?? 0)} <span className="text-sm text-muted-foreground">{cur}</span>
                   </Ltr>
                 </Stat>
               </>
             ) : null}
-          </dl>
+          </div>
 
           {r.own_time_only ? <Note data="own">{t("reports.ownOnly")}</Note> : null}
           {r.group_by === "label" ? <Note data="label">{t("reports.labelNote")}</Note> : null}
@@ -136,16 +135,14 @@ function Charts({ r }: { r: TimeReport }) {
         .map((x) => ({ key: x.key, name: x.key ? x.name : t(`reports.none.${r.group_by}`), color: x.color, seconds: x.rounded_s }))
     : []
   return (
-    <section className={cn("grid border-b border-line", top.length ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : "")} data-report-charts data-print-block>
-      <div className="min-w-0 px-6 py-5">
-        <h2 className="mb-3 text-sm font-medium">{t("reports.chart.title")}</h2>
+    <section className={cn("grid gap-4", top.length ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : "")} data-report-charts data-print-block>
+      <Panel title={t("reports.chart.title")}>
         <SeriesChart series={r.series} />
-      </div>
+      </Panel>
       {top.length ? (
-        <div className="min-w-0 border-line px-6 py-5 max-lg:border-t lg:border-s">
-          <h2 className="mb-3 text-sm font-medium">{t("reports.chart.breakdown", { group: t(`reports.group.${r.group_by}`) })}</h2>
+        <Panel title={t("reports.chart.breakdown", { group: t(`reports.group.${r.group_by}`) })}>
           <BreakdownChart items={top} colored={r.group_by === "project" || r.group_by === "label"} />
-        </div>
+        </Panel>
       ) : null}
     </section>
   )
@@ -154,14 +151,14 @@ function Charts({ r }: { r: TimeReport }) {
 /** Name cell: "none" is localised; days/weeks keep the ISO date the export uses, with a readable hint. */
 function GroupName({ row, group }: { row: ReportRow; group: TimeReport["group_by"] }) {
   const { t, locale } = useTranslations()
-  if (!row.key) return <span className="text-grid-muted italic" data-none>{t(`reports.none.${group}`)}</span>
+  if (!row.key) return <span className="text-muted-foreground italic" data-none>{t(`reports.none.${group}`)}</span>
   if (group === "day" || group === "week") {
     return (
       <span className="flex items-baseline gap-2">
         <Ltr mono data-cell-name>
           {row.name}
         </Ltr>
-        <span className="text-meta text-grid-muted" data-print-hide>
+        <span className="text-caption text-muted-foreground" data-print-hide>
           {group === "week" ? t("reports.weekOf", { date: dayLabel(row.key, locale) }) : dayLabel(row.key, locale)}
         </span>
       </span>
@@ -198,13 +195,13 @@ function ReportTable({ r }: { r: TimeReport }) {
     ...(r.finance ? [`${t("reports.col.billableValue")} (${cur})`, `${t("reports.col.cost")} (${cur})`, `${t("reports.col.profit")} (${cur})`] : []),
   ]
   return (
-    <div className="print-table" data-report-table data-finance={r.finance}>
+    <Panel flush className="print-table" data-report-table data-finance={r.finance}>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="ps-6">{t(`reports.group.${r.group_by}`)}</TableHead>
+            <TableHead className="ps-4">{t(`reports.group.${r.group_by}`)}</TableHead>
             {heads.map((h, i) => (
-              <TableHead key={h} className={cn(num, i === heads.length - 1 && "pe-6")}>
+              <TableHead key={h} className={cn(num, i === heads.length - 1 && "pe-4")}>
                 {h}
               </TableHead>
             ))}
@@ -212,12 +209,12 @@ function ReportTable({ r }: { r: TimeReport }) {
         </TableHeader>
         <TableBody>
           {r.rows.map((x) => (
-            <TableRow key={x.key || "none"} data-row={x.key || "none"} className={cn(x.seconds === 0 && "text-grid-muted")}>
-              <TableCell className="max-w-72 ps-6">
+            <TableRow key={x.key || "none"} data-row={x.key || "none"} className={cn(x.seconds === 0 && "text-muted-foreground")}>
+              <TableCell className="max-w-72 ps-4">
                 <GroupName row={x} group={r.group_by} />
               </TableCell>
               {cells(x).map((c, i, all) => (
-                <TableCell key={i} className={cn(num, i === all.length - 1 && "pe-6", i >= 5 && Number(c) < 0 && "text-(--grid-danger-text)")}>
+                <TableCell key={i} className={cn(num, i === all.length - 1 && "pe-4", i >= 5 && Number(c) < 0 && "text-(--nq-danger-text)")}>
                   <Ltr mono data-cell>
                     {c}
                   </Ltr>
@@ -228,9 +225,9 @@ function ReportTable({ r }: { r: TimeReport }) {
         </TableBody>
         <TableFooter>
           <TableRow data-row="total">
-            <TableCell className="ps-6 font-semibold">{t("reports.total")}</TableCell>
+            <TableCell className="ps-4 font-semibold">{t("reports.total")}</TableCell>
             {cells(r.total).map((c, i, all) => (
-              <TableCell key={i} className={cn(num, "font-semibold", i === all.length - 1 && "pe-6")}>
+              <TableCell key={i} className={cn(num, "font-semibold", i === all.length - 1 && "pe-4")}>
                 <Ltr mono data-cell>
                   {c}
                 </Ltr>
@@ -239,6 +236,6 @@ function ReportTable({ r }: { r: TimeReport }) {
           </TableRow>
         </TableFooter>
       </Table>
-    </div>
+    </Panel>
   )
 }

@@ -1,19 +1,33 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { BotIcon, CopyIcon, EyeIcon, EyeOffIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
-import { toast } from "sonner"
+import {
+  ActivityIcon,
+  BotIcon,
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
+  MessageSquareIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  UsersIcon,
+  type LucideIcon,
+} from "lucide-react"
+import { toast } from "@fadymondy/nasaq/web"
 import useSWR from "swr"
 
 import { api } from "@/lib/api"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge, Button, Field, FieldLabel, Input, Tabs, TabsList, TabsPanel, TabsTab } from "@fadymondy/nasaq/web"
+
+
+
+
+
 import { ConfirmButton } from "@/components/confirm-button"
+import { BrandLogo, LogoTile, STACK_BRAND } from "@/components/work/brand-logos"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 import { errorText, w } from "@/lib/work"
 
 /*
@@ -118,86 +132,127 @@ export function FeedbackWidgetSection({
   }
 
   return (
-    <section className="border-b border-line">
-      <div className="px-6 pt-6 pb-3">
-        <h2 className="text-base font-medium">{t("sdk.section.title")}</h2>
-        <p className="mt-1 text-sm text-grid-muted">{t("sdk.section.desc")}</p>
+    <section className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-h3">{t("sdk.section.title")}</h2>
+        <p className="mt-1 text-body-sm text-muted-foreground">{t("sdk.section.desc")}</p>
       </div>
 
-      <div className="px-6 pb-5">
-        <h3 className="text-sm font-medium mb-2">{t("sdk.contacts.title")}</h3>
-        {!clientId ? (
-          <p className="text-sm text-grid-muted">{t("sdk.contacts.needClient")}</p>
-        ) : (
-          <ContactManager
-            clientId={clientId}
-            contacts={contacts.data?.contacts ?? []}
-            canManage={canManage}
-            busy={busy}
-            onChange={() => contacts.mutate()}
-            run={run}
-          />
-        )}
-      </div>
+      <div className="grid gap-4">
+        <ProductCard icon={UsersIcon} title={t("sdk.contacts.title")} data="contacts">
+          {!clientId ? (
+            <p className="text-sm text-muted-foreground">{t("sdk.contacts.needClient")}</p>
+          ) : (
+            <ContactManager
+              clientId={clientId}
+              contacts={contacts.data?.contacts ?? []}
+              canManage={canManage}
+              busy={busy}
+              onChange={() => contacts.mutate()}
+              run={run}
+            />
+          )}
+        </ProductCard>
 
-      <div className="px-6 pb-5">
-        <ProductHeader
+        <ProductCard
+          icon={MessageSquareIcon}
           badge={t("sdk.feedback.badge")}
           title={t("sdk.feedback.title")}
           desc={t("sdk.feedback.desc")}
-        />
-        <KeyManager
-          projectId={projectId}
-          keys={keys.data?.keys ?? []}
-          canManage={canManage}
-          busy={busy}
-          onChange={() => keys.mutate()}
-          run={run}
-          copy={copy}
-        />
-      </div>
+          stacks={FEEDBACK_STACKS}
+          data="feedback"
+        >
+          <KeyManager
+            projectId={projectId}
+            keys={keys.data?.keys ?? []}
+            canManage={canManage}
+            busy={busy}
+            onChange={() => keys.mutate()}
+            run={run}
+            copy={copy}
+          />
+        </ProductCard>
 
-      <div className="px-6 pb-6">
-        <ProductHeader
+        <ProductCard
+          icon={ActivityIcon}
           badge={t("sdk.monitor.badge")}
           title={t("sdk.monitor.title")}
           desc={t("sdk.monitor.desc")}
+          stacks={MONITOR_STACKS}
           tone="monitor"
-        />
-        <MonitorKeyManager
-          projectId={projectId}
-          keys={monitorKeys.data?.keys ?? []}
-          canManage={canManage}
-          busy={busy}
-          onChange={() => monitorKeys.mutate()}
-          run={run}
-          copy={copy}
-        />
+          data="monitor"
+        >
+          <MonitorKeyManager
+            projectId={projectId}
+            keys={monitorKeys.data?.keys ?? []}
+            canManage={canManage}
+            busy={busy}
+            onChange={() => monitorKeys.mutate()}
+            run={run}
+            copy={copy}
+          />
+        </ProductCard>
       </div>
     </section>
   )
 }
 
-// The two products sit in one page, so each gets its own labelled header: a badge that
-// says where the code runs (browser vs server) and one line on what it reports.
-function ProductHeader({
+// Portal contacts and the two products each get a card: an icon tile, a badge that says where the
+// code runs (browser vs server), one line on what it reports and the logos of the stacks it installs on.
+function ProductCard({
+  icon: Icon,
   badge,
   title,
   desc,
+  stacks,
   tone = "feedback",
+  data,
+  children,
 }: {
-  badge: string
+  icon: LucideIcon
+  badge?: string
   title: string
-  desc: string
+  desc?: string
+  stacks?: string[]
   tone?: "feedback" | "monitor"
+  data: string
+  children: React.ReactNode
 }) {
+  const { t } = useTranslations()
+  const brands = (stacks ?? []).flatMap((s) => {
+    const b = STACK_BRAND[s]
+    return b ? [{ stack: s, brand: b }] : []
+  })
   return (
-    <div className="mb-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <Badge variant={tone === "monitor" ? "outline" : "secondary"}>{badge}</Badge>
+    <div className="flex min-w-0 flex-col gap-4 rounded-card bg-muted/40 p-4" data-sdk={data}>
+      <div className="flex items-start gap-3">
+        <span
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-lg",
+            tone === "monitor" ? "bg-nq-danger/10 text-nq-danger-text" : "bg-primary/10 text-primary",
+          )}
+        >
+          <Icon className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-medium">{title}</h3>
+            {badge ? <Badge variant={tone === "monitor" ? "outline" : "neutral"}>{badge}</Badge> : null}
+          </div>
+          {desc ? <p className="mt-1 text-caption text-muted-foreground">{desc}</p> : null}
+          {brands.length ? (
+            <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={t("sdk.install.label")}>
+              {brands.map(({ stack, brand }) => (
+                <li key={stack} title={t(`sdk.stack.${stack}`)}>
+                  <LogoTile brand={brand} className="size-7 rounded-md" logoClassName="size-4" />
+                  <span className="sr-only">{t(`sdk.stack.${stack}`)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       </div>
-      <p className="mt-1 text-meta text-grid-muted">{desc}</p>
+      {children}
     </div>
   )
 }
@@ -223,9 +278,9 @@ function ContactManager({
   return (
     <div className="space-y-2">
       {contacts.length === 0 ? (
-        <p className="text-sm text-grid-muted">{t("sdk.contacts.empty")}</p>
+        <p className="text-sm text-muted-foreground">{t("sdk.contacts.empty")}</p>
       ) : (
-        <ul className="divide-y divide-line rounded-md border border-line">
+        <ul className="divide-y divide-line rounded-md border border-border">
           {contacts.map((c) => (
             <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2">
               <span className="text-sm">{c.email ?? c.user_id}</span>
@@ -271,7 +326,7 @@ function ContactManager({
               placeholder={t("sdk.contacts.addPlaceholder")}
             />
           </Field>
-          <Button type="submit" disabled={busy || !email.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !email.trim()}>
             <PlusIcon /> {t("common.add")}
           </Button>
         </form>
@@ -303,7 +358,7 @@ function KeyManager({
   return (
     <div className="space-y-3">
       {keys.length === 0 ? (
-        <p className="text-sm text-grid-muted">{t("sdk.feedback.empty")}</p>
+        <p className="text-sm text-muted-foreground">{t("sdk.feedback.empty")}</p>
       ) : (
         keys.map((k) => (
           <KeyRow
@@ -320,7 +375,7 @@ function KeyManager({
       )}
       {canManage ? (
         <Button
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(
@@ -365,13 +420,13 @@ function KeyRow({
     [origin, k.public_key],
   )
   return (
-    <div className="rounded-md border border-line p-3 space-y-2">
+    <div className="rounded-md border border-border p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <code className="truncate text-xs font-mono" dir="ltr" aria-label={t("sdk.feedback.publicKeyAria")}>
             {k.public_key}
           </code>
-          <Badge variant={k.active ? "default" : "secondary"}>
+          <Badge variant={k.active ? "success" : "neutral"}>
             {k.active ? t("sdk.feedback.statusActive") : t("sdk.feedback.statusRevoked")}
           </Badge>
         </div>
@@ -391,12 +446,12 @@ function KeyRow({
           />
         ) : null}
       </div>
-      <p className="text-meta text-grid-muted">{t("sdk.feedback.publicSafe")}</p>
+      <p className="text-caption text-muted-foreground">{t("sdk.feedback.publicSafe")}</p>
 
       <Field>
         <FieldLabel>{t("sdk.feedback.originsLabel")}</FieldLabel>
         <textarea
-          className="min-h-[64px] w-full rounded-md border border-line bg-transparent px-3 py-2 text-sm"
+          className="min-h-[64px] w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
           dir="ltr"
           value={origins}
           disabled={!canManage || busy}
@@ -408,7 +463,7 @@ function KeyRow({
       {canManage ? (
         <Button
           size="sm"
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(
@@ -430,7 +485,7 @@ function KeyRow({
       <Field>
         <FieldLabel>{t("sdk.feedback.snippet")}</FieldLabel>
         <div className="flex items-center gap-2">
-          <code className="flex-1 truncate rounded bg-grid-muted/10 px-2 py-1 text-xs" dir="ltr">
+          <code className="flex-1 truncate rounded bg-nq-fg-muted/10 px-2 py-1 text-xs" dir="ltr">
             {snippet}
           </code>
           <Button size="sm" variant="ghost" onClick={() => copy(snippet, t("sdk.feedback.snippetLabel"))}>
@@ -475,7 +530,7 @@ function MonitorKeyManager({
   return (
     <div className="space-y-3">
       {keys.length === 0 ? (
-        <p className="text-sm text-grid-muted">{t("sdk.monitor.empty")}</p>
+        <p className="text-sm text-muted-foreground">{t("sdk.monitor.empty")}</p>
       ) : (
         keys.map((k) => (
           <MonitorKeyRow
@@ -492,7 +547,7 @@ function MonitorKeyManager({
       )}
       {canManage ? (
         <Button
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(
@@ -532,11 +587,11 @@ function MonitorKeyRow({
   const [shown, setShown] = useState(false)
   const live = k.revoked_at === null
   return (
-    <div className="rounded-md border border-line p-3 space-y-2">
+    <div className="rounded-md border border-border p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate text-sm">{k.name}</span>
-          <Badge variant={live ? "default" : "secondary"}>
+          <Badge variant={live ? "success" : "neutral"}>
             {live ? t("sdk.monitor.statusLive") : t("sdk.monitor.statusRevoked")}
           </Badge>
         </div>
@@ -563,7 +618,7 @@ function MonitorKeyRow({
       <Field>
         <FieldLabel>{t("sdk.monitor.dsnLabel")}</FieldLabel>
         <div className="flex items-center gap-2">
-          <code className="flex-1 truncate rounded bg-grid-muted/10 px-2 py-1 text-xs font-mono" dir="ltr">
+          <code className="flex-1 truncate rounded bg-nq-fg-muted/10 px-2 py-1 text-xs font-mono" dir="ltr">
             {shown ? k.dsn : t("sdk.monitor.dsnHidden")}
           </code>
           <Button
@@ -579,7 +634,7 @@ function MonitorKeyRow({
           </Button>
         </div>
       </Field>
-      <p className="text-meta text-grid-danger-text">{t("sdk.monitor.secret")}</p>
+      <p className="text-caption text-nq-danger-text">{t("sdk.monitor.secret")}</p>
 
       {live ? (
         <InstallGuides
@@ -625,7 +680,7 @@ function WidgetLookEditor({
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <select
-        className="h-8 w-full rounded-lg border border-line bg-transparent px-2 text-sm"
+        className="h-8 w-full rounded-lg border border-border bg-transparent px-2 text-sm"
         value={look[f] ?? "default"}
         disabled={busy}
         aria-label={label}
@@ -662,7 +717,7 @@ function WidgetLookEditor({
             <FieldLabel>{t("sdk.look.color")}</FieldLabel>
             <input
               type="color"
-              className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent"
+              className="h-8 w-full cursor-pointer rounded-lg border border-border bg-transparent"
               value={bg}
               disabled={busy}
               aria-label={t("sdk.look.color")}
@@ -673,7 +728,7 @@ function WidgetLookEditor({
             <FieldLabel>{t("sdk.look.textColor")}</FieldLabel>
             <input
               type="color"
-              className="h-8 w-full cursor-pointer rounded-lg border border-line bg-transparent"
+              className="h-8 w-full cursor-pointer rounded-lg border border-border bg-transparent"
               value={fg}
               disabled={busy}
               aria-label={t("sdk.look.textColor")}
@@ -704,7 +759,7 @@ function WidgetLookEditor({
         </span>
         <Button
           size="sm"
-          variant="outline"
+          variant="secondary"
           disabled={busy}
           onClick={() =>
             run(() => w.patch(ws.id, `/api/w/feedback-keys/${k.id}`, { widget: look }), t("sdk.look.saved")).then(
@@ -758,7 +813,7 @@ function InstallGuides({
       <div className="flex items-center justify-between gap-2">
         <FieldLabel>{t("sdk.install.label")}</FieldLabel>
         {data.guides.agent ? (
-          <Button size="sm" variant="outline" onClick={() => copy(data.guides.agent, t("sdk.install.agentLabel"))}>
+          <Button size="sm" variant="secondary" onClick={() => copy(data.guides.agent, t("sdk.install.agentLabel"))}>
             <BotIcon /> {t("sdk.install.copyAgent")}
           </Button>
         ) : null}
@@ -766,16 +821,17 @@ function InstallGuides({
       <Tabs defaultValue={available[0]}>
         <TabsList className="flex-wrap">
           {available.map((s) => (
-            <TabsTrigger key={s} value={s}>
+            <TabsTab key={s} value={s} className="gap-1.5">
+              {STACK_BRAND[s] ? <BrandLogo brand={STACK_BRAND[s]} className="size-4" /> : <BotIcon className="size-4" aria-hidden />}
               {label(s)}
-            </TabsTrigger>
+            </TabsTab>
           ))}
         </TabsList>
         {available.map((s) => (
-          <TabsContent key={s} value={s} className="relative">
+          <TabsPanel key={s} value={s} className="relative">
             <pre
               dir="ltr"
-              className="max-h-72 overflow-auto rounded-md border border-line bg-grid-muted/10 p-3 pe-20 font-mono text-xs whitespace-pre-wrap"
+              className="max-h-72 overflow-auto rounded-md border border-border bg-nq-fg-muted/10 p-3 pe-20 font-mono text-xs whitespace-pre-wrap"
             >
               {data.guides[s]}
             </pre>
@@ -788,11 +844,11 @@ function InstallGuides({
             >
               <CopyIcon /> {t("common.copy")}
             </Button>
-          </TabsContent>
+          </TabsPanel>
         ))}
       </Tabs>
       {mcpHint ? (
-        <p className="text-meta text-grid-muted">
+        <p className="text-caption text-muted-foreground">
           {t("sdk.install.mcpHint")} <code dir="ltr">{mcpHint}</code>
         </p>
       ) : null}

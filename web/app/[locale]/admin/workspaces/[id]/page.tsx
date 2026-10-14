@@ -6,14 +6,16 @@ import Link from "next/link"
 import { useEffect, useState, type FormEvent } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Building2Icon, TrashIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
 import { IntegrationPicker, RuleFields, RuleHeader, fromDraft, toDraft, type RuleDraft } from "@/components/admin/limit-editor"
 import { BillingCard } from "@/components/admin/billing"
 import { ReasonDialog, StatusBadge } from "@/components/admin/reason-dialog"
@@ -70,9 +72,9 @@ export default function AdminWorkspacePage() {
         title={ws.name}
         description={
           <span className="flex flex-wrap items-center gap-3">
-            <Ltr className="text-grid-muted">{ws.slug}</Ltr>
+            <Ltr className="text-muted-foreground">{ws.slug}</Ltr>
             <StatusBadge status={ws.status} />
-            <span className="text-meta text-grid-muted">
+            <span className="text-caption text-muted-foreground">
               {t("admin.col.owner")}: <Ltr>{ws.owner_email ?? "—"}</Ltr> · {t("admin.col.created")}: {formatDay(ws.created_at, locale)}
             </span>
           </span>
@@ -81,7 +83,7 @@ export default function AdminWorkspacePage() {
           <div className="flex flex-wrap gap-2">
             {ws.status === "suspended" ? (
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={async () => {
                   try {
                     await adminApi.reactivateWorkspace(ws.id)
@@ -95,11 +97,11 @@ export default function AdminWorkspacePage() {
                 {t("admin.reactivate")}
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => setSuspending(true)}>
+              <Button variant="secondary" onClick={() => setSuspending(true)}>
                 {t("admin.suspend")}
               </Button>
             )}
-            <Button variant="destructive" onClick={() => setDeleting(true)}>
+            <Button variant="danger" onClick={() => setDeleting(true)}>
               <TrashIcon />
               {t("common.delete")}
             </Button>
@@ -107,15 +109,15 @@ export default function AdminWorkspacePage() {
         }
       />
       {ws.status === "suspended" && ws.suspended_reason ? (
-        <p className="border-t border-line bg-grid-soft/50 px-6 py-3 text-sm text-grid-danger-text">{t("admin.suspendedBecause", { reason: ws.suspended_reason })}</p>
+        <p className="border-t border-border bg-muted/50 px-6 py-3 text-sm text-nq-danger-text">{t("admin.suspendedBecause", { reason: ws.suspended_reason })}</p>
       ) : null}
 
       <PlanPicker detail={d} plans={plans.data?.plans ?? []} onSaved={() => detail.mutate()} />
 
       <section className="space-y-3 py-6" data-usage-section>
         <div className="flex flex-wrap items-end justify-between gap-3 px-6">
-          <h2 className="text-sm font-medium text-grid-fg">{t("admin.workspaces.usage")}</h2>
-          <label className="flex items-center gap-2 text-sm text-grid-muted">
+          <h2 className="text-sm font-medium text-foreground">{t("admin.workspaces.usage")}</h2>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
             {t("admin.workspaces.month")}
             <Input type="month" dir="ltr" className="h-8 w-40" value={month} max={thisMonth()} onChange={(e) => e.target.value && setMonth(e.target.value)} />
           </label>
@@ -137,15 +139,15 @@ export default function AdminWorkspacePage() {
       <OverridesEditor key={JSON.stringify(d.overrides)} detail={d} onSaved={() => detail.mutate()} />
 
       <section className="space-y-3 py-6">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">{t("admin.workspaces.features")}</h2>
+        <h2 className="px-6 text-sm font-medium text-foreground">{t("admin.workspaces.features")}</h2>
         <FeatureList features={d.usage.features} overridden={d.usage.features_overridden ?? []} />
       </section>
 
       <section className="space-y-3 pb-10">
-        <h2 className="px-6 text-sm font-medium text-grid-fg">
-          {t("admin.col.members")} <Ltr className="text-grid-muted">({(d.members ?? []).length})</Ltr>
+        <h2 className="px-6 text-sm font-medium text-foreground">
+          {t("admin.col.members")} <Ltr className="text-muted-foreground">({(d.members ?? []).length})</Ltr>
         </h2>
-        <div className="border-y border-line">
+        <div className="border-y border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -164,8 +166,8 @@ export default function AdminWorkspacePage() {
                     </Link>
                   </TableCell>
                   <TableCell>{t(`role.${m.role}`)}</TableCell>
-                  <TableCell className="hidden text-grid-muted sm:table-cell">{m.status}</TableCell>
-                  <TableCell className="hidden pe-6 text-grid-muted md:table-cell">{formatDay(m.joined_at, locale)}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">{m.status}</TableCell>
+                  <TableCell className="hidden pe-6 text-muted-foreground md:table-cell">{formatDay(m.joined_at, locale)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -198,8 +200,8 @@ function PlanPicker({ detail, plans, onSaved }: { detail: WorkspaceDetail; plans
   const items = plans.map((p) => ({ value: p.key, label: `${planName(p, locale)}${p.active ? "" : ` (${t("admin.plans.inactive")})`}` }))
   if (!items.some((i) => i.value === detail.workspace.plan)) items.unshift({ value: detail.workspace.plan, label: detail.workspace.plan })
   return (
-    <div className="flex flex-wrap items-center gap-3 border-y border-line bg-grid-soft/50 px-6 py-3" data-plan-picker>
-      <Building2Icon className="size-4 text-grid-muted" />
+    <div className="flex flex-wrap items-center gap-3 border-y border-border bg-muted/50 px-6 py-3" data-plan-picker>
+      <Building2Icon className="size-4 text-muted-foreground" />
       <span className="text-sm font-medium">{t("admin.col.plan")}</span>
       <Select items={items} value={plan} onValueChange={(v) => setPlan(String(v ?? ""))}>
         <SelectTrigger className="h-8 w-56" aria-label={t("admin.col.plan")}>
@@ -213,7 +215,7 @@ function PlanPicker({ detail, plans, onSaved }: { detail: WorkspaceDetail; plans
           ))}
         </SelectContent>
       </Select>
-      <Button
+      <Button variant="primary"
         size="sm"
         disabled={busy || plan === detail.workspace.plan}
         onClick={async () => {
@@ -293,12 +295,12 @@ function OverridesEditor({ detail, onSaved }: { detail: WorkspaceDetail; onSaved
   return (
     <form onSubmit={save} noValidate className="space-y-3 py-6" data-overrides>
       <div className="space-y-1 px-6">
-        <h2 className="text-sm font-medium text-grid-fg">{t("admin.overrides.title")}</h2>
-        <p className="text-sm text-grid-muted">{t("admin.overrides.hint")}</p>
+        <h2 className="text-sm font-medium text-foreground">{t("admin.overrides.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("admin.overrides.hint")}</p>
       </div>
-      <div className="divide-y divide-line border-y border-line">
+      <div className="divide-y divide-line border-y border-border">
         <div className="hidden gap-3 px-6 py-2 md:grid md:grid-cols-[12rem_8rem_1fr]">
-          <span className="text-meta text-grid-muted">{t("plan.col.limit")}</span>
+          <span className="text-caption text-muted-foreground">{t("plan.col.limit")}</span>
           <span />
           <RuleHeader currency={currency} />
         </div>
@@ -320,7 +322,7 @@ function OverridesEditor({ detail, onSaved }: { detail: WorkspaceDetail; onSaved
             {modes[k] === "custom" ? (
               <RuleFields id={k} draft={drafts[k]} currency={currency} onChange={(dr) => setDrafts({ ...drafts, [k]: dr })} />
             ) : (
-              <span className="text-meta text-grid-muted">{t("admin.overrides.fromPlan")}</span>
+              <span className="text-caption text-muted-foreground">{t("admin.overrides.fromPlan")}</span>
             )}
           </div>
         ))}
@@ -364,8 +366,8 @@ function OverridesEditor({ detail, onSaved }: { detail: WorkspaceDetail; onSaved
         </div>
       </div>
       <div className="flex items-center justify-end gap-3 px-6">
-        {error ? <FieldError>{error}</FieldError> : null}
-        <Button type="submit" disabled={busy}>
+        {error ? <FormError>{error}</FormError> : null}
+        <Button variant="primary" type="submit" disabled={busy}>
           {busy ? t("common.working") : t("admin.overrides.save")}
         </Button>
       </div>
@@ -409,13 +411,13 @@ function DeleteDialog({ open, onOpenChange, id, slug }: { open: boolean; onOpenC
             <FieldDescription>
               <Ltr mono>{slug}</Ltr>
             </FieldDescription>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
           </Field>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" variant="destructive" disabled={busy || confirm !== slug}>
+            <Button type="submit" variant="danger" disabled={busy || confirm !== slug}>
               {busy ? t("common.working") : t("common.delete")}
             </Button>
           </DialogFooter>

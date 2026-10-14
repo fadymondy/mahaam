@@ -25,6 +25,14 @@ export function timeAgo(value: string | null | undefined, locale: Locale): strin
   return rtf.format(Math.round(v), "year")
 }
 
+/** A moment with its time ("5 Oct 2026, 14:32") in the UI locale and the viewer's timezone. */
+export function formatDateTime(value: string | null | undefined, locale: Locale): string {
+  if (!value) return "—"
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return "—"
+  return new Intl.DateTimeFormat(intlTag(locale), { dateStyle: "medium", timeStyle: "short" }).format(d)
+}
+
 /** A calendar date (due dates, project dates) — no time, UTC so it never shifts a day. */
 export function formatDay(value: string | null | undefined, locale: Locale, style: "short" | "medium" = "medium"): string {
   if (!value) return "—"

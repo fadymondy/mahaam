@@ -109,7 +109,7 @@ async function boot() {
       notify({ type: "timer", running: null });
     },
     async selectWorkspace(ws: Workspace) {
-      state = { ...state, workspace: { id: ws.id, slug: ws.slug, name: ws.name, role: ws.role, locale: ws.locale } };
+      state = { ...state, workspace: { id: ws.id, slug: ws.slug, name: ws.name, role: ws.role, locale: ws.locale, logo: ws.logo } };
       client.setWorkspace(ws.id);
       await saveState({ workspace: state.workspace });
       notify({ type: "refresh" });

@@ -12,6 +12,8 @@ github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsVi
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
+github.com/circlexo/circlexo-go v0.2.0 h1:pLAQQ+1QK5erWrfx8oSu6jT5Dac6KHuvoOxSNNCXmRA=
+github.com/circlexo/circlexo-go v0.2.0/go.mod h1:8owk1RIM0vdyUFE1kqqQ1ZGhof7uQ7xAxm5AaW8xMGQ=
 github.com/cpuguy83/go-md2man/v2 v2.0.5 h1:ZtcqGrnekaHpVLArFSe4HK5DoKx1T0rq2DwVB0alcyc=
 github.com/cpuguy83/go-md2man/v2 v2.0.5/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
@@ -22,6 +24,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgryski/trifles v0.0.0-20230903005119-f50d829f2e54 h1:SG7nF6SRlWhcT7cNTs5R6Hk4V2lcmLz2NsG2VnInyNo=
 github.com/dgryski/trifles v0.0.0-20230903005119-f50d829f2e54/go.mod h1:if7Fbed8SFyPtHLHbg49SI7NAdJiC5WIA09pe59rfAA=
+github.com/dlclark/regexp2 v1.11.0 h1:G/nrcoOa7ZXlpoa/91N3X7mM3r8eIlMBBJZvsz/mxKI=
+github.com/dlclark/regexp2 v1.11.0/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/fadymondy/mahaam-go v0.0.0-20260921100450-e74d34b7714e h1:/FJftl+bNGxq2zjt5hagfQYoeCTjsu9gqpLuzeSTpU8=
@@ -49,8 +53,8 @@ github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsI
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761/go.mod h1:5TJZWKEWniPve33vlWYSoGYefn3gLQRzjfDlhSJ9ZKM=
-github.com/jackc/pgx/v5 v5.7.1 h1:x7SYsPBYDkHDksogeSmZZ5xzThcTgRz++I5E+ePFUcs=
-github.com/jackc/pgx/v5 v5.7.1/go.mod h1:e7O26IywZZ+naJtWWos6i6fvWK+29etgITqrqHLfoZA=
+github.com/jackc/pgx/v5 v5.11.0 h1:IzBBtyK9AHqf98cctWFifYSci2hgQR/cd56wB4p+ogg=
+github.com/jackc/pgx/v5 v5.11.0/go.mod h1:mal1tBGAFfLHvZzaYh77YS/eC6IX9OWbRV1QIIM0Jn4=
 github.com/jackc/puddle/v2 v2.2.2 h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo=
 github.com/jackc/puddle/v2 v2.2.2/go.mod h1:vriiEXHvEE654aYKXXjOvZM39qJ0q+azkZFrfEOc3H4=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
@@ -78,6 +82,8 @@ github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWb
 github.com/rogpeppe/go-internal v1.16.0/go.mod h1:DrUVZyrJU+txYW5/1kwtXQSMFio52ZOxX7yM1VHvnxs=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
+github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 h1:1EYB5IzjZawrrnELUi78f9fPu57HuXjmddZPjrls/28=
+github.com/santhosh-tekuri/jsonschema/v6 v6.0.3/go.mod h1:JXeL+ps8p7/KNMjDQk3TCwPpBy0wYklyWTfbkIzdIFU=
 github.com/sergi/go-diff v1.3.1 h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=
 github.com/sergi/go-diff v1.3.1/go.mod h1:aMJSSKb2lpPvRNec0+w3fl7LP9IOFzdc9Pa4NFbPK1I=
 github.com/sosodev/duration v1.3.1 h1:qtHBDMQ6lvMQsL15g4aopM4HEfOaYuhWBw3NPTtlqq4=
@@ -87,12 +93,12 @@ github.com/sqlc-dev/pqtype v0.3.0/go.mod h1:oyUjp5981ctiL9UYvj1bVvCKi8OXkCa0u645
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
-github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/togo-framework/auth v0.8.0 h1:wpbR6x50gbvZZ3pcZYOripRxs+yO2vHqycH3MpqHA6c=
-github.com/togo-framework/auth v0.8.0/go.mod h1:dPa8CdFlMGggb/PSHlhhqJvEqBelgf36t+qP/vkq2vQ=
-github.com/togo-framework/auth-oauth v0.2.0 h1:PAxwiiXF/7Hh0NJNtzNMqky8+zv7mpv5eJMiqWSyjk8=
-github.com/togo-framework/auth-oauth v0.2.0/go.mod h1:WD59z6wBKPT6BPbP4DyF7NeDxnR69dE9LYPrpeR1c6Q=
+github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
+github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
+github.com/togo-framework/auth v0.10.0 h1:eFZVnAiQ5zqFFvwB8TriwZIu8UVMcjuVU0KdsQL9ZAk=
+github.com/togo-framework/auth v0.10.0/go.mod h1:7rvnIe3YweUjp2JS0tBINDQB78YC5FToAYq6j2VUtuM=
+github.com/togo-framework/auth-oauth v0.2.1 h1:CAi9yNwVifPRdoUf+43fYKeC9Bd0kZLL9bwYettEfC4=
+github.com/togo-framework/auth-oauth v0.2.1/go.mod h1:WD59z6wBKPT6BPbP4DyF7NeDxnR69dE9LYPrpeR1c6Q=
 github.com/togo-framework/cache v0.3.0 h1:COOKnJ+uo6lbhYOYugOwi/0BS7cwb9B45cRrmTkQc9Q=
 github.com/togo-framework/cache v0.3.0/go.mod h1:ctBGrqfx7/zK+Zrt269Etxa5VR9HBHpFl8usgWlXC4U=
 github.com/togo-framework/db-postgres v0.1.0 h1:6uNo5LVcRm2hRI7nW+YvQEV3Yo9FkfGCR0gPTtgSXEQ=
@@ -113,8 +119,8 @@ github.com/togo-framework/queue v0.3.0 h1:l6NrDeJIhqgyTVOxok197vVVr5aV5Len7naT02
 github.com/togo-framework/queue v0.3.0/go.mod h1:HsjBEk31j+z/4yGZRHqxNxaYvRorUCaJzZsjWzQdKk0=
 github.com/togo-framework/ratelimit v0.1.0 h1:zSYAaEkXAWAsEO3c+oB9UtGm7ckNGo4/eh9yN311pu4=
 github.com/togo-framework/ratelimit v0.1.0/go.mod h1:T78mTs7xc/cFT6gEC0MZaPDRDP7HL9PzGevpqVH7XGw=
-github.com/togo-framework/realtime v0.2.0 h1:ejT+Z40ukumu5QWPRzgbFfCyAoVtidLfD/snQnPZPso=
-github.com/togo-framework/realtime v0.2.0/go.mod h1:saQu84DVN19AjtlUqf6nHvJ1zgtt17rV7R7vs/JfSXY=
+github.com/togo-framework/realtime v0.2.1 h1:N+wnogccG27MlWjfnmM7wceE2BtCh07LrzCo0pdFSO0=
+github.com/togo-framework/realtime v0.2.1/go.mod h1:saQu84DVN19AjtlUqf6nHvJ1zgtt17rV7R7vs/JfSXY=
 github.com/togo-framework/scheduler v0.1.0 h1:eJBTSPix7JXKCRXenr3ahyUhOwpJOUhINPH0KLAgUVs=
 github.com/togo-framework/scheduler v0.1.0/go.mod h1:uv6HpvLHZSKnl207E4ltVQl2EeRAuGlGmvz7ZxzFJn0=
 github.com/togo-framework/settings v0.1.1 h1:7m1Ou7hoYIIJg/bmTs5h0SyzmZChjCetXgq5WSeInpc=

@@ -33,13 +33,17 @@ import kpiAr from "@/lang/kpi.ar.json"
 import adminEn from "@/lang/admin.en.json"
 import adminAr from "@/lang/admin.ar.json"
 
+// The rebuilt app shell and home dashboard.
+import homeEn from "@/lang/home.en.json"
+import homeAr from "@/lang/home.ar.json"
+
 export { LOCALES, dirForLocale, isLocale } from "@/lib/i18n-locale"
 export type { Locale } from "@/lib/i18n-locale"
 
 type Dict = Record<string, string>
 const DICTIONARIES: Record<Locale, Dict> = {
-  en: { ...en, ...workEn, ...timeEn, ...reportsEn, ...invoicesEn, ...integrationsEn, ...portalEn, ...kpiEn, ...adminEn },
-  ar: { ...ar, ...workAr, ...timeAr, ...reportsAr, ...invoicesAr, ...integrationsAr, ...portalAr, ...kpiAr, ...adminAr },
+  en: { ...en, ...workEn, ...timeEn, ...reportsEn, ...invoicesEn, ...integrationsEn, ...portalEn, ...kpiEn, ...adminEn, ...homeEn },
+  ar: { ...ar, ...workAr, ...timeAr, ...reportsAr, ...invoicesAr, ...integrationsAr, ...portalAr, ...kpiAr, ...adminAr, ...homeAr },
 }
 
 /** Non-reactive lookup — for use outside React. */

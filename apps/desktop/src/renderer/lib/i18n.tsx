@@ -7,9 +7,16 @@ import * as inbox from "../lang/inbox";
 import * as issues from "../lang/issues";
 import * as settings from "../lang/settings";
 import * as time from "../lang/time";
+import * as projectL from "../lang/project";
+import * as projectTabsL from "../lang/projectTabs";
+import * as projectMoneyL from "../lang/projectMoney";
+import * as clientsL from "../lang/clients";
+import * as teamL from "../lang/team";
+import * as reportsL from "../lang/reports";
+import * as agentsL from "../lang/agents";
 
-const EN = { ...core.en, ...issues.en, ...time.en, ...inbox.en, ...settings.en };
-const AR = { ...core.ar, ...issues.ar, ...time.ar, ...inbox.ar, ...settings.ar } as Record<string, string>;
+const EN = { ...core.en, ...issues.en, ...time.en, ...inbox.en, ...settings.en, ...projectL.en, ...projectTabsL.en, ...projectMoneyL.en, ...clientsL.en, ...teamL.en, ...reportsL.en, ...agentsL.en };
+const AR = { ...core.ar, ...issues.ar, ...time.ar, ...inbox.ar, ...settings.ar, ...projectL.ar, ...projectTabsL.ar, ...projectMoneyL.ar, ...clientsL.ar, ...teamL.ar, ...reportsL.ar, ...agentsL.ar } as Record<string, string>;
 
 import { LOCALES, type Locale } from "../../shared/locales";
 

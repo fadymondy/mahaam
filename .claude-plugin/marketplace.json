@@ -1,0 +1,13 @@
+{
+  "name": "mahaam",
+  "owner": { "name": "Mahaam", "email": "info@3x1.io" },
+  "metadata": { "description": "Mahaam for Claude Code: project management, issues, time and AI cost from your editor." },
+  "plugins": [
+    {
+      "name": "mahaam",
+      "source": "./kit/claude-plugin",
+      "description": "Work your Mahaam board from Claude Code: the issues loop, time tracking, per-issue AI cost, status reports.",
+      "category": "productivity"
+    }
+  ]
+}

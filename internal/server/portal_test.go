@@ -72,10 +72,37 @@ func TestCustomerPortal(t *testing.T) {
 	if panel["invoices_visible"] != true {
 		t.Errorf("the client's own contact should see the client's invoices section")
 	}
-	// Still no tasks for a client.
-	for _, p := range []string{"/api/w/tasks", "/api/w/projects/" + prID + "/board", "/api/w/projects/" + prID + "/tasks"} {
-		if code, _ := cust.do("GET", p, nil); code == 200 {
-			t.Errorf("client read tasks at %s", p)
+
+	// ---- MH-1167: the portal dashboard and time page span only the customer's projects ------
+	code, raw = cust.do("GET", "/api/w/portal/overview", nil)
+	if code != 200 {
+		t.Fatalf("portal overview: %d %s", code, raw)
+	}
+	for _, leak := range []string{otherPr, "999900", "bill_rate", "cost_rate"} {
+		if strings.Contains(string(raw), leak) {
+			t.Errorf("portal overview leaks %q: %s", leak, raw)
+		}
+	}
+	ov := cust.must("GET", "/api/w/portal/overview", nil, 200)
+	if len(ov["projects"].([]any)) != 1 || num(ov["active_projects"]) != 1 || num(ov["open_tasks"]) != 1 || len(ov["weeks"].([]any)) != 12 {
+		t.Errorf("portal overview: %v", ov)
+	}
+	tm := cust.must("GET", "/api/w/portal/time", nil, 200)
+	if num(tm["total_minutes"]) != 90 || len(tm["projects"].([]any)) != 1 {
+		t.Errorf("portal time: %v", tm)
+	}
+	if people := tm["people"].([]any); len(people) != 1 || num(people[0].(map[string]any)["minutes"]) != 90 {
+		t.Errorf("portal time by person (team shared by default): %v", tm["people"])
+	}
+	// A customer reads the tasks of their own projects (MH-1176) — never another project's.
+	for _, p := range []string{"/api/w/projects/" + prID + "/board", "/api/w/tasks?project=" + prID} {
+		if code, _ := cust.do("GET", p, nil); code != 200 {
+			t.Errorf("client should read its project's tasks at %s: %d", p, code)
+		}
+	}
+	for _, p := range []string{"/api/w/projects/" + otherPr + "/board"} {
+		if code, _ := cust.do("GET", p, nil); code != 404 {
+			t.Errorf("client read another project's tasks at %s: %d", p, code)
 		}
 	}
 
@@ -92,8 +119,21 @@ func TestCustomerPortal(t *testing.T) {
 	if code, _ := cust.do("GET", "/api/w/portal/issues/"+foreign, nil); code != 404 {
 		t.Errorf("client read another project's issue: %d", code)
 	}
-	if code, _ := cust.do("PATCH", "/api/w/issues/"+issue, map[string]any{"status": "done"}); code/100 == 2 {
-		t.Errorf("the general issue PATCH must stay closed to clients: %d", code)
+	// The general issue routes are open to a customer on their own projects only (MH-1176).
+	if code, _ := cust.do("GET", "/api/w/issues/"+issue, nil); code != 200 {
+		t.Errorf("client should read its project's issue: %d", code)
+	}
+	if code, _ := cust.do("GET", "/api/w/issues/"+foreign, nil); code != 404 {
+		t.Errorf("client read another project's issue via /api/w/issues: %d", code)
+	}
+	if code, _ := cust.do("PATCH", "/api/w/issues/"+foreign, map[string]any{"priority": "low"}); code != 404 {
+		t.Errorf("client changed another project's issue: %d", code)
+	}
+	if strings.Contains(mustString(t, cust, "GET", "/api/w/issues"), foreign) {
+		t.Errorf("client issue list leaks another project's issue %s", foreign)
+	}
+	if code, _ := cust.do("POST", "/api/w/issues", map[string]any{"title": "No project"}); code/100 == 2 {
+		t.Errorf("client filed an issue with no project: %d", code)
 	}
 	if code, _ := cust.do("PATCH", "/api/w/portal/issues/"+issue, map[string]any{"status": "in_progress"}); code != 422 {
 		t.Errorf("client moved an issue to in_progress: %d", code)
@@ -261,12 +301,61 @@ func TestCustomerPortal(t *testing.T) {
 	if code, _ := cust.do("GET", "/api/w/portal/projects/"+otherPr+"/tasks", nil); code != 404 {
 		t.Errorf("customer read another project's board: %d", code)
 	}
-	for _, w := range []struct{ m, p string }{
-		{"PATCH", "/api/w/tasks/" + tkKey}, {"POST", "/api/w/projects/" + prID + "/tasks"},
-		{"POST", "/api/w/tasks/" + tkKey + "/comments"}, {"GET", "/api/w/tasks/" + tkKey},
+	// The app's task routes work for a customer on their own project (MH-1176)…
+	if code, _ := cust.do("GET", "/api/w/tasks/"+tkKey, nil); code != 200 {
+		t.Errorf("client should open its project's task: %d", code)
+	}
+	if code, _ := cust.do("POST", "/api/w/tasks/"+tkKey+"/comments", map[string]any{"body": "From the customer"}); code/100 != 2 {
+		t.Errorf("client should comment on its project's task: %d", code)
+	}
+	// …and never on a project they cannot see.
+	if code, _ := cust.do("POST", "/api/w/projects/"+otherPr+"/tasks", map[string]any{"title": "x"}); code != 404 {
+		t.Errorf("client created a task in another project: %d", code)
+	}
+	// Their directory is the people on their projects, never the member list.
+	if code, _ := cust.do("GET", "/api/w/members", nil); code/100 == 2 {
+		t.Errorf("client listed the workspace members: %d", code)
+	}
+	if ppl := cust.must("GET", "/api/w/people", nil, 200)["people"].([]any); len(ppl) == 0 {
+		t.Errorf("client people directory is empty")
+	}
+	// Every project tab but Settings (MH-1190): integrations, the vault and billing, on their own
+	// project only, with our cost, the markup and secret values kept back.
+	if code, _ := cust.do("GET", "/api/w/projects/"+prID+"/integrations", nil); code != 200 {
+		t.Errorf("client should read its project's integrations: %d", code)
+	}
+	vault := "/api/w/projects/" + prID + "/vault"
+	cust.must("POST", vault, map[string]any{"kind": "memory", "title": "Brand colours", "body": "Teal and sand."}, 201)
+	sec := owner.must("POST", vault, map[string]any{"kind": "secret", "title": "Production DB", "value": "s3cr3t-pa55"}, 201)["id"].(string)
+	if raw := mustString(t, cust, "GET", vault); !strings.Contains(raw, "Brand colours") || !strings.Contains(raw, "Production DB") || strings.Contains(raw, "s3cr3t-pa55") {
+		t.Errorf("client vault (notes and secret titles, never a value): %s", raw)
+	}
+	if code, _ := cust.do("POST", "/api/w/vault/"+sec+"/reveal", nil); code/100 == 2 {
+		t.Errorf("client revealed a secret: %d", code)
+	}
+	owner.must("POST", "/api/w/projects/"+prID+"/subscriptions", map[string]any{
+		"name": "Hetzner server", "price": "49.00", "cost": "30.00", "currency": "USD", "notes": "internal margin note",
+	}, 201)
+	owner.must("POST", "/api/w/projects/"+prID+"/subscriptions", map[string]any{"name": "Our own tooling", "price": "5.00", "billable": false}, 201)
+	subs := mustString(t, cust, "GET", "/api/w/subscriptions?project="+prID)
+	if !strings.Contains(subs, "Hetzner server") || !strings.Contains(subs, `"price_minor":4900`) || strings.Contains(subs, `"cost_minor":3000`) ||
+		strings.Contains(subs, "internal margin note") || strings.Contains(subs, "Our own tooling") {
+		t.Errorf("client subscriptions (billable, price only): %s", subs)
+	}
+	if code, _ := cust.do("GET", "/api/w/ai-usage?project="+prID, nil); code != 200 {
+		t.Errorf("client should read its project's AI usage: %d", code)
+	}
+	for _, p := range []string{
+		"/api/w/projects/" + otherPr + "/integrations", "/api/w/projects/" + otherPr + "/vault",
+		"/api/w/subscriptions?project=" + otherPr, "/api/w/ai-usage?project=" + otherPr,
 	} {
-		if code, _ := cust.do(w.m, w.p, map[string]any{"title": "x", "body": "x"}); code/100 == 2 {
-			t.Errorf("client reached staff task route %s %s: %d", w.m, w.p, code)
+		if code, _ := cust.do("GET", p, nil); code != 404 {
+			t.Errorf("client on another project: %s answered %d, want 404", p, code)
+		}
+	}
+	for _, p := range []string{"/api/w/subscriptions", "/api/w/ai-usage", "/api/w/projects/" + prID + "/ai-markup"} {
+		if code, _ := cust.do("GET", p, nil); code/100 == 2 {
+			t.Errorf("client read workspace billing or the markup: %s answered %d", p, code)
 		}
 	}
 	if tm := cust.must("GET", "/api/w/portal/projects/"+prID+"/time", nil, 200); num(tm["used_minutes"]) != 90 {
@@ -337,13 +426,13 @@ func TestCustomerPortal(t *testing.T) {
 			t.Errorf("client tools/list lacks %s", want)
 		}
 	}
-	for _, staff := range []string{"list_tasks", "get_task", "list_requests", "profitability"} {
+	for _, staff := range []string{"list_requests", "profitability", "list_members"} {
 		if listed[staff] {
 			t.Errorf("client tools/list shows staff tool %s", staff)
 		}
 	}
-	if code, _ := cust.do("POST", "/api/w/mcp_tokens", map[string]any{"name": "x", "scopes": []string{"tasks:read"}}); code != 422 {
-		t.Errorf("a client minted tasks:read: %d", code)
+	if code, _ := cust.do("POST", "/api/w/mcp_tokens", map[string]any{"name": "x", "scopes": []string{"reports:read"}}); code != 422 {
+		t.Errorf("a client minted reports:read: %d", code)
 	}
 	if text, isErr := call(agent, "portal_board", map[string]any{"project": prID}); isErr || !strings.Contains(text, tkKey) {
 		t.Errorf("portal_board: %v %q", isErr, text)

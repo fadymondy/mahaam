@@ -2651,6 +2651,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/w/members/{user}/view-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** View the workspace as a member (owner/admin; read-only, sent as X-View-As) */
+        post: operations["w-member-view-as"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/notification-settings": {
         parameters: {
             query?: never;
@@ -2714,6 +2731,40 @@ export interface paths {
         put?: never;
         /** Mark one of my notifications read */
         post: operations["w-read-notification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Home dashboard aggregates: overdue, completed, tasks needing attention, project members */
+        get: operations["w-overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** People on the projects you can see (the directory of a customer, who cannot list members) */
+        get: operations["w-people"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2806,6 +2857,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/w/portal/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The customer's dashboard across their projects: counts, hours, what's due and recent activity */
+        get: operations["w-portal-overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/portal/projects": {
         parameters: {
             query?: never;
@@ -2851,6 +2919,40 @@ export interface paths {
         get: operations["w-portal-activity"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/portal/projects/{project}/hosting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The project's hosting, as its customer sees it */
+        get: operations["w-portal-hosting"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/portal/projects/{project}/hosting/panel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A one-time link into the hosting panel */
+        post: operations["w-portal-hosting-panel"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2917,6 +3019,23 @@ export interface paths {
         };
         /** The requests of your projects with their state and the team's reply */
         get: operations["w-portal-requests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/portal/time": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The team's time across the customer's projects: by week, by project, and by person where the team is shared */
+        get: operations["w-portal-time-all"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3287,6 +3406,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/w/projects/{project}/hosting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The project's Hosbah apps */
+        get: operations["w-hosting"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/projects/{project}/hosting/deploy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deploy one of the project's Hosbah apps */
+        post: operations["w-hosting-deploy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/projects/{project}/integrations": {
         parameters: {
             query?: never;
@@ -3347,6 +3500,74 @@ export interface paths {
         };
         /** Repositories the installation can access */
         get: operations["w-github-repos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/projects/{project}/integrations/hosbah": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link a Hosbah app */
+        put: operations["w-connect-hosbah"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/projects/{project}/integrations/hosbah/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hosbah apps the CircleXO sign-in can see */
+        post: operations["w-hosbah-apps"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/projects/{project}/integrations/hosbah/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start connecting Hosbah (OAuth) */
+        post: operations["w-hosbah-authorize"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/w/projects/{project}/integrations/hosbah/methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ways to connect Hosbah */
+        get: operations["w-hosbah-methods"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4207,6 +4428,23 @@ export interface paths {
         patch: operations["w-update-time-entry"];
         trace?: never;
     };
+    "/api/w/time/range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A person's week or month and the period before it, entries cut at local midnight */
+        get: operations["w-time-range"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/w/time/running": {
         parameters: {
             query?: never;
@@ -4251,7 +4489,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start a timer — the running one stops in the same transaction */
+        /** Start a timer — your running human timer stops in the same transaction; agent (MCP) starts need a task, run in parallel and stop nothing */
         post: operations["w-start-timer"];
         delete?: never;
         options?: never;
@@ -4375,6 +4613,25 @@ export interface paths {
         post?: never;
         /** Delete this workspace and everything in it (owner only; type the slug to confirm) */
         delete: operations["w-delete-workspace"];
+        options?: never;
+        head?: never;
+        /** Rename the workspace or change its address (owner/admin) */
+        patch: operations["w-update-workspace"];
+        trace?: never;
+    };
+    "/api/w/workspace/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload the workspace logo (multipart field "file": JPEG, PNG or GIF, up to 10 MB; owner/admin) */
+        post: operations["w-workspace-logo-upload"];
+        /** Remove the workspace logo (owner/admin) */
+        delete: operations["w-workspace-logo-delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4785,6 +5042,18 @@ export interface components {
             updated_at: string;
             uploaded_by: string;
             workspace_id: string;
+        };
+        AttentionTask: {
+            /** Format: date-time */
+            due_at: string | null;
+            id: string;
+            key: string;
+            overdue: boolean;
+            priority: string;
+            project_color: string;
+            project_id: string;
+            project_name: string;
+            title: string;
         };
         AuditEntry: {
             action: string;
@@ -5769,6 +6038,7 @@ export interface components {
             readonly $schema?: string;
             can: string[] | null;
             role: string;
+            viewing_as?: components["schemas"]["ViewingAs"];
             workspace: components["schemas"]["WorkspaceStruct"];
         };
         Def: {
@@ -6095,10 +6365,115 @@ export interface components {
             readonly $schema?: string;
             grants: components["schemas"]["Grant"][] | null;
         };
+        HosbahApp: {
+            domains: string[] | null;
+            id: string;
+            logo_url?: string;
+            name: string;
+            /** @description The app's page in the server's customer panel */
+            panel_url?: string;
+            server_id: string;
+            server_name?: string;
+            /** @description new, deploying, running, failed or stopped */
+            status: string;
+            title?: string;
+        };
+        HosbahAppList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HosbahAppList.json
+             */
+            readonly $schema?: string;
+            apps: components["schemas"]["HosbahApp"][] | null;
+        };
+        HosbahAppsInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HosbahAppsInput.json
+             */
+            readonly $schema?: string;
+            /** @description The sealed CircleXO sign-in from the connect redirect (#hosbah=…); never a raw token */
+            pending: string;
+        };
+        HosbahDeployment: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HosbahDeployment.json
+             */
+            readonly $schema?: string;
+            commit?: string;
+            /** Format: date-time */
+            finished_at?: string;
+            id: string;
+            /** @description deploy, restart or rollback */
+            kind: string;
+            message?: string;
+            /** Format: int64 */
+            number: number;
+            /** Format: date-time */
+            queued_at: string;
+            ref?: string;
+            status: string;
+        };
+        HosbahInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HosbahInput.json
+             */
+            readonly $schema?: string;
+            /** @description A Hosbah app id (or apps) */
+            app?: string;
+            /** @description The Hosbah app ids to link (web, api, mcp…); replaces the linked set */
+            apps?: string[] | null;
+            /** @description The sealed CircleXO sign-in from the connect redirect (#hosbah=…); never a raw token */
+            pending: string;
+        };
+        HosbahMethods: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HosbahMethods.json
+             */
+            readonly $schema?: string;
+            /** @description Connect through the CircleXO account (the caller's Mahaam account is linked to the hub) */
+            circlexo: boolean;
+            /** @description Connect through Hosbah's own OAuth */
+            hosbah: boolean;
+        };
+        HosbahStartOutBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HosbahStartOutBody.json
+             */
+            readonly $schema?: string;
+            url: string;
+        };
+        Hosting: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Hosting.json
+             */
+            readonly $schema?: string;
+            app: components["schemas"]["HosbahApp"];
+            apps: components["schemas"]["HostingApp"][] | null;
+            deployments: components["schemas"]["HosbahDeployment"][] | null;
+        };
+        HostingApp: {
+            app: components["schemas"]["HosbahApp"];
+            deployments: components["schemas"]["HosbahDeployment"][] | null;
+            error?: string;
+        };
         Identity: {
             email: string;
             guard: string;
             id: string;
+            impersonator?: string;
             permissions: string[] | null;
             roles: string[] | null;
         };
@@ -6180,7 +6555,7 @@ export interface components {
              * @example https://example.com/schemas/Integration.json
              */
             readonly $schema?: string;
-            /** @description Non-secret settings (repo, installation_id, base_url, project_key, jql, email, team_id) */
+            /** @description Non-secret settings (repo, installation_id, base_url, project_key, jql, email, team_id, app_id, app_name, server_id, panel_url) */
             config: {
                 [key: string]: unknown;
             };
@@ -6192,7 +6567,7 @@ export interface components {
             /** Format: date-time */
             last_synced_at: string | null;
             project_id: string;
-            /** @description github, jira or linear */
+            /** @description github, jira, linear or hosbah */
             provider: string;
             /** @description pending, active, error or disabled */
             status: string;
@@ -6361,10 +6736,28 @@ export interface components {
              * @description Time an agent has banked on the issue
              */
             agent_seconds: number;
+            /**
+             * Format: int64
+             * @description Cache read + write tokens
+             */
+            ai_cache_tokens: number;
+            /**
+             * Format: int64
+             * @description What the AI work on this issue cost, in minor units
+             */
+            ai_cost_minor: number;
+            ai_currency: string;
             /** @description low, medium, high, xhigh or max */
             ai_effort: string | null;
+            /**
+             * Format: int64
+             * @description Input tokens agents reported on this issue
+             */
+            ai_input_tokens: number;
             /** @description Model the agent runs this issue with (opus, sonnet, haiku, fable) */
             ai_model: string | null;
+            /** Format: int64 */
+            ai_output_tokens: number;
             body: string | null;
             /** Format: date-time */
             closed_at: string | null;
@@ -6436,10 +6829,28 @@ export interface components {
              * @description Time an agent has banked on the issue
              */
             agent_seconds: number;
+            /**
+             * Format: int64
+             * @description Cache read + write tokens
+             */
+            ai_cache_tokens: number;
+            /**
+             * Format: int64
+             * @description What the AI work on this issue cost, in minor units
+             */
+            ai_cost_minor: number;
+            ai_currency: string;
             /** @description low, medium, high, xhigh or max */
             ai_effort: string | null;
+            /**
+             * Format: int64
+             * @description Input tokens agents reported on this issue
+             */
+            ai_input_tokens: number;
             /** @description Model the agent runs this issue with (opus, sonnet, haiku, fable) */
             ai_model: string | null;
+            /** Format: int64 */
+            ai_output_tokens: number;
             body: string | null;
             /** Format: date-time */
             closed_at: string | null;
@@ -6491,6 +6902,9 @@ export interface components {
              * @example https://example.com/schemas/IssueList.json
              */
             readonly $schema?: string;
+            column_totals?: {
+                [key: string]: number;
+            };
             issues: components["schemas"]["Issue"][] | null;
         };
         Item: {
@@ -7354,6 +7768,46 @@ export interface components {
                 [key: string]: components["schemas"]["Rule"];
             };
         };
+        Overview: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/Overview.json
+             */
+            readonly $schema?: string;
+            /** @description Overdue first, then high and urgent open tasks (at most 6) */
+            attention: components["schemas"]["AttentionTask"][] | null;
+            /**
+             * Format: int64
+             * @description Tasks completed, in non-archived projects I can see
+             */
+            completed_total: number;
+            /**
+             * Format: int64
+             * @description Of those, completed in the last 7 days
+             */
+            completed_week: number;
+            /**
+             * Format: int64
+             * @description Open tasks past their due date
+             */
+            overdue: number;
+            /** @description Direct member user ids per visible project (at most 5 each) */
+            project_members: {
+                [key: string]: string[] | null;
+            };
+        };
+        PanelLink: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PanelLink.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            expires_at?: string;
+            url: string;
+        };
         PaymentInput: {
             /**
              * Format: uri
@@ -7370,6 +7824,20 @@ export interface components {
             paid_at?: string;
             /** @description A reference (transfer id, cheque no.) */
             ref?: string;
+        };
+        PeopleList: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PeopleList.json
+             */
+            readonly $schema?: string;
+            people: components["schemas"]["Person"][] | null;
+        };
+        Person: {
+            initials: string;
+            name: string;
+            user_id: string;
         };
         Plan: {
             /**
@@ -7437,6 +7905,8 @@ export interface components {
             key: string;
             /** @description task.created, task.moved, task.completed, issue.created, issue.closed, request.filed */
             kind: string;
+            project?: string;
+            project_id?: string;
             title: string;
             to?: string;
         };
@@ -7486,6 +7956,36 @@ export interface components {
             created_at: string;
             id: string;
             mine: boolean;
+        };
+        PortalDueTask: {
+            /** Format: date-time */
+            due_at: string;
+            key: string;
+            overdue: boolean;
+            project: string;
+            project_id: string;
+            title: string;
+        };
+        PortalHosting: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PortalHosting.json
+             */
+            readonly $schema?: string;
+            apps: components["schemas"]["PortalHostingApp"][] | null;
+            /** @description The caller may open the hosting panel (the project's client contacts, managers and up) */
+            can_open: boolean;
+            connected: boolean;
+            domains: string[] | null;
+            name?: string;
+            status?: string;
+        };
+        PortalHostingApp: {
+            domains: string[] | null;
+            id: string;
+            name: string;
+            status: string;
         };
         PortalInvoiceList: {
             /**
@@ -7573,11 +8073,53 @@ export interface components {
             color: string;
             name: string;
         };
+        PortalOverview: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PortalOverview.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            active_projects: number;
+            /** @description Recent activity across your projects */
+            activity: components["schemas"]["PortalActivityItem"][] | null;
+            /** Format: int64 */
+            completed_7d: number;
+            /** Format: int64 */
+            completed_projects: number;
+            /** @description Overdue and due in 14 days (projects that share their board) */
+            due_tasks: components["schemas"]["PortalDueTask"][] | null;
+            /**
+             * Format: int64
+             * @description Tracked this calendar month (workspace timezone)
+             */
+            month_minutes: number;
+            /** Format: int64 */
+            open_issues: number;
+            /** Format: int64 */
+            open_tasks: number;
+            /** Format: int64 */
+            overdue_tasks: number;
+            /** Format: int64 */
+            pending_requests: number;
+            projects: components["schemas"]["PortalProject"][] | null;
+            /** Format: int64 */
+            unpaid_invoices: number;
+            /** @description The last 12 weeks across your projects */
+            weeks: components["schemas"]["PortalWeek"][] | null;
+        };
         PortalPerson: {
             initials: string;
             name: string;
             /** @description lead or member (team list only) */
             role?: string;
+        };
+        PortalPersonTime: {
+            initials: string;
+            /** Format: int64 */
+            minutes: number;
+            name: string;
         };
         PortalProject: {
             archived: boolean;
@@ -7686,6 +8228,18 @@ export interface components {
             /** @description The last 12 weeks, totals only */
             weeks: components["schemas"]["PortalWeek"][] | null;
         };
+        PortalProjectTime: {
+            /** Format: int64 */
+            budget_minutes: number | null;
+            color: string;
+            id: string;
+            /** Format: int64 */
+            month_minutes: number;
+            name: string;
+            status: string;
+            /** Format: int64 */
+            used_minutes: number;
+        };
         PortalShare: {
             board: boolean;
             money: boolean;
@@ -7751,6 +8305,22 @@ export interface components {
             /** Format: int64 */
             minutes: number;
             title: string | null;
+        };
+        PortalTimeOverview: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PortalTimeOverview.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            month_minutes: number;
+            /** @description Only projects that share their team */
+            people: components["schemas"]["PortalPersonTime"][] | null;
+            projects: components["schemas"]["PortalProjectTime"][] | null;
+            /** Format: int64 */
+            total_minutes: number;
+            weeks: components["schemas"]["PortalWeek"][] | null;
         };
         PortalTimeReport: {
             /**
@@ -7894,6 +8464,11 @@ export interface components {
             issues?: {
                 [key: string]: number;
             };
+            /**
+             * Format: date-time
+             * @description when anything last happened in the project (newest of its activity log, tasks and issues); list only
+             */
+            last_activity_at?: string;
             /** Format: int64 */
             member_count: number;
             name: string;
@@ -7956,6 +8531,11 @@ export interface components {
             issues?: {
                 [key: string]: number;
             };
+            /**
+             * Format: date-time
+             * @description when anything last happened in the project (newest of its activity log, tasks and issues); list only
+             */
+            last_activity_at?: string;
             /** Format: int64 */
             member_count: number;
             members: components["schemas"]["ProjectMember"][] | null;
@@ -8658,7 +9238,9 @@ export interface components {
              * @example https://example.com/schemas/Running.json
              */
             readonly $schema?: string;
-            /** @description null when no timer is running */
+            /** @description Running agent (MCP) timers, one per task, oldest first */
+            agents: components["schemas"]["TimeEntry"][] | null;
+            /** @description The human timer; null when none runs */
             timer: components["schemas"]["TimeEntry"];
         };
         SavedReport: {
@@ -8815,7 +9397,13 @@ export interface components {
             /** @description todo, doing or done */
             category: string;
             color: string;
+            /** @description Lucide icon name; empty means the stage's default icon */
+            icon: string;
             id: string;
+            /** @description The column's name per locale (en, ar); name is the fallback */
+            labels: {
+                [key: string]: string;
+            };
             name: string;
             /** Format: double */
             position: number;
@@ -8835,14 +9423,34 @@ export interface components {
             /** @enum {string} */
             category?: "todo" | "doing" | "done";
             color?: string;
+            /** @description Lucide icon name (see StatusIcons); empty resets to the stage's default */
+            icon?: string;
             /** Format: int64 */
             index?: number;
+            /** @description The column's name per locale: en, ar */
+            labels?: {
+                [key: string]: string;
+            };
             name?: string;
             /**
              * @description Workflow stage; sets the category too
              * @enum {string}
              */
             stage?: "backlog" | "todo" | "in_progress" | "waiting_approval" | "in_review" | "done";
+        };
+        StopInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/StopInput.json
+             */
+            readonly $schema?: string;
+            /** @description The id of the running entry to stop (needed when several run) */
+            entry?: string;
+            /** @description Stop the timer running on this task (MG-12, 12 or the task id) */
+            task?: string;
+            /** @description A member's user id (time:manage); default you */
+            user?: string;
         };
         Subscription: {
             /**
@@ -9571,6 +10179,37 @@ export interface components {
             user_id: string;
             workspace_id: string;
         };
+        TimePeriod: {
+            /** @description YYYY-MM-DD, local */
+            from: string;
+            /** @description YYYY-MM-DD, local */
+            to: string;
+        };
+        TimeRange: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TimeRange.json
+             */
+            readonly $schema?: string;
+            current: components["schemas"]["TimePeriod"];
+            /** @description Every entry overlapping the two periods, oldest first */
+            entries: components["schemas"]["TimeEntry"][] | null;
+            /** @description week or month */
+            kind: string;
+            /** Format: date-time */
+            now: string;
+            previous: components["schemas"]["TimePeriod"];
+            /** Format: int64 */
+            rounding_minutes: number;
+            running: components["schemas"]["TimeEntry"];
+            /** @description Each entry cut at local midnight, for the days of both periods */
+            slices: components["schemas"]["EntrySlice"][] | null;
+            timezone: string;
+            user_id: string;
+            /** Format: int64 */
+            week_start: number;
+        };
         TimeReport: {
             /**
              * Format: uri
@@ -9683,8 +10322,10 @@ export interface components {
              * @example https://example.com/schemas/TimerChange.json
              */
             readonly $schema?: string;
+            /** @description An agent start on a task whose agent timer was already running: nothing changed, started is the existing timer */
+            already_running: boolean;
             started: components["schemas"]["TimeEntry"];
-            /** @description The timer this start stopped, if one was running */
+            /** @description The human timer this start stopped, if one was running (agent starts stop nothing) */
             stopped: components["schemas"]["TimeEntry"];
         };
         Timesheet: {
@@ -10383,6 +11024,23 @@ export interface components {
             email_verification_required: boolean;
             email_verified: boolean;
         };
+        ViewAsOut: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ViewAsOut.json
+             */
+            readonly $schema?: string;
+            email: string;
+            role: string;
+            user_id: string;
+        };
+        ViewingAs: {
+            by: string;
+            email: string;
+            role: string;
+            user_id: string;
+        };
         "W-add-catalogue-itemRequest": {
             /**
              * Format: uri
@@ -10550,6 +11208,24 @@ export interface components {
             /** @description owner/name */
             repo: string;
         };
+        "W-hosbah-authorizeRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/W-hosbah-authorizeRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Where the callback returns to (default en)
+             * @enum {string}
+             */
+            locale?: "en" | "ar" | "";
+            /**
+             * @description Through the CircleXO account or Hosbah's own OAuth
+             * @enum {string}
+             */
+            via: "circlexo" | "hosbah";
+        };
         "W-list-invitationsResponse": {
             /**
              * Format: uri
@@ -10596,6 +11272,18 @@ export interface components {
              */
             readonly $schema?: string;
             body: string;
+        };
+        "W-portal-hosting-panelRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/W-portal-hosting-panelRequest.json
+             */
+            readonly $schema?: string;
+            /** @description The Hosbah app id (default: the first linked app) */
+            app?: string;
+            /** @description en or ar */
+            locale?: string;
         };
         "W-put-project-memberRequest": {
             /**
@@ -10676,16 +11364,6 @@ export interface components {
             /** @description Label ids or exact names */
             labels: string[] | null;
         };
-        "W-stop-timerRequest": {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/W-stop-timerRequest.json
-             */
-            readonly $schema?: string;
-            /** @description A member's user id (time:manage); default you */
-            user?: string;
-        };
         "W-sync-catalogueRequest": {
             /**
              * Format: uri
@@ -10756,6 +11434,16 @@ export interface components {
             /** @description backlog, todo, in_progress, waiting_approval, in_review, done */
             status?: string;
             title?: string;
+        };
+        "W-update-workspaceRequest": {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/W-update-workspaceRequest.json
+             */
+            readonly $schema?: string;
+            name?: string;
+            slug?: string;
         };
         WidgetConfig: {
             /** @description Launcher background, #rrggbb (default: Mahaam purple) */
@@ -10859,6 +11547,8 @@ export interface components {
             readonly $schema?: string;
             billing: components["schemas"]["Billing"];
             configured: boolean;
+            hub_billing_url?: string;
+            hub_linked: boolean;
             plans: components["schemas"]["BuyablePlan"][] | null;
         };
         WorkspaceDetail: {
@@ -10896,8 +11586,16 @@ export interface components {
             workspace_id: string;
         };
         WorkspaceOut: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WorkspaceOut.json
+             */
+            readonly $schema?: string;
             id: string;
             locale: string;
+            /** @description A data: URL (256px JPEG), or null for initials */
+            logo: string | null;
             name: string;
             role: string;
             slug: string;
@@ -18330,6 +19028,8 @@ export interface operations {
                 include_human_only?: boolean;
                 /** @description Also list items created on the project board (the board shows everything; the issue queue only what was filed as an issue) */
                 include_board?: boolean;
+                /** @description With project: only the first N items of each board column, plus column_totals (the board's paging) */
+                per_column?: number;
             };
             header?: {
                 /** @description Workspace id or slug. Non-members get 404. */
@@ -19239,6 +19939,40 @@ export interface operations {
             };
         };
     };
+    "w-member-view-as": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                user: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewAsOut"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "w-notification-settings": {
         parameters: {
             query?: never;
@@ -19393,6 +20127,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-overview": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-people": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleList"];
+                };
             };
             /** @description Error */
             default: {
@@ -19617,6 +20415,38 @@ export interface operations {
             };
         };
     };
+    "w-portal-overview": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalOverview"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "w-portal-projects": {
         parameters: {
             query?: never;
@@ -19704,6 +20534,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PortalActivityList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-portal-hosting": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalHosting"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-portal-hosting-panel": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["W-portal-hosting-panelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelLink"];
                 };
             };
             /** @description Error */
@@ -19843,6 +20745,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-portal-time-all": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalTimeOverview"];
                 };
             };
             /** @description Error */
@@ -20794,6 +21728,77 @@ export interface operations {
             };
         };
     };
+    "w-hosting": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hosting"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-hosting-deploy": {
+        parameters: {
+            query?: {
+                /** @description The Hosbah app id (default: the first linked app) */
+                app?: string;
+            };
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HosbahDeployment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "w-list-integrations": {
         parameters: {
             query?: never;
@@ -20937,6 +21942,155 @@ export interface operations {
             };
         };
     };
+    "w-connect-hosbah": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HosbahInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Integration"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-hosbah-apps": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HosbahAppsInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HosbahAppList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-hosbah-authorize": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["W-hosbah-authorizeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HosbahStartOutBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-hosbah-methods": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path: {
+                project: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HosbahMethods"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "w-connect-jira": {
         parameters: {
             query?: never;
@@ -21022,7 +22176,7 @@ export interface operations {
             };
             path: {
                 project: string;
-                /** @description github, jira or linear */
+                /** @description github, jira, linear or hosbah */
                 provider: string;
             };
             cookie?: never;
@@ -21056,7 +22210,7 @@ export interface operations {
             };
             path: {
                 project: string;
-                /** @description github, jira or linear */
+                /** @description github, jira, linear or hosbah */
                 provider: string;
             };
             cookie?: never;
@@ -23487,6 +24641,45 @@ export interface operations {
             };
         };
     };
+    "w-time-range": {
+        parameters: {
+            query?: {
+                /** @description A member's user id (time:manage); default you */
+                user?: string;
+                /** @description week (default) or month */
+                kind?: string;
+                /** @description Any YYYY-MM-DD in the period (default: now) */
+                ref?: string;
+            };
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeRange"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     "w-running-timer": {
         parameters: {
             query?: {
@@ -23638,7 +24831,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["W-stop-timerRequest"];
+                "application/json": components["schemas"]["StopInput"];
             };
         };
         responses: {
@@ -23930,6 +25123,113 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-update-workspace": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["W-update-workspaceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOut"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-workspace-logo-upload": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOut"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    "w-workspace-logo-delete": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Workspace id or slug. Non-members get 404. */
+                "X-Workspace-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOut"];
+                };
             };
             /** @description Error */
             default: {

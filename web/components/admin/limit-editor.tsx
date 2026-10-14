@@ -2,9 +2,10 @@
 
 // Editing a LimitRule in a form: the plan editor (every catalog key) and the per-workspace
 // overrides (a key may also "inherit" the plan). Prices are typed in major units.
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
+
 import { useTranslations } from "@/lib/i18n"
 import type { LimitPolicy, LimitRule } from "@/lib/admin"
 
@@ -91,7 +92,7 @@ export function RuleFields({ id, draft, onChange, currency }: { id: string; draf
 export function RuleHeader({ currency }: { currency: string }) {
   const { t } = useTranslations()
   return (
-    <div className="grid grid-cols-2 gap-2 text-meta text-grid-muted sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 text-caption text-muted-foreground sm:grid-cols-4">
       <span>{t("admin.limit.limit")}</span>
       <span>{t("plan.col.policy")}</span>
       <span className="hidden sm:block">{t("admin.limit.unitPrice", { currency })}</span>

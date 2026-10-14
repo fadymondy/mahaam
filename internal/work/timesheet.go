@@ -167,7 +167,9 @@ func (sv *Service) Timesheet(ctx context.Context, userRef, ref string) (*Timeshe
 		if e.EndedAt != nil {
 			end = *e.EndedAt
 		} else {
-			ts.Running = e
+			if e.Source != "mcp" || ts.Running == nil {
+				ts.Running = e // the human timer wins; else an agent timer
+			}
 		}
 		k := sval(e.ProjectID) + "|" + sval(e.TaskID)
 		row := grid[k]

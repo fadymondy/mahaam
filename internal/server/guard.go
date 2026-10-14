@@ -16,10 +16,12 @@ import (
 	"github.com/fadymondy/mahaam/internal/app"
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/billing/ghmarketplace"
+	"github.com/fadymondy/mahaam/internal/circlexo"
 	"github.com/fadymondy/mahaam/internal/mcp"
 	"github.com/fadymondy/mahaam/internal/limits"
 	"github.com/fadymondy/mahaam/internal/mailer"
 	"github.com/fadymondy/mahaam/internal/platform"
+	"github.com/fadymondy/mahaam/internal/reports"
 	"github.com/fadymondy/mahaam/internal/tenant"
 )
 
@@ -70,6 +72,16 @@ func classify(r *http.Request) tier {
 		// ever checked it. Mahaam's is /api/me/2fa/* and /api/auth/2fa/challenge (MH-341).
 		"/api/auth/2fa/enroll",
 		"/api/auth/2fa/verify",
+		// auth v0.9.0 added the plugin's code-gated disable for that same TOTP; with enrolment
+		// blocked there is nothing for it to disable. Mahaam's is /api/me/2fa/disable.
+		"/api/auth/2fa/disable",
+		// auth v0.10.0's admin API: user CRUD, impersonation, admin reset and magic links for any
+		// account whose users.roles holds "admin", which is exactly a Mahaam platform admin. It
+		// bypasses everything the panel does around those actions (suspension, sole-owner checks,
+		// the admin audit), and a magic link is the vulnerability class blocked above. The
+		// platform admin panel is /api/admin/* (internal/admin).
+		"/api/auth/admin/",
+		"/api/auth/impersonation/",
 		// togo-framework/settings arrives transitively (queue -> providers -> settings) and its
 		// init() mounts GET/PUT/DELETE /api/settings/{scope}/{key} over one GLOBAL table, the
 		// scope taken from the path, with no authentication or tenant of its own. Workspace
@@ -134,6 +146,14 @@ func classify(r *http.Request) tier {
 		mcp.RegisterPath,
 		mcp.TokenPath,
 		mcp.RevokePath,
+		// CircleXO hub integration (internal/circlexo, all off unless CIRCLEXO_ISSUER is set): the
+		// sign-in switch (no secrets), and the hub's event / provision / deprovision calls, which
+		// authenticate by Standard Webhooks signature (CIRCLEXO_WEBHOOK_SECRET) and nothing else.
+		// The /auth/circlexo/* and /sso/circlexo routes are outside /api and public already. Exact.
+		circlexo.ConfigPath,
+		circlexo.EventsPath,
+		circlexo.ProvisionPath,
+		circlexo.DeprovisionPath,
 		"/api/integrations/github/user-callback":
 		return tierPublic
 	}
@@ -159,8 +179,12 @@ func classify(r *http.Request) tier {
 	if path == "/api/auth/tokens" || strings.HasPrefix(path, "/api/auth/tokens/") {
 		return tierSignedIn
 	}
+	// The auth plugin guards its own routes. Since auth v0.9.0 it also mounts POST
+	// /api/auth/password/forgot, /api/auth/password/reset and /api/auth/2fa/challenge; Mahaam's own
+	// handlers for those paths (internal/account) are registered after the kernel's providers run,
+	// so they replace the plugin's on the shared chi tree (TestAuthPluginSurface).
 	if strings.HasPrefix(path, "/api/auth/") {
-		return tierPublic // the auth plugin guards its own routes
+		return tierPublic
 	}
 	if strings.HasPrefix(path, "/api/me/") {
 		return tierSignedIn
@@ -203,6 +227,10 @@ func installGuard(k *togo.Kernel, a *app.App) {
 				writeError(w, http.StatusNotFound, "not found")
 			case tierPublic:
 				switch {
+				case r.URL.Path == "/api/feedback/embed" && r.Method == http.MethodOptions:
+					// Before the auth plugin's CORS, which would answer with its own header list (MH-727).
+					reports.EmbedPreflight(w, r)
+					return
 				case r.URL.Path == "/api/auth/login" && r.Method == http.MethodPost:
 					// A suspended account cannot sign in (the plugin's handler knows nothing of it).
 					if refuseSuspendedLogin(w, r, a) {
@@ -289,6 +317,11 @@ func accountGate(a *app.App, acct *account.Service) func(http.Handler) http.Hand
 				return
 			}
 			if platform.SessionRevoked(r.Context(), a.SysDB, u, r) {
+				writeCoded(w, http.StatusUnauthorized, "your session was ended — sign in again", "session_revoked")
+				return
+			}
+			// A hub sign-in the hub has since revoked (session.revoked): internal/circlexo.
+			if hub := circlexo.Current(); hub != nil && circlexo.SessionEnded(r.Context(), hub, u.ID, r) {
 				writeCoded(w, http.StatusUnauthorized, "your session was ended — sign in again", "session_revoked")
 				return
 			}

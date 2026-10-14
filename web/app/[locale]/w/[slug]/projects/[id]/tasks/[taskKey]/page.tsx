@@ -4,7 +4,7 @@
 import { useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 
-import { LoadingRows } from "@/components/states"
+import { BoardSkeleton } from "@/components/work/project/project-skeletons"
 import { useProjectCtx } from "@/components/work/project-context"
 
 export default function TaskPage() {
@@ -14,5 +14,5 @@ export default function TaskPage() {
   useEffect(() => {
     router.replace(`${base}/issues/${encodeURIComponent(params.taskKey ?? "")}`)
   }, [router, base, params.taskKey])
-  return <LoadingRows rows={3} />
+  return <BoardSkeleton />
 }

@@ -110,6 +110,16 @@ func (r routes) portal() {
 			list, err := r.sv.PortalInvoices(ctx)
 			return PortalInvoiceList{Invoices: list}, err
 		})
+	do(r, http.MethodGet, "/api/w/portal/overview", "w-portal-overview",
+		"The customer's dashboard across their projects: counts, hours, what's due and recent activity", portalTag, 0,
+		func(ctx context.Context, _ *WS) (*PortalOverview, error) {
+			return r.sv.PortalOverview(ctx)
+		})
+	do(r, http.MethodGet, "/api/w/portal/time", "w-portal-time-all",
+		"The team's time across the customer's projects: by week, by project, and by person where the team is shared", portalTag, 0,
+		func(ctx context.Context, _ *WS) (*PortalTimeOverview, error) {
+			return r.sv.PortalTimeAll(ctx)
+		})
 }
 
 // VaultRef is the {item} path parameter for a vault item. Exported so Huma binds it.

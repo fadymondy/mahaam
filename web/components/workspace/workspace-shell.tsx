@@ -4,135 +4,126 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
-  BellIcon,
   BriefcaseIcon,
   ChartColumnIcon,
   CalendarRangeIcon,
+  HomeIcon,
   ClockIcon,
-  CoinsIcon,
-  TimerIcon,
-  CheckIcon,
-  ChevronsUpDownIcon,
   FolderKanbanIcon,
-  KeyRoundIcon,
-  LayoutGridIcon,
-  MenuIcon,
-  MessageSquarePlusIcon,
-  DownloadIcon,
-  PlugZapIcon,
-  PanelLeftCloseIcon,
-  PanelLeftOpenIcon,
   ReceiptTextIcon,
-  PlusIcon,
-  TagIcon,
   UsersIcon,
   UsersRoundIcon,
-  ShieldCheckIcon,
   Settings2Icon,
   InboxIcon,
-  GaugeIcon,
   BanIcon,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
+  AppHeader,
+  AppMain,
+  AppShell,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { CubeMark } from "@/components/brand/cube-mark";
-import { LanguageSwitcher, ThemeToggle } from "@/components/header-controls";
+  BootSplash,
+  ProductMark,
+  Sidebar,
+  SidebarContent,
+  SidebarExpandedOnly,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarTrigger,
+  Skeleton,
+  WorkspaceSwitcher,
+} from "@fadymondy/nasaq/web";
+
 import { ReportProblemDialog } from "@/components/feedback/report-problem";
 import { AppInstallDialog, useAutoOpenAppPrompt } from "@/components/app-install-dialog";
-import { ConnectAgentDialog } from "@/components/mcp/connect-agent-dialog";
+import { ConnectAgentButton, ConnectAgentSheet } from "@/components/mcp/connect-agent-sheet";
 import { NotFoundState } from "@/components/not-found-state";
+import { NavItem } from "@/components/shell/nav-item";
+import { GlobalSearch } from "@/components/shell/global-search";
 import { ErrorState } from "@/components/states";
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
 import { UserMenu } from "@/components/workspace/user-menu";
 import { WorkspaceContext, type WorkspaceCtx } from "@/components/workspace/workspace-context";
-import { MAHAAM_MARK } from "@/lib/brand/mark";
-import { suspensionCode, type WorkspaceSummary } from "@/lib/api";
+import { ViewAsBanner } from "@/components/workspace/view-as-banner";
+import { ApiError, suspensionCode, type WorkspaceSummary } from "@/lib/api";
+import { clearViewAs } from "@/lib/view-as";
 import { useTranslations } from "@/lib/i18n";
 import { useCurrentWorkspace, useMyWorkspaces } from "@/lib/queries";
 import { useRequireAuth } from "@/lib/use-require-auth";
-import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/time/notification-bell";
 import { TimerBar } from "@/components/time/timer-bar";
 import { useLiveStream } from "@/lib/time";
 import { brandName } from "@/lib/brand-name";
 
-function Brand() {
-  const { locale } = useTranslations();
-  return (
-    <Link href={`/${locale}/workspaces`} className="flex items-center gap-2.5">
-      <CubeMark mark={MAHAAM_MARK} size={24} />
-      <span className="nav-label text-[15px] font-medium">{brandName(locale)}</span>
-    </Link>
-  );
-}
-
-function WorkspaceSwitcher({ active, all }: { active: WorkspaceSummary; all: WorkspaceSummary[] }) {
+/** The sidebar (Nasaq dashboard layout): brand, workspace switcher and search on top, the permission-gated
+ * navigation, then the account menu (help, theme, language) at the bottom. */
+function ShellSidebar({
+  base,
+  summary,
+  all,
+  can,
+  email,
+  onReport,
+  onInstall,
+}: {
+  base: string;
+  summary?: WorkspaceSummary;
+  all?: WorkspaceSummary[];
+  can: string[];
+  email?: string;
+  onReport: () => void;
+  onInstall: () => void;
+}) {
   const { t, locale } = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const [creating, setCreating] = useState(false);
 
   // Switching keeps the section (members, MCP) when it exists in every workspace.
-  function hrefFor(slug: string) {
-    const prefix = `/${locale}/w/${active.slug}`;
-    const rest = pathname.startsWith(prefix) ? pathname.slice(prefix.length) : "";
-    return `/${locale}/w/${slug}${rest}`;
-  }
+  const switchTo = useCallback(
+    (id: string) => {
+      const next = all?.find((w) => w.id === id);
+      if (!next || !summary) return;
+      const prefix = `/${locale}/w/${summary.slug}`;
+      const rest = pathname.startsWith(prefix) ? pathname.slice(prefix.length) : "";
+      router.push(`/${locale}/w/${next.slug}${rest}`);
+    },
+    [all, summary, locale, pathname, router],
+  );
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              className="h-9 max-w-[9rem] justify-between gap-2 px-2.5 sm:max-w-[16rem]"
-              aria-label={t("shell.switchWorkspace")}
-            />
-          }
-        >
-          <span className="flex size-6 shrink-0 items-center justify-center border border-line bg-grid-card text-xs font-medium text-grid-brand">
-            {active.name.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="hidden truncate text-sm font-medium sm:inline">{active.name}</span>
-          <ChevronsUpDownIcon className="text-grid-muted" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-64">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>{t("shell.workspaces")}</DropdownMenuLabel>
-            {all.map((w) => (
-              <DropdownMenuItem key={w.id} onClick={() => router.push(hrefFor(w.slug))}>
-                <span className="min-w-0 flex-1 truncate">{w.name}</span>
-                <span className="text-meta text-grid-muted">{t(`role.${w.role}`)}</span>
-                {w.id === active.id ? <CheckIcon /> : null}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setCreating(true)}>
-            <PlusIcon />
-            {t("workspaces.create")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <Sidebar aria-label={t("shell.navigation")}>
+      <SidebarHeader>
+        <Link href={summary ? base : `/${locale}/workspaces`} className="flex items-center gap-2.5 px-1" aria-label={brandName(locale)}>
+          <ProductMark brand="mahaam" size={28} title="" />
+          <SidebarExpandedOnly>
+            <span className="text-label font-semibold">{brandName(locale)}</span>
+          </SidebarExpandedOnly>
+        </Link>
+        {summary && all ? (
+          <WorkspaceSwitcher
+            workspaces={all.map((w) => ({ id: w.id, name: w.name, description: t(`role.${w.role}`), logoSrc: w.logo ?? undefined }))}
+            value={summary.id}
+            onValueChange={switchTo}
+            onCreate={() => setCreating(true)}
+            labels={{ heading: t("shell.workspaces"), create: t("workspaces.create") }}
+          />
+        ) : (
+          <Skeleton className="h-9 w-full" />
+        )}
+        {summary ? <GlobalSearch /> : null}
+      </SidebarHeader>
+      <SidebarContent>{summary ? <ShellNav base={base} can={can} isOwner={summary.role === "owner" || summary.role === "admin"} /> : null}</SidebarContent>
+      <SidebarFooter>
+        {email ? <UserMenu email={email} onReport={onReport} onInstall={onInstall} profileHref={summary ? `${base}/me` : undefined} /> : null}
+      </SidebarFooter>
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -142,41 +133,7 @@ function WorkspaceSwitcher({ active, all }: { active: WorkspaceSummary; all: Wor
           <CreateWorkspaceForm autoFocus onCreated={() => setCreating(false)} />
         </DialogContent>
       </Dialog>
-    </>
-  );
-}
-
-function NavLink({
-  href,
-  icon,
-  children,
-  exact = false,
-  onNavigate,
-}: {
-  href: string;
-  icon: ReactNode;
-  children: ReactNode;
-  exact?: boolean;
-  onNavigate?: () => void;
-}) {
-  const pathname = usePathname();
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
-  return (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      aria-current={active ? "page" : undefined}
-      title={typeof children === "string" ? children : undefined}
-      className={cn(
-        "flex items-center gap-2.5 border-s-2 px-3 py-2 text-sm transition-colors [&_svg]:size-4 [&_svg]:shrink-0",
-        active
-          ? "border-grid-action bg-grid-soft font-medium text-grid-fg"
-          : "border-transparent text-grid-body hover:bg-grid-soft hover:text-grid-fg",
-      )}
-    >
-      {icon}
-      <span className="nav-label min-w-0 truncate">{children}</span>
-    </Link>
+    </Sidebar>
   );
 }
 
@@ -186,40 +143,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const me = useRequireAuth();
   const list = useMyWorkspaces(!!me.data);
   const [reporting, setReporting] = useState(false);
-  // The sidebar collapses to icons (Ctrl/⌘+B or the header button); the choice is remembered.
-  const [collapsed, setCollapsed] = useState(false);
-  useEffect(() => {
-    setCollapsed(window.localStorage.getItem("mahaam.nav") === "collapsed");
-  }, []);
-  const toggleNav = useCallback(() => {
-    setCollapsed((c) => {
-      try {
-        window.localStorage.setItem("mahaam.nav", c ? "open" : "collapsed");
-      } catch {}
-      return !c;
-    });
-  }, []);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        toggleNav();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [toggleNav]);
   const [appOpen, setAppOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const openApp = useCallback(() => setAppOpen(true), []);
+  const [bannerHeight, setBannerHeight] = useState(0);
   useAutoOpenAppPrompt(Boolean(me.data), openApp);
-  const [navOpen, setNavOpen] = useState(false);
-  const { isRtl } = useTranslations();
 
   const summary = list.data?.find((w) => w.slug === slug);
   const current = useCurrentWorkspace(summary?.id);
   const base = `/${locale}/w/${slug}`;
-  // One context object for the header's timer/bell and the page body (the header sits outside <main>).
+  // One context object for the sidebar, the header's timer/bell and the page body.
   const ctx: WorkspaceCtx | null = summary
     ? {
         summary,
@@ -232,12 +165,25 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   // The per-user realtime stream: mounted once per tab, it keeps every view of the timer in step.
   const live = useLiveStream(summary?.id);
 
+  // A stale view-as (the member left or now outranks you): drop it and load your own view.
+  const viewAsDenied = current.error instanceof ApiError && current.error.code === "view_as_denied";
+  useEffect(() => {
+    if (!viewAsDenied) return;
+    clearViewAs();
+    window.location.reload();
+  }, [viewAsDenied]);
+
   const suspended = suspensionCode(me.error) ?? suspensionCode(list.error) ?? suspensionCode(current.error);
+
+  // Until we know who you are, which workspaces you have and what you can do here, show Nasaq's boot
+  // splash instead of a half-built shell (empty nav, empty header) that looks broken.
+  const booting =
+    !suspended && !me.error && !list.error && !current.error && (!me.data || !list.data || (!!summary && !current.data));
+  if (booting) return <BootSplash mark={<ProductMark brand="mahaam" size={56} title="" />} name={brandName(locale)} />;
 
   let body: ReactNode;
   if (suspended) body = <SuspendedState code={suspended} message={(me.error ?? list.error ?? current.error)?.message} />;
   else if (me.error || list.error) body = <ErrorState error={me.error ?? list.error} />;
-  else if (!me.data || !list.data) body = <ShellSkeleton />;
   else if (!summary)
     body = (
       <NotFoundState
@@ -248,272 +194,113 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       />
     );
   else if (current.error) body = <ErrorState error={current.error} />;
-  else
-    body = (
-      <WorkspaceContext.Provider
-        value={{
-          summary,
-          current: current.data,
-          id: summary.id,
-          slug: summary.slug,
-          can: (p) => !!current.data?.can?.includes(p),
-        }}
-      >
-        {children}
-      </WorkspaceContext.Provider>
-    );
+  else body = children;
 
-  return (
-    <div className="grid-shell" data-nav={collapsed ? "collapsed" : "open"}>
-      <aside className="grid-shell-nav sticky top-0 hidden h-dvh flex-col overflow-x-hidden overflow-y-auto md:flex">
-        <div className="flex h-14 items-center border-b border-line px-4">
-          <Brand />
+  const viewing = current.data?.viewing_as;
+  const shell = (
+    <AppShell
+      offset={viewing ? bannerHeight : 0}
+      sidebar={
+        <ShellSidebar
+          base={base}
+          summary={summary}
+          all={list.data}
+          can={current.data?.can ?? []}
+          email={me.data?.email}
+          onReport={() => setReporting(true)}
+          onInstall={openApp}
+        />
+      }
+    >
+      <AppHeader data-live={live}>
+        <SidebarTrigger />
+        {ctx ? <TimerBar /> : null}
+        <div className="ms-auto flex items-center gap-1">
+          {ctx ? <ConnectAgentButton onClick={() => setConnectOpen(true)} /> : null}
+          {ctx ? <NotificationBell /> : null}
         </div>
-        {summary ? <ShellNav base={base} can={current.data?.can ?? []} isOwner={summary.role === "owner"} /> : null}
-      </aside>
-
-      <div className="flex min-w-0 flex-col">
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-line bg-background px-3 sm:px-4"
-          data-live={live}
-        >
-          <div className="flex min-w-0 items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="hidden md:inline-flex"
-              aria-label={t(collapsed ? "shell.expandNav" : "shell.collapseNav")}
-              title={t(collapsed ? "shell.expandNav" : "shell.collapseNav")}
-              aria-pressed={collapsed}
-              onClick={toggleNav}
-            >
-              {collapsed ? <PanelLeftOpenIcon className="rtl:-scale-x-100" /> : <PanelLeftCloseIcon className="rtl:-scale-x-100" />}
-            </Button>
-            {summary ? (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="md:hidden"
-                aria-label={t("shell.navigation")}
-                onClick={() => setNavOpen(true)}
-              >
-                <MenuIcon />
-              </Button>
-            ) : null}
-            {summary && list.data ? (
-              <WorkspaceSwitcher active={summary} all={list.data} />
-            ) : (
-              <Skeleton className="h-6 w-40" />
-            )}
-            {ctx ? (
-              <WorkspaceContext.Provider value={ctx}>
-                <TimerBar />
-              </WorkspaceContext.Provider>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-1">
-            {me.data ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden sm:inline-flex"
-                onClick={() => setReporting(true)}
-                aria-label={t("feedback.report")}
-              >
-                <MessageSquarePlusIcon />
-                <span className="hidden sm:inline">{t("feedback.report")}</span>
-              </Button>
-            ) : null}
-            {ctx ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden sm:inline-flex"
-                onClick={() => setConnectOpen(true)}
-                aria-label={t("mcp.connectTitle")}
-              >
-                <PlugZapIcon />
-                <span className="hidden sm:inline">{t("mcp.connectAgent")}</span>
-              </Button>
-            ) : null}
-            {me.data ? (
-              <Button variant="ghost" size="icon-sm" onClick={openApp} aria-label={t("pwa.title")} title={t("pwa.title")}>
-                <DownloadIcon />
-              </Button>
-            ) : null}
-            {ctx ? (
-              <WorkspaceContext.Provider value={ctx}>
-                <NotificationBell />
-              </WorkspaceContext.Provider>
-            ) : null}
-            <LanguageSwitcher />
-            <ThemeToggle />
-            {me.data ? (
-              <UserMenu
-                email={me.data.email}
-                onReport={() => setReporting(true)}
-                profileHref={ctx ? `${base}/me` : undefined}
-              />
-            ) : null}
-          </div>
-        </header>
-        <main className="min-w-0 flex-1">{body}</main>
-      </div>
-
-      <Sheet open={navOpen} onOpenChange={setNavOpen}>
-        <SheetContent side={isRtl ? "right" : "left"} className="w-72 gap-0 p-0" data-mobile-nav>
-          <SheetTitle className="flex h-14 items-center border-b border-line px-4">
-            <Brand />
-          </SheetTitle>
-          {summary ? (
-            <ShellNav
-              base={base}
-              can={current.data?.can ?? []} isOwner={summary.role === "owner"}
-              onNavigate={() => setNavOpen(false)}
-            />
-          ) : null}
-        </SheetContent>
-      </Sheet>
+      </AppHeader>
+      <AppMain className="p-0">{body}</AppMain>
 
       <AppInstallDialog open={appOpen} onOpenChange={setAppOpen} />
-      {ctx ? (
-        <WorkspaceContext.Provider value={ctx}>
-          <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} />
-        </WorkspaceContext.Provider>
-      ) : null}
-      <ReportProblemDialog
-        open={reporting}
-        onOpenChange={setReporting}
-        workspaceSlug={summary?.slug}
-      />
-    </div>
+      {ctx ? <ConnectAgentSheet open={connectOpen} onOpenChange={setConnectOpen} /> : null}
+      <ReportProblemDialog open={reporting} onOpenChange={setReporting} workspaceSlug={summary?.slug} />
+    </AppShell>
   );
+
+  const framed = viewing ? (
+    <>
+      <ViewAsBanner viewing={viewing} home={base} onHeight={setBannerHeight} />
+      {shell}
+    </>
+  ) : (
+    shell
+  );
+  return ctx ? <WorkspaceContext.Provider value={ctx}>{framed}</WorkspaceContext.Provider> : framed;
 }
 
-function ShellSkeleton() {
-  return (
-    <div className="space-y-4 p-6">
-      <Skeleton className="h-8 w-56" />
-      <Skeleton className="h-4 w-96 max-w-full" />
-      <Skeleton className="h-32 w-full" />
-    </div>
-  );
-}
-
-/** The workspace navigation: the sticky sidebar on desktop, a slide-out sheet below md. */
-function ShellNav({
-  base,
-  can,
-  isOwner,
-  onNavigate,
-}: {
-  base: string;
-  can: string[];
-  isOwner?: boolean;
-  onNavigate?: () => void;
-}) {
+/** The workspace navigation, gated by the caller's permissions. */
+function ShellNav({ base, can }: { base: string; can: string[]; isOwner?: boolean }) {
   const { t } = useTranslations();
-  const L = (props: { href: string; icon: ReactNode; children: ReactNode; exact?: boolean }) => (
-    <NavLink {...props} onNavigate={onNavigate} />
-  );
   // A client is external: they get only the portal (their projects, issues and
   // invoices). members:read is the Member tier, which a client never holds, so
   // its absence identifies the client role without threading the role in.
   const isClient = !can.includes("members:read");
   if (isClient) {
     return (
-      <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
-        <L href={`${base}/portal`} icon={<LayoutGridIcon />}>
-          {t("nav.portal")}
-        </L>
-        <L href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
-          {t("nav.connectAi")}
-        </L>
-      </nav>
+      <SidebarGroup>
+        <NavItem href={`${base}/portal`} exact icon={<HomeIcon />}>
+          {t("portal.nav.dashboard")}
+        </NavItem>
+        <NavItem href={`${base}/projects`} icon={<FolderKanbanIcon />}>
+          {t("nav.projects")}
+        </NavItem>
+        <NavItem href={`${base}/portal/time`} icon={<ClockIcon />}>
+          {t("portal.nav.time")}
+        </NavItem>
+        <NavItem href={`${base}/portal/requests`} icon={<InboxIcon />}>
+          {t("nav.requests")}
+        </NavItem>
+        <NavItem href={`${base}/portal/invoices`} icon={<ReceiptTextIcon />}>
+          {t("portal.nav.billing")}
+        </NavItem>
+      </SidebarGroup>
     );
   }
+  const item = (perm: string | null, href: string, icon: ReactNode, label: string, exact = false) =>
+    perm === null || can.includes(perm) ? (
+      <NavItem href={href} exact={exact} icon={icon}>
+        {label}
+      </NavItem>
+    ) : null;
+  const hasTime = can.includes("time:track") || can.includes("time:manage");
   return (
-    <nav className="flex flex-col py-3" aria-label={t("shell.navigation")}>
-      <L href={base} exact icon={<LayoutGridIcon />}>
-        {t("nav.overview")}
-      </L>
-      <L href={`${base}/projects`} icon={<FolderKanbanIcon />}>
-        {t("nav.projects")}
-      </L>
-      {can.includes("time:track") ? (
-        <L href={`${base}/time`} exact icon={<ClockIcon />}>
-          {t("nav.time")}
-        </L>
+    <>
+      <SidebarGroup>
+        {item(null, base, <HomeIcon />, t("nav.home"), true)}
+        {item(null, `${base}/projects`, <FolderKanbanIcon />, t("nav.projects"))}
+        {item(null, `${base}/members`, <UsersIcon />, t("nav.team"))}
+        {item("reports:read", `${base}/reports`, <ChartColumnIcon />, t("nav.reports"))}
+      </SidebarGroup>
+      <SidebarGroup label={t("nav.workspace")}>
+        {item("clients:read", `${base}/clients`, <BriefcaseIcon />, t("nav.clients"))}
+        {item("invoices:read", `${base}/invoices`, <ReceiptTextIcon />, t("nav.invoices"))}
+        {item("teams:read", `${base}/teams`, <UsersRoundIcon />, t("nav.teams"))}
+        {item("requests:manage", `${base}/requests`, <InboxIcon />, t("nav.requests"))}
+      </SidebarGroup>
+      {hasTime ? (
+        <SidebarGroup label={t("nav.timeGroup")}>
+          {item("time:track", `${base}/time`, <ClockIcon />, t("nav.time"), true)}
+          {item("time:manage", `${base}/time/team`, <CalendarRangeIcon />, t("nav.teamTime"))}
+        </SidebarGroup>
       ) : null}
-      {can.includes("time:manage") ? (
-        <L href={`${base}/time/team`} icon={<CalendarRangeIcon />}>
-          {t("nav.teamTime")}
-        </L>
-      ) : null}
-      {can.includes("reports:read") ? (
-        <L href={`${base}/reports`} icon={<ChartColumnIcon />}>
-          {t("nav.reports")}
-        </L>
-      ) : null}
-      {can.includes("clients:read") ? (
-        <L href={`${base}/clients`} icon={<BriefcaseIcon />}>
-          {t("nav.clients")}
-        </L>
-      ) : null}
-      {can.includes("invoices:read") ? (
-        <L href={`${base}/invoices`} icon={<ReceiptTextIcon />}>
-          {t("nav.invoices")}
-        </L>
-      ) : null}
-      {can.includes("teams:read") ? (
-        <L href={`${base}/teams`} icon={<UsersRoundIcon />}>
-          {t("nav.teams")}
-        </L>
-      ) : null}
-      <L href={`${base}/members`} icon={<UsersIcon />}>
-        {t("nav.members")}
-      </L>
-      {can.includes("requests:manage") ? (
-        <L href={`${base}/requests`} icon={<InboxIcon />}>
-          {t("nav.requests")}
-        </L>
-      ) : null}
-      <p className="grid-micro mt-4 border-t border-line px-4 pt-4 pb-1">
-        <span className="nav-label">{t("nav.settings")}</span>
-      </p>
-      <L href={`${base}/settings/labels`} icon={<TagIcon />}>
-        {t("nav.labels")}
-      </L>
-      {can.includes("access:manage") ? (
-        <L href={`${base}/settings/access`} icon={<ShieldCheckIcon />}>
-          {t("nav.access")}
-        </L>
-      ) : null}
-      <L href={`${base}/settings/mcp`} icon={<KeyRoundIcon />}>
-        {t("nav.mcpTokens")}
-      </L>
-      <L href={`${base}/settings/time`} icon={<TimerIcon />}>
-        {t("nav.timeSettings")}
-      </L>
-      <L href={`${base}/settings/notifications`} icon={<BellIcon />}>
-        {t("nav.notifications")}
-      </L>
-      {isOwner ? (
-        <L href={`${base}/settings/workspace`} icon={<Settings2Icon />}>
-          {t("nav.workspaceSettings")}
-        </L>
-      ) : null}
-      {can.includes("workspace:update") ? (
-        <L href={`${base}/settings/plan`} icon={<GaugeIcon />}>
-          {t("nav.plan")}
-        </L>
-      ) : null}
-      {can.includes("rates:read") ? (
-        <L href={`${base}/settings/rates`} icon={<CoinsIcon />}>
-          {t("nav.rates")}
-        </L>
-      ) : null}
-    </nav>
+      <SidebarGroup>
+        {/* one entry: the settings page carries its own grouped nav (settings/layout.tsx) */}
+        <NavItem href={`${base}/settings`} icon={<Settings2Icon />}>
+          {t("nav.settingsGroup")}
+        </NavItem>
+      </SidebarGroup>
+    </>
   );
 }
 
@@ -522,11 +309,11 @@ function SuspendedState({ code, message }: { code: "workspace_suspended" | "acco
   const { t, locale } = useTranslations();
   return (
     <div className="flex flex-col items-center gap-4 px-6 py-20 text-center" role="alert" data-suspended={code}>
-      <BanIcon className="size-10 text-grid-danger" />
-      <h1 className="grid-title text-2xl">{t(code === "workspace_suspended" ? "suspended.workspaceTitle" : "suspended.accountTitle")}</h1>
-      <p className="grid-body max-w-md text-sm">{message || t(code === "workspace_suspended" ? "suspended.workspaceBody" : "suspended.accountBody")}</p>
+      <BanIcon className="size-10 text-nq-danger-text" />
+      <h1 className="text-h1">{t(code === "workspace_suspended" ? "suspended.workspaceTitle" : "suspended.accountTitle")}</h1>
+      <p className="max-w-md text-body text-nq-fg-body">{message || t(code === "workspace_suspended" ? "suspended.workspaceBody" : "suspended.accountBody")}</p>
       {code === "workspace_suspended" ? (
-        <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/workspaces`} />}>
+        <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/workspaces`} />}>
           {t("shell.allWorkspaces")}
         </Button>
       ) : null}

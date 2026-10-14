@@ -3,24 +3,44 @@
 import Link from "next/link"
 import { Suspense, useCallback, type ReactNode } from "react"
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ArchiveIcon, ChevronLeftIcon } from "lucide-react"
+import { ChevronLeftIcon, GithubIcon, KeyRoundIcon, LayoutDashboardIcon, ReceiptTextIcon, ServerIcon, SettingsIcon, SquareKanbanIcon, type LucideIcon } from "lucide-react"
 import { useSWRConfig } from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
+
+import { ProjectHeaderSkeleton, ProjectTabSkeleton } from "@/components/work/project/project-skeletons"
 import { NotFoundState } from "@/components/not-found-state"
 import { ErrorState } from "@/components/states"
-import { ColorDot } from "@/components/work/palette"
 import { ProjectContext } from "@/components/work/project-context"
 import { TaskSheet } from "@/components/work/task-sheet"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { ApiError } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useProject } from "@/lib/work"
+import { ProjectHeader, StatusPill } from "@/components/work/project/project-header"
 import { ProjectAvatar } from "@/components/work/project-avatar"
 
-const TABS = ["overview", "board", "github", "vault", "billing", "settings"] as const
+const TABS = ["overview", "board", "github", "hosting", "vault", "billing", "settings"] as const
+type Tab = (typeof TABS)[number]
+// The board route is the issues view (board and list of the same items), so its tab reads "Issues".
+const TAB_LABEL: Record<Tab, string> = {
+  overview: "projectTab.overview",
+  board: "projectTab.issues",
+  github: "projectTab.github",
+  hosting: "projectTab.hosting",
+  vault: "projectTab.vault",
+  billing: "projectTab.billing",
+  settings: "projectTab.settings",
+}
+const TAB_ICON: Record<Tab, LucideIcon> = {
+  overview: LayoutDashboardIcon,
+  board: SquareKanbanIcon,
+  github: GithubIcon,
+  hosting: ServerIcon,
+  vault: KeyRoundIcon,
+  billing: ReceiptTextIcon,
+  settings: SettingsIcon,
+}
 
 function ProjectShell({ children }: { children: ReactNode }) {
   const { id } = useParams<{ id: string }>()
@@ -52,62 +72,88 @@ function ProjectShell({ children }: { children: ReactNode }) {
 
   if (project.error) {
     return project.error instanceof ApiError && project.error.status === 404 ? (
-      <NotFoundState title={t("project.notFound")} body={t("project.notFoundBody")} backHref={`/${locale}/w/${ws.slug}/projects`} backLabel={t("nav.projects")} />
+      <NotFoundState
+        title={t("project.notFound")}
+        body={t("project.notFoundBody")}
+        backHref={`/${locale}/w/${ws.slug}/projects`}
+        backLabel={t("nav.projects")}
+      />
     ) : (
       <ErrorState error={project.error} />
     )
   }
-  if (!project.data) {
-    return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-8 w-72" />
-        <Skeleton className="h-9 w-96 max-w-full" />
-      </div>
-    )
-  }
-  const p = project.data
   const rest = pathname.slice(base.length)
   // An item's page (/issues/MH-3) belongs to the board: issues and cards are one thing.
   const tab = /^\/issues(\/|$)/.test(rest) ? "board" : (TABS.find((x) => rest.includes(`/${x}/`) || rest.endsWith(`/${x}`)) ?? "overview")
+  if (!project.data) {
+    // The header and the open tab outline themselves in place until the project is in.
+    return (
+      <>
+        <ProjectHeaderSkeleton />
+        <ProjectTabSkeleton tab={tab} />
+      </>
+    )
+  }
+  const p = project.data
   // A task detail page (/projects/{id}/tasks/{key}) nests under this layout: keep the
   // project breadcrumb and context (statuses) but drop the project tabs, which don't apply.
   const isTaskRoute = pathname.includes(`/projects/${id}/tasks/`)
 
   return (
     <ProjectContext.Provider value={{ project: p, reload, openTask: (k) => setTask(k), base }}>
-      <div className="px-6 pt-5">
-        <Link href={`/${locale}/w/${ws.slug}/projects`} className="inline-flex items-center gap-1 text-meta text-grid-muted hover:text-grid-fg">
-          <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
-          {t("nav.projects")}
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <ProjectAvatar project={p} className="size-9 text-xs" />
-          <h1 className="grid-title min-w-0 truncate text-2xl">{p.name}</h1>
-          <Badge variant="outline">{t(`projectStatus.${p.status}`)}</Badge>
-          {p.archived_at ? (
-            <Badge variant="secondary" className="gap-1">
-              <ArchiveIcon />
-              {t("project.archivedBadge")}
-            </Badge>
-          ) : null}
-          {p.client_name ? <span className="text-sm text-grid-muted">{p.client_name}</span> : null}
+      {isTaskRoute ? (
+        <div className="px-4 pt-5 sm:px-6">
+          <Link href={`/${locale}/w/${ws.slug}/projects`} className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground">
+            <ChevronLeftIcon className={isRtl ? "size-3.5 rotate-180" : "size-3.5"} />
+            {t("nav.projects")}
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <ProjectAvatar project={p} className="size-9 text-xs" />
+            <h1 className="text-h2 min-w-0 truncate text-2xl">{p.name}</h1>
+            <StatusPill status={p.status} />
+          </div>
         </div>
-      </div>
-      {!isTaskRoute ? (
-        <div className="mt-4 border-b border-line px-6">
-          <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
-            <TabsList variant="line">
-              {TABS.filter((x) => (x !== "vault" || ws.can("vault:read")) && (x !== "github" || ws.can("integrations:read")) && (x !== "billing" || ws.can("subscriptions:manage"))).map((x) => (
-                <TabsTrigger key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}>
-                  {t(`projectTab.${x}`)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
+      ) : (
+        <>
+          <ProjectHeader
+            p={p}
+            base={base}
+            slugBase={`/${locale}/w/${ws.slug}`}
+            tabs={
+              <nav aria-label={p.name} data-project-tabs>
+                <Tabs value={tab} onValueChange={(v) => router.push(v === "overview" ? base : `${base}/${v}`)}>
+                  {/* Open tabs: the active one takes the page background and drops its bottom edge, so it runs into the content below. */}
+                  <TabsList variant="underline" className="w-max min-w-full gap-1 border-b-0">
+                    {TABS.filter(
+                      (x) =>
+                        (x !== "vault" || ws.can("vault:read")) &&
+                        (x !== "github" || ws.can("integrations:read")) &&
+                        (x !== "hosting" || ws.can("integrations:read")) &&
+                        // A customer sees every tab but Settings (MH-1190); Billing at the prices they pay.
+                        (x !== "billing" || ws.can("subscriptions:manage") || ws.current?.role === "client") &&
+                        (x !== "settings" || p.can_manage),
+                    ).map((x) => {
+                      const Icon = TAB_ICON[x]
+                      return (
+                        <TabsTab key={x} value={x} nativeButton={false} render={<Link href={x === "overview" ? base : `${base}/${x}`} />}
+                          className="h-10 rounded-t-lg border border-b-0 border-transparent px-3.5 hover:bg-background/60 data-active:border-border data-active:bg-background"
+                          data-tab={x}
+                        >
+                          <Icon />
+                          {t(TAB_LABEL[x])}
+                        </TabsTab>
+                      )
+                    })}
+                  </TabsList>
+                </Tabs>
+              </nav>
+            }
+          />
+        </>
+      )}
+      {p.archived_at ? (
+        <p className="mx-4 mt-2 rounded-lg bg-muted px-4 py-2 text-sm text-muted-foreground sm:mx-6">{t("project.archivedNotice")}</p>
       ) : null}
-      {p.archived_at ? <p className="border-b border-line bg-grid-soft px-6 py-2 text-sm text-grid-muted">{t("project.archivedNotice")}</p> : null}
       {children}
       <TaskSheet taskKey={taskKey} statuses={p.statuses} onClose={() => setTask(null)} onOpen={(k) => setTask(k)} onChanged={reload} />
     </ProjectContext.Provider>

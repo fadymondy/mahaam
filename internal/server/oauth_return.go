@@ -208,7 +208,18 @@ func withdrawSession(h http.Header) {
 		SameSite: http.SameSiteLaxMode, MaxAge: -1}).String())
 }
 
-// oauthRedirectWriter rewrites the plugin's success redirect (302 Location: /dashboard) in place,
+// pluginAfterLogin is where auth-oauth (v0.2.1) sends a successful sign-in: OAUTH_AFTER_LOGIN when
+// it is a local path, else /dashboard — the same rule as the plugin's afterLogin, so setting the
+// variable can't make a success slip past the suspension and two-factor checks above.
+func pluginAfterLogin() string {
+	v := strings.TrimSpace(os.Getenv("OAUTH_AFTER_LOGIN"))
+	if v == "" || !strings.HasPrefix(v, "/") || strings.HasPrefix(v, "//") || strings.HasPrefix(v, "/\\") {
+		return "/dashboard"
+	}
+	return v
+}
+
+// oauthRedirectWriter rewrites the plugin's success redirect (302 Location: OAUTH_AFTER_LOGIN) in place,
 // before the header is written, and swallows the body http.Redirect writes for it.
 type oauthRedirectWriter struct {
 	http.ResponseWriter
@@ -222,7 +233,7 @@ func (o *oauthRedirectWriter) WriteHeader(code int) {
 		return
 	}
 	o.wrote = true
-	if code == http.StatusFound && o.Header().Get("Location") == "/dashboard" {
+	if code == http.StatusFound && o.Header().Get("Location") == pluginAfterLogin() {
 		o.rewritten = true
 		o.decide(o.Header())
 	}

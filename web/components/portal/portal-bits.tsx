@@ -4,22 +4,24 @@
 // weekly-hours chart (the registry's shadcn chart, like the reports page) and the request dialog.
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge, Button, type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { formatDay } from "@/lib/format"
 import { useTranslations } from "@/lib/i18n"
-import { REQUEST_KINDS, hours, portalApi, type PortalWeek, type RequestState } from "@/lib/portal"
+import { REQUEST_KINDS, hours, portalApi, type CustomerRequest, type PortalWeek, type RequestState } from "@/lib/portal"
 import { cn } from "@/lib/utils"
 import { errorText } from "@/lib/work"
+import { wsHeaders } from "@/lib/view-as"
 
 /** A labelled progress bar; value 0–100. `warn` paints it in the danger colour (over budget). */
 export function Meter({ value, label, warn }: { value: number; label?: string; warn?: boolean }) {
@@ -40,7 +42,7 @@ export function Meter({ value, label, warn }: { value: number; label?: string; w
 
 export function RequestStateBadge({ state }: { state: RequestState }) {
   const { t } = useTranslations()
-  const variant = state === "declined" ? "destructive" : state === "pending" ? "outline" : "secondary"
+  const variant = state === "declined" ? "danger" : state === "pending" ? "outline" : "success"
   return (
     <Badge variant={variant} data-request-state={state}>
       {t(`portal.request.state.${state}`)}
@@ -50,7 +52,7 @@ export function RequestStateBadge({ state }: { state: RequestState }) {
 
 export function WeeksChart({ weeks }: { weeks: PortalWeek[] }) {
   const { t, locale, isRtl } = useTranslations()
-  const config = { hours: { label: t("portal.budget"), color: "var(--grid-action)" } } satisfies ChartConfig
+  const config = { hours: { label: t("portal.budget"), color: "var(--nq-action)" } } satisfies ChartConfig
   const data = weeks.map((w) => ({ week: w.week, hours: hours(w.minutes) }))
   return (
     <ChartContainer config={config} className="aspect-auto h-48 w-full" role="img" aria-label={t("portal.hoursByWeek")}>
@@ -70,10 +72,7 @@ export function WeeksChart({ weeks }: { weeks: PortalWeek[] }) {
           cursor={false}
           content={
             <ChartTooltipContent
-              labelFormatter={(_, p) => {
-                const d = (p?.[0]?.payload as { week?: string } | undefined)?.week
-                return d ? formatDay(d, locale) : ""
-              }}
+              labelFormatter={(label) => (label ? formatDay(String(label), locale) : "")}
             />
           }
         />
@@ -188,7 +187,7 @@ export function NewRequestDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             {t("portal.cancel")}
           </Button>
-          <Button onClick={submit} disabled={busy || !title.trim() || !projectId}>
+          <Button variant="primary" onClick={submit} disabled={busy || !title.trim() || !projectId}>
             {busy ? t("portal.sending") : t("portal.send")}
           </Button>
         </DialogFooter>
@@ -241,7 +240,7 @@ export function PromptDialog({
             {t("portal.cancel")}
           </Button>
           <Button
-            variant={destructive ? "destructive" : "default"}
+            variant={destructive ? "danger" : "primary"}
             disabled={busy || (required && !text.trim())}
             onClick={async () => {
               setBusy(true)
@@ -285,7 +284,7 @@ export function ScrollTabs({
       ref={ref}
       role="tablist"
       aria-label={label}
-      className="-mx-4 flex w-auto snap-x gap-1 overflow-x-auto border-b border-line px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+      className="-mx-4 flex w-auto snap-x gap-1 overflow-x-auto border-b border-border px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
       data-scroll-tabs
     >
       {items.map((it) => {
@@ -299,8 +298,8 @@ export function ScrollTabs({
             data-tab={it.value}
             onClick={() => onChange(it.value)}
             className={cn(
-              "relative inline-flex shrink-0 snap-start items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-grid-action",
-              active ? "text-grid-fg" : "text-grid-muted hover:text-grid-fg",
+              "relative inline-flex shrink-0 snap-start items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-nq-action",
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {it.icon}
@@ -309,13 +308,13 @@ export function ScrollTabs({
               <span
                 className={cn(
                   "min-w-5 rounded-full px-1.5 text-center text-xs leading-5 tabular-nums",
-                  active ? "bg-grid-action text-white" : "bg-muted text-grid-muted",
+                  active ? "bg-nq-action text-white" : "bg-muted text-muted-foreground",
                 )}
               >
                 {it.count}
               </span>
             ) : null}
-            <span aria-hidden className={cn("absolute inset-x-2 -bottom-px h-0.5 rounded-full", active ? "bg-grid-action" : "bg-transparent")} />
+            <span aria-hidden className={cn("absolute inset-x-2 -bottom-px h-0.5 rounded-full", active ? "bg-nq-action" : "bg-transparent")} />
           </button>
         )
       })}
@@ -330,7 +329,7 @@ export function AuthImage({ src, alt, className }: { src: string; alt: string; c
   useEffect(() => {
     let gone = false
     let made: string | null = null
-    fetch(src, { headers: { "X-Workspace-ID": ws.id }, credentials: "same-origin" })
+    fetch(src, { headers: wsHeaders(ws.id), credentials: "same-origin" })
       .then((res) => (res.ok ? res.blob() : Promise.reject(new Error(String(res.status)))))
       .then((b) => {
         if (gone) return
@@ -347,7 +346,7 @@ export function AuthImage({ src, alt, className }: { src: string; alt: string; c
   return (
     <a href={url} target="_blank" rel="noreferrer noopener" className="mt-2 block w-fit">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt={alt} className={cn("max-h-80 w-auto rounded-md border border-line", className)} />
+      <img src={url} alt={alt} className={cn("max-h-80 w-auto rounded-md border border-border", className)} />
     </a>
   )
 }
@@ -359,7 +358,7 @@ export function PersonBadge({ name, initials, size = "md", ring }: { name: strin
       title={name}
       aria-label={name}
       className={cn(
-        "inline-grid shrink-0 place-items-center rounded-full bg-grid-action/15 font-semibold text-grid-action",
+        "inline-grid shrink-0 place-items-center rounded-full bg-nq-action/15 font-semibold text-nq-accent-text",
         size === "sm" ? "size-6 text-xs" : "size-8 text-xs",
         ring && "ring-2 ring-background",
       )}
@@ -387,7 +386,7 @@ export function ProgressRing({ value, size = 64, label }: { value: number; size?
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c - (c * v) / 100}
-          className="stroke-grid-action transition-[stroke-dashoffset]"
+          className="stroke-nq-action transition-[stroke-dashoffset]"
         />
       </svg>
       <span className="absolute text-sm font-semibold tabular-nums" dir="ltr">
@@ -400,8 +399,8 @@ export function ProgressRing({ value, size = 64, label }: { value: number; size?
 /** A stat tile: label, big value, optional footer. */
 export function StatTile({ label, value, children, icon }: { label: string; value: ReactNode; children?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="flex h-full min-w-0 flex-col gap-2 rounded-xl border border-line bg-card p-4">
-      <p className="flex items-center gap-1.5 text-meta font-medium text-grid-muted">
+    <div className="flex h-full min-w-0 flex-col gap-2 rounded-xl border border-border bg-card p-4">
+      <p className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground">
         {icon}
         {label}
       </p>
@@ -414,11 +413,72 @@ export function StatTile({ label, value, children, icon }: { label: string; valu
 /** A friendly empty state for a portal section. */
 export function PortalEmpty({ icon, title, body, action }: { icon: ReactNode; title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line px-6 py-12 text-center">
-      <span className="grid size-11 place-items-center rounded-full bg-grid-action/10 text-grid-action [&_svg]:size-5">{icon}</span>
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-12 text-center">
+      <span className="grid size-11 place-items-center rounded-full bg-nq-action/10 text-nq-accent-text [&_svg]:size-5">{icon}</span>
       <p className="font-medium">{title}</p>
-      {body ? <p className="max-w-sm text-sm text-grid-muted">{body}</p> : null}
+      {body ? <p className="max-w-sm text-sm text-muted-foreground">{body}</p> : null}
       {action}
     </div>
+  )
+}
+
+/** One customer request: its state, the team's reply, and a way into the issue or task it became. */
+export function RequestCard({
+  r,
+  project,
+  onOpenIssue,
+  onOpenTask,
+}: {
+  r: CustomerRequest
+  project?: string | null
+  onOpenIssue: (key: string) => void
+  onOpenTask?: (key: string) => void
+}) {
+  const { t, locale } = useTranslations()
+  return (
+    <li className="rounded-xl border border-border bg-card p-4" data-request={r.key}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-2">
+            <code className="text-xs text-muted-foreground" dir="ltr">
+              {r.key}
+            </code>
+            <span className="font-medium">{r.title}</span>
+          </p>
+          <p className="text-caption text-muted-foreground">
+            {project ? `${project} · ` : ""}
+            {t(`portal.request.kind.${r.kind}`)} · {formatDay(r.created_at, locale)}
+            {r.desired_on ? ` · ${t("portal.request.wantedBy", { date: formatDay(r.desired_on, locale) })}` : ""}
+          </p>
+        </div>
+        <span className="flex items-center gap-2">
+          {r.state === "accepted" ? <Badge variant="neutral">{t(`issues.status.${r.status}`)}</Badge> : null}
+          <RequestStateBadge state={r.state} />
+        </span>
+      </div>
+      {r.body ? (
+        <p className="mt-2 text-sm whitespace-pre-wrap text-muted-foreground" dir="auto">
+          {r.body}
+        </p>
+      ) : null}
+      {r.reply ? (
+        <div className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+          <p className="text-caption font-medium text-muted-foreground">{r.state === "declined" ? t("portal.request.reason") : t("portal.request.reply")}</p>
+          <p className="whitespace-pre-wrap" dir="auto">
+            {r.reply}
+          </p>
+        </div>
+      ) : null}
+      {r.state === "accepted" ? (
+        <Button size="sm" variant="ghost" className="mt-2 -ms-2" onClick={() => onOpenIssue(r.key)}>
+          {t("portal.request.openIssue")}
+        </Button>
+      ) : null}
+      {r.state === "converted" && r.task_key && onOpenTask ? (
+        <Button size="sm" variant="ghost" className="mt-2 -ms-2" onClick={() => onOpenTask(r.task_key!)}>
+          {t("portal.request.openTask", { task: r.task_key })}
+        </Button>
+      ) : null}
+    </li>
   )
 }

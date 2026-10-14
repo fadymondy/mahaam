@@ -14,10 +14,10 @@ require (
 )
 
 require (
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/sqlc-dev/pqtype v0.3.0
-	github.com/togo-framework/auth v0.8.0
-	github.com/togo-framework/auth-oauth v0.2.0
+	github.com/togo-framework/auth v0.10.0
+	github.com/togo-framework/auth-oauth v0.2.1
 	github.com/togo-framework/cache v0.3.0
 	github.com/togo-framework/db-postgres v0.1.0
 	github.com/togo-framework/faker v0.1.0
@@ -27,7 +27,7 @@ require (
 	github.com/togo-framework/orm v0.1.0
 	github.com/togo-framework/queue v0.3.0
 	github.com/togo-framework/ratelimit v0.1.0
-	github.com/togo-framework/realtime v0.2.0
+	github.com/togo-framework/realtime v0.2.1
 	github.com/togo-framework/scheduler v0.1.0
 	github.com/togo-framework/storage v0.2.0
 	github.com/togo-framework/validation v0.1.0
@@ -37,12 +37,15 @@ require (
 
 require github.com/fadymondy/mahaam-go v0.0.0-20260921100450-e74d34b7714e
 
+require github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
+
 require (
-	github.com/SherClockHolmes/webpush-go v1.4.0 // indirect
+	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/agnivade/levenshtein v1.2.0 // indirect
+	github.com/circlexo/circlexo-go v0.2.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-pdf/fpdf v0.9.0 // indirect
+	github.com/go-pdf/fpdf v0.9.0
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0 // indirect
@@ -68,7 +71,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	github.com/xuri/efp v0.0.0-20231025114914-d1ff6096ae53 // indirect
 	github.com/xuri/nfp v0.0.0-20230919160717-d98342af3f05 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.57.0
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect

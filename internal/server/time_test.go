@@ -344,6 +344,7 @@ func TestTimeTracking(t *testing.T) {
 	}
 
 	// ---- 6. MCP round-trip ------------------------------------------------------------------------
+	mcpTaskKey := alice.must("POST", "/api/w/projects/"+prID+"/tasks", map[string]any{"title": "MCP timer task"}, 201)["key"].(string)
 	tok := mia.must("POST", "/api/w/mcp_tokens", map[string]any{"name": "mia agent", "scopes": []string{"members:read", "time:read", "time:write"}}, 201)
 	agent := newClient(t, srv.URL)
 	agent.bearer = tok["plaintext"].(string)
@@ -357,10 +358,10 @@ func TestTimeTracking(t *testing.T) {
 	if text, _ := call("whoami", nil); !strings.Contains(text, "running timer: none") {
 		t.Errorf("whoami before start: %q", text)
 	}
-	if text, isErr := call("start_timer", map[string]any{"project": projName, "description": "via MCP"}); isErr || !strings.HasPrefix(text, "Started: via MCP") {
+	if text, isErr := call("start_timer", map[string]any{"task": mcpTaskKey, "description": "via MCP"}); isErr || !strings.HasPrefix(text, "Started: via MCP") {
 		t.Fatalf("start_timer: %v %q", isErr, text)
 	}
-	if text, _ := call("whoami", nil); !strings.Contains(text, "running timer: via MCP") {
+	if text, _ := call("whoami", nil); !strings.Contains(text, "agent timers running: 1") || !strings.Contains(text, "via MCP") {
 		t.Errorf("whoami must show the running timer: %q", text)
 	}
 	if text, isErr := call("get_running_timer", nil); isErr || !strings.Contains(text, "via MCP") {
@@ -414,14 +415,19 @@ func TestTimeTracking(t *testing.T) {
 			t.Errorf("%s: the realtime payload must never carry rates: %s", who, ev.data)
 		}
 	}
-	if text, isErr := call("start_timer", map[string]any{"description": "agent took over"}); isErr {
+	// An agent timer runs beside the human one: its start emits only timer.started (the human timer
+	// is not stopped), and each event carries its own entry id.
+	if text, isErr := call("start_timer", map[string]any{"task": mcpTaskKey, "description": "agent took over"}); isErr {
 		t.Fatalf("start_timer: %q", text)
 	}
 	for who, ch := range map[string]<-chan sseEvent{"mia tab A": tabA, "mia tab B": tabB} {
-		expectEvent(t, who, ch, "timer.stopped", started["id"].(string))
 		expectEvent(t, who, ch, "timer.started", "agent took over")
 	}
 	mia.must("POST", "/api/w/time/stop", map[string]any{}, 200)
+	expectEvent(t, "mia tab A", tabA, "timer.stopped", started["id"].(string))
+	if text, isErr := call("stop_timer", map[string]any{"task": mcpTaskKey}); isErr {
+		t.Fatalf("stop_timer: %q", text)
+	}
 	expectEvent(t, "mia tab A", tabA, "timer.stopped", "agent took over")
 	expectQuiet(t, "alice", aliceTab, 800*time.Millisecond)
 	expectQuiet(t, "bob", bobTab, 200*time.Millisecond)

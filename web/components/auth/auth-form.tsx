@@ -1,15 +1,27 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { PublicFrame, PublicPanel } from "@/components/public-frame"
+import {
+  Alert,
+  Button,
+  Field,
+  FieldDescription,
+  FieldLabel,
+  Input,
+  SignInFlow,
+  TwoFactorChallenge,
+  OAuthButtons,
+  OAuthDivider,
+  PasswordInput,
+  ProductMark,
+  type OAuthProvider as NqProvider,
+} from "@fadymondy/nasaq/web"
+
+import { PublicFrame } from "@/components/public-frame"
 import { api, ApiError, resetCsrf } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { safeNext } from "@/lib/use-require-auth"
@@ -17,7 +29,8 @@ import { useDocumentTitle } from "@/lib/title"
 
 type OAuthProvider = { id: string; label: string; href: string }
 
-const KNOWN: Record<string, string> = { google: "Google", github: "GitHub" }
+// Display order: Apple, Google, GitHub (the order the apps use too).
+const KNOWN: Record<string, string> = { apple: "Apple", google: "Google", github: "GitHub" }
 
 /*
   GET /api/auth/methods lists what the togo auth plugin has enabled. Its exact shape is read
@@ -40,7 +53,7 @@ function oauthProviders(data: unknown): OAuthProvider[] {
     let id = ""
     let href = ""
     if (typeof item === "string") {
-      const m = /^(?:oauth[:/])?(google|github)$/i.exec(item)
+      const m = /^(?:oauth[:/])?(apple|google|github)$/i.exec(item)
       if (m) id = m[1].toLowerCase()
     } else if (item && typeof item === "object") {
       const o = item as Record<string, unknown>
@@ -53,16 +66,16 @@ function oauthProviders(data: unknown): OAuthProvider[] {
       out.push({ id, label: KNOWN[id], href: href || `/api/auth/oauth/${id}` })
     }
   }
-  return out
+  return out.sort((a, b) => Object.keys(KNOWN).indexOf(a.id) - Object.keys(KNOWN).indexOf(b.id))
 }
 
 /*
-  Google/GitHub sign-ins that can't finish come back here (internal/server/oauth_return.go):
+  Google/GitHub/Apple sign-ins that can't finish come back here (internal/server/oauth_return.go):
     /login?error=account_suspended
     /login?error=oauth_failed
     /login?error=mfa_required&next=<path>#mfa_challenge=<challenge>
   The provider was only the first factor; the challenge in the fragment is the same one a right
-  password gets, so the form goes straight to its two-factor step. The fragment never reaches a
+  password gets, so the page goes straight to the two-factor step. The fragment never reaches a
   server, and it's stripped from the address bar once read.
 */
 function oauthErrorKey(code: string | null): string | null {
@@ -72,30 +85,33 @@ function oauthErrorKey(code: string | null): string | null {
   return null
 }
 
+const HUB_ERRORS = ["failed", "email_unverified", "account_conflict", "suspended", "no_email", "not_member", "unavailable"]
+
+function hubErrorMessage(t: (key: string) => string, code: string): string {
+  return t(`auth.circlexoError.${HUB_ERRORS.includes(code) ? code : "failed"}`)
+}
+
+type Failure = { error?: string } | void
+
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const { t, locale, formatDate } = useTranslations()
   const router = useRouter()
   const params = useSearchParams()
   const { mutate } = useSWRConfig()
-  const next = safeNext(params.get("next"), `/${locale}/workspaces`)
+  const next = safeNext(params.get("next"), `/${locale}`)
 
   useDocumentTitle(mode === "login" ? t("auth.signIn") : t("auth.createAccount"))
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(() => {
-    const key = mode === "login" ? oauthErrorKey(params.get("error")) : null
+  // A refused CircleXO sign-in comes back as /login?circlexo_error=<code>.
+  const hubError = params.get("circlexo_error")
+  const oauthError = mode === "login" ? oauthErrorKey(params.get("error")) : null
+  const [notice, setNotice] = useState<string | null>(() => {
+    if (hubError) return hubErrorMessage(t, hubError)
     // mfa_required is only an error when no challenge came with it (read below, after mount).
-    return key && key !== "auth.oauthMfaExpired" ? t(key) : null
+    return oauthError && oauthError !== "auth.oauthMfaExpired" ? t(oauthError) : null
   })
-  const [busy, setBusy] = useState(false)
-  // Two-factor sign-in (MH-341): the password was right and the account has a second factor, so
-  // the API answered with a challenge instead of a session.
-  const [challenge, setChallenge] = useState<string | null>(null)
-  const [code, setCode] = useState("")
-  const [useRecovery, setUseRecovery] = useState(false)
-  // Where the challenge came from decides what "start over" means: a password, or the provider.
-  const [challengeFrom, setChallengeFrom] = useState<"password" | "oauth">("password")
+  // A provider sign-in that still needs the second factor: its challenge, from the URL fragment.
+  const [oauthChallenge, setOAuthChallenge] = useState<string | null>(null)
 
   useEffect(() => {
     if (mode !== "login" || params.get("error") !== "mfa_required") return
@@ -106,12 +122,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     }
     // setState in an effect on purpose: the fragment exists only in the browser.
     if (fromOAuth) {
-      setChallenge(fromOAuth)
-      setChallengeFrom("oauth")
-      setCode("")
-      setError(null)
+      pending.current = fromOAuth
+      setOAuthChallenge(fromOAuth)
+      setNotice(null)
     } else {
-      setError(t("auth.oauthMfaExpired"))
+      setNotice(t("auth.oauthMfaExpired"))
     }
     // Once, on arrival; params and t are stable for this page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,62 +137,90 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     shouldRetryOnError: false,
   })
   const providers = oauthProviders(methods.data)
+  // Sign in with CircleXO: shown only when the API reports the integration on.
+  const hubConfig = useSWR("/api/circlexo/config", (p: string) => api<{ enabled?: boolean; login_url?: string }>(p), {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  })
+  const hubLogin = hubConfig.data?.enabled ? hubConfig.data.login_url || "/auth/circlexo/login" : ""
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError(null)
-    if (mode === "register" && password.length < 8) {
-      setError(t("auth.passwordTooShort"))
+  // Nasaq's provider buttons: Google / GitHub with their own logos, then CircleXO with its Nasaq brand mark.
+  const buttons: NqProvider[] = [
+    ...providers.map((p) => p.id as "apple" | "google" | "github"),
+    ...(hubLogin
+      ? [
+          {
+            id: "circlexo",
+            label: mode === "login" ? t("auth.signInCircleXO") : t("auth.continueWith", { provider: "CircleXO" }),
+            icon: <ProductMark brand="circlexo" size={18} title="" />,
+          },
+        ]
+      : []),
+  ]
+
+  function goOAuth(id: string) {
+    // CircleXO is a chain of redirects through the API: a full page load.
+    if (id === "circlexo" && hubLogin) {
+      window.location.assign(`${hubLogin}?return_to=${encodeURIComponent(next)}`)
       return
     }
-    setBusy(true)
+    const p = providers.find((x) => x.id === id)
+    if (!p) return
+    window.location.assign(`${p.href}${p.href.includes("?") ? "&" : "?"}next=${encodeURIComponent(next)}`)
+  }
+
+  async function finish() {
+    // A new session carries a new CSRF token.
+    resetCsrf()
+    await mutate("/api/auth/me")
+    router.replace(next)
+  }
+
+  // The email-first flow (as on the CircleXO hub): email, then password, then the second factor.
+  // There is no lookup on the email step, so every address goes on to the password step and the page
+  // never says whether an account exists. The challenge id lives in a ref so the flow's 2FA step
+  // reads the latest one.
+  const pending = useRef<string | null>(null)
+
+  async function password(values: { email: string; password: string }): Promise<{ error?: string } | { twoFactor: true } | void> {
+    setNotice(null)
     try {
       resetCsrf()
-      await api(`/api/auth/${mode}`, { json: { email: email.trim(), password } })
-      // A new session carries a new CSRF token.
-      resetCsrf()
-      await mutate("/api/auth/me")
-      router.replace(next)
+      await api("/api/auth/login", { json: { email: values.email.trim(), password: values.password } })
+      await finish()
     } catch (err) {
       if (err instanceof ApiError) {
         const mfa = (err.data as { challenge?: string } | undefined)?.challenge
-        if (mode === "login" && err.code === "mfa_required" && mfa) {
-          setChallenge(mfa)
-          setChallengeFrom("password")
-          setCode("")
-        } else if (mode === "login" && err.status === 401) setError(t("auth.invalidCredentials"))
-        else if (mode === "register" && /registration failed/i.test(err.message)) setError(t("auth.registrationFailed"))
-        else setError(err.message)
-      } else {
-        setError(t("common.networkError"))
+        if (err.code === "mfa_required" && mfa) {
+          pending.current = mfa
+          return { twoFactor: true }
+        }
+        return { error: err.status === 401 ? t("auth.invalidCredentials") : err.message }
       }
-    } finally {
-      setBusy(false)
+      return { error: t("common.networkError") }
     }
   }
 
-  async function onSecondFactor(e: FormEvent) {
-    e.preventDefault()
-    if (!challenge) return
-    setError(null)
-    setBusy(true)
+  async function flowSecondFactor(values: { code: string; method: string }): Promise<Failure> {
+    const id = pending.current
+    if (!id) return { error: t("auth.mfaExpired") }
+    const code = values.code.trim()
     try {
-      await api("/api/auth/2fa/challenge", {
-        json: useRecovery ? { challenge, recovery_code: code.trim() } : { challenge, code: code.trim() },
-      })
-      resetCsrf()
-      await mutate("/api/auth/me")
-      router.replace(next)
+      await api("/api/auth/2fa/challenge", { json: values.method === "recovery" ? { challenge: id, recovery_code: code } : { challenge: id, code } })
+      await finish()
     } catch (err) {
+      // The challenge expired (five minutes) or the password changed: say so; "Change" starts over.
       if (err instanceof ApiError && err.status === 401) {
-        // The challenge expired (five minutes) or the password changed: start over.
-        setChallenge(null)
-        setError(t(challengeFrom === "oauth" ? "auth.oauthMfaExpired" : "auth.mfaExpired"))
-      } else if (err instanceof ApiError && err.status === 429) setError(t("auth.mfaLocked"))
-      else if (err instanceof ApiError && err.status === 400) setError(t("auth.mfaWrong"))
-      else setError(err instanceof ApiError ? err.message : t("common.networkError"))
-    } finally {
-      setBusy(false)
+        if (oauthChallenge) {
+          // A provider's challenge can't be restarted here: back to the buttons, with the reason.
+          setOAuthChallenge(null)
+          setNotice(t("auth.oauthMfaExpired"))
+        }
+        return { error: t("auth.mfaExpired") }
+      }
+      if (err instanceof ApiError && err.status === 429) return { error: t("auth.mfaLocked") }
+      if (err instanceof ApiError && err.status === 400) return { error: t("auth.mfaWrong") }
+      return { error: err instanceof ApiError ? err.message : t("common.networkError") }
     }
   }
 
@@ -186,140 +229,85 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <PublicFrame
-      eyebrow={mode === "login" ? t("auth.welcomeBack") : t("auth.getStarted")}
+      split
       title={mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
       description={mode === "login" ? t("auth.signInHint") : t("auth.registerHint")}
+      prompt={
+        <>
+          {mode === "login" ? t("auth.noAccount") : t("auth.haveAccount")} <Link href={otherHref}>{mode === "login" ? t("auth.createAccount") : t("auth.signIn")}</Link>
+        </>
+      }
     >
-      <PublicPanel className="flex justify-center py-10">
-      <div className="w-full max-w-sm" data-auth-form>
-        {challenge ? (
-          <form onSubmit={onSecondFactor} noValidate data-mfa-form>
-            <FieldGroup>
-              {challengeFrom === "oauth" ? (
-                <p className="text-sm text-grid-body" data-oauth-mfa>
-                  {t("auth.oauthMfaHint")}
-                </p>
-              ) : null}
-              <p className="text-sm text-grid-muted" role="status">
-                {useRecovery ? t("auth.mfaRecoveryHint") : t("auth.mfaHint")}
-              </p>
-              <Field data-invalid={!!error || undefined}>
-                <FieldLabel htmlFor="mfa-code">{useRecovery ? t("auth.mfaRecoveryLabel") : t("auth.mfaLabel")}</FieldLabel>
-                <Input
-                  id="mfa-code"
-                  dir="ltr"
-                  autoFocus
-                  inputMode={useRecovery ? "text" : "numeric"}
-                  autoComplete="one-time-code"
-                  maxLength={useRecovery ? 11 : 6}
-                  value={code}
-                  onChange={(e) => setCode(useRecovery ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="font-mono tracking-[0.3em]"
-                  placeholder={useRecovery ? "xxxxx-xxxxx" : "000000"}
-                />
-              </Field>
-              {error ? <FieldError>{error}</FieldError> : null}
-              <Button type="submit" size="lg" disabled={busy || (useRecovery ? code.trim().length < 10 : code.length !== 6)}>
-                {busy ? t("common.working") : t("auth.mfaSubmit")}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setUseRecovery(!useRecovery)
-                  setCode("")
-                  setError(null)
-                }}
-              >
-                {useRecovery ? t("auth.mfaUseApp") : t("auth.mfaUseRecovery")}
-              </Button>
-            </FieldGroup>
-          </form>
-        ) : (
-        <form onSubmit={onSubmit} noValidate>
-          <FieldGroup>
-            {mode === "login" && params.get("deleted") ? (
-              // Arrived from deleting the account: say when, and that signing in is the undo.
-              <p className="rounded-md border border-line p-3 text-sm" role="status" data-deleted-notice>
-                {t("auth.deletedNotice", { date: formatDate(params.get("deleted")) })}
-              </p>
-            ) : null}
-            <Field data-invalid={!!error || undefined}>
-              <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                dir="ltr"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-              />
-            </Field>
-            <Field data-invalid={!!error || undefined}>
-              <FieldLabel htmlFor="password">{t("auth.password")}</FieldLabel>
-              <Input
-                id="password"
-                type="password"
-                dir="ltr"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                required
-                minLength={mode === "register" ? 8 : undefined}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              {mode === "register" ? <FieldDescription>{t("auth.passwordHint")}</FieldDescription> : null}
-              {mode === "login" ? (
-                <Link
-                  href={`/${locale}/forgot-password`}
-                  className="self-end text-sm text-grid-muted underline-offset-4 hover:text-grid-fg hover:underline"
-                >
-                  {t("auth.forgotPassword")}
+      <div className="flex flex-col gap-4" data-auth-form>
+        {notice ? (
+          <Alert tone="danger" data-auth-error>
+            {notice}
+            {notice === t("auth.accountSuspended") ? (
+              <>
+                {" "}
+                <Link href={`/${locale}/support`} className="underline underline-offset-4" data-suspended-support>
+                  {t("footer.support")}
                 </Link>
-              ) : null}
-            </Field>
-            {error ? <FieldError>{error}</FieldError> : null}
-            {error && error === t("auth.accountSuspended") ? (
-              <Link
-                href={`/${locale}/support`}
-                className="self-start text-sm text-grid-fg underline underline-offset-4"
-                data-suspended-support
-              >
-                {t("footer.support")}
-              </Link>
+              </>
             ) : null}
-            <Button type="submit" size="lg" disabled={busy || !email || !password}>
-              {busy ? t("common.working") : mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
-            </Button>
-          </FieldGroup>
-        </form>
+          </Alert>
+        ) : null}
+        {mode === "login" && params.get("deleted") ? (
+          // Arrived from deleting the account: say when, and that signing in is the undo.
+          <Alert tone="info" data-deleted-notice>
+            {t("auth.deletedNotice", { date: formatDate(params.get("deleted")) })}
+          </Alert>
+        ) : null}
+
+        {mode === "login" && oauthChallenge ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground" data-oauth-mfa>
+              {t("auth.oauthMfaHint")}
+            </p>
+            <TwoFactorChallenge
+              data-mfa-form
+              showTrustDevice={false}
+              onSubmit={(v) => flowSecondFactor({ code: v.code, method: v.method })}
+              footer={
+                <button
+                  type="button"
+                  className="text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  onClick={() => {
+                    pending.current = null
+                    setOAuthChallenge(null)
+                  }}
+                >
+                  {t("auth.backToSignIn")}
+                </button>
+              }
+            />
+          </div>
+        ) : mode === "login" ? (
+          <SignInFlow
+            showRemember={false}
+            forgotPassword={
+              <Link
+                href={`/${locale}/forgot-password`}
+                className="text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                {t("auth.forgotPassword")}
+              </Link>
+            }
+            oauthProviders={buttons}
+            onOAuth={goOAuth}
+            onPassword={password}
+            onTwoFactor={flowSecondFactor}
+            onRegister={() => router.push(otherHref)}
+            onStepChange={() => setNotice(null)}
+          />
+        ) : (
+          <RegisterFields providers={buttons} onDone={finish} onOAuth={goOAuth} />
         )}
 
-        {providers.length > 0 ? (
-          <div className="mt-6 space-y-3">
-            <div className="flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="grid-micro">{t("auth.or")}</span>
-              <Separator className="flex-1" />
-            </div>
-            {providers.map((p) => (
-              <Button
-                key={p.id}
-                variant="outline"
-                size="lg"
-                className="w-full"
-                nativeButton={false} render={<a href={`${p.href}${p.href.includes("?") ? "&" : "?"}next=${encodeURIComponent(next)}`} />}
-              >
-                {t("auth.continueWith", { provider: p.label })}
-              </Button>
-            ))}
-          </div>
-        ) : null}
         {mode === "register" ? (
           // Links rather than a checkbox: submitting the form is the agreement, and a box that
           // must be ticked before the button works adds a step without adding consent.
-          <p className="mt-4 text-center text-meta text-grid-muted" data-consent>
+          <p className="text-center text-caption text-muted-foreground" data-consent>
             {t("auth.consent")
               .split(/(\{terms\}|\{privacy\})/)
               .map((part, i) =>
@@ -327,7 +315,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                   <Link
                     key={i}
                     href={`/${locale}/legal/${part === "{terms}" ? "terms" : "privacy"}`}
-                    className="text-grid-fg underline underline-offset-4"
+                    className="text-foreground underline underline-offset-4"
                   >
                     {t(part === "{terms}" ? "auth.consentTerms" : "auth.consentPrivacy")}
                   </Link>
@@ -337,14 +325,91 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               )}
           </p>
         ) : null}
-        <p className="mt-6 text-center text-sm text-grid-muted">
-          {mode === "login" ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
-          <Link href={otherHref} className="font-medium text-grid-fg underline underline-offset-4">
-            {mode === "login" ? t("auth.createAccount") : t("auth.signIn")}
-          </Link>
-        </p>
       </div>
-      </PublicPanel>
     </PublicFrame>
+  )
+}
+
+/*
+  Register keeps its own two fields (email + password): Nasaq RegisterForm also collects a name and
+  a confirmation, which POST /api/auth/register does not take.
+*/
+function RegisterFields({
+  providers,
+  onDone,
+  onOAuth,
+}: {
+  providers: NqProvider[]
+  onDone: () => Promise<void>
+  onOAuth: (id: string) => void
+}) {
+  const { t } = useTranslations()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (password.length < 8) {
+      setError(t("auth.passwordTooShort"))
+      return
+    }
+    setBusy(true)
+    try {
+      resetCsrf()
+      await api("/api/auth/register", { json: { email: email.trim(), password } })
+      await onDone()
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(/registration failed/i.test(err.message) ? t("auth.registrationFailed") : err.message)
+      } else {
+        setError(t("common.networkError"))
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+      {error ? <Alert tone="danger">{error}</Alert> : null}
+      <Field>
+        <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
+        <Input
+          id="email"
+          type="email"
+          dir="ltr"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@company.com"
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="password">{t("auth.password")}</FieldLabel>
+        <PasswordInput
+          id="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          showStrength
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <FieldDescription>{t("auth.passwordHint")}</FieldDescription>
+      </Field>
+      <Button variant="primary" type="submit" size="lg" disabled={busy || !email || !password}>
+        {busy ? t("common.working") : t("auth.createAccount")}
+      </Button>
+      {providers.length ? (
+        <>
+          <OAuthDivider />
+          <OAuthButtons providers={providers} intent="signup" onSelect={onOAuth} />
+        </>
+      ) : null}
+    </form>
   )
 }

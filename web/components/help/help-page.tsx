@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 
-import { Markdown } from "@/components/markdown"
+import { Markdown } from "@fadymondy/nasaq/web"
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { HELP_DOCS, HELP_PATHS, helpText, type HelpDoc } from "@/content/help"
 import { useTranslations } from "@/lib/i18n"
+import { TRUSTED_MARKDOWN } from "@/lib/trusted-markdown"
 import { useDocumentTitle } from "@/lib/title"
 import { cn } from "@/lib/utils"
 
@@ -46,9 +47,7 @@ export function HelpPage({ doc }: { doc: HelpDoc }) {
                   {s.heading}
                 </a>
               </h2>
-              <Markdown trusted className="text-[15px]">
-                {s.body}
-              </Markdown>
+              <Markdown components={TRUSTED_MARKDOWN}>{s.body}</Markdown>
             </section>
           ))}
         </article>

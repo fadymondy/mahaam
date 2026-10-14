@@ -3,14 +3,12 @@
 import { useState } from "react"
 import Link from "next/link"
 import { PlusIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { SectionHeader } from "@/components/public-frame"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Input, Textarea } from "@fadymondy/nasaq/web"
+
+import { Page, PageHeader, Panel } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { MemberPicker } from "@/components/work/fields"
@@ -33,17 +31,20 @@ export default function TeamsPage() {
   const [editing, setEditing] = useState<Team | "new" | null>(null)
   const list = teams.data?.teams ?? []
 
-  if (ws.current && !ws.can("teams:read")) return <p className="px-6 py-6 text-sm text-grid-muted">{t("teams.noPermission")}</p>
+  if (ws.current && !ws.can("teams:read")) return (
+      <Page>
+        <p className="text-sm text-muted-foreground">{t("teams.noPermission")}</p>
+      </Page>
+    )
 
   return (
-    <>
-      <SectionHeader
-        micro={ws.summary.name}
+    <Page>
+      <PageHeader
         title={t("nav.teams")}
         description={t("teams.hint")}
-        action={
+        actions={
           canWrite ? (
-            <Button onClick={() => setEditing("new")}>
+            <Button variant="primary" onClick={() => setEditing("new")}>
               <PlusIcon />
               {t("teams.new")}
             </Button>
@@ -57,15 +58,16 @@ export default function TeamsPage() {
       ) : list.length === 0 ? (
         <EmptyState title={t("teams.empty")} body={canWrite ? t("teams.emptyBody") : undefined} />
       ) : (
-        <ul className="divide-y divide-line border-y border-line">
+        <Panel flush>
+        <ul className="divide-y divide-line">
           {list.map((team) => (
-            <li key={team.id} className="flex flex-wrap items-center gap-3 px-6 py-3" data-team={team.id}>
+            <li key={team.id} className="flex flex-wrap items-center gap-3 px-4 py-3" data-team={team.id}>
               <ColorDot color={team.color} className="size-3" />
               <div className="min-w-0 flex-1">
-                <Link href={`/${locale}/w/${ws.slug}/teams/${team.id}`} className="block truncate font-medium text-grid-fg hover:underline">
+                <Link href={`/${locale}/w/${ws.slug}/teams/${team.id}`} className="block truncate font-medium text-foreground hover:underline">
                   {team.name}
                 </Link>
-                <p className="truncate text-meta text-grid-muted">
+                <p className="truncate text-caption text-muted-foreground">
                   {team.description ? `${team.description} · ` : ""}
                   {t("teams.memberCount", { n: team.member_ids.length })} · {t("teams.projectCount", { n: team.project_count })}
                 </p>
@@ -95,6 +97,7 @@ export default function TeamsPage() {
             </li>
           ))}
         </ul>
+        </Panel>
       )}
 
       <TeamDialog
@@ -106,7 +109,7 @@ export default function TeamsPage() {
           void teams.mutate()
         }}
       />
-    </>
+    </Page>
   )
 }
 
@@ -154,14 +157,14 @@ function TeamDialog({ team, dir, onClose, onSaved }: { team: Team | "new" | null
           <DialogTitle>{existing ? t("teams.edit") : t("teams.new")}</DialogTitle>
           <DialogDescription>{t("teams.formHint")}</DialogDescription>
         </DialogHeader>
-        <FieldGroup>
+        <div className="flex flex-col gap-4">
           <Field>
             <FieldLabel htmlFor="t-name">{t("project.name")}</FieldLabel>
             <Input id="t-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
           <Field>
             <FieldLabel htmlFor="t-desc">
-              {t("project.description")} <span className="text-grid-muted">({t("common.optional")})</span>
+              {t("project.description")} <span className="text-muted-foreground">({t("common.optional")})</span>
             </FieldLabel>
             <Textarea id="t-desc" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
@@ -173,13 +176,13 @@ function TeamDialog({ team, dir, onClose, onSaved }: { team: Team | "new" | null
             <FieldLabel>{t("teams.members")}</FieldLabel>
             <MemberPicker dir={dir} selected={members} onChange={setMembers} label={t("teams.members")} />
           </Field>
-          {error ? <FieldError>{error}</FieldError> : null}
-        </FieldGroup>
+          {error ? <FormError>{error}</FormError> : null}
+        </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button disabled={busy || !name.trim()} onClick={save}>
+          <Button variant="primary" disabled={busy || !name.trim()} onClick={save}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </DialogFooter>

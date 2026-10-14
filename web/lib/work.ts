@@ -4,6 +4,7 @@
 import useSWR, { type KeyedMutator } from "swr"
 
 import { api, ApiError } from "@/lib/api"
+import { wsHeaders } from "@/lib/view-as"
 
 export type TaskCounts = { todo: number; doing: number; done: number }
 
@@ -28,6 +29,8 @@ export type Project = {
   updated_at: string
   tasks: TaskCounts
   member_count: number
+  /** When anything last happened in the project; absent when nothing has. */
+  last_activity_at?: string | null
   /** data: URL of the project's image; null = coloured initials. */
   avatar?: string | null
   /** Items per issue status (lists only). */
@@ -54,6 +57,10 @@ export type Status = {
   category: Category
   /** Workflow stage of the column: backlog, todo, in_progress, waiting_approval, in_review, done. */
   stage?: string
+  /** The column's name per locale (en, ar); name is the fallback. */
+  labels?: Record<string, string>
+  /** Lucide icon name from the allow-list; empty means the stage's default. */
+  icon?: string
   position: number
   task_count: number
 }
@@ -230,6 +237,11 @@ export type Issue = {
   skill: string | null
   sort_order: number
   agent_seconds: number
+  ai_input_tokens?: number
+  ai_output_tokens?: number
+  ai_cache_tokens?: number
+  ai_cost_minor?: number
+  ai_currency?: string
   comment_count: number
   started_at: string | null
   finished_at: string | null
@@ -255,11 +267,11 @@ const opts = {
   revalidateOnFocus: false,
 }
 
-function useW<T>(path: string | null, workspaceId: string | null | undefined) {
+function useW<T>(path: string | null, workspaceId: string | null | undefined, extra?: { keepPreviousData?: boolean }) {
   return useSWR<T>(
     path && workspaceId ? [path, workspaceId] : null,
     ([p, id]: [string, string]) => api<T>(p, { workspaceId: id }),
-    opts,
+    extra ? { ...opts, ...extra } : opts,
   )
 }
 
@@ -288,15 +300,15 @@ export const useClient = (ws: string, id: string | null, enabled = true) =>
 export const useTeams = (ws: string, enabled = true) => useW<{ teams: Team[] }>(enabled ? "/api/w/teams" : null, ws)
 export const useLabels = (ws: string) => useW<{ labels: Label[] }>("/api/w/labels", ws)
 
-export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string; project?: string; state?: string; include_board?: string }
+export type IssueQuery = { status?: string; priority?: string; type?: string; q?: string; project?: string; state?: string; include_board?: string; per_column?: string }
 function issueQs(q: IssueQuery) {
   const s = new URLSearchParams()
-  for (const k of ["status", "priority", "type", "q", "project", "state", "include_board"] as const) if (q[k]) s.set(k, q[k]!)
+  for (const k of ["status", "priority", "type", "q", "project", "state", "include_board", "per_column"] as const) if (q[k]) s.set(k, q[k]!)
   const str = s.toString()
   return str ? `?${str}` : ""
 }
 export const useIssues = (ws: string, query: IssueQuery = {}, enabled = true) =>
-  useW<{ issues: Issue[] }>(enabled ? `/api/w/issues${issueQs(query)}` : null, ws)
+  useW<{ issues: Issue[]; column_totals?: Record<string, number> }>(enabled ? `/api/w/issues${issueQs(query)}` : null, ws, { keepPreviousData: true })
 export const useIssue = (ws: string, key: string | null, enabled = true) =>
   useW<IssueDetail>(key && enabled ? `/api/w/issues/${encodeURIComponent(key)}` : null, ws)
 
@@ -421,7 +433,7 @@ export const invoicesApi = {
 
 /** Fetch a workspace-scoped file (needs the X-Workspace-ID header a plain link can't set). */
 async function fetchWithWs(ws: string, path: string) {
-  const res = await fetch(path, { headers: { "X-Workspace-ID": ws }, credentials: "same-origin", cache: "no-store" })
+  const res = await fetch(path, { headers: wsHeaders(ws), credentials: "same-origin", cache: "no-store" })
   if (!res.ok) {
     let msg = res.statusText
     try {
@@ -473,3 +485,28 @@ export const w = {
 export function errorText(err: unknown, fallback: string) {
   return err instanceof ApiError ? err.message : fallback
 }
+
+// ── home dashboard ─────────────────────────────────────────────────────────
+
+export type AttentionTask = {
+  id: string
+  key: string
+  title: string
+  project_id: string
+  project_name: string
+  project_color: string
+  priority: Priority
+  due_at: string | null
+  overdue: boolean
+}
+
+/** GET /api/w/overview: the aggregates no list endpoint gives cheaply. */
+export type Overview = {
+  completed_total: number
+  completed_week: number
+  overdue: number
+  attention: AttentionTask[] | null
+  project_members: Record<string, string[]> | null
+}
+
+export const useOverview = (ws: string, enabled = true) => useW<Overview>(enabled ? "/api/w/overview" : null, ws)

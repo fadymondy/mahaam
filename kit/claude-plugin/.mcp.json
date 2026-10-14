@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mahaam": {
+      "type": "http",
+      "url": "${MAHAAM_URL:-https://console.mahaam.app}/api/mcp"
+    }
+  }
+}

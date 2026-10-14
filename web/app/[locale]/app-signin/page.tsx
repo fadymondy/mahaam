@@ -21,8 +21,9 @@ import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { LaptopIcon, LogOutIcon, SmartphoneIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, Skeleton } from "@fadymondy/nasaq/web"
+
+
 import { PublicFrame, PublicPanel } from "@/components/public-frame"
 import { ErrorState } from "@/components/states"
 import { api, ApiError } from "@/lib/api"
@@ -95,7 +96,7 @@ export default function AppSigninPage() {
     return (
       <PublicFrame title={t("appSignin.title")}>
         <PublicPanel>
-          <p className="p-6 text-sm text-grid-muted">{t("appSignin.badRequest")}</p>
+          <p className="p-6 text-sm text-muted-foreground">{t("appSignin.badRequest")}</p>
         </PublicPanel>
       </PublicFrame>
     )
@@ -106,25 +107,25 @@ export default function AppSigninPage() {
       <PublicPanel>
         <div className="flex flex-col gap-5 p-6" data-app-signin>
           {done ? (
-            <p className="text-sm text-grid-body" role="status" data-app-signin-done>
+            <p className="text-sm text-nq-fg-body" role="status" data-app-signin-done>
               {t("appSignin.done")}
             </p>
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center border border-line bg-grid-soft">
-                  {phone ? <SmartphoneIcon className="size-5 text-grid-action" /> : <LaptopIcon className="size-5 text-grid-action" />}
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">
+                  {phone ? <SmartphoneIcon className="size-5 text-nq-accent-text" /> : <LaptopIcon className="size-5 text-nq-accent-text" />}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-grid-fg" dir="auto">
+                  <p className="truncate text-sm font-medium text-foreground" dir="auto">
                     {device || t("appSignin.anApp")}
                   </p>
-                  <p className="text-sm text-grid-muted">{t("appSignin.wantsToSignIn")}</p>
+                  <p className="text-sm text-muted-foreground">{t("appSignin.wantsToSignIn")}</p>
                 </div>
               </div>
-              <p className="text-sm text-grid-body">
+              <p className="text-sm text-nq-fg-body">
                 {t("appSignin.as")}{" "}
-                <span className="font-medium text-grid-fg" dir="ltr">
+                <span className="font-medium text-foreground" dir="ltr">
                   {me.data.email}
                 </span>
               </p>
@@ -134,15 +135,15 @@ export default function AppSigninPage() {
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                <Button disabled={busy !== null} onClick={() => void proceed()} data-app-signin-continue>
+                <Button variant="primary" disabled={busy !== null} onClick={() => void proceed()} data-app-signin-continue>
                   {busy === "continue" ? t("common.working") : t("appSignin.continue")}
                 </Button>
-                <Button variant="outline" disabled={busy !== null} onClick={() => void switchAccount()}>
+                <Button variant="secondary" disabled={busy !== null} onClick={() => void switchAccount()}>
                   <LogOutIcon />
                   {t("appSignin.switch")}
                 </Button>
               </div>
-              <p className="text-meta text-grid-muted">{t("appSignin.notYou")}</p>
+              <p className="text-caption text-muted-foreground">{t("appSignin.notYou")}</p>
             </>
           )}
         </div>

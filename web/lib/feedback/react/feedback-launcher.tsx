@@ -5,7 +5,8 @@
 import { useState, type ReactNode } from "react"
 import { MessageSquarePlusIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@fadymondy/nasaq/web"
+
 
 import { submit, type SubmitFn, type SubmitOptions } from "../core/transport"
 import { FEEDBACK_LABELS } from "./labels"
@@ -19,8 +20,8 @@ export type FeedbackLauncherProps = Omit<ReportDialogProps, "open" | "onOpenChan
   onSubmitted?: (result: unknown) => void
   /** Replaces the default icon + label inside the button. */
   children?: ReactNode
-  variant?: "default" | "outline" | "ghost" | "secondary"
-  size?: "default" | "sm" | "lg"
+  variant?: "primary" | "ghost" | "secondary"
+  size?: "md" | "sm" | "lg"
   className?: string
 }
 
@@ -33,7 +34,7 @@ export function FeedbackLauncher({
   submitOptions,
   onSubmitted,
   children,
-  variant = "outline",
+  variant = "secondary",
   size = "sm",
   className,
   ...dialog

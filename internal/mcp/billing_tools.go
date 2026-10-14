@@ -14,6 +14,7 @@ import (
 BillingTools: AI consumption and project subscriptions (internal/work/billing_sources.go).
 
 	record_ai_usage                              ai:record   (member+) — push a project's daily usage
+	record_issue_usage                           ai:record   (member+) — add one session's spend to an issue
 	ai_usage_summary, set_ai_markup              ai:read     (manager+)
 	list_subscriptions, add_subscription,
 	update_subscription                          subscriptions:manage (manager+)
@@ -64,6 +65,42 @@ func BillingTools() []Tool {
 					cur = rows[0].Currency
 				}
 				return fmt.Sprintf("Recorded %d row(s): %d tokens, cost %s.", len(rows), tokens, money(cost, cur)), nil
+			},
+		},
+		{
+			Name: "record_issue_usage",
+			Description: "Report what one agent session spent on one issue: tokens and cost. Adds to the issue's AI totals and to its project's usage " +
+				"for the day (it adds, it doesn't replace, so push only this session's numbers). Call it before review_issue, request_approval or finish_issue.",
+			Scope: "ai:record",
+			InputSchema: schema([]string{"key", "model", "cost"}, map[string]any{
+				"key": prop("string", "MG-12 or id"), "model": prop("string", "e.g. claude-opus-5"),
+				"provider": prop("string", "anthropic (default), openai, …"), "source": prop("string", "issues (default), claude-code, an agent name"),
+				"input_tokens": prop("integer", ""), "output_tokens": prop("integer", ""),
+				"cache_read_tokens": prop("integer", ""), "cache_write_tokens": prop("integer", ""),
+				"requests": prop("integer", "Default 1"), "cost": prop("string", "What this session cost, e.g. \"1.84\""),
+				"currency": prop("string", "Default USD"), "day": prop("string", "YYYY-MM-DD, default today (UTC)"),
+			}),
+			Run: func(ctx context.Context, a *app.App, raw json.RawMessage) (string, error) {
+				var in struct {
+					Key string `json:"key"`
+					work.AIUsageInput
+				}
+				if err := json.Unmarshal(raw, &in); err != nil {
+					return "", err
+				}
+				r, err := findIssue(ctx, a, in.Key)
+				if err != nil {
+					return "", err
+				}
+				if r.ProjectID == nil {
+					return "", fmt.Errorf("%s has no project", r.Key)
+				}
+				u, err := work.New(a).RecordIssueUsage(ctx, *r.ProjectID, r.ID, in.AIUsageInput)
+				if err != nil {
+					return "", toolErr(err)
+				}
+				return fmt.Sprintf("%s: %d in / %d out / %d cache tokens, %s spent on the issue so far.",
+					r.Key, u.InputTokens, u.OutputTokens, u.CacheTokens, money(u.CostMinor, u.Currency)), nil
 			},
 		},
 		{

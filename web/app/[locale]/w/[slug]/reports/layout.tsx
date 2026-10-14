@@ -6,8 +6,9 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { usePathname } from "next/navigation"
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SectionHeader } from "@/components/public-frame"
+import { Tabs, TabsList, TabsTab } from "@fadymondy/nasaq/web"
+
+import { Page, PageHeader } from "@/components/page"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 
@@ -25,25 +26,27 @@ export default function ReportsLayout({ children }: { children: ReactNode }) {
   ].filter((x) => x.show)
   const tab = pathname.endsWith("/budgets") ? "budgets" : pathname.endsWith("/profitability") ? "profitability" : "time"
 
-  if (ws.current && !ws.can("reports:read")) return <p className="px-6 py-6 text-sm text-grid-muted">{t("reports.noPermission")}</p>
+  if (ws.current && !ws.can("reports:read")) return (
+      <Page>
+        <p className="text-sm text-muted-foreground">{t("reports.noPermission")}</p>
+      </Page>
+    )
 
   return (
-    <div data-reports={tab}>
-      <div data-print-hide>
-        <SectionHeader micro={ws.summary.name} title={t("reports.title")} description={t("reports.hint")} />
-        <div className="border-b border-line px-6">
-          <Tabs value={tab}>
-            <TabsList variant="line">
+    <Page wide data-reports={tab}>
+      <div className="flex flex-col gap-4" data-print-hide>
+        <PageHeader title={t("reports.title")} description={t("reports.hint")} />
+        <Tabs value={tab}>
+            <TabsList variant="underline">
               {tabs.map((x) => (
-                <TabsTrigger key={x.value} value={x.value} nativeButton={false} render={<Link href={x.href} />} data-report-tab={x.value}>
+                <TabsTab key={x.value} value={x.value} nativeButton={false} render={<Link href={x.href} />} data-report-tab={x.value}>
                   {t(`reports.tab.${x.value}`)}
-                </TabsTrigger>
+                </TabsTab>
               ))}
             </TabsList>
-          </Tabs>
-        </div>
+        </Tabs>
       </div>
       {children}
-    </div>
+    </Page>
   )
 }

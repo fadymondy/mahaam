@@ -1,25 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { PlusIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { SectionHeader } from "@/components/public-frame"
+import { Badge, Button, DataTableFacetFilter, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
+
+import { DataView } from "@/components/data-view"
+import { Panel, SectionTitle } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
-import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
+import { EmptyState, ErrorState } from "@/components/states"
 import { ConnectAgentDialog } from "@/components/mcp/connect-agent-dialog"
+import { AgentKitGuide } from "@/components/mcp/agent-kit-guide"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api, ApiError, type McpScope, type McpToken } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 import { useMcpTokens } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
 
-const MCP_ORIGIN = process.env.NEXT_PUBLIC_MCP_ORIGIN ?? "http://localhost:8110"
+import { MCP_ORIGIN } from "@/lib/mcp-origin"
 
 export default function McpTokensPage() {
   const { t, formatDate } = useTranslations()
@@ -38,16 +38,80 @@ export default function McpTokensPage() {
     }
   }
 
-  const list = tokens.data?.tokens ?? []
+  const list = useMemo(() => tokens.data?.tokens ?? [], [tokens.data])
+  const columns = useMemo<DataTableColumn<McpToken>[]>(
+    () => [
+      { id: "name", header: t("mcp.name"), hideable: false, sortValue: (tok) => tok.name.toLowerCase(), searchValue: (tok) => `${tok.name} ${tok.prefix} ${(tok.scopes ?? []).join(" ")}`, className: "font-medium", cell: (tok) => tok.name },
+      {
+        id: "prefix",
+        header: t("mcp.prefix"),
+        cell: (tok) => (
+          <Ltr mono className="text-xs">
+            {tok.prefix}…
+          </Ltr>
+        ),
+      },
+      {
+        id: "scopes",
+        header: t("mcp.scopes"),
+        cell: (tok) => (
+          <div className="flex max-w-xs flex-wrap gap-1">
+            {(tok.scopes ?? []).map((s) => (
+              <Badge key={s} variant="outline" className="font-mono" dir="ltr">
+                {s}
+              </Badge>
+            ))}
+          </div>
+        ),
+      },
+      {
+        id: "lastUsed",
+        header: t("mcp.lastUsed"),
+        sortValue: (tok) => tok.last_used_at ?? null,
+        className: "text-muted-foreground",
+        cell: (tok) => (tok.last_used_at ? <Ltr>{formatDate(tok.last_used_at)}</Ltr> : t("mcp.never")),
+      },
+      {
+        id: "expires",
+        header: t("mcp.expires"),
+        sortValue: (tok) => tok.expires_at ?? null,
+        className: "text-muted-foreground",
+        cell: (tok) => (tok.expires_at ? <Ltr>{formatDate(tok.expires_at)}</Ltr> : t("mcp.noExpiry")),
+      },
+      {
+        id: "status",
+        header: t("mcp.status"),
+        align: "end",
+        hideable: false,
+        filterValue: tokenState,
+        cell: (tok) => {
+          const state = tokenState(tok)
+          if (state !== "active") return <Badge variant="neutral">{t(state === "revoked" ? "mcp.revokedBadge" : "mcp.expiredBadge")}</Badge>
+          return (
+            <ConfirmButton
+              label={t("common.revoke")}
+              title={t("mcp.revokeTitle")}
+              description={t("mcp.revokeBody", { name: tok.name })}
+              confirmLabel={t("common.revoke")}
+              onConfirm={() => revoke(tok.id)}
+            />
+          )
+        },
+      },
+    ],
+    // revoke only closes over ws.id and tokens.mutate
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, formatDate],
+  )
+  const table = useDataTable({ data: list, columns, getRowId: (tok) => tok.id, pageSize: 25, defaultSort: { id: "lastUsed", direction: "desc" } })
 
   return (
-    <>
-      <SectionHeader
-        micro={ws.summary.name}
+    <div className="flex flex-col gap-6">
+      <SectionTitle
         title={t("nav.mcpTokens")}
         description={t("mcp.hint")}
-        action={
-          <Button onClick={() => setCreating(true)} disabled={!tokens.data}>
+        actions={
+          <Button variant="primary" onClick={() => setCreating(true)} disabled={!tokens.data}>
             <PlusIcon />
             {t("mcp.create")}
           </Button>
@@ -56,79 +120,39 @@ export default function McpTokensPage() {
 
       {tokens.error ? (
         <ErrorState error={tokens.error} />
-      ) : tokens.isLoading ? (
-        <LoadingRows />
-      ) : list.length === 0 ? (
-        <EmptyState title={t("mcp.empty")} body={t("mcp.emptyBody")} />
       ) : (
-        <div className="border-y border-line">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-6">{t("mcp.name")}</TableHead>
-                <TableHead>{t("mcp.prefix")}</TableHead>
-                <TableHead>{t("mcp.scopes")}</TableHead>
-                <TableHead>{t("mcp.lastUsed")}</TableHead>
-                <TableHead>{t("mcp.expires")}</TableHead>
-                <TableHead className="pe-6 text-end">
-                  <span className="sr-only">{t("common.actions")}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.map((tok) => (
-                <TokenRow key={tok.id} tok={tok} formatDate={formatDate} onRevoke={() => revoke(tok.id)} />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <DataView
+          table={table}
+          label={t("nav.mcpTokens")}
+          rowLabel={(tok) => tok.name}
+          loading={tokens.isLoading}
+          empty={<EmptyState title={t("mcp.empty")} body={t("mcp.emptyBody")} />}
+          search={t("mcp.search")}
+          filters={
+            <DataTableFacetFilter
+              table={table}
+              column="status"
+              title={t("mcp.status")}
+              options={[
+                { value: "active", label: t("mcp.activeBadge") },
+                { value: "expired", label: t("mcp.expiredBadge") },
+                { value: "revoked", label: t("mcp.revokedBadge") },
+              ]}
+            />
+          }
+        />
       )}
 
+      <Panel title={t("mcp.kitTitle")}>
+        <AgentKitGuide />
+      </Panel>
+
       <ConnectAgentDialog open={creating} onOpenChange={setCreating} onCreated={() => tokens.mutate()} />
-    </>
+    </div>
   )
 }
 
-function TokenRow({ tok, formatDate, onRevoke }: { tok: McpToken; formatDate: (v: string | null | undefined) => string; onRevoke: () => Promise<void> }) {
-  const { t } = useTranslations()
-  const expired = !!tok.expires_at && new Date(tok.expires_at).getTime() < Date.now()
-  return (
-    <TableRow className={tok.revoked_at || expired ? "opacity-60" : undefined}>
-      <TableCell className="ps-6 font-medium">{tok.name}</TableCell>
-      <TableCell>
-        <Ltr mono className="text-xs">
-          {tok.prefix}…
-        </Ltr>
-      </TableCell>
-      <TableCell>
-        <div className="flex max-w-xs flex-wrap gap-1">
-          {(tok.scopes ?? []).map((s) => (
-            <Badge key={s} variant="outline" className="font-mono" dir="ltr">
-              {s}
-            </Badge>
-          ))}
-        </div>
-      </TableCell>
-      <TableCell className="text-grid-muted">{tok.last_used_at ? <Ltr>{formatDate(tok.last_used_at)}</Ltr> : t("mcp.never")}</TableCell>
-      <TableCell className="text-grid-muted">
-        {tok.expires_at ? <Ltr>{formatDate(tok.expires_at)}</Ltr> : t("mcp.noExpiry")}
-      </TableCell>
-      <TableCell className="pe-6 text-end">
-        {tok.revoked_at ? (
-          <Badge variant="secondary">{t("mcp.revokedBadge")}</Badge>
-        ) : expired ? (
-          <Badge variant="secondary">{t("mcp.expiredBadge")}</Badge>
-        ) : (
-          <ConfirmButton
-            label={t("common.revoke")}
-            title={t("mcp.revokeTitle")}
-            description={t("mcp.revokeBody", { name: tok.name })}
-            confirmLabel={t("common.revoke")}
-            onConfirm={onRevoke}
-          />
-        )}
-      </TableCell>
-    </TableRow>
-  )
+function tokenState(tok: McpToken): "active" | "expired" | "revoked" {
+  if (tok.revoked_at) return "revoked"
+  return tok.expires_at && new Date(tok.expires_at).getTime() < Date.now() ? "expired" : "active"
 }
-

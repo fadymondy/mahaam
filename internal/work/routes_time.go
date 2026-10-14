@@ -34,7 +34,8 @@ type EntryList struct {
 
 // Running is the body of GET /api/w/time/running.
 type Running struct {
-	Timer *TimeEntry `json:"timer" doc:"null when no timer is running"`
+	Timer  *TimeEntry  `json:"timer" doc:"The human timer; null when none runs"`
+	Agents []TimeEntry `json:"agents" doc:"Running agent (MCP) timers, one per task, oldest first"`
 }
 
 func (r routes) time() {
@@ -43,10 +44,18 @@ func (r routes) time() {
 		WS
 		User string `query:"user" doc:"A member's user id (time:manage)"`
 	}) (Running, error) {
-		e, err := r.sv.RunningTimer(ctx, in.User)
-		return Running{Timer: e}, err
+		all, err := r.sv.RunningTimers(ctx, in.User)
+		out := Running{Agents: []TimeEntry{}}
+		for i := range all {
+			if all[i].Source == "mcp" {
+				out.Agents = append(out.Agents, all[i])
+			} else if out.Timer == nil {
+				out.Timer = &all[i]
+			}
+		}
+		return out, err
 	})
-	do(r, http.MethodPost, "/api/w/time/start", "w-start-timer", "Start a timer — the running one stops in the same transaction", tag, http.StatusCreated, func(ctx context.Context, in *struct {
+	do(r, http.MethodPost, "/api/w/time/start", "w-start-timer", "Start a timer — your running human timer stops in the same transaction; agent (MCP) starts need a task, run in parallel and stop nothing", tag, http.StatusCreated, func(ctx context.Context, in *struct {
 		WS
 		Body StartInput
 	}) (*TimerChange, error) {
@@ -54,11 +63,9 @@ func (r routes) time() {
 	})
 	do(r, http.MethodPost, "/api/w/time/stop", "w-stop-timer", "Stop the running timer (yours, or a member's with time:manage)", tag, 0, func(ctx context.Context, in *struct {
 		WS
-		Body struct {
-			User string `json:"user,omitempty" doc:"A member's user id (time:manage); default you"`
-		}
+		Body StopInput
 	}) (*TimeEntry, error) {
-		return r.sv.StopTimer(ctx, in.Body.User)
+		return r.sv.StopTimer(ctx, in.Body)
 	})
 	do(r, http.MethodGet, "/api/w/time/entries", "w-list-time-entries", "Time entries overlapping a date range, newest first", tag, 0, func(ctx context.Context, in *struct {
 		WS
@@ -102,6 +109,14 @@ func (r routes) time() {
 		Week string `query:"week" doc:"Any YYYY-MM-DD in the week (default: this week)"`
 	}) (*Timesheet, error) {
 		return r.sv.Timesheet(ctx, in.User, in.Week)
+	})
+	do(r, http.MethodGet, "/api/w/time/range", "w-time-range", "A person's week or month and the period before it, entries cut at local midnight", tag, 0, func(ctx context.Context, in *struct {
+		WS
+		User string `query:"user" doc:"A member's user id (time:manage); default you"`
+		Kind string `query:"kind" doc:"week (default) or month"`
+		Ref  string `query:"ref" doc:"Any YYYY-MM-DD in the period (default: now)"`
+	}) (*TimeRange, error) {
+		return r.sv.TimeRange(ctx, in.User, in.Kind, in.Ref)
 	})
 	do(r, http.MethodGet, "/api/w/time/team", "w-team-timesheet", "Everyone's week (time:manage)", tag, 0, func(ctx context.Context, in *struct {
 		WS
@@ -172,10 +187,19 @@ func (sv *Service) Events() http.HandlerFunc {
 		}
 	}
 	return sv.Live.Handler(func(ctx context.Context) (string, any) {
-		e, err := sv.RunningTimer(ctx, "")
+		all, err := sv.RunningTimers(ctx, "")
 		if err != nil {
-			return "timer.state", map[string]any{"running": nil}
+			return "timer.state", map[string]any{"running": nil, "agents": []any{}}
 		}
-		return "timer.state", map[string]any{"running": public(e)}
+		var human *TimeEntry
+		agents := []*TimeEntry{}
+		for i := range all {
+			if all[i].Source == "mcp" {
+				agents = append(agents, public(&all[i]))
+			} else if human == nil {
+				human = public(&all[i])
+			}
+		}
+		return "timer.state", map[string]any{"running": human, "agents": agents}
 	})
 }

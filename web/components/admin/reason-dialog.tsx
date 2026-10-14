@@ -2,10 +2,12 @@
 
 import { useState, type FormEvent } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Textarea } from "@/components/ui/textarea"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, FieldLabel, Textarea } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
+
+
+
+
 import { useTranslations } from "@/lib/i18n"
 import { errorText } from "@/lib/work"
 
@@ -57,13 +59,13 @@ export function ReasonDialog({
           <Field>
             <FieldLabel htmlFor="admin-reason">{t("admin.reason")}</FieldLabel>
             <Textarea id="admin-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} autoFocus />
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
           </Field>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" variant="destructive" disabled={busy}>
+            <Button type="submit" variant="danger" disabled={busy}>
               {busy ? t("common.working") : confirmLabel}
             </Button>
           </DialogFooter>
@@ -80,12 +82,12 @@ export function StatusBadge({ status }: { status: string }) {
     <span
       className={
         status === "suspended"
-          ? "inline-flex items-center gap-1.5 text-meta text-grid-danger-text"
-          : "inline-flex items-center gap-1.5 text-meta text-(--grid-ok-text)"
+          ? "inline-flex items-center gap-1.5 text-caption text-nq-danger-text"
+          : "inline-flex items-center gap-1.5 text-caption text-(--nq-ok-text)"
       }
       data-status={status}
     >
-      <span aria-hidden className={status === "suspended" ? "size-1.5 rounded-full bg-grid-danger" : "size-1.5 rounded-full bg-grid-ok"} />
+      <span aria-hidden className={status === "suspended" ? "size-1.5 rounded-full bg-nq-danger" : "size-1.5 rounded-full bg-nq-ok"} />
       {t(`admin.status.${status}`)}
     </span>
   )

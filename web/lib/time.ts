@@ -154,7 +154,10 @@ function qs(params: Record<string, string | null | undefined>) {
 
 export const RUNNING = "/api/w/time/running"
 
-export const useRunning = (ws: string | null | undefined, enabled = true) => useW<{ timer: TimeEntry | null }>(enabled ? RUNNING : null, ws)
+/** `timer` is the human timer; `agents` are running agent (MCP) timers, one per task. */
+export type RunningState = { timer: TimeEntry | null; agents?: TimeEntry[] }
+
+export const useRunning = (ws: string | null | undefined, enabled = true) => useW<RunningState>(enabled ? RUNNING : null, ws)
 export const useTimesheet = (ws: string, week?: string | null, user?: string | null) =>
   useW<Timesheet>(`/api/w/time/timesheet${qs({ week, user })}`, ws)
 export const useTeamTimesheet = (ws: string, week: string | null, enabled: boolean) =>
@@ -224,14 +227,27 @@ export function useLiveStream(ws: string | null | undefined): LiveState {
       }
       const running = [RUNNING, ws]
       if (name === "timer.state") {
-        void mutate(running, { timer: (payload as { running?: TimeEntry | null })?.running ?? null }, { revalidate: false })
+        const st = payload as { running?: TimeEntry | null; agents?: TimeEntry[] } | null
+        void mutate(running, { timer: st?.running ?? null, agents: st?.agents ?? [] }, { revalidate: false })
         return
       }
       if (name === "timer.started") {
-        void mutate(running, { timer: payload as TimeEntry }, { revalidate: false })
+        const e = payload as TimeEntry
+        void mutate(
+          running,
+          (cur?: RunningState) =>
+            e.source === "mcp"
+              ? { timer: cur?.timer ?? null, agents: [...(cur?.agents ?? []).filter((a) => a.id !== e.id), e] }
+              : { timer: e, agents: cur?.agents ?? [] },
+          { revalidate: false },
+        )
       } else if (name === "timer.stopped") {
         const id = (payload as { id?: string })?.id
-        void mutate(running, (cur?: { timer: TimeEntry | null }) => (cur?.timer && cur.timer.id === id ? { timer: null } : cur), { revalidate: false })
+        void mutate(
+          running,
+          (cur?: RunningState) => (cur ? { timer: cur.timer && cur.timer.id === id ? null : cur.timer, agents: (cur.agents ?? []).filter((a) => a.id !== id) } : cur),
+          { revalidate: false },
+        )
       }
       if (name.startsWith("timer.") || name === "entry.changed") {
         void mutate((key) => isKey(key, ws, "/api/w/time/") && !(Array.isArray(key) && key[0] === RUNNING))

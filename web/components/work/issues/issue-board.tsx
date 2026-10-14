@@ -1,6 +1,6 @@
 "use client"
 // The issues board: one column per status, dnd-kit drag within and between columns (the pattern of
-// components/shadcn-space/blocks/kanban-application-01). A drop persists through
+// components/work/kanban). A drop persists through
 // POST /api/w/issues/{key}/move — after the card above it, before the card below it, or into an
 // empty column by status — and a failed move rolls the board back.
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -21,7 +21,7 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { FolderIcon, MessageSquareIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { Ltr } from "@/components/copy-field"
 import { AgentTime, HumanOnlyMark, IssuePriorityMark, IssueTypeIcon } from "@/components/work/issues/issue-bits"
@@ -172,7 +172,7 @@ export function IssueBoard({
         </div>
         <DragOverlay>
           {active ? (
-            <div className="w-64 rotate-1 border border-line bg-grid-card p-3 shadow-lg">
+            <div className="w-64 rotate-1 rounded-lg border border-border bg-card p-3 shadow-lg">
               <IssueCardBody issue={active} projectName={projectName} />
             </div>
           ) : null}
@@ -198,14 +198,14 @@ function IssueColumn({
   const label = t(`issues.status.${column.status}`)
   return (
     <section
-      className="flex w-64 shrink-0 flex-col border border-line bg-grid-soft data-[over=true]:border-grid-action"
+      className="flex w-64 shrink-0 flex-col overflow-hidden rounded-card border border-border bg-muted data-[over=true]:border-nq-action"
       data-over={isOver}
       data-status={column.status}
       aria-label={label}
     >
-      <header className="flex items-center gap-2 border-b border-line px-3 py-2">
-        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-grid-fg">{label}</h2>
-        <span className="text-meta text-grid-muted tabular-nums">
+      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{label}</h2>
+        <span className="text-caption text-muted-foreground tabular-nums">
           <Ltr>{column.issues.length}</Ltr>
         </span>
       </header>
@@ -215,7 +215,7 @@ function IssueColumn({
             <IssueCard key={issue.key} issue={issue} draggable={canWrite} projectName={projectName} href={hrefFor(issue.key)} />
           ))}
         </SortableContext>
-        {column.issues.length === 0 ? <p className="px-1 py-4 text-center text-meta text-grid-muted">{t("issues.emptyColumn")}</p> : null}
+        {column.issues.length === 0 ? <p className="px-1 py-4 text-center text-caption text-muted-foreground">{t("issues.emptyColumn")}</p> : null}
       </div>
     </section>
   )
@@ -226,15 +226,15 @@ export function IssueCardBody({ issue, projectName }: { issue: Issue; projectNam
   const project = projectName(issue.project_id)
   return (
     <>
-      <div className="flex items-center gap-2 text-meta text-grid-muted">
+      <div className="flex items-center gap-2 text-caption text-muted-foreground">
         <IssueTypeIcon type={issue.issue_type} />
         <Ltr mono>{issue.key}</Ltr>
         <IssuePriorityMark priority={issue.priority} className="ms-auto" />
       </div>
-      <p className={cn("mt-1 text-sm font-medium break-words text-grid-fg", issue.status === "done" && "text-grid-muted line-through")} dir="auto">
+      <p className={cn("mt-1 text-sm font-medium break-words text-foreground", issue.status === "done" && "text-muted-foreground line-through")} dir="auto">
         {issue.title}
       </p>
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-grid-muted">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-muted-foreground">
         {project ? (
           <span className="flex min-w-0 items-center gap-1">
             <FolderIcon className="size-3 shrink-0" aria-hidden />
@@ -280,7 +280,7 @@ function IssueCard({
         if (Date.now() - lastDragEnd < 300) e.preventDefault()
       }}
       className={cn(
-        "block w-full border border-line bg-grid-card p-3 text-start transition-colors outline-none hover:border-grid-muted focus-visible:ring-2 focus-visible:ring-grid-action",
+        "block w-full rounded-lg border border-border bg-card p-3 text-start transition-colors outline-none hover:border-nq-line-strong focus-visible:ring-2 focus-visible:ring-nq-action",
         draggable && "cursor-grab touch-none active:cursor-grabbing",
         isDragging && "opacity-40",
       )}

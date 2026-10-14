@@ -5,13 +5,12 @@
 // notice) and per-kind mutes (a muted kind is not stored in the inbox at all).
 import { useState, type ReactNode } from "react"
 import { MailWarningIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+import { Checkbox, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { Panel, SectionTitle } from "@/components/page"
 import { ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
@@ -21,12 +20,12 @@ import { errorText } from "@/lib/work"
 
 function Row({ label, hint, htmlFor, children }: { label: string; hint?: ReactNode; htmlFor?: string; children: ReactNode }) {
   return (
-    <div className="grid gap-3 border-b border-line px-6 py-5 md:grid-cols-[18rem_1fr] md:gap-8">
+    <div className="grid gap-3 px-4 py-5 md:grid-cols-[18rem_1fr] md:gap-8">
       <div>
-        <label htmlFor={htmlFor} className="text-sm font-medium text-grid-fg">
+        <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
           {label}
         </label>
-        {hint ? <p className="mt-1 text-meta text-grid-muted">{hint}</p> : null}
+        {hint ? <p className="mt-1 text-caption text-muted-foreground">{hint}</p> : null}
       </div>
       <div className="min-w-0 max-w-xl">{children}</div>
     </div>
@@ -39,10 +38,10 @@ export default function NotificationSettingsPage() {
   useDocumentTitle(`${t("nset.title")} · ${ws.summary.name}`)
   const s = useNotificationSettings(ws.id)
   return (
-    <>
-      <SectionHeader micro={ws.summary.name} title={t("nset.title")} description={t("nset.hint")} />
+    <div className="flex flex-col gap-6">
+      <SectionTitle title={t("nset.title")} description={t("nset.hint")} />
       {s.error ? <ErrorState error={s.error} /> : !s.data ? <LoadingRows rows={4} /> : <Form data={s.data} onSaved={(d) => void s.mutate(d, { revalidate: false })} />}
-    </>
+    </div>
   )
 }
 
@@ -69,11 +68,11 @@ function Form({ data, onSaved }: { data: NotificationSettings; onSaved: (d: Noti
   const muted = new Set(data.muted_kinds ?? [])
 
   return (
-    <div className="border-t border-line" data-notification-settings data-email-configured={configured}>
+    <Panel flush contentClassName="divide-y divide-line" data-notification-settings data-email-configured={configured}>
       {configured ? (
         <>
           <Row label={t("nset.email")} hint={t("nset.emailHint", { address: `⁦${data.address}⁩` })} htmlFor="ns-email">
-            <label className="flex items-center justify-between gap-4 text-sm text-grid-body">
+            <label className="flex items-center justify-between gap-4 text-sm text-nq-fg-body">
               <span>{t("nset.emailEnabled")}</span>
               <Switch
                 id="ns-email"
@@ -86,7 +85,7 @@ function Form({ data, onSaved }: { data: NotificationSettings; onSaved: (d: Noti
           </Row>
           <Row label={t("nset.digest")} hint={t("nset.digestHourHint", { tz: data.timezone })} htmlFor="ns-digest">
             <div className="space-y-3">
-              <label className="flex items-center justify-between gap-4 text-sm text-grid-body">
+              <label className="flex items-center justify-between gap-4 text-sm text-nq-fg-body">
                 <span>{t("nset.digestEnabled")}</span>
                 <Switch
                   id="ns-digest"
@@ -96,7 +95,7 @@ function Form({ data, onSaved }: { data: NotificationSettings; onSaved: (d: Noti
                   data-digest-enabled
                 />
               </label>
-              <label className="flex items-center justify-between gap-4 text-sm text-grid-body">
+              <label className="flex items-center justify-between gap-4 text-sm text-nq-fg-body">
                 <span>{t("nset.digestHour")}</span>
                 <Select
                   items={hours}
@@ -120,17 +119,17 @@ function Form({ data, onSaved }: { data: NotificationSettings; onSaved: (d: Noti
           </Row>
         </>
       ) : (
-        <div role="status" className="flex items-start gap-3 border-b border-line bg-grid-soft px-6 py-4" data-email-not-configured>
-          <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-(--grid-warn-text)" />
+        <div role="status" className="flex items-start gap-3 bg-muted px-4 py-4" data-email-not-configured>
+          <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-(--nq-warn-text)" />
           <div className="space-y-1">
-            <p className="text-sm font-medium text-grid-fg">{t("nset.notConfigured")}</p>
-            <p className="max-w-3xl text-sm text-grid-body">{t("nset.notConfiguredBody", { driver: data.email.driver })}</p>
+            <p className="text-sm font-medium text-foreground">{t("nset.notConfigured")}</p>
+            <p className="max-w-3xl text-sm text-nq-fg-body">{t("nset.notConfiguredBody", { driver: data.email.driver })}</p>
           </div>
         </div>
       )}
 
       <Row label={t("nset.kinds")} hint={t("nset.kindsHint")}>
-        <ul className="divide-y divide-line border border-line" data-kinds>
+        <ul className="divide-y divide-line rounded-lg border border-border" data-kinds>
           {data.kinds.map((k) => {
             const id = `ns-kind-${k.replace(/\W/g, "-")}`
             const on = muted.has(k)
@@ -147,15 +146,15 @@ function Form({ data, onSaved }: { data: NotificationSettings; onSaved: (d: Noti
                     void patch(`kind:${k}`, { muted_kinds: [...next] })
                   }}
                 />
-                <label htmlFor={id} className="min-w-0 flex-1 text-sm text-grid-body">
+                <label htmlFor={id} className="min-w-0 flex-1 text-sm text-nq-fg-body">
                   {t(`nset.kind.${k}`) === `nset.kind.${k}` ? <Ltr>{k}</Ltr> : t(`nset.kind.${k}`)}
                 </label>
-                <span className="text-meta text-grid-muted">{on ? t("nset.muted") : ""}</span>
+                <span className="text-caption text-muted-foreground">{on ? t("nset.muted") : ""}</span>
               </li>
             )
           })}
         </ul>
       </Row>
-    </div>
+    </Panel>
   )
 }

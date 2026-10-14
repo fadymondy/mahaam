@@ -5,13 +5,15 @@
 // running-timer cache on timer.started / timer.stopped.
 import { useEffect, useState, type FormEvent } from "react"
 import { CornerDownLeftIcon, PlayIcon, SquareIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
+import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, Popover, PopoverContent, PopoverTrigger } from "@fadymondy/nasaq/web"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { TargetPicker, projectTarget, targetBody, taskTarget, useTargets, type Target } from "@/components/time/targets"
 import { ColorDot } from "@/components/work/palette"
@@ -31,7 +33,7 @@ export function useTimerActions() {
     setBusy(true)
     try {
       const res = await timeApi.start(ws.id, body)
-      await running.mutate({ timer: res.started }, { revalidate: false })
+      await running.mutate((cur) => ({ timer: res.started, agents: cur?.agents ?? [] }), { revalidate: false })
       void refresh(ws.id)
       toast.success(t("timer.started"))
       return true
@@ -47,7 +49,7 @@ export function useTimerActions() {
     setBusy(true)
     try {
       await timeApi.stop(ws.id)
-      await running.mutate({ timer: null }, { revalidate: false })
+      await running.mutate((cur) => ({ timer: null, agents: cur?.agents ?? [] }), { revalidate: false })
       void refresh(ws.id)
       toast.success(t("timer.stopped"))
     } catch (err) {
@@ -57,14 +59,14 @@ export function useTimerActions() {
       setBusy(false)
     }
   }
-  return { timer: running.data?.timer ?? null, loading: running.isLoading, busy, start, stop }
+  return { timer: running.data?.timer ?? null, agents: running.data?.agents ?? [], loading: running.isLoading, busy, start, stop }
 }
 
 export function TimerBar() {
   const { t } = useTranslations()
   const ws = useWorkspace()
   const canTrack = ws.can("time:track")
-  const { timer, busy, start, stop } = useTimerActions()
+  const { timer, agents, busy, start, stop } = useTimerActions()
   const now = useNow(1000, !!timer)
   const [open, setOpen] = useState(false)
   const [palette, setPalette] = useState(false)
@@ -72,7 +74,7 @@ export function TimerBar() {
   useEffect(() => {
     if (!canTrack) return
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault()
         setPalette((p) => !p)
       }
@@ -89,15 +91,15 @@ export function TimerBar() {
   return (
     <div data-timer-bar data-running={timer ? "true" : "false"} className="flex min-w-0 items-center">
       {timer ? (
-        <div className="flex h-8 min-w-0 items-center gap-2 border border-line bg-grid-card ps-2.5 pe-0.5" data-timer-running={timer.id}>
+        <div className="flex h-8 min-w-0 items-center gap-2 rounded-md border border-border bg-card ps-2.5 pe-0.5" data-timer-running={timer.id}>
           <span className="relative flex size-2.5 shrink-0" aria-hidden>
-            <span className="absolute inline-flex size-full animate-ping rounded-full opacity-60 motion-reduce:animate-none" style={{ background: "var(--grid-action)" }} />
+            <span className="absolute inline-flex size-full animate-ping rounded-full opacity-60 motion-reduce:animate-none" style={{ background: "var(--nq-action)" }} />
             <ColorDot color={timer.project_color ?? "violet"} className="relative" />
           </span>
           <span className="hidden max-w-[16rem] min-w-0 truncate text-sm md:inline" title={where ? `${what} — ${where}` : what} data-timer-what>
             {what}
           </span>
-          {where ? <span className="hidden max-w-[12rem] truncate text-meta text-grid-muted xl:inline">{where}</span> : null}
+          {where ? <span className="hidden max-w-[12rem] truncate text-caption text-muted-foreground xl:inline">{where}</span> : null}
           <Ltr mono className="text-sm tabular-nums" data-timer-elapsed>
             {clock(entrySeconds(timer, now))}
           </Ltr>
@@ -107,11 +109,11 @@ export function TimerBar() {
         </div>
       ) : (
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger render={<Button variant="outline" size="sm" aria-label={t("timer.start")} title={t("timer.shortcut")} data-timer-start />}>
+          <PopoverTrigger render={<Button variant="secondary" size="sm" aria-label={t("timer.start")} title={t("timer.shortcut")} data-timer-start />}>
             <PlayIcon />
             <span className="hidden sm:inline">{t("timer.start")}</span>
-            <kbd className="hidden font-mono text-xs text-grid-muted lg:inline" dir="ltr">
-              ⌘K
+            <kbd className="hidden font-mono text-xs text-muted-foreground lg:inline" dir="ltr">
+              ⇧⌘K
             </kbd>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-80 p-0">
@@ -124,6 +126,16 @@ export function TimerBar() {
           </PopoverContent>
         </Popover>
       )}
+      {agents.length > 0 ? (
+        <span
+          className="ms-2 inline-flex h-8 shrink-0 items-center gap-1.5 border border-border px-2 text-caption text-muted-foreground"
+          title={agents.map((a) => [a.task_key, a.task_title ?? a.description].filter(Boolean).join(" ")).join("\n")}
+          data-agent-timers={agents.length}
+        >
+          <span className="size-1.5 rounded-full" style={{ background: "var(--nq-action)" }} aria-hidden />
+          {t("timer.agentsRunning", { n: agents.length })}
+        </span>
+      ) : null}
       <StartPalette
         open={palette}
         onOpenChange={setPalette}
@@ -147,7 +159,7 @@ function StartForm({ onStart, busy }: { onStart: (b: StartBody) => void; busy: b
     <form onSubmit={submit} className="space-y-3 p-3" data-timer-form>
       <Input autoFocus dir="auto" placeholder={t("timer.whatAreYouDoing")} value={desc} onChange={(e) => setDesc(e.target.value)} data-timer-description />
       <TargetPicker value={target} onChange={setTarget} />
-      <Button type="submit" className="w-full" disabled={busy}>
+      <Button variant="primary" type="submit" className="w-full" disabled={busy}>
         <PlayIcon />
         {t("timer.start")}
       </Button>
@@ -180,7 +192,7 @@ function StartPalette({ open, onOpenChange, onStart }: { open: boolean; onOpenCh
               <CommandItem value="__free" onSelect={() => go({})} data-palette-free>
                 <PlayIcon />
                 <span className="truncate">{text ? t("timer.startFree", { text }) : t("timer.startBlank")}</span>
-                <CornerDownLeftIcon className="ms-auto text-grid-muted" />
+                <CornerDownLeftIcon className="ms-auto text-muted-foreground" />
               </CommandItem>
             </CommandGroup>
             {tasks.length ? (
@@ -188,11 +200,11 @@ function StartPalette({ open, onOpenChange, onStart }: { open: boolean; onOpenCh
                 {tasks.map((task) => (
                   <CommandItem key={task.id} value={`t:${task.id}`} onSelect={() => go(taskTarget(task, byProject), false)} data-palette-task={task.key}>
                     <ColorDot color={byProject.get(task.project_id)?.color} />
-                    <Ltr mono className="text-xs text-grid-muted">
+                    <Ltr mono className="text-xs text-muted-foreground">
                       {task.key}
                     </Ltr>
                     <span className="truncate">{task.title}</span>
-                    <span className="ms-auto truncate text-meta text-grid-muted">{byProject.get(task.project_id)?.name}</span>
+                    <span className="ms-auto truncate text-caption text-muted-foreground">{byProject.get(task.project_id)?.name}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>

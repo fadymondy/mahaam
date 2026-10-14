@@ -24,7 +24,7 @@ func TestIssueLoop(t *testing.T) {
 	pid := owner.must("POST", "/api/w/projects", map[string]any{"name": proj}, 201)["id"].(string)
 
 	tok := owner.must("POST", "/api/w/mcp_tokens", map[string]any{"name": "loop " + rnd(),
-		"scopes": []string{"issues:read", "issues:write", "projects:read", "projects:write"}}, 201)
+		"scopes": []string{"issues:read", "issues:write", "projects:read", "projects:write", "ai:record"}}, 201)
 	agent := newClient(t, srv.URL)
 	agent.bearer = tok["plaintext"].(string)
 
@@ -117,6 +117,34 @@ func TestIssueLoop(t *testing.T) {
 	_ = a.SysDB.QueryRow(`SELECT sort_order, status FROM reports WHERE workspace_id = $1 AND key = $2`, ws, second).Scan(&o2, &status)
 	if !(o2 < o1) || status != "in_review" {
 		t.Errorf("reorder: %s=%d %s=%d status=%s", second, o2, first, o1, status)
+	}
+
+	// Any move out of the backlog starts the clock; reaching review or done banks it.
+	text, _ = call("create_issue", map[string]any{"title": "Moved by status only", "project": proj, "status": "backlog"})
+	third := keyOf(text)
+	call("update_issue", map[string]any{"key": third, "status": "in_progress"})
+	_ = a.SysDB.QueryRow(`SELECT started_at FROM reports WHERE workspace_id = $1 AND key = $2`, ws, third).Scan(&started)
+	if started == nil {
+		t.Errorf("leaving the backlog must start the clock")
+	}
+	_, _ = a.SysDB.Exec(`UPDATE reports SET started_at = now() - interval '120 seconds' WHERE workspace_id = $1 AND key = $2`, ws, third)
+	call("update_issue", map[string]any{"key": third, "status": "done"})
+	_ = a.SysDB.QueryRow(`SELECT agent_seconds, started_at FROM reports WHERE workspace_id = $1 AND key = $2`, ws, third).Scan(&secs, &started)
+	if secs < 115 || started != nil {
+		t.Errorf("done must bank the clock: seconds=%d started=%v", secs, started)
+	}
+
+	// Per-issue AI spend adds up, and lands on the project's usage for the day.
+	for i := 0; i < 2; i++ {
+		if text, isErr = call("record_issue_usage", map[string]any{"key": third, "model": "claude-opus-5", "input_tokens": 1000, "output_tokens": 200, "cost": "0.75"}); isErr {
+			t.Fatalf("record_issue_usage: %q", text)
+		}
+	}
+	var in, cost, pcost int64
+	_ = a.SysDB.QueryRow(`SELECT ai_input_tokens, ai_cost_minor FROM reports WHERE workspace_id = $1 AND key = $2`, ws, third).Scan(&in, &cost)
+	_ = a.SysDB.QueryRow(`SELECT COALESCE(sum(cost_minor), 0) FROM ai_usage WHERE workspace_id = $1 AND project_id = $2`, ws, pid).Scan(&pcost)
+	if in != 2000 || cost != 150 || pcost != 150 {
+		t.Errorf("issue usage: tokens=%d cost=%d project cost=%d", in, cost, pcost)
 	}
 
 	// The install guide for the project's key, as an agent would fetch it.

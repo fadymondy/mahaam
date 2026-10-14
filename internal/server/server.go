@@ -102,6 +102,7 @@ func Boot() *app.App {
 	}
 	installReminders(k, a)
 	installBilling(k, a)      // Polar: PUBLIC webhook + the 15-minute usage push
+	installCircleXO(k, a)     // CircleXO hub: SSO, org mapping, entitlements, webhooks (off unless CIRCLEXO_ISSUER)
 	installIntegrations(k, a) // GitHub webhook + install callback (PUBLIC), Jira/Linear re-sync, GitHub mirror
 	// Customer import: the Google Contacts OAuth redirect (PUBLIC, guard allowlist; signed state + nonce cookie).
 	k.Router.Get(work.GoogleCallbackPath, work.New(a).GoogleCallback())

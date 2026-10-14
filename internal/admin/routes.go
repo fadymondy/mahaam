@@ -102,6 +102,8 @@ func Register(api huma.API, a *app.App) {
 			return out, nil
 		})
 
+	registerSettings(api, sv.DB)
+
 	// The owner deletes their own workspace (Settings → Workspace → Danger zone). Same path as the
 	// platform admin's delete (cascade, audit, stored files removed), with two extra guards: only
 	// the OWNER may, and not while a paid subscription is still running (cancel it first, so the

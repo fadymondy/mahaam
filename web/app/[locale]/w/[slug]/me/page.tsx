@@ -2,12 +2,13 @@
 
 import { useEffect } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
 import { AccountCard } from "@/components/account/account-card"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { Page, PageHeader } from "@/components/page"
 import { LoadingRows } from "@/components/states"
 import { GitHubConnectCard } from "@/components/kpi/github-connect-card"
 import { KpiDashboard } from "@/components/kpi/kpi-dashboard"
@@ -39,9 +40,8 @@ export default function MyProfilePage() {
 
   const canKpi = ws.can("kpi:read")
   return (
-    <>
-      <SectionHeader
-        micro={ws.summary.name}
+    <Page>
+      <PageHeader
         title={t("kpi.profile")}
         description={
           me.data ? (
@@ -56,13 +56,13 @@ export default function MyProfilePage() {
       {!me.data ? (
         <LoadingRows rows={3} />
       ) : canKpi ? (
-        <div className="space-y-6 pt-6 pb-8">
+        <div className="flex flex-col gap-6">
           <GitHubConnectCard />
           <KpiDashboard userId={String(me.data.id)} isSelf />
         </div>
       ) : (
-        <p className="px-6 py-6 text-sm text-grid-muted">{t("kpi.clientNoKpi")}</p>
+        <p className="text-sm text-muted-foreground">{t("kpi.clientNoKpi")}</p>
       )}
-    </>
+    </Page>
   )
 }

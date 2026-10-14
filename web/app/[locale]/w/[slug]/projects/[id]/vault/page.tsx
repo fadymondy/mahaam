@@ -1,19 +1,38 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { BrainIcon, CopyIcon, EyeIcon, EyeOffIcon, KeyRoundIcon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react"
-import { toast } from "sonner"
+import { useEffect, useMemo, useState } from "react"
+import { BrainIcon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react"
 import useSWR from "swr"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+import {
+  Badge,
+  Button,
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Field,
+  FieldLabel,
+  Input,
+  SectionHeader,
+  Textarea,
+  Vault,
+  toast,
+  type VaultSecret,
+  type VaultSecretInput,
+  type VaultSecretKind,
+} from "@fadymondy/nasaq/web"
+
 import { ConfirmButton } from "@/components/confirm-button"
-import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
+import { EmptyState, ErrorState } from "@/components/states"
+import { CardGridSkeleton } from "@/components/work/project/project-skeletons"
 import { useProjectCtx } from "@/components/work/project-context"
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { api } from "@/lib/api"
@@ -23,10 +42,13 @@ import { useDocumentTitle } from "@/lib/title"
 import { errorText, w } from "@/lib/work"
 
 /*
-The project vault (internal/work/vault.go): MEMORY notes anyone on the project reads and
-writes, and SECRETS sealed at rest. A secret's value is never listed; Reveal decrypts one
-(manager+ or the project lead) and the reveal lands in the activity feed. The same data an
-agent reaches over MCP (vault_recall, vault_remember, vault_reveal_secret).
+The project vault (internal/work/vault.go): SECRETS sealed at rest, in Nasaq's Vault (grouped,
+masked, reveal and copy fetch the value on demand and the reveal lands in the activity feed),
+and MEMORY notes anyone on the project reads and writes, as cards. The same data an agent
+reaches over MCP (vault_recall, vault_remember, vault_reveal_secret).
+
+A secret's group, kind and expiry ride in its tags: the first plain tag is the group, and
+"kind:<kind>" / "expires:<YYYY-MM-DD>" are reserved, so nothing the dialog asks for is lost.
 */
 
 type Kind = "memory" | "secret"
@@ -43,199 +65,236 @@ type VaultItem = {
   updated_at: string
 }
 
-type Draft = { id?: string; kind: Kind; title: string; body: string; tags: string; value: string }
+type Draft = { id?: string; title: string; body: string; tags: string }
+
+const KINDS: readonly VaultSecretKind[] = ["api-key", "password", "token", "certificate", "ssh-key", "other"]
+
+function toSecret(v: VaultItem): VaultSecret {
+  const plain = v.tags.filter((x) => !x.startsWith("kind:") && !x.startsWith("expires:"))
+  const kind = v.tags.find((x) => x.startsWith("kind:"))?.slice(5) as VaultSecretKind | undefined
+  const expires = v.tags.find((x) => x.startsWith("expires:"))?.slice(8)
+  return {
+    id: v.id,
+    name: v.title,
+    group: plain[0] ?? "",
+    kind: kind && KINDS.includes(kind) ? kind : undefined,
+    description: v.body || undefined,
+    updatedAt: v.updated_at,
+    expiresAt: expires || undefined,
+    lastAccessedAt: v.last_revealed_at ?? undefined,
+  }
+}
+
+function secretTags(input: VaultSecretInput, previous: string[] = []): string[] {
+  // Keep any extra plain tags an agent added after the group; the dialog only edits the group.
+  const extra = previous.filter((x) => !x.startsWith("kind:") && !x.startsWith("expires:")).slice(1)
+  // The server lowercases tags and drops any over 40 characters.
+  const group = input.group.trim().slice(0, 40)
+  return [...(group ? [group] : []), ...extra.filter((x) => x !== group), `kind:${input.kind}`, ...(input.expiresAt ? [`expires:${input.expiresAt}`] : [])]
+}
 
 export default function VaultPage() {
-  const { t, locale } = useTranslations()
+  const { t } = useTranslations()
   const ws = useWorkspace()
   const { project } = useProjectCtx()
   useDocumentTitle(`${t("projectTab.vault")} · ${project.name}`)
-  const [kind, setKind] = useState<"all" | Kind>("all")
-  const [q, setQ] = useState("")
-  const [query, setQuery] = useState("")
-  const [draft, setDraft] = useState<Draft | null>(null)
-  const [revealed, setRevealed] = useState<Record<string, string>>({})
   const canWrite = ws.can("vault:write")
   const canSecrets = ws.can("vault:secrets")
 
-  useEffect(() => {
-    const id = setTimeout(() => setQuery(q.trim()), 250)
-    return () => clearTimeout(id)
-  }, [q])
-
-  const params = new URLSearchParams()
-  if (kind !== "all") params.set("kind", kind)
-  if (query) params.set("q", query)
   const list = useSWR<{ items: VaultItem[] | null }>(
-    [`/api/w/projects/${project.id}/vault?${params}`, ws.id],
+    [`/api/w/projects/${project.id}/vault`, ws.id],
     ([p, id]: [string, string]) => api(p, { workspaceId: id }),
     { revalidateOnFocus: false },
   )
-
-  const reveal = async (item: VaultItem) => {
-    if (revealed[item.id]) {
-      setRevealed(({ [item.id]: _, ...rest }) => rest)
-      return
-    }
-    try {
-      const out = await w.post<VaultItem>(ws.id, `/api/w/vault/${item.id}/reveal`)
-      setRevealed((r) => ({ ...r, [item.id]: out.value ?? "" }))
-      // Hide it again after 30 s; the reveal is already on record.
-      setTimeout(() => setRevealed(({ [item.id]: _, ...rest }) => rest), 30_000)
-      void list.mutate()
-    } catch (err) {
-      toast.error(errorText(err, t("vault.failed")))
-    }
-  }
-
-  const copy = (text: string) =>
-    navigator.clipboard?.writeText(text).then(
-      () => toast.success(t("vault.copied")),
-      () => toast.error(t("vault.copyFailed")),
-    )
-
   const items = list.data?.items ?? []
+  const secrets = items.filter((v) => v.kind === "secret")
+  const memories = items.filter((v) => v.kind === "memory")
+
+  const failed = (err: unknown) => ({ error: errorText(err, t("vault.failed")) })
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-56 flex-1">
-          <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-grid-muted" aria-hidden />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("vault.search")} className="ps-8" aria-label={t("vault.search")} />
-        </div>
-        <Tabs value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
-          <TabsList>
-            <TabsTrigger value="all">{t("vault.all")}</TabsTrigger>
-            <TabsTrigger value="memory">{t("vault.memory")}</TabsTrigger>
-            <TabsTrigger value="secret">{t("vault.secrets")}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {canWrite ? (
-          <Button onClick={() => setDraft({ kind: "memory", title: "", body: "", tags: "", value: "" })}>
-            <BrainIcon /> {t("vault.newMemory")}
-          </Button>
-        ) : null}
-        {canSecrets ? (
-          <Button variant="outline" onClick={() => setDraft({ kind: "secret", title: "", body: "", tags: "", value: "" })}>
-            <KeyRoundIcon /> {t("vault.newSecret")}
-          </Button>
-        ) : null}
-      </div>
-      <p className="text-sm text-grid-muted">{t("vault.hint")}</p>
+    <div className="mx-auto w-full max-w-6xl space-y-8 p-4 sm:p-6" data-vault-page>
+      {list.error ? <ErrorState error={list.error} /> : null}
 
-      {list.error ? (
-        <ErrorState error={list.error} />
-      ) : !list.data ? (
-        <LoadingRows rows={4} />
-      ) : items.length === 0 ? (
-        <EmptyState title={query ? t("vault.noMatch") : t("vault.empty")} body={query ? undefined : t("vault.emptyBody")} />
-      ) : (
-        <ul className="divide-y divide-line border border-line">
-          {items.map((v) => (
-            <li key={v.id} className="space-y-2 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                {v.kind === "secret" ? (
-                  <KeyRoundIcon className="size-4 text-grid-gold-text" aria-hidden />
-                ) : (
-                  <BrainIcon className="size-4 text-grid-muted" aria-hidden />
-                )}
-                <h3 className="font-medium" dir="auto">
-                  {v.title}
-                </h3>
-                <Badge variant="secondary">{v.kind === "secret" ? t("vault.secret") : t("vault.memoryOne")}</Badge>
-                {v.tags.map((tag) => (
-                  <Badge key={tag} variant="outline">
-                    {tag}
-                  </Badge>
-                ))}
-                <span className="ms-auto text-meta text-grid-muted">{t("vault.updated", { when: timeAgo(v.updated_at, locale) })}</span>
-              </div>
-              {v.body ? (
-                <p className="text-sm whitespace-pre-wrap text-grid-body" dir="auto">
-                  {v.body}
-                </p>
-              ) : null}
-              {v.kind === "secret" ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <code dir="ltr" className="min-w-0 flex-1 truncate border border-line bg-grid-soft px-2 py-1 font-mono text-xs">
-                    {revealed[v.id] ?? "••••••••••••"}
-                  </code>
-                  {canSecrets ? (
-                    <Button size="sm" variant="outline" onClick={() => void reveal(v)}>
-                      {revealed[v.id] ? <EyeOffIcon /> : <EyeIcon />} {revealed[v.id] ? t("vault.hide") : t("vault.reveal")}
-                    </Button>
-                  ) : null}
-                  {revealed[v.id] ? (
-                    <Button size="sm" variant="ghost" onClick={() => void copy(revealed[v.id])}>
-                      <CopyIcon /> {t("vault.copy")}
-                    </Button>
-                  ) : null}
-                  {v.last_revealed_at ? (
-                    <span className="text-meta text-grid-muted">{t("vault.lastRevealed", { when: timeAgo(v.last_revealed_at, locale) })}</span>
-                  ) : null}
-                </div>
-              ) : null}
-              {canWrite && (v.kind === "memory" || canSecrets) ? (
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setDraft({ id: v.id, kind: v.kind, title: v.title, body: v.body, tags: v.tags.join(", "), value: "" })}
-                  >
-                    <PencilIcon /> {t("vault.edit")}
-                  </Button>
-                  <ConfirmButton
-                    label={
-                      <>
-                        <Trash2Icon /> {t("vault.delete")}
-                      </>
-                    }
-                    title={t("vault.deleteTitle")}
-                    description={t("vault.deleteBody")}
-                    confirmLabel={t("vault.delete")}
-                    onConfirm={() =>
-                      w
-                        .del(ws.id, `/api/w/vault/${v.id}`)
-                        .then(() => void list.mutate())
-                        .catch((err) => void toast.error(errorText(err, t("vault.failed"))))
-                    }
-                  />
-                </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      <Vault
+        title={t("vault.secrets")}
+        description={t("vault.secretHint")}
+        secrets={secrets.map(toSecret)}
+        loading={!list.data && !list.error}
+        revealTimeout={30_000}
+        onReveal={async (id) => {
+          if (!canSecrets) return { error: t("vault.failed") }
+          try {
+            const out = await w.post<VaultItem>(ws.id, `/api/w/vault/${id}/reveal`)
+            void list.mutate()
+            return { value: out.value ?? "" }
+          } catch (err) {
+            return { error: errorText(err, t("vault.failed")) }
+          }
+        }}
+        onSave={
+          canWrite && canSecrets
+            ? async (input, id) => {
+                const prev = secrets.find((s) => s.id === id)
+                const body: Record<string, unknown> = { title: input.name.trim(), body: input.description ?? "", tags: secretTags(input, prev?.tags) }
+                if (input.value) body.value = input.value
+                try {
+                  if (id) await w.patch(ws.id, `/api/w/vault/${id}`, body)
+                  else await w.post(ws.id, `/api/w/projects/${project.id}/vault`, { ...body, kind: "secret" })
+                  toast.success(t("vault.saved"))
+                  void list.mutate()
+                } catch (err) {
+                  return failed(err)
+                }
+              }
+            : undefined
+        }
+        onDelete={
+          canWrite && canSecrets
+            ? async (id) => {
+                try {
+                  await w.del(ws.id, `/api/w/vault/${id}`)
+                  void list.mutate()
+                } catch (err) {
+                  return failed(err)
+                }
+              }
+            : undefined
+        }
+        data-vault-secrets
+      />
 
-      <VaultDialog draft={draft} projectId={project.id} onClose={() => setDraft(null)} onSaved={() => void list.mutate()} />
+      <Memories items={memories} loading={!list.data && !list.error} canWrite={canWrite} projectId={project.id} onChanged={() => void list.mutate()} />
     </div>
   )
 }
 
-function VaultDialog({
-  draft,
+function Memories({
+  items,
+  loading,
+  canWrite,
   projectId,
-  onClose,
-  onSaved,
+  onChanged,
 }: {
-  draft: Draft | null
+  items: VaultItem[]
+  loading: boolean
+  canWrite: boolean
   projectId: string
-  onClose: () => void
-  onSaved: () => void
+  onChanged: () => void
 }) {
+  const { t, locale } = useTranslations()
+  const ws = useWorkspace()
+  const [q, setQ] = useState("")
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const query = q.trim().toLowerCase()
+  const shown = useMemo(
+    () => (query ? items.filter((v) => `${v.title}\n${v.body}\n${v.tags.join(" ")}`.toLowerCase().includes(query)) : items),
+    [items, query],
+  )
+
+  return (
+    <section className="space-y-4" aria-labelledby="vault-memory" data-vault-memory>
+      <SectionHeader
+        headingId="vault-memory"
+        title={t("vault.memory")}
+        description={t("vault.hint")}
+        action={
+          canWrite ? (
+            <Button variant="primary" onClick={() => setDraft({ title: "", body: "", tags: "" })}>
+              <PlusIcon />
+              {t("vault.newMemory")}
+            </Button>
+          ) : null
+        }
+      />
+      {items.length > 3 ? (
+        <div className="relative max-w-sm">
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("vault.search")} className="ps-8" aria-label={t("vault.search")} />
+        </div>
+      ) : null}
+      {loading ? (
+        <CardGridSkeleton />
+      ) : shown.length === 0 ? (
+        <EmptyState title={query ? t("vault.noMatch") : t("vault.empty")} body={query ? undefined : t("vault.emptyBody")} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {shown.map((v) => (
+            <Card key={v.id} className="min-w-0 gap-3 border-transparent" data-vault-note={v.id}>
+              <CardHeader>
+                <CardTitle as="h3" className="flex min-w-0 items-center gap-2">
+                  <BrainIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span className="truncate" dir="auto">
+                    {v.title}
+                  </span>
+                </CardTitle>
+                {canWrite ? (
+                  <CardAction className="flex gap-1">
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={t("vault.edit")}
+                      onClick={() => setDraft({ id: v.id, title: v.title, body: v.body, tags: v.tags.join(", ") })}
+                    >
+                      <PencilIcon />
+                    </Button>
+                    <ConfirmButton
+                      label={
+                        <>
+                          <Trash2Icon />
+                          <span className="sr-only">{t("vault.delete")}</span>
+                        </>
+                      }
+                      title={t("vault.deleteTitle")}
+                      description={t("vault.deleteBody")}
+                      confirmLabel={t("vault.delete")}
+                      onConfirm={() =>
+                        w
+                          .del(ws.id, `/api/w/vault/${v.id}`)
+                          .then(onChanged)
+                          .catch((err) => void toast.error(errorText(err, t("vault.failed"))))
+                      }
+                    />
+                  </CardAction>
+                ) : null}
+              </CardHeader>
+              <CardContent className="flex flex-1 flex-col gap-3">
+                {v.body ? (
+                  <p className="line-clamp-6 text-sm whitespace-pre-wrap text-nq-fg-body" dir="auto">
+                    {v.body}
+                  </p>
+                ) : null}
+                <div className="mt-auto flex flex-wrap items-center gap-1.5">
+                  {v.tags.map((tag) => (
+                    <Badge key={tag} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))}
+                  <span className="ms-auto text-caption text-muted-foreground">{t("vault.updated", { when: timeAgo(v.updated_at, locale) })}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      <NoteDialog draft={draft} projectId={projectId} onClose={() => setDraft(null)} onSaved={onChanged} />
+    </section>
+  )
+}
+
+function NoteDialog({ draft, projectId, onClose, onSaved }: { draft: Draft | null; projectId: string; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslations()
   const ws = useWorkspace()
   const [d, setD] = useState<Draft | null>(draft)
   const [busy, setBusy] = useState(false)
   useEffect(() => setD(draft), [draft])
   if (!d) return null
-  const secret = d.kind === "secret"
   const editing = !!d.id
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!d.title.trim()) return
-    const body: Record<string, unknown> = {
+    const body = {
       title: d.title.trim(),
       body: d.body,
       tags: d.tags
@@ -243,11 +302,10 @@ function VaultDialog({
         .map((s) => s.trim())
         .filter(Boolean),
     }
-    if (secret && d.value) body.value = d.value
     setBusy(true)
     try {
       if (editing) await w.patch(ws.id, `/api/w/vault/${d.id}`, body)
-      else await w.post(ws.id, `/api/w/projects/${projectId}/vault`, { ...body, kind: d.kind })
+      else await w.post(ws.id, `/api/w/projects/${projectId}/vault`, { ...body, kind: "memory" })
       toast.success(t("vault.saved"))
       onSaved()
       onClose()
@@ -263,52 +321,28 @@ function VaultDialog({
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={save} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>
-              {secret ? (editing ? t("vault.editSecret") : t("vault.newSecret")) : editing ? t("vault.editMemory") : t("vault.newMemory")}
-            </DialogTitle>
-            <DialogDescription>{secret ? t("vault.secretHint") : t("vault.memoryHint")}</DialogDescription>
+            <DialogTitle>{editing ? t("vault.editMemory") : t("vault.newMemory")}</DialogTitle>
+            <DialogDescription>{t("vault.memoryHint")}</DialogDescription>
           </DialogHeader>
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor="vault-title">{t("vault.title")}</FieldLabel>
               <Input id="vault-title" dir="auto" required maxLength={200} value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} />
             </Field>
-            {secret ? (
-              <Field>
-                <FieldLabel htmlFor="vault-value">{editing ? t("vault.newValue") : t("vault.value")}</FieldLabel>
-                <Input
-                  id="vault-value"
-                  type="password"
-                  dir="ltr"
-                  autoComplete="off"
-                  required={!editing}
-                  value={d.value}
-                  placeholder={editing ? t("vault.keepValue") : undefined}
-                  onChange={(e) => setD({ ...d, value: e.target.value })}
-                />
-              </Field>
-            ) : null}
             <Field>
-              <FieldLabel htmlFor="vault-body">{secret ? t("vault.secretBody") : t("vault.note")}</FieldLabel>
-              <Textarea
-                id="vault-body"
-                dir="auto"
-                rows={secret ? 2 : 8}
-                value={d.body}
-                placeholder={secret ? t("vault.secretBodyPh") : t("vault.notePh")}
-                onChange={(e) => setD({ ...d, body: e.target.value })}
-              />
+              <FieldLabel htmlFor="vault-body">{t("vault.note")}</FieldLabel>
+              <Textarea id="vault-body" dir="auto" rows={8} value={d.body} placeholder={t("vault.notePh")} onChange={(e) => setD({ ...d, body: e.target.value })} />
             </Field>
             <Field>
               <FieldLabel htmlFor="vault-tags">{t("vault.tags")}</FieldLabel>
               <Input id="vault-tags" dir="auto" value={d.tags} placeholder="deploy, staging" onChange={(e) => setD({ ...d, tags: e.target.value })} />
             </Field>
-          </FieldGroup>
+          </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>
               {t("vault.cancel")}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               <PlusIcon /> {t("vault.save")}
             </Button>
           </DialogFooter>

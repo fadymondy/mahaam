@@ -14,24 +14,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS tasks_ws_project_id_uq ON tasks (workspace_id,
 CREATE UNIQUE INDEX IF NOT EXISTS time_entries_ws_id_uq  ON time_entries (workspace_id, id);
 
 -- ---- the invariants -------------------------------------------------------------------------------
--- At most one running timer per person per workspace. "Start" stops the running entry and inserts
--- the new one in one transaction; this index is what makes a race lose instead of double-running.
-CREATE UNIQUE INDEX IF NOT EXISTS one_running_timer ON time_entries (workspace_id, user_id) WHERE ended_at IS NULL;
+-- one_running_timer and no_overlap moved to 19p_parallel_agent_timers.sql: agent (source = 'mcp')
+-- timers run in parallel, so both now exempt them. That file creates or upgrades them in place.
 
--- A person's entries never overlap; a running entry extends to infinity. Workspace-scoped (the plan
--- wrote (user_id, range)): a constraint that spans tenants would refuse a write in workspace B
--- because of a row the caller cannot see in workspace A — a cross-tenant signal — and it would make
--- the per-workspace one_running_timer impossible to use in a second workspace.
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'no_overlap') THEN
-        ALTER TABLE time_entries ADD CONSTRAINT no_overlap EXCLUDE USING gist (
-            workspace_id WITH =,
-            user_id WITH =,
-            tstzrange(started_at, coalesce(ended_at, 'infinity'::timestamptz), '[)') WITH &&
-        );
-    END IF;
-END $$;
 
 DO $$
 DECLARE

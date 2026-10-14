@@ -102,7 +102,7 @@ make test       # unit + CI guards: every MCP tool has a scope; every sqlc query
                 # tenant table carries workspace_id = $n; authz matrix; slugs
 make test-e2e   # boots the real stack on mahaam_test: the route sweep, TestTimeTracking, TestReports, TestMCPSession; sweeps EVERY route as
                 # anonymous / non-member / other-workspace member (+ MCP checks)
-make grid-check # generated grid + feedback-sdk copies match fadymondy.com-v2
+make grid-check # apps/mobile grid + feedback-sdk copies match fadymondy.com-v2
 ```
 
 ## P1 — projects and tasks
@@ -143,15 +143,30 @@ activity work, and board + side-over are screenshotted in en/ar × light/dark (`
 ## P2 — time tracking
 
 - **Invariants in Postgres** (`internal/db/schema/time_entry.sql`, `internal/db/post/12_p2_constraints.sql`):
-  `one_running_timer` (unique partial index on `(workspace_id, user_id) WHERE ended_at IS NULL`),
-  `no_overlap` (gist exclusion, btree_gist), `duration_s` GENERATED, `source` timer|manual|mcp|import,
+  `one_running_timer` (unique partial index on `(workspace_id, user_id) WHERE ended_at IS NULL AND source <> 'mcp'`),
+  `one_running_agent_timer_per_task` (`(workspace_id, user_id, task_id) WHERE ended_at IS NULL AND source = 'mcp'`),
+  `no_overlap` (gist exclusion, btree_gist, `WHERE (source <> 'mcp')`; these three live in
+  `internal/db/post/19p_parallel_agent_timers.sql`, which upgrades an existing database in place), `duration_s` GENERATED, `source` timer|manual|mcp|import,
   `invoice_id` / `locked_at` reserved (a set value makes the entry immutable). Deviations from the plan:
   `no_overlap` also keys on `workspace_id` (a cross-tenant constraint leaks another workspace's rows and
   contradicts the per-workspace running index); `user_id` references `users`, not `workspace_members`
   (removing a member deletes the membership row — a composite key would cascade billing history away or
   block the removal; membership is checked on every write instead). The task reference is
   `(workspace_id, project_id, task_id)`, so a task always belongs to the entry's project.
-- **Start stops the running timer in the same transaction**, serialised per person by
+- **Parallel agent timers.** Agents act through the user's own `mgy_` token, so their entries are `source='mcp'`.
+  Those may run in parallel: at most one per `(workspace, user, task)`, and they may overlap the human timer and
+  each other (reports sum them; that overlap is accepted). Human timers (`timer`/`manual`/`import`) keep the old
+  rules: one running per person, no overlap among themselves. The kinds never touch each other: a human start
+  stops only the human timer, an agent start stops nothing. MCP `start_timer` **requires a task** (a project-only
+  timer would have nothing to be idempotent on, so it is refused) and, on a task whose agent timer already runs,
+  returns that timer (`already_running`) instead of erroring. `stop_timer` takes `task` or `entry`; with neither,
+  a lone agent timer stops, several give an error that lists them, none falls back to the human timer.
+  `GET /api/w/time/running` returns `{timer, agents[]}` (`timer` is the human one, as before); MCP
+  `get_running_timer` and `whoami` list all. Realtime: `timer.state` carries `running` (human) plus `agents`;
+  `timer.started`/`timer.stopped` carry the entry (id, source); the lock-screen timer follows the human timer
+  only. The header shows the human timer plus an "N agent timers running" chip. Long-running reminders raise one
+  notification per person per day for all agent timers together, not one per timer.
+- **A human start stops the running human timer in the same transaction**, serialised per person by
   `pg_advisory_xact_lock` with the clock read after the lock — concurrent starts queue; the index is the
   backstop. Stop is own-only; `time:manage` (manager+) reaches members' timers.
 - **Rates are snapshotted** on the entry when it is created: bill task → project → member → workspace
@@ -371,6 +386,18 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
   readers. The customer sees ALL issues of their projects (slim: no logs, agent fields or author ids).
   `internal/work/portal_panel.go`, `internal/reports/portal_panel.go`. Actions `portal:read` / `portal:write` (Client+)
   on top of project visibility (404 otherwise).
+- **Customer full project (MH-1176)**: a customer opens the app's own Projects list (`/w/{slug}/projects`) and project
+  pages (overview, board, list, issues, task sheet) and works them like a member — create, edit, move, assign, comment —
+  on the projects `visibleClause` gives them, and nothing wider. Matrix: `tasks:read|write`, `feedback:read|write`,
+  `labels:create` are Client+. The issue tracker (`internal/reports` `customer()`) limits `List`/`Find` to visible
+  projects and refuses a project-less `Create`. `GET /api/w/people` is their directory (names on their projects; never the
+  member list). Still member+: members, teams, clients, reports, time tracking, rates. The
+  `/portal/projects` pages redirect to the app's; the portal panel endpoints above stay for the dashboard, MCP and mobile.
+- **Customer project tabs (MH-1190)**: every tab but Settings. `integrations:read`, `vault:read|write` are Client+ (all
+  go through `FindProject`); connecting/deploying and vault secrets stay manager+ or the lead. Billing is `billing:read`
+  (Client role only — members keep none): `GET /api/w/ai-usage` and `/api/w/subscriptions` need `?project=` and return
+  billed prices (`cost_minor` = cost × markup; subscriptions billable only, cost 0, no notes); the markup stays manager+.
+  The Hosting tab opens the panel with the customer's one-time link. MCP scopes are unchanged (vault/integrations member+).
 - **Customer issue control**: `PATCH /api/w/portal/issues/{key}` allows exactly accept (in_review → done), reopen
   (done | in_review → todo) and priority; `POST …/comments` replies. The general `PATCH /api/w/issues/{key}` is unchanged.
 - **Requests**: a reports row with `request_state` (`pending | accepted | declined | converted`), `request_kind`

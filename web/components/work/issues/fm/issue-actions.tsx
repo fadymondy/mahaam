@@ -1,27 +1,13 @@
 "use client"
 
 import { useState, type ReactElement, type ReactNode } from "react"
+import Link from "next/link"
 import { ExternalLinkIcon, LinkIcon, LockIcon, PencilIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
 
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuGroup,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@fadymondy/nasaq/web"
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, ISSUE_TYPES, errorText, issuesApi, type Issue, type IssuePatch } from "@/lib/work"
@@ -79,10 +65,10 @@ function IssueMenuItems({ issue, parts, actions, showOpen }: { issue: Issue; par
         <>
           <Item
             render={
-              <a href={actions.href}>
+              <Link href={actions.href}>
                 <ExternalLinkIcon />
                 {t("issues.action.open")}
-              </a>
+              </Link>
             }
           />
           <Item onClick={actions.copyLink}>

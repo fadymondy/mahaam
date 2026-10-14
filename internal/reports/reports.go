@@ -14,6 +14,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/tenant"
 	"strings"
 	"sync"
@@ -68,6 +69,8 @@ type Report struct {
 	RequestState                               *string
 	ID, WorkspaceID, Key, Title                string
 	Number, SortOrder, AgentSeconds            int64
+	AIInputTokens, AIOutputTokens, AICacheTokens, AICostMinor int64
+	AICurrency                                 string
 	IssueType, Status, State, Priority         string
 	Body, Resolution, Route, PageURL, Selector *string
 	Screenshot, ConsoleLog, NetworkLog         *string
@@ -85,7 +88,8 @@ type Report struct {
 const reportCols = `id, workspace_id, key, title, number, sort_order, agent_seconds, issue_type, status, state, priority,
 	body, resolution, route, page_url, selector, screenshot, console_log, network_log, viewport, user_agent, reporter_id,
 	project_id, ai_model, ai_effort, agent, skill, source,
-	closed_at, started_at, finished_at, human_only, created_at, updated_at, request_state`
+	closed_at, started_at, finished_at, human_only, created_at, updated_at, request_state,
+	ai_input_tokens, ai_output_tokens, ai_cache_tokens, ai_cost_minor, ai_currency`
 
 func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 	r := &Report{}
@@ -94,7 +98,8 @@ func scanReport(row interface{ Scan(...any) error }) (*Report, error) {
 		&r.Body, &r.Resolution, &r.Route, &r.PageURL, &r.Selector, &r.Screenshot, &r.ConsoleLog, &r.NetworkLog,
 		&r.Viewport, &r.UserAgent, &r.ReporterID,
 		&r.ProjectID, &r.AIModel, &r.AIEffort, &r.Agent, &r.Skill, &r.Source,
-		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt, &r.RequestState)
+		&r.ClosedAt, &r.StartedAt, &r.FinishedAt, &r.HumanOnly, &r.CreatedAt, &r.UpdatedAt, &r.RequestState,
+		&r.AIInputTokens, &r.AIOutputTokens, &r.AICacheTokens, &r.AICostMinor, &r.AICurrency)
 	return r, err
 }
 
@@ -113,7 +118,7 @@ func ValidStatus(s string) bool {
 
 // Filter narrows List.
 type Filter struct {
-	Status, State, IssueType, Q string
+	Status, State, IssueType, Q, Priority string
 	// ProjectID limits to one project's issues; ReporterID to one reporter's
 	// (both used by the client portal, which never sees other people's issues).
 	ProjectID, ReporterID string
@@ -135,47 +140,12 @@ type Filter struct {
 
 // List returns a workspace's reports, board order first.
 func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Report, error) {
-	q := `SELECT ` + reportCols + ` FROM reports WHERE workspace_id = $1`
-	args := []any{workspaceID}
-	add := func(cond string, v any) {
-		args = append(args, v)
-		q += fmt.Sprintf(" AND "+cond, len(args))
-	}
-	if f.Status != "" {
-		add("status = $%d", f.Status)
-	}
-	if f.State != "" {
-		add("state = $%d", f.State)
-	}
-	if f.IssueType != "" {
-		add("issue_type = $%d", f.IssueType)
-	}
-	if f.Q != "" {
-		add("title ILIKE $%d", "%"+f.Q+"%")
-	}
-	if f.ProjectID != "" {
-		add("project_id = $%d", f.ProjectID)
-	}
-	if f.ReporterID != "" {
-		add("reporter_id = $%d", f.ReporterID)
-	}
-	if ids := scopedProjects(ctx); len(ids) > 0 {
-		add("project_id = ANY($%d::text[])", ids)
-	}
-	if f.CustomerView || !f.IncludeBoard {
-		q += " AND NOT from_board"
-	}
-	if f.HideHumanOnly {
-		q += " AND NOT human_only"
-	}
-	if !f.IncludeRequests {
-		q += " AND (request_state IS NULL OR request_state = 'accepted')"
-	}
+	where, args := filterSQL(ctx, workspaceID, f)
 	if f.Limit <= 0 || f.Limit > 500 {
 		f.Limit = 50
 	}
 	args = append(args, f.Limit)
-	q += fmt.Sprintf(" ORDER BY sort_order ASC, created_at DESC LIMIT $%d", len(args))
+	q := `SELECT ` + reportCols + ` FROM reports WHERE ` + where + fmt.Sprintf(" ORDER BY sort_order ASC, created_at DESC LIMIT $%d", len(args))
 
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -193,6 +163,104 @@ func List(ctx context.Context, db *sql.DB, workspaceID string, f Filter) ([]*Rep
 	return out, rows.Err()
 }
 
+// BoardPage is one page of a project board: the first N items of every column.
+type BoardPage struct {
+	Reports []*Report
+	Column  map[string]string // issue key → column id
+	Totals  map[string]int    // column id → items in it (all of them, not just this page)
+}
+
+// ListBoard returns the first perColumn items of each board column, board order, plus how many
+// each column holds, so the board can load more as a column scrolls. An item sits in its card's
+// column; one without a card sits in the first column of its stage (or the project's first).
+func ListBoard(ctx context.Context, db *sql.DB, workspaceID string, f Filter, perColumn int) (*BoardPage, error) {
+	where, args := filterSQL(ctx, workspaceID, f)
+	args = append(args, perColumn)
+	q := `SELECT ` + reportCols + `, board_col, col_total FROM (
+		SELECT *, row_number() OVER (PARTITION BY board_col ORDER BY sort_order ASC, created_at DESC) AS rn,
+			count(*) OVER (PARTITION BY board_col) AS col_total
+		FROM (SELECT reports.*, COALESCE(
+				(SELECT t.status_id FROM tasks t WHERE t.workspace_id = reports.workspace_id AND t.id = reports.task_id),
+				(SELECT s.id FROM task_statuses s WHERE s.workspace_id = reports.workspace_id AND s.project_id = reports.project_id
+					ORDER BY (s.stage = reports.status) DESC, s.position LIMIT 1), '') AS board_col
+			FROM reports WHERE ` + where + `) cols
+	) ranked WHERE rn <= $` + fmt.Sprint(len(args)) + ` ORDER BY sort_order ASC, created_at DESC`
+
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("could not list the board: %w", err)
+	}
+	defer rows.Close()
+	page := &BoardPage{Column: map[string]string{}, Totals: map[string]int{}}
+	for rows.Next() {
+		var col string
+		var total int
+		r, err := scanReport(extraScan{rows, []any{&col, &total}})
+		if err != nil {
+			return nil, err
+		}
+		page.Reports = append(page.Reports, r)
+		page.Column[r.Key] = col
+		page.Totals[col] = total
+	}
+	return page, rows.Err()
+}
+
+// extraScan appends trailing destinations to a scan, for queries that add columns after reportCols.
+type extraScan struct {
+	rows  *sql.Rows
+	extra []any
+}
+
+func (e extraScan) Scan(dest ...any) error { return e.rows.Scan(append(dest, e.extra...)...) }
+
+// filterSQL is the WHERE clause (without the keyword) and its args for a Filter.
+func filterSQL(ctx context.Context, workspaceID string, f Filter) (string, []any) {
+	q := `workspace_id = $1`
+	args := []any{workspaceID}
+	add := func(cond string, v any) {
+		args = append(args, v)
+		q += fmt.Sprintf(" AND "+cond, len(args))
+	}
+	if f.Status != "" {
+		add("status = $%d", f.Status)
+	}
+	if f.State != "" {
+		add("state = $%d", f.State)
+	}
+	if f.IssueType != "" {
+		add("issue_type = $%d", f.IssueType)
+	}
+	if f.Priority != "" {
+		add("priority = $%d", f.Priority)
+	}
+	if f.Q != "" {
+		add("title ILIKE $%d", "%"+f.Q+"%")
+	}
+	if f.ProjectID != "" {
+		add("project_id = $%d", f.ProjectID)
+	}
+	if f.ReporterID != "" {
+		add("reporter_id = $%d", f.ReporterID)
+	}
+	if ids := scopedProjects(ctx); len(ids) > 0 {
+		add("project_id = ANY($%d::text[])", ids)
+	}
+	if c, ok := customer(ctx); ok {
+		q += " AND project_id IN (SELECT p.id FROM projects p WHERE p.workspace_id = $1 AND " + work.VisibleProjectsSQL(c, &args) + ")"
+	}
+	if f.CustomerView || !f.IncludeBoard {
+		q += " AND NOT from_board"
+	}
+	if f.HideHumanOnly {
+		q += " AND NOT human_only"
+	}
+	if !f.IncludeRequests {
+		q += " AND (request_state IS NULL OR request_state = 'accepted')"
+	}
+	return q, args
+}
+
 // Find accepts the key (MG-12, case-insensitive) or the row id.
 func Find(ctx context.Context, db *sql.DB, workspaceID, ref string) (*Report, error) {
 	ref = strings.TrimSpace(ref)
@@ -205,7 +273,32 @@ func Find(ctx context.Context, db *sql.DB, workspaceID, ref string) (*Report, er
 	if err == nil && !inScope(ctx, r.ProjectID) {
 		return nil, sql.ErrNoRows
 	}
+	if err == nil {
+		if c, ok := customer(ctx); ok {
+			if r.ProjectID == nil {
+				return nil, sql.ErrNoRows
+			}
+			args := []any{workspaceID, *r.ProjectID}
+			var seen bool
+			if err := db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM projects p WHERE p.workspace_id = $1 AND p.id = $2 AND `+
+				work.VisibleProjectsSQL(c, &args)+`)`, args...).Scan(&seen); err != nil {
+				return nil, err
+			}
+			if !seen {
+				return nil, sql.ErrNoRows
+			}
+		}
+	}
 	return r, err
+}
+
+// customer is the calling scope when it is a customer (the client role). A customer works on the
+// issues of the projects they can see (work.VisibleProjectsSQL) like a member does (MH-1176), but
+// never reaches a workspace-level issue or another customer's project — on every path: the app's
+// /api/w/issues, the portal, the MCP tools and the screenshot route all list and find through here.
+func customer(ctx context.Context) (*tenant.Scope, bool) {
+	s, ok := tenant.From(ctx)
+	return s, ok && s.Role == string(authz.Client)
 }
 
 // scopedProjects is the project limit of a project-scoped MCP token (tenant.Scope.ProjectIDs).
@@ -276,6 +369,10 @@ func Create(ctx context.Context, db *sql.DB, workspaceID string, n NewReport) (*
 		if !inScope(ctx, &pid) || pid == "" {
 			return nil, fmt.Errorf("this token is limited to its projects: pass one of them as project")
 		}
+	}
+	// A customer files only into one of their projects (the callers resolve it as visible).
+	if _, ok := customer(ctx); ok && n.ProjectID == "" {
+		return nil, fmt.Errorf("pick one of your projects for this issue")
 	}
 	status := firstNonEmpty(n.Status, "backlog")
 	if !ValidStatus(status) {

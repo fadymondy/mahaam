@@ -1,16 +1,33 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { ClockIcon, PlusIcon, SearchIcon, UserRoundIcon } from "lucide-react"
-import { toast } from "sonner"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  pointerWithin,
+  rectIntersection,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragMoveEvent,
+} from "@dnd-kit/core"
+import { ClockIcon, Loader2Icon, PlusIcon, SearchIcon, SparklesIcon, UserRoundIcon } from "lucide-react"
+import { toast } from "@fadymondy/nasaq/web"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@fadymondy/nasaq/web"
+
+
+
+
 import { ErrorState } from "@/components/states"
-import { ColorDot } from "@/components/work/palette"
+import { BoardColumnsSkeleton } from "@/components/work/project/project-skeletons"
 import { useWorkspace } from "@/components/workspace/workspace-context"
+import { StatusIcon, statusLabel } from "@/components/work/status-icon"
 import { useTranslations } from "@/lib/i18n"
 import { useDocumentTitle } from "@/lib/title"
 import { cn } from "@/lib/utils"
@@ -28,13 +45,16 @@ import {
   type IssueStatus,
 } from "@/lib/work"
 import { IssueContextMenu } from "./issue-actions"
+import { TaskSheet } from "@/components/work/task-sheet"
 import { IssueFormDialog } from "./issue-form-dialog"
-import { IssueSheet } from "./issue-sheet"
-import { PRIORITY_MARK, TYPE_DOT, formatAgentTime } from "./shared"
+import { PRIORITY_MARK, TYPE_DOT, formatAICost, formatAgentTime, issueSeconds } from "./shared"
+
+// Items per board column per page.
+const PAGE = 20
 
 /** fadymondy.com's issue board, scoped to one Mahaam project. */
 export function IssuesView({ projectId, title }: { projectId: string; title?: string }) {
-  const { t } = useTranslations()
+  const { t, locale } = useTranslations()
   const ws = useWorkspace()
   const canWrite = ws.can("feedback:write")
   useDocumentTitle(`${t("issues.title")}${title ? ` · ${title}` : ""} · ${ws.summary.name}`)
@@ -51,9 +71,13 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
   // The project board is the one board: issues filed as issues (SDK, portal, MCP, in-app) and
   // items created here, all the same thing.
+  // Each column shows its first `perColumn` items; scrolling to a column's end loads the next page.
+  const [perColumn, setPerColumn] = useState(PAGE)
+  useEffect(() => setPerColumn(PAGE), [projectId, debouncedQuery, typeFilter, priorityFilter])
   const list = useIssues(ws.id, {
     project: projectId,
     include_board: "true",
+    per_column: String(perColumn),
     q: debouncedQuery || undefined,
     type: typeFilter === "all" ? undefined : typeFilter,
     priority: priorityFilter === "all" ? undefined : priorityFilter,
@@ -64,16 +88,52 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
   const [creating, setCreating] = useState(false)
   // Clicking a card opens it here; the sheet's arrow is the way to the page.
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const selected = useMemo(() => issues.find((i) => i.key === selectedKey) ?? null, [issues, selectedKey])
-  const [lastSelected, setLastSelected] = useState<Issue | null>(null)
-  useEffect(() => {
-    if (selected) setLastSelected(selected)
-  }, [selected])
 
   const [dragging, setDragging] = useState<Issue | null>(null)
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null)
   // Where in the target column the card would land. null means "at the end".
   const [dropIndex, setDropIndex] = useState<number | null>(null)
+
+  // dnd-kit (pointer events), not the HTML5 drag API: that one never fires on touch screens and
+  // is unreliable when the press starts on the card's title button.
+  // Touch waits for a press-and-hold, so a swipe still scrolls the column.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  )
+  // The card under the pointer wins over its column; a column's empty space drops at its end.
+  const collide: CollisionDetection = (args) => {
+    const hits = pointerWithin(args)
+    const cards = hits.filter((h) => String(h.id).startsWith("card:"))
+    if (cards.length) return cards
+    return hits.length ? hits : rectIntersection(args)
+  }
+  const onDragMove = ({ active, over }: DragMoveEvent) => {
+    const data = over?.data.current as { status: string; index?: number } | undefined
+    if (!data) {
+      setDragOverStatus(null)
+      setDropIndex(null)
+      return
+    }
+    setDragOverStatus(data.status)
+    if (data.index === undefined) {
+      setDropIndex(null)
+      return
+    }
+    const me = active.rect.current.translated
+    const mid = me ? me.top + me.height / 2 : 0
+    setDropIndex(mid > over!.rect.top + over!.rect.height / 2 ? data.index + 1 : data.index)
+  }
+  const endDrag = () => {
+    setDragging(null)
+    setDragOverStatus(null)
+    setDropIndex(null)
+  }
+  const onDragEnd = ({ over }: DragEndEvent) => {
+    const status = (over?.data.current as { status?: string } | undefined)?.status
+    if (dragging && status) void dropCard(dragging, status, dropIndex)
+    endDrag()
+  }
 
   // The project's columns ARE the workflow (Settings → Board columns): the board renders them,
   // in their order, with their names and colours. An item sits in its card's column.
@@ -121,7 +181,11 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
    * or the end of an empty column.
    */
   async function dropCard(issue: Issue, status: string, index: number | null) {
-    const column = (byStatus.get(status) ?? []).filter((r) => r.key !== issue.key)
+    // index counts the column as drawn, dragged card included; below it, one slot is its own.
+    const drawn = byStatus.get(status) ?? []
+    const self = drawn.findIndex((r) => r.key === issue.key)
+    if (index !== null && self >= 0 && self < index) index--
+    const column = drawn.filter((r) => r.key !== issue.key)
     const at = index === null ? column.length : Math.max(0, Math.min(index, column.length))
     const before = column[at - 1]
     const after = column[at]
@@ -144,9 +208,9 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
-          <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-grid-muted" />
+          <SearchIcon className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="ps-8"
             type="search"
@@ -186,7 +250,7 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
         </Select>
 
         {canWrite ? (
-          <Button className="gap-2" onClick={() => setCreating(true)}>
+          <Button variant="primary" className="gap-2" onClick={() => setCreating(true)}>
             <PlusIcon />
             {t("issues.new")}
           </Button>
@@ -196,118 +260,126 @@ export function IssuesView({ projectId, title }: { projectId: string; title?: st
       {list.error ? (
         <ErrorState error={list.error} />
       ) : !list.data ? (
-        <div className="flex flex-col">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-none border-b border-line" />
-          ))}
-        </div>
+        <BoardColumnsSkeleton />
       ) : (
         /* Columns scroll horizontally; each is a fixed width so cards stay legible. */
-        <div className="flex flex-1 overflow-hidden">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collide}
+          onDragStart={({ active }) => setDragging(issues.find((i) => i.key === active.id) ?? null)}
+          onDragMove={onDragMove}
+          onDragEnd={onDragEnd}
+          onDragCancel={endDrag}
+        >
+        <div className="flex flex-1 gap-3 overflow-x-auto pt-3 pb-2">
           {columns.map((column) => {
             const status = column.id
             const cards = byStatus.get(status) ?? []
             const isTarget = dragOverStatus === status
+            const total = Math.max(list.data?.column_totals?.[status] ?? 0, cards.length)
 
             return (
-              <section
+              <DropColumn
                 key={status}
+                status={status}
                 className={cn(
-                  "flex max-h-[calc(100vh-12rem)] min-w-0 flex-1 basis-0 flex-col border-e border-line transition-colors last:border-e-0",
-                  isTarget && "bg-grid-action/[0.06] inset-ring-1 inset-ring-grid-action/40",
+                  // A fixed, roomy width per column (the row scrolls sideways) and a fixed height, so each list scrolls on its own.
+                  "flex h-[calc(100dvh-16rem)] min-h-96 w-80 shrink-0 flex-col overflow-hidden rounded-card bg-muted/40 transition-colors",
+                  isTarget && "bg-nq-action/[0.06] inset-ring-1 inset-ring-nq-action/40",
                 )}
-                onDragOver={(e) => {
-                  if (!dragging) return
-                  e.preventDefault()
-                  e.dataTransfer.dropEffect = "move"
-                  setDragOverStatus(status)
-                }}
-                onDragLeave={(e) => {
-                  // Only when the pointer actually leaves the column, not a child card.
-                  if (e.currentTarget.contains(e.relatedTarget as Node)) return
-                  setDragOverStatus((s) => (s === status ? null : s))
-                  setDropIndex(null)
-                }}
-                onDrop={() => {
-                  if (dragging) void dropCard(dragging, status, dropIndex)
-                  setDragging(null)
-                  setDragOverStatus(null)
-                  setDropIndex(null)
-                }}
               >
-                <h2 className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5 font-mono text-xs tracking-wider text-grid-muted uppercase">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <ColorDot color={column.color} className="size-2" />
-                    <span className="truncate" dir="auto">{column.name}</span>
+                <h2 className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5 text-sm font-medium">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <StatusIcon status={column} />
+                    <span className="truncate" dir="auto">{statusLabel(column, locale)}</span>
                   </span>
-                  <span dir="ltr" className="tabular-nums">
-                    {cards.length}
+                  <span dir="ltr" className="rounded-full bg-background px-2 text-caption text-muted-foreground tabular-nums">
+                    {total}
                   </span>
                 </h2>
 
-                <div className="flex flex-1 flex-col divide-y divide-line overflow-y-auto">
+                <div className="flex min-h-0 flex-1 flex-col divide-y divide-line overflow-y-auto">
                   {cards.map((issue, index) => (
-                    <div
-                      key={issue.key}
-                      className="relative"
-                      onDragOver={(e) => {
-                        if (!dragging) return
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setDragOverStatus(status)
-                        // Above or below the midpoint decides which side of this card the drop lands on.
-                        const box = e.currentTarget.getBoundingClientRect()
-                        const after = e.clientY > box.top + box.height / 2
-                        setDropIndex(after ? index + 1 : index)
-                      }}
-                    >
+                    <DragCard key={issue.key} id={issue.key} status={status} index={index} disabled={!canWrite}>
                       {/* The landing line, drawn on the edge it would land on. */}
-                      {isTarget && dropIndex === index ? <span aria-hidden className="absolute inset-x-0 top-0 z-10 h-0.5 bg-grid-action" /> : null}
+                      {isTarget && dropIndex === index ? <span aria-hidden className="absolute inset-x-0 top-0 z-10 h-0.5 bg-nq-action" /> : null}
                       {isTarget && dropIndex === index + 1 && index === cards.length - 1 ? (
-                        <span aria-hidden className="absolute inset-x-0 bottom-0 z-10 h-0.5 bg-grid-action" />
+                        <span aria-hidden className="absolute inset-x-0 bottom-0 z-10 h-0.5 bg-nq-action" />
                       ) : null}
 
                       <IssueCard
                         issue={issue}
                         canWrite={canWrite}
-                        onDragStart={() => setDragging(issue)}
-                        onDragEnd={() => {
-                          setDragging(null)
-                          setDragOverStatus(null)
-                          setDropIndex(null)
-                        }}
+                        dragging={dragging?.key === issue.key}
                         columns={columns}
                         column={status}
                         onStatusChange={(s) => void changeStatus(issue.key, s)}
                         onOpen={() => setSelectedKey(issue.key)}
                         onChanged={refresh}
                       />
-                    </div>
+                    </DragCard>
                   ))}
+                  {total > cards.length ? (
+                    <LoadMore loading={list.isValidating} onVisible={() => setPerColumn((n) => (cards.length >= n ? n + PAGE : n))} />
+                  ) : null}
+                  {/* The empty space under the last card drops at the end. */}
+                  <div className="min-h-12 flex-1" />
                 </div>
-              </section>
+              </DropColumn>
             )
           })}
         </div>
+        <DragOverlay dropAnimation={null}>
+          {dragging ? (
+            <div className="w-64 border border-nq-action bg-background px-3 py-2.5 text-sm font-medium shadow-lg" dir="auto">
+              {dragging.title}
+            </div>
+          ) : null}
+        </DragOverlay>
+        </DndContext>
       )}
 
       <IssueFormDialog open={creating} onOpenChange={setCreating} projectId={projectId} onSaved={refresh} />
 
-      <IssueSheet
-        issue={selected ?? lastSelected}
-        open={selectedKey !== null}
-        onOpenChange={(next) => !next && setSelectedKey(null)}
-        onChanged={refresh}
-      />
+      <TaskSheet taskKey={selectedKey} onClose={() => setSelectedKey(null)} onOpen={setSelectedKey} onChanged={() => void refresh()} />
     </>
+  )
+}
+
+function DropColumn({ status, className, children }: { status: string; className: string; children: ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: `column:${status}`, data: { status } })
+  return (
+    <section ref={setNodeRef} className={className} data-status-id={status}>
+      {children}
+    </section>
+  )
+}
+
+function DragCard({ id, status, index, disabled, children }: { id: string; status: string; index: number; disabled: boolean; children: ReactNode }) {
+  const drag = useDraggable({ id, disabled, data: { status, index } })
+  const drop = useDroppable({ id: `card:${id}`, data: { status, index } })
+  return (
+    <div
+      ref={(node) => {
+        drag.setNodeRef(node)
+        drop.setNodeRef(node)
+      }}
+      {...drag.attributes}
+      {...drag.listeners}
+      role={undefined}
+      tabIndex={undefined}
+      className="relative"
+      data-task-key={id}
+    >
+      {children}
+    </div>
   )
 }
 
 function IssueCard({
   issue,
   canWrite,
-  onDragStart,
-  onDragEnd,
+  dragging,
   onStatusChange,
   columns,
   column,
@@ -318,69 +390,37 @@ function IssueCard({
   column: string
   issue: Issue
   canWrite: boolean
-  onDragStart: () => void
-  onDragEnd: () => void
+  dragging: boolean
   onStatusChange: (status: string) => void
   onOpen: () => void
   onChanged: () => void | Promise<unknown>
 }) {
-  const { t } = useTranslations()
-  const [dragging, setDragging] = useState(false)
+  const { t, locale } = useTranslations()
   const mark = PRIORITY_MARK[issue.priority]
-  const agentTime = formatAgentTime(issue.agent_seconds)
-  const busy = Boolean(issue.started_at && !issue.finished_at)
+  const busy = Boolean(issue.started_at)
+  const agentTime = busy ? formatAgentTime(issueSeconds(issue)) || "0m" : formatAgentTime(issue.agent_seconds)
+  const aiCost = formatAICost(issue)
 
   return (
     <IssueContextMenu issue={issue} onChanged={onChanged}>
       <article
-        draggable={canWrite}
-        onDragStart={(e) => {
-          e.dataTransfer.effectAllowed = "move"
-          e.dataTransfer.setData("text/plain", issue.key)
-
-          const node = e.currentTarget as HTMLElement
-          const box = node.getBoundingClientRect()
-
-          // Snapshot a DETACHED CLONE, not the live node: the live card is about to
-          // change (opacity-40), and the ghost would drift away from the cursor.
-          const ghost = node.cloneNode(true) as HTMLElement
-          ghost.style.width = `${box.width}px`
-          ghost.style.height = `${box.height}px`
-          ghost.style.position = "fixed"
-          ghost.style.top = "-10000px"
-          ghost.style.left = "-10000px"
-          ghost.style.opacity = "1"
-          ghost.style.pointerEvents = "none"
-          ghost.style.background = "var(--background)"
-          ghost.style.border = "1px solid var(--grid-action)"
-          document.body.appendChild(ghost)
-          e.dataTransfer.setDragImage(ghost, e.clientX - box.left, e.clientY - box.top)
-          requestAnimationFrame(() => ghost.remove())
-
-          setDragging(true)
-          onDragStart()
-        }}
-        onDragEnd={() => {
-          setDragging(false)
-          onDragEnd()
-        }}
         className={cn(
           "group/issue flex flex-col gap-2 px-3 py-2.5 transition-[opacity,background-color] duration-150",
           canWrite && "cursor-grab active:cursor-grabbing",
-          "hover:bg-grid-soft",
+          "hover:bg-muted",
           dragging && "opacity-40",
-          busy && "border-s-2 border-grid-action ps-[calc(0.75rem-2px)]",
+          busy && "border-s-2 border-nq-action ps-[calc(0.75rem-2px)]",
         )}
       >
         <button type="button" dir="auto" onClick={onOpen} className="text-start text-sm font-medium text-pretty hover:underline">
           {issue.title}
         </button>
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-grid-muted">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-muted-foreground">
           <span dir="ltr">{issue.key}</span>
 
           <span className="flex items-center gap-1.5">
-            <span className={cn("size-1.5 shrink-0", TYPE_DOT[issue.issue_type] ?? "bg-grid-muted")} aria-hidden />
+            <span className={cn("size-1.5 shrink-0", TYPE_DOT[issue.issue_type] ?? "bg-nq-fg-muted")} aria-hidden />
             {t(`issues.type.${issue.issue_type}`)}
           </span>
 
@@ -398,32 +438,59 @@ function IssueCard({
           ) : null}
 
           {agentTime ? (
-            <span className={cn("flex items-center gap-1", busy && "text-grid-action")} title={t("issues.agentTime")}>
+            <span className={cn("flex items-center gap-1", busy && "text-nq-accent-text")} title={t("issues.agentTime")}>
               <ClockIcon className="size-3" />
               <span dir="ltr">{agentTime}</span>
+            </span>
+          ) : null}
+
+          {aiCost ? (
+            <span className="flex items-center gap-1" title={t("issues.aiCost")}>
+              <SparklesIcon className="size-3" />
+              <span dir="ltr">{aiCost}</span>
             </span>
           ) : null}
         </div>
 
         {issue.route || issue.page_url ? (
-          <p dir="ltr" className="truncate font-mono text-xs text-grid-muted/70">
+          <p dir="ltr" className="truncate font-mono text-xs text-muted-foreground/70">
             {issue.route ?? issue.page_url}
           </p>
         ) : null}
 
         <Select value={column} disabled={!canWrite} onValueChange={(v) => onStatusChange(String(v ?? column))}>
-          <SelectTrigger size="sm" className="w-full">
-            <SelectValue>{(v) => columns.find((c) => c.id === v)?.name ?? ""}</SelectValue>
+          <SelectTrigger className="w-full">
+            <SelectValue>{(v) => statusLabel(columns.find((c) => c.id === v) ?? { name: "" }, locale)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {columns.map((c) => (
               <SelectItem key={c.id} value={c.id}>
-                {c.name}
+                <StatusIcon status={c} />
+                {statusLabel(c, locale)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </article>
     </IssueContextMenu>
+  )
+}
+
+/** The end of a column that holds more than it shows: loads the next page when scrolled into view. */
+function LoadMore({ loading, onVisible }: { loading: boolean; onVisible: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const cb = useRef(onVisible)
+  cb.current = onVisible
+  useEffect(() => {
+    const el = ref.current
+    if (!el || loading) return
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && cb.current(), { rootMargin: "200px" })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [loading])
+  return (
+    <div ref={ref} className="flex justify-center py-3">
+      <Loader2Icon className="size-4 animate-spin text-muted-foreground" aria-hidden />
+    </div>
   )
 }

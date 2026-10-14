@@ -1,25 +1,28 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useCallback, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { MailWarningIcon } from "lucide-react"
-import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { EyeIcon, MailWarningIcon } from "lucide-react"
+import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { SectionHeader } from "@/components/public-frame"
+import { Badge, Button, Field, FieldLabel, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, DataTable, DataTableFacetFilter, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
+
+import { DataView } from "@/components/data-view"
+import { Page, PageHeader, Panel } from "@/components/page"
 import { ConfirmButton } from "@/components/confirm-button"
 import { CopyField, Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { useWorkspace } from "@/components/workspace/workspace-context"
-import { api, ApiError, INVITABLE_ROLES, type Invitation } from "@/lib/api"
+import { api, ApiError, INVITABLE_ROLES, type Invitation, type Member } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
-import { useInvitations, useMembers } from "@/lib/queries"
+import { useInvitations, useMe, useMembers } from "@/lib/queries"
 import { useDocumentTitle } from "@/lib/title"
+import { startViewAs } from "@/lib/view-as"
+import { errorText } from "@/lib/work"
+
+const RANK: Record<string, number> = { client: 1, member: 2, manager: 3, admin: 4, owner: 5 }
 
 export default function MembersPage() {
   const { t, locale, formatDate } = useTranslations()
@@ -29,16 +32,85 @@ export default function MembersPage() {
   const canInvite = ws.can("members:invite")
   const members = useMembers(ws.id)
   const invitations = useInvitations(ws.id, canInvite)
+  const router = useRouter()
+  const list = useMemo(() => members.data?.members ?? [], [members.data])
+  const roles = useMemo(() => [...new Set(list.map((m) => m.role))], [list])
+  const statuses = useMemo(() => [...new Set(list.map((m) => m.status))], [list])
+  // View as (MH-1159): owners and admins, never as yourself or someone above you (the API checks too).
+  const me = useMe()
+  const myRole = ws.current?.role
+  const viewer = !ws.current?.viewing_as && (myRole === "owner" || myRole === "admin")
+  const canViewAs = useCallback(
+    (m: Member) => viewer && m.status === "active" && String(m.user_id) !== String(me.data?.id) && RANK[m.role] <= RANK[myRole ?? "client"],
+    [viewer, myRole, me.data?.id],
+  )
+  const [switching, setSwitching] = useState<string | null>(null)
+  const viewAs = useCallback(
+    async (m: Member) => {
+      setSwitching(m.user_id)
+      try {
+        await startViewAs(ws, m.user_id, `/${locale}/w/${ws.slug}`)
+      } catch (err) {
+        toast.error(errorText(err, t("viewAs.failed")))
+        setSwitching(null)
+      }
+    },
+    [ws, locale, t],
+  )
+  const columns = useMemo<DataTableColumn<Member>[]>(
+    () => [
+      {
+        id: "email",
+        header: t("members.email"),
+        hideable: false,
+        sortValue: (m) => m.email,
+        searchValue: (m) => m.email,
+        cell: (m) => (
+          <Link href={`/${locale}/w/${ws.slug}/members/${m.user_id}`} className="hover:underline">
+            <Ltr>{m.email}</Ltr>
+          </Link>
+        ),
+      },
+      { id: "role", header: t("members.role"), sortValue: (m) => m.role, filterValue: (m) => m.role, cell: (m) => <Badge variant="outline">{t(`role.${m.role}`)}</Badge> },
+      { id: "status", header: t("members.status"), sortValue: (m) => m.status, filterValue: (m) => m.status, className: "text-muted-foreground", cell: (m) => t(`status.${m.status}`) },
+      {
+        id: "joined",
+        header: t("members.joined"),
+        sortValue: (m) => m.joined_at,
+        className: "text-muted-foreground",
+        cell: (m) => <Ltr>{formatDate(m.joined_at)}</Ltr>,
+      },
+      ...(viewer
+        ? [
+            {
+              id: "actions",
+              header: <span className="sr-only">{t("common.actions")}</span>,
+              label: t("common.actions"),
+              hideable: false,
+              className: "text-end",
+              cell: (m: Member) =>
+                canViewAs(m) ? (
+                  <Button variant="ghost" size="sm" disabled={switching !== null} onClick={() => void viewAs(m)} data-view-as-start={m.user_id}>
+                    <EyeIcon />
+                    {t("viewAs.action")}
+                  </Button>
+                ) : null,
+            } satisfies DataTableColumn<Member>,
+          ]
+        : []),
+    ],
+    [t, locale, ws.slug, formatDate, viewer, canViewAs, switching, viewAs],
+  )
+  const table = useDataTable({ data: list, columns, getRowId: (m) => m.user_id, pageSize: 25, defaultSort: { id: "email", direction: "asc" } })
 
   return (
-    <>
-      <SectionHeader
-        micro={ws.summary.name}
+    <Page>
+      <PageHeader
         title={t("nav.members")}
         description={t("members.hint")}
-        action={
+        actions={
           ws.can("kpi:all") ? (
-            <Button variant="outline" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
+            <Button variant="secondary" nativeButton={false} render={<Link href={`/${locale}/w/${ws.slug}/members/kpi`} />}>
               {t("kpi.teamTitle")}
             </Button>
           ) : null
@@ -47,46 +119,26 @@ export default function MembersPage() {
 
       {members.error ? (
         <ErrorState error={members.error} />
-      ) : members.isLoading ? (
-        <LoadingRows />
-      ) : (members.data?.members ?? []).length === 0 ? (
-        <EmptyState title={t("members.empty")} />
       ) : (
-        <div className="border-y border-line">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-6">{t("members.email")}</TableHead>
-                <TableHead>{t("members.role")}</TableHead>
-                <TableHead>{t("members.status")}</TableHead>
-                <TableHead className="pe-6">{t("members.joined")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(members.data?.members ?? []).map((m) => (
-                <TableRow key={m.user_id}>
-                  <TableCell className="ps-6">
-                    <Link href={`/${locale}/w/${ws.slug}/members/${m.user_id}`} className="hover:underline">
-                      <Ltr>{m.email}</Ltr>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{t(`role.${m.role}`)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-grid-muted">{t(`status.${m.status}`)}</TableCell>
-                  <TableCell className="pe-6 text-grid-muted">
-                    <Ltr>{formatDate(m.joined_at)}</Ltr>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <DataView
+          table={table}
+          label={t("nav.members")}
+          rowLabel={(m) => m.email}
+          loading={members.isLoading}
+          empty={<EmptyState title={t("members.empty")} />}
+          onRowClick={(m) => router.push(`/${locale}/w/${ws.slug}/members/${m.user_id}`)}
+          search={t("members.search")}
+          filters={
+            <>
+              <DataTableFacetFilter table={table} column="role" title={t("members.role")} options={roles.map((r) => ({ value: r, label: t(`role.${r}`) }))} />
+              <DataTableFacetFilter table={table} column="status" title={t("members.status")} options={statuses.map((v) => ({ value: v, label: t(`status.${v}`) }))} />
+            </>
+          }
+        />
       )}
 
       {canInvite ? (
         <>
-          <div className="grid-separator-contained hatch-band mt-8" aria-hidden />
           <InviteSection />
           <PendingInvitations
             loading={invitations.isLoading}
@@ -97,9 +149,9 @@ export default function MembersPage() {
           />
         </>
       ) : ws.current ? (
-        <p className="px-6 py-6 text-sm text-grid-muted">{t("members.noInvitePermission")}</p>
+        <p className="text-sm text-muted-foreground">{t("members.noInvitePermission")}</p>
       ) : null}
-    </>
+    </Page>
   )
 }
 
@@ -136,15 +188,18 @@ function InviteSection() {
   }
 
   return (
-    <section className="px-6 py-6">
-      <h2 className="text-base font-medium">{t("members.inviteTitle")}</h2>
-      {/* P0 sends no email — say so plainly instead of implying it does. */}
-      <p className="mt-1 mb-5 flex items-start gap-2 text-sm text-grid-muted">
-        <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-grid-warn" />
-        {t("members.noEmail")}
-      </p>
+    <Panel
+      title={t("members.inviteTitle")}
+      // P0 sends no email — say so plainly instead of implying it does.
+      description={
+        <span className="flex items-start gap-2">
+          <MailWarningIcon className="mt-0.5 size-4 shrink-0 text-nq-warn-text" />
+          {t("members.noEmail")}
+        </span>
+      }
+    >
       <form onSubmit={onSubmit} noValidate>
-        <FieldGroup className="sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <Field className="sm:flex-1">
             <FieldLabel htmlFor="invite-email">{t("members.email")}</FieldLabel>
             <Input
@@ -172,19 +227,19 @@ function InviteSection() {
               </SelectContent>
             </Select>
           </Field>
-          <Button type="submit" disabled={busy || !email.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !email.trim()}>
             {busy ? t("common.working") : t("members.invite")}
           </Button>
-        </FieldGroup>
-        {error ? <FieldError className="mt-3">{error}</FieldError> : null}
+        </div>
+        {error ? <FormError className="mt-3">{error}</FormError> : null}
       </form>
 
       {link ? (
-        <div className="mt-6 space-y-2 border border-line bg-grid-card p-4" role="status">
+        <div className="mt-6 space-y-2 rounded-xl border border-border bg-card p-4" role="status">
           <p className="text-sm font-medium">
             {t("members.linkReady")} <Ltr>{link.email}</Ltr>
           </p>
-          <p className="text-meta text-grid-warn-text">{t("members.linkOnce")}</p>
+          <p className="text-caption text-nq-warn-text">{t("members.linkOnce")}</p>
           <CopyField value={link.url} label={t("members.acceptLink")} />
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={() => setLink(null)}>
@@ -193,7 +248,7 @@ function InviteSection() {
           </div>
         </div>
       ) : null}
-    </section>
+    </Panel>
   )
 }
 
@@ -213,6 +268,29 @@ function PendingInvitations({
   const { t } = useTranslations()
   const ws = useWorkspace()
 
+  const columns: DataTableColumn<Invitation>[] = [
+    { id: "email", header: t("members.email"), sortValue: (inv) => inv.email, cell: (inv) => <Ltr>{inv.email}</Ltr> },
+    { id: "role", header: t("members.role"), sortValue: (inv) => inv.role, cell: (inv) => <Badge variant="outline">{t(`role.${inv.role}`)}</Badge> },
+    { id: "expires", header: t("members.expires"), sortValue: (inv) => inv.expires_at, className: "text-muted-foreground", cell: (inv) => <Ltr>{formatDate(inv.expires_at)}</Ltr> },
+    {
+      id: "revoke",
+      header: <span className="sr-only">{t("common.actions")}</span>,
+      label: t("common.actions"),
+      hideable: false,
+      align: "end",
+      cell: (inv) => (
+        <ConfirmButton
+          label={t("common.revoke")}
+          title={t("members.revokeTitle")}
+          description={t("members.revokeBody", { email: inv.email })}
+          confirmLabel={t("common.revoke")}
+          onConfirm={() => revoke(inv.id)}
+        />
+      ),
+    },
+  ]
+  const table = useDataTable({ data: items, columns, getRowId: (inv) => inv.id, defaultSort: { id: "expires", direction: "asc" } })
+
   async function revoke(id: string) {
     try {
       await api(`/api/w/invitations/${encodeURIComponent(id)}`, { method: "DELETE", workspaceId: ws.id })
@@ -224,54 +302,14 @@ function PendingInvitations({
   }
 
   return (
-    <section className="pb-8">
-      <h2 className="px-6 pb-3 text-base font-medium">{t("members.pending")}</h2>
+    <Panel flush title={t("members.pending")}>
       {error ? (
         <ErrorState error={error} />
       ) : loading ? (
         <LoadingRows rows={2} />
-      ) : items.length === 0 ? (
-        <EmptyState title={t("members.noPending")} />
       ) : (
-        <div className="border-y border-line">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="ps-6">{t("members.email")}</TableHead>
-                <TableHead>{t("members.role")}</TableHead>
-                <TableHead>{t("members.expires")}</TableHead>
-                <TableHead className="pe-6 text-end">
-                  <span className="sr-only">{t("common.actions")}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((inv) => (
-                <TableRow key={inv.id}>
-                  <TableCell className="ps-6">
-                    <Ltr>{inv.email}</Ltr>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{t(`role.${inv.role}`)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-grid-muted">
-                    <Ltr>{formatDate(inv.expires_at)}</Ltr>
-                  </TableCell>
-                  <TableCell className="pe-6 text-end">
-                    <ConfirmButton
-                      label={t("common.revoke")}
-                      title={t("members.revokeTitle")}
-                      description={t("members.revokeBody", { email: inv.email })}
-                      confirmLabel={t("common.revoke")}
-                      onConfirm={() => revoke(inv.id)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <DataTable table={table} label={t("members.pending")} rowLabel={(inv) => inv.email} empty={<EmptyState title={t("members.noPending")} />} />
       )}
-    </section>
+    </Panel>
   )
 }

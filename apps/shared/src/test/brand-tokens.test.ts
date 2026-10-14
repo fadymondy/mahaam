@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest"
 /**
  * The third copy of the design tokens.
  *
- * `web/app/styles` is the source, synced from fadymondy.com-v2 and guarded by `make grid-check`.
+ * `apps/shared/src/ui/grid/grid-tokens.css` is the source, synced from fadymondy.com-v2.
  * `apps/mobile/src/theme/tokens.ts` is hand-copied hex, guarded by its own drift test. And
  * `apps/shared/src/brand/tokens.css` — what the tray popover and the extension popup actually
  * render with — had nothing watching it at all.
@@ -20,13 +20,19 @@ import { describe, expect, it } from "vitest"
  */
 
 const here = join(__dirname, "..", "..")
-const styles = join(here, "..", "..", "web", "app", "styles")
+// The web app moved to Nasaq tokens and no longer ships web/app/styles/grid-tokens.css, so the
+// source is now the grid copy synced from fadymondy.com-v2 (apps/shared/src/ui/grid) plus the
+// repo-owned Mahaam brand block the desktop app imports.
+const SOURCES = [
+  join(here, "src", "ui", "grid", "grid-tokens.css"),
+  join(here, "..", "desktop", "src", "renderer", "styles", "mahaam-brand.css"),
+]
 
-// Order matters, and matches how the web app imports them: mahaam-brand.css overrides the grid's
-// own brand. Read separately rather than concatenated — joining them first and splitting on the
+// Order matters, and matches how they are imported: mahaam-brand.css overrides the grid's own
+// brand. Read separately rather than concatenated — joining them first and splitting on the
 // dark selector once would push the whole brand override into the dark scope, leaving light
 // holding the unbranded values and the comparison passing for the wrong reason.
-const SHEETS = ["grid-tokens.css", "mahaam-brand.css"].map((f) => readFileSync(join(styles, f), "utf8"))
+const SHEETS = SOURCES.map((f) => readFileSync(f, "utf8"))
 const OURS = readFileSync(join(here, "src", "brand", "tokens.css"), "utf8")
 
 /**

@@ -4,7 +4,8 @@
 // language. Every sentence is a dictionary key per action, filled from the entry's changes.
 import { BotIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@fadymondy/nasaq/web"
+
 import { Ltr } from "@/components/copy-field"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { PersonAvatar, type Directory } from "@/components/work/people"
@@ -18,27 +19,10 @@ function str(v: unknown): string {
   return typeof v === "string" ? v : typeof v === "number" ? String(v) : ""
 }
 
-export function ActivityFeed({
-  items,
-  loading,
-  error,
-  dir,
-  showTask = true,
-  emptyTitle,
-}: {
-  items: Activity[] | undefined
-  loading: boolean
-  error: unknown
-  dir: Directory
-  showTask?: boolean
-  emptyTitle?: string
-}) {
+/** Turns an activity entry into its sentence in the UI language. */
+export function useActivitySentence(dir: Directory, showTask = true) {
   const { t, locale } = useTranslations()
-  if (error) return <ErrorState error={error} />
-  if (loading) return <LoadingRows rows={3} />
-  if (!items?.length) return <EmptyState title={emptyTitle ?? t("activity.empty")} />
-
-  function sentence(a: Activity) {
+  const sentence = (a: Activity) => {
     const c = a.changes
     const vars: Record<string, string> = {
       key: str(c.key),
@@ -65,15 +49,41 @@ export function ActivityFeed({
     const text = t(k, vars)
     return text === k ? t("activity.generic", { action: a.action }) : text
   }
+  return sentence
+}
+
+export function ActivityFeed({
+  items,
+  loading,
+  error,
+  dir,
+  showTask = true,
+  emptyTitle,
+  compact = false,
+}: {
+  items: Activity[] | undefined
+  loading: boolean
+  error: unknown
+  dir: Directory
+  showTask?: boolean
+  emptyTitle?: string
+  /** Inside a card: tighter padding, no outer borders. */
+  compact?: boolean
+}) {
+  const { t, locale } = useTranslations()
+  const sentence = useActivitySentence(dir, showTask)
+  if (error) return <ErrorState error={error} />
+  if (loading) return <LoadingRows rows={3} />
+  if (!items?.length) return <EmptyState title={emptyTitle ?? t("activity.empty")} />
 
   return (
-    <ol className="divide-y divide-line border-y border-line" aria-label={t("activity.title")}>
+    <ol className={compact ? "divide-y divide-line" : "divide-y divide-line border-y border-border"} aria-label={t("activity.title")}>
       {items.map((a) => (
-        <li key={a.id} className="flex items-start gap-3 px-6 py-3 text-sm" data-action={a.action}>
+        <li key={a.id} className={compact ? "flex items-start gap-3 px-4 py-2.5 text-sm" : "flex items-start gap-3 px-6 py-3 text-sm"} data-action={a.action}>
           <PersonAvatar id={a.actor_id} dir={dir} className="mt-0.5" />
           <div className="min-w-0 flex-1">
-            <p className="text-grid-body">
-              <span className="font-medium text-grid-fg" dir="ltr">
+            <p className="text-nq-fg-body">
+              <span className="font-medium text-foreground" dir="ltr">
                 {dir.name(a.actor_id)}
               </span>{" "}
               {sentence(a)}
@@ -85,10 +95,10 @@ export function ActivityFeed({
               ) : null}
             </p>
             {typeof a.changes.excerpt === "string" && a.changes.excerpt ? (
-              <p className="mt-1 line-clamp-2 border-s-2 border-line ps-2 text-grid-muted">{a.changes.excerpt}</p>
+              <p className="mt-1 line-clamp-2 border-s-2 border-border ps-2 text-muted-foreground">{a.changes.excerpt}</p>
             ) : null}
           </div>
-          <time className="shrink-0 text-meta text-grid-muted" dateTime={a.created_at} title={new Date(a.created_at).toLocaleString()}>
+          <time className="shrink-0 text-caption text-muted-foreground" dateTime={a.created_at} title={new Date(a.created_at).toLocaleString()}>
             <Ltr>{timeAgo(a.created_at, locale)}</Ltr>
           </time>
         </li>

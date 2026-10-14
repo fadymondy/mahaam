@@ -1,6 +1,7 @@
 // Package integrations connects a Mahaam project to GitHub (a GitHub App: issues both ways,
 // pull requests, commits, workflow runs, deployments, workflow_dispatch deploys, webhooks),
-// Jira (issue import) and Linear (issue import).
+// Jira (issue import), Linear (issue import) and Hosbah (hosting: one app per project, opened
+// by the customer from the portal — hosbah.go).
 //
 // Authorization follows internal/work: the caller comes from tenant.Scope on ctx (session or
 // MCP token), the project must be visible to them (work.FindProject — 404 otherwise), and the
@@ -37,7 +38,7 @@ import (
 )
 
 // Providers are the integrations a project can have (one of each).
-var Providers = []string{"github", "jira", "linear"}
+var Providers = []string{"github", "jira", "linear", "hosbah"}
 
 // Service carries the handles the integrations need.
 type Service struct {
@@ -71,9 +72,9 @@ func New(a *app.App) *Service {
 type Integration struct {
 	ID           string         `json:"id"`
 	ProjectID    string         `json:"project_id"`
-	Provider     string         `json:"provider" doc:"github, jira or linear"`
+	Provider     string         `json:"provider" doc:"github, jira, linear or hosbah"`
 	Status       string         `json:"status" doc:"pending, active, error or disabled"`
-	Config       map[string]any `json:"config" doc:"Non-secret settings (repo, installation_id, base_url, project_key, jql, email, team_id)"`
+	Config       map[string]any `json:"config" doc:"Non-secret settings (repo, installation_id, base_url, project_key, jql, email, team_id, app_id, app_name, server_id, panel_url)"`
 	HasSecret    bool           `json:"has_secret"`
 	LastSyncedAt *time.Time     `json:"last_synced_at"`
 	LastError    *string        `json:"last_error"`
@@ -312,6 +313,11 @@ func (sv *Service) Disconnect(ctx context.Context, projectRef, provider string) 
 	if err != nil {
 		return err
 	}
+	if provider == "hosbah" {
+		if r, err := sv.load(ctx, sv.DB, s.WorkspaceID, p.ID, provider); err == nil {
+			sv.revokeHosbah(ctx, r)
+		}
+	}
 	return sv.tx(ctx, func(tx *sql.Tx) error {
 		var id string
 		err := tx.QueryRowContext(ctx, `DELETE FROM project_integrations WHERE workspace_id = $1 AND project_id = $2 AND provider = $3 RETURNING id`,
@@ -383,6 +389,8 @@ func (sv *Service) syncRow(ctx context.Context, s *tenant.Scope, r *row) (*SyncR
 		err = sv.syncLinear(ctx, s, r, res)
 	case "github":
 		err = sv.syncGitHub(ctx, s, r, res)
+	case "hosbah":
+		err = sv.syncHosbah(ctx, s, r, res)
 	}
 	if err != nil {
 		msg := truncate(err.Error(), 500)

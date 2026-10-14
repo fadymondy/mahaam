@@ -104,7 +104,7 @@ async function settle(c: MahaamClient): Promise<void> {
   c.setWorkspace(ws?.id ?? null);
 }
 
-const pick = (w: Workspace): Workspace => ({ id: w.id, slug: w.slug, name: w.name, role: w.role, locale: w.locale });
+const pick = (w: Workspace): Workspace => ({ id: w.id, slug: w.slug, name: w.name, role: w.role, locale: w.locale, logo: w.logo });
 
 /** On launch: resume the stored session, if the token still works. */
 export async function restore(): Promise<void> {
@@ -128,7 +128,32 @@ export async function restore(): Promise<void> {
     }
     client = c;
     me = { id: "", email: stored.email };
+    resettle(c);
   }
+}
+
+/**
+ * The server couldn't be reached at launch, so the session is kept but doesn't know who you are
+ * yet (me.id is ""). Everything scoped to "me" (My issues, the timer's owner) waits on that id,
+ * so without this the app stayed in that state until it was restarted: My issues showed its
+ * loader for ever. Keep trying, backing off to a minute, until the server answers; then tell the
+ * windows, which refetch with the real id.
+ */
+function resettle(c: MahaamClient, delay = 5_000): void {
+  setTimeout(async () => {
+    if (client !== c || (me && me.id)) return; // signed out, replaced, or already settled
+    try {
+      await settle(c);
+      persist();
+      emit("workspace");
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        expire();
+        return;
+      }
+      resettle(c, Math.min(delay * 2, 60_000));
+    }
+  }, delay);
 }
 
 export type SignInResult = { ok: true; session: SessionOut } | { ok: false; mfa: true };

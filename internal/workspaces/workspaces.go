@@ -82,11 +82,12 @@ func newToken() string {
 
 // WorkspaceOut is a workspace as seen by one of its members.
 type WorkspaceOut struct {
-	ID     string `json:"id"`
-	Slug   string `json:"slug"`
-	Name   string `json:"name"`
-	Role   string `json:"role"`
-	Locale string `json:"locale"`
+	ID     string  `json:"id"`
+	Slug   string  `json:"slug"`
+	Name   string  `json:"name"`
+	Role   string  `json:"role"`
+	Locale string  `json:"locale"`
+	Logo   *string `json:"logo" doc:"A data: URL (256px JPEG), or null for initials"`
 }
 
 type memberOut struct {
@@ -107,6 +108,14 @@ type invitationOut struct {
 
 type wsHeader struct {
 	WorkspaceID string `header:"X-Workspace-ID" doc:"Workspace id or slug. Non-members get 404."`
+}
+
+// viewingAs is the member an owner/admin is viewing the workspace as, and who that viewer is.
+type viewingAs struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
+	By     string `json:"by"`
 }
 
 func identity(ctx context.Context) (*auth.Identity, error) {
@@ -305,6 +314,8 @@ func Register(api huma.API, a *app.App) {
 			} `json:"workspace"`
 			Role string   `json:"role"`
 			Can  []string `json:"can"`
+			// ViewingAs is set while an owner/admin views as this member (X-View-As, MH-1159).
+			ViewingAs *viewingAs `json:"viewing_as,omitempty"`
 		}
 	}, error) {
 		s, err := scope(ctx)
@@ -321,8 +332,9 @@ func Register(api huma.API, a *app.App) {
 					Timezone string `json:"timezone"`
 					Currency string `json:"currency"`
 				} `json:"workspace"`
-				Role string   `json:"role"`
-				Can  []string `json:"can"`
+				Role      string     `json:"role"`
+				Can       []string   `json:"can"`
+				ViewingAs *viewingAs `json:"viewing_as,omitempty"`
 			}
 		}{}
 		w := &out.Body.Workspace
@@ -335,6 +347,9 @@ func Register(api huma.API, a *app.App) {
 		}
 		out.Body.Role = s.Role
 		out.Body.Can = authz.Allowed(s.Role)
+		if s.ImpersonatorID != "" {
+			out.Body.ViewingAs = &viewingAs{UserID: s.UserID, Email: s.Email, Role: s.Role, By: s.ImpersonatorEmail}
+		}
 		return out, nil
 	})
 
@@ -504,14 +519,14 @@ func Register(api huma.API, a *app.App) {
 // MyWorkspaces lists userID's active memberships (owner pool, explicit user predicate).
 func MyWorkspaces(ctx context.Context, sys *sql.DB, userID string) ([]WorkspaceOut, error) {
 	rows, err := sys.QueryContext(ctx, `
-		SELECT w.id, w.slug, w.name, m.role, w.locale
+		SELECT w.id, w.slug, w.name, m.role, w.locale, w.logo
 		FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
 		WHERE m.user_id = $1 AND m.status = 'active'
 		UNION ALL
 		-- The platform workspace ("Report a problem" lands there): platform admins act in it as
 		-- admins without a membership row (tenant.Resolve), so list it for them — the web shell
 		-- only opens workspaces this list returns.
-		SELECT w.id, w.slug, w.name, 'admin', w.locale
+		SELECT w.id, w.slug, w.name, 'admin', w.locale, w.logo
 		FROM workspaces w JOIN users u ON u.id = $1
 		WHERE w.slug = 'platform' AND ',' || replace(u.roles, ' ', '') || ',' LIKE '%,admin,%'
 		  AND NOT EXISTS (SELECT 1 FROM workspace_members m2 WHERE m2.workspace_id = w.id AND m2.user_id = $1 AND m2.status = 'active')
@@ -523,7 +538,7 @@ func MyWorkspaces(ctx context.Context, sys *sql.DB, userID string) ([]WorkspaceO
 	out := []WorkspaceOut{}
 	for rows.Next() {
 		var w WorkspaceOut
-		if err := rows.Scan(&w.ID, &w.Slug, &w.Name, &w.Role, &w.Locale); err != nil {
+		if err := rows.Scan(&w.ID, &w.Slug, &w.Name, &w.Role, &w.Locale, &w.Logo); err != nil {
 			return nil, err
 		}
 		out = append(out, w)
@@ -643,10 +658,10 @@ func Accept(ctx context.Context, sys *sql.DB, userID, token string) (*WorkspaceO
 	}
 	ws := &WorkspaceOut{}
 	if err := tx.QueryRowContext(ctx, `
-		SELECT w.id, w.slug, w.name, m.role, w.locale FROM workspaces w
+		SELECT w.id, w.slug, w.name, m.role, w.locale, w.logo FROM workspaces w
 		JOIN workspace_members m ON m.workspace_id = w.id AND m.user_id = $2
 		WHERE w.id = $1`, wsID, userID,
-	).Scan(&ws.ID, &ws.Slug, &ws.Name, &ws.Role, &ws.Locale); err != nil {
+	).Scan(&ws.ID, &ws.Slug, &ws.Name, &ws.Role, &ws.Locale, &ws.Logo); err != nil {
 		return nil, err
 	}
 	return ws, tx.Commit()

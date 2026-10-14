@@ -109,7 +109,8 @@ const (
 	// Project vault. Memory (notes about the project) is read and written by anyone working
 	// on it (members+, on a project they can see). Secrets: members see that a secret exists
 	// (title + hint), but only managers+ (or the project lead) store, change or reveal one,
-	// and every reveal is recorded. Clients never see the vault.
+	// and every reveal is recorded. A customer works the vault of their own projects like a
+	// member (MH-1190): memory and secret titles, never a secret's value.
 	VaultRead    = "vault:read"
 	VaultWrite   = "vault:write"
 	VaultSecrets = "vault:secrets"
@@ -131,6 +132,10 @@ const (
 	AIUsageRecord       = "ai_usage:record"
 	AIUsageRead         = "ai_usage:read"
 	SubscriptionsManage = "subscriptions:manage"
+	// BillingRead: a project's Billing tab as its customer sees it (MH-1190) — AI usage at the
+	// billed price and the billable subscriptions' prices, on a project the caller can see; never
+	// our cost, the markup or notes.
+	BillingRead = "billing:read"
 
 	// Employee KPI (internal/work/kpi.go). KPIRead: your own KPI dossier and GitHub account
 	// (member+); KPIAll: anyone's, the team table, and mapping a member's GitHub account;
@@ -150,8 +155,10 @@ var Matrix = map[string]Role{
 	TokensManageOwn:   Client,
 	TokensRevokeAny:   Admin,
 	FeedbackFile:      Client,
-	FeedbackRead:      Member,
-	FeedbackWrite:     Member,
+	// A customer works the issues of their own projects like a member (MH-1176); the issue
+	// tracker (internal/reports.customer) keeps them to the projects they can see.
+	FeedbackRead:  Client,
+	FeedbackWrite: Client,
 	// The generic GraphQL endpoint exposes generated resolvers, which carry no
 	// per-field authorization of their own; RLS isolates tenants, and this keeps
 	// it to people who could make the same changes in the UI.
@@ -160,15 +167,17 @@ var Matrix = map[string]Role{
 	ProjectsRead:   Client, // clients: only the projects of the client they are a portal contact of (internal/work)
 	ProjectsCreate: Manager,
 	ProjectsManage: Manager, // or the project's lead
-	// A client never reads tasks: the portal shows their projects, the issues they
-	// filed and their invoices — never the internal task board (P7). Members up.
-	TasksRead:        Member,
-	TasksWrite:       Member,
+	// A customer (client) gets the full project — board, tasks, issues — with a member's
+	// rights, on the projects they can see (visibleClause / taskClause) and nothing wider
+	// (MH-1176), and every project tab but Settings: GitHub, Hosting, Vault and Billing read
+	// (MH-1190). Rates, time tracking, members and the workspace areas stay member+.
+	TasksRead:        Client,
+	TasksWrite:       Client,
 	ClientsRead:      Member,
 	ClientsWrite:     Manager,
 	TeamsRead:        Member,
 	TeamsWrite:       Manager,
-	LabelsCreate:     Member,
+	LabelsCreate:     Client,
 	LabelsManage:     Manager,
 	ActivityRead:     Manager, // the workspace-wide feed; project/task feeds follow project access
 	CommentsModerate: Manager,
@@ -190,13 +199,13 @@ var Matrix = map[string]Role{
 	FeedbackKeysRead:     Manager,
 	FeedbackKeysManage:   Manager,
 
-	IntegrationsRead:   Member,
+	IntegrationsRead:   Client, // on a project they can see (integrations.project → FindProject)
 	IntegrationsManage: Manager,
 	GitHubIssueWrite:   Member,
 	GitHubDeploy:       Manager,
 
-	VaultRead:    Member,
-	VaultWrite:   Member,
+	VaultRead:    Client, // on a project they can see (vaultProject → FindProject)
+	VaultWrite:   Client,
 	VaultSecrets: Manager, // or the project's lead (internal/work/vault.go)
 
 	AccessManage: Manager,
@@ -204,6 +213,7 @@ var Matrix = map[string]Role{
 	AIUsageRecord:       Member,
 	AIUsageRead:         Manager,
 	SubscriptionsManage: Manager,
+	BillingRead:         Client,
 
 	KPIRead:   Member,
 	KPIAll:    Manager,

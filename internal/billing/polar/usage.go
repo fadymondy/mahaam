@@ -31,7 +31,8 @@ type pending struct {
 // deduplicated by Polar; what was sent is recorded only after Polar accepted it.
 func PushUsage(ctx context.Context, db *sql.DB, c *Client, now time.Time) (int, error) {
 	rows, err := db.QueryContext(ctx, `SELECT id FROM workspaces
-		WHERE polar_subscription_id IS NOT NULL AND billing_status IN ('active', 'past_due', 'canceled')`)
+		WHERE polar_subscription_id IS NOT NULL AND billing_status IN ('active', 'past_due', 'canceled')
+		AND NOT EXISTS (SELECT 1 FROM circlexo_org_links l WHERE l.workspace_id = workspaces.id AND l.status = 'active')`)
 	if err != nil {
 		return 0, err
 	}

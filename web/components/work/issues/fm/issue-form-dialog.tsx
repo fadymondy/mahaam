@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Switch } from "@/components/ui/switch"
+import { Field, FieldLabel, Switch } from "@fadymondy/nasaq/web"
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { ReportDialog, type FeedbackSubmission } from "@/lib/feedback/react/report-dialog"
 import { useTranslations } from "@/lib/i18n"
@@ -94,7 +95,7 @@ export function IssueFormDialog({
         bodyPlaceholder: t("issues.bodyPlaceholder"),
       }}
       extra={
-        <Field orientation="horizontal">
+        <Field className="flex-row items-center gap-2">
           <Switch id="issue-human-only" checked={humanOnly} onCheckedChange={(v) => setHumanOnly(Boolean(v))} />
           <FieldLabel htmlFor="issue-human-only" className="font-normal">
             {t("issues.humanOnlyHint")}

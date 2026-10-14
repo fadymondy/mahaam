@@ -4,19 +4,17 @@
 // A new time entry copies the rate in force when it starts; editing a rate never changes an entry
 // already logged. Managers read; admins set and delete.
 import Link from "next/link"
-import { useState, type FormEvent } from "react"
+import { useMemo, useState, type FormEvent } from "react"
 import { HistoryIcon, PencilIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, DataTableFacetFilter, useDataTable, type DataTableColumn } from "@fadymondy/nasaq/web"
+
 import { ConfirmButton } from "@/components/confirm-button"
 import { Ltr } from "@/components/copy-field"
-import { SectionHeader } from "@/components/public-frame"
+import { DataView } from "@/components/data-view"
+import { SectionTitle } from "@/components/page"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states"
 import { DateField } from "@/components/work/fields"
 import { PersonAvatar, useDirectory } from "@/components/work/people"
@@ -39,8 +37,6 @@ export default function RatesPage() {
   const [editing, setEditing] = useState<MemberRates | null>(null)
   const [history, setHistory] = useState<MemberRates | null>(null)
 
-  if (ws.current && !canRead) return <p className="px-6 py-6 text-sm text-grid-muted">{t("rates.noPermission")}</p>
-
   const rs = sheet.data
   const rate = (v: number | null | undefined, cur: string) =>
     v != null ? (
@@ -49,22 +45,105 @@ export default function RatesPage() {
         {t("rates.perHour")}
       </Ltr>
     ) : (
-      <span className="text-grid-muted">{t("rates.none")}</span>
+      <span className="text-muted-foreground">{t("rates.none")}</span>
     )
-  const upcoming = (m: MemberRates, today: string) => m.history.find((h) => h.effective_from > today)
+  const members = useMemo(() => rs?.members ?? [], [rs])
+  const roles = useMemo(() => [...new Set(members.map((m) => m.role))], [members])
+  const cur = rs?.currency ?? ""
+  const today = rs?.today ?? ""
+  const canManage = !!rs?.can_manage
+  const columns = useMemo<DataTableColumn<MemberRates>[]>(() => {
+    const rateCell = (v: number | null | undefined) =>
+      v != null ? (
+        <Ltr>
+          {money(v, cur, locale)}
+          {t("rates.perHour")}
+        </Ltr>
+      ) : (
+        <span className="text-muted-foreground">{t("rates.none")}</span>
+      )
+    return [
+      {
+        id: "member",
+        header: t("rates.member"),
+        hideable: false,
+        sortValue: (m) => dir.name(m.user_id).toLowerCase(),
+        searchValue: (m) => dir.name(m.user_id),
+        filterValue: (m) => m.role,
+        className: "max-w-0",
+        cell: (m) => (
+          <span className="flex min-w-0 items-center gap-2.5" data-rate-member={m.user_id}>
+            <PersonAvatar id={m.user_id} dir={dir} />
+            <span className="min-w-0">
+              <Ltr className="block truncate">{dir.name(m.user_id)}</Ltr>
+              <span className="text-caption text-muted-foreground">{t(`role.${m.role}`)}</span>
+            </span>
+          </span>
+        ),
+      },
+      { id: "bill", header: t("rates.bill"), sortValue: (m) => m.current?.bill_rate_minor ?? null, cell: (m) => <span data-rate-bill>{rateCell(m.current?.bill_rate_minor)}</span> },
+      { id: "cost", header: t("rates.cost"), sortValue: (m) => m.current?.cost_rate_minor ?? null, cell: (m) => rateCell(m.current?.cost_rate_minor) },
+      {
+        id: "since",
+        header: t("rates.since"),
+        sortValue: (m) => m.current?.effective_from ?? null,
+        className: "text-muted-foreground",
+        cell: (m) => {
+          const next = m.history.find((h) => h.effective_from > today)
+          return (
+            <>
+              {m.current ? <Ltr>{formatDay(m.current.effective_from, locale)}</Ltr> : "—"}
+              {next ? (
+                <Badge variant="outline" className="ms-2">
+                  {t("rates.upcoming", { day: formatDay(next.effective_from, locale, "short") })}
+                </Badge>
+              ) : null}
+            </>
+          )
+        },
+      },
+      {
+        id: "actions",
+        header: <span className="sr-only">{t("common.actions")}</span>,
+        label: t("common.actions"),
+        hideable: false,
+        align: "end",
+        cell: (m) => (
+          <div className="flex justify-end gap-1">
+            {m.history.length ? (
+              <Button variant="ghost" size="sm" onClick={() => setHistory(m)}>
+                <HistoryIcon />
+                <span className="hidden md:inline">{t("rates.history")}</span>
+                <Ltr className="text-muted-foreground">{m.history.length}</Ltr>
+              </Button>
+            ) : null}
+            {canManage ? (
+              <Button variant="secondary" size="sm" onClick={() => setEditing(m)} data-set-rate={m.user_id}>
+                <PencilIcon />
+                <span className="hidden sm:inline">{t("rates.set")}</span>
+              </Button>
+            ) : null}
+          </div>
+        ),
+      },
+    ]
+  }, [t, locale, dir, cur, today, canManage])
+  const table = useDataTable({ data: members, columns, getRowId: (m) => m.user_id, pageSize: 25, defaultSort: { id: "member", direction: "asc" } })
+
+  if (ws.current && !canRead) return <p className="text-sm text-muted-foreground">{t("rates.noPermission")}</p>
 
   return (
-    <>
-      <SectionHeader micro={ws.summary.name} title={t("rates.title")} description={t("rates.hint")} />
+    <div className="flex flex-col gap-6">
+      <SectionTitle title={t("rates.title")} description={t("rates.hint")} />
       {sheet.error ? (
         <ErrorState error={sheet.error} />
       ) : !rs ? (
         <LoadingRows />
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-grid-soft/50 px-6 py-3 text-sm" data-rate-defaults>
-            <span className="text-grid-body">
-              <span className="font-medium text-grid-fg">{t("rates.defaults")}: </span>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-muted/50 px-4 py-3 text-sm" data-rate-defaults>
+            <span className="text-nq-fg-body">
+              <span className="font-medium text-foreground">{t("rates.defaults")}: </span>
               {t("rates.defaultsHint", {
                 bill: rs.default_bill_rate_minor != null ? money(rs.default_bill_rate_minor, rs.currency, locale) : "—",
                 cost: rs.default_cost_rate_minor != null ? money(rs.default_cost_rate_minor, rs.currency, locale) : "—",
@@ -74,71 +153,15 @@ export default function RatesPage() {
               {t("rates.defaultsLink")}
             </Link>
           </div>
-          {!rs.can_manage ? <p className="border-t border-line px-6 py-3 text-sm text-grid-muted">{t("rates.readOnly")}</p> : null}
-          {rs.members.length === 0 ? (
-            <EmptyState title={t("team.empty")} />
-          ) : (
-            <div className="border-y border-line">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="ps-6">{t("rates.member")}</TableHead>
-                    <TableHead>{t("rates.bill")}</TableHead>
-                    <TableHead className="hidden sm:table-cell">{t("rates.cost")}</TableHead>
-                    <TableHead className="hidden md:table-cell">{t("rates.since")}</TableHead>
-                    <TableHead className="pe-6 text-end">
-                      <span className="sr-only">{t("common.actions")}</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rs.members.map((m) => {
-                    const next = upcoming(m, rs.today)
-                    return (
-                      <TableRow key={m.user_id} data-rate-member={m.user_id}>
-                        <TableCell className="max-w-0 ps-6">
-                          <span className="flex min-w-0 items-center gap-2.5">
-                            <PersonAvatar id={m.user_id} dir={dir} />
-                            <span className="min-w-0">
-                              <Ltr className="block truncate">{dir.name(m.user_id)}</Ltr>
-                              <span className="text-meta text-grid-muted">{t(`role.${m.role}`)}</span>
-                            </span>
-                          </span>
-                        </TableCell>
-                        <TableCell data-rate-bill>{rate(m.current?.bill_rate_minor, rs.currency)}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{rate(m.current?.cost_rate_minor, rs.currency)}</TableCell>
-                        <TableCell className="hidden text-grid-muted md:table-cell">
-                          {m.current ? <Ltr>{formatDay(m.current.effective_from, locale)}</Ltr> : "—"}
-                          {next ? (
-                            <Badge variant="outline" className="ms-2">
-                              {t("rates.upcoming", { day: formatDay(next.effective_from, locale, "short") })}
-                            </Badge>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="pe-6 text-end">
-                          <div className="flex justify-end gap-1">
-                            {m.history.length ? (
-                              <Button variant="ghost" size="sm" onClick={() => setHistory(m)}>
-                                <HistoryIcon />
-                                <span className="hidden md:inline">{t("rates.history")}</span>
-                                <Ltr className="text-grid-muted">{m.history.length}</Ltr>
-                              </Button>
-                            ) : null}
-                            {rs.can_manage ? (
-                              <Button variant="outline" size="sm" onClick={() => setEditing(m)} data-set-rate={m.user_id}>
-                                <PencilIcon />
-                                <span className="hidden sm:inline">{t("rates.set")}</span>
-                              </Button>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          {!rs.can_manage ? <p className="text-sm text-muted-foreground">{t("rates.readOnly")}</p> : null}
+          <DataView
+            table={table}
+            label={t("rates.title")}
+            rowLabel={(m) => dir.name(m.user_id)}
+            empty={<EmptyState title={t("team.empty")} />}
+            search={t("members.search")}
+            filters={<DataTableFacetFilter table={table} column="member" title={t("members.role")} options={roles.map((r) => ({ value: r, label: t(`role.${r}`) }))} />}
+          />
         </>
       )}
 
@@ -168,10 +191,10 @@ export default function RatesPage() {
             <DialogDescription>{t("rates.deleteBody")}</DialogDescription>
           </DialogHeader>
           {history && rs ? (
-            <ul className="divide-y divide-line border-y border-line" data-rate-history>
+            <ul className="divide-y divide-line border-y border-border" data-rate-history>
               {history.history.map((h) => (
                 <li key={h.id} className="flex items-center gap-3 py-2.5 text-sm">
-                  <Ltr className="w-28 shrink-0 text-grid-muted">{formatDay(h.effective_from, locale)}</Ltr>
+                  <Ltr className="w-28 shrink-0 text-muted-foreground">{formatDay(h.effective_from, locale)}</Ltr>
                   <span className="min-w-0 flex-1">
                     {t("rates.bill")}: {rate(h.bill_rate_minor, h.currency)} · {t("rates.cost")}: {rate(h.cost_rate_minor, h.currency)}
                   </span>
@@ -198,7 +221,7 @@ export default function RatesPage() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }
 
@@ -234,7 +257,7 @@ function RateForm({ member, sheet, onDone }: { member: MemberRates; sheet: RateS
 
   return (
     <form onSubmit={submit} noValidate data-rate-form>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="r-day">{t("rates.effective")}</FieldLabel>
           <DateField id="r-day" value={day} onChange={(v) => v && setDay(v)} />
@@ -251,13 +274,13 @@ function RateForm({ member, sheet, onDone }: { member: MemberRates; sheet: RateS
             <FieldDescription>{t("rates.costHint", { currency: sheet.currency })}</FieldDescription>
           </Field>
         </div>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

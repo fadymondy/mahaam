@@ -1,0 +1,16 @@
+{
+  "description": "Mahaam: link the repo's project into the session, and bank every issue's AI tokens and cost when an agent closes it.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-start.mjs\"", "timeout": 10 }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__.*mahaam.*__(start_issue|review_issue|finish_issue|request_approval|record_issue_usage)",
+        "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/issue-usage.mjs\"", "timeout": 20 }]
+      }
+    ]
+  }
+}

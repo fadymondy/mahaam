@@ -6,11 +6,13 @@
 import { useEffect, useState, type FormEvent } from "react"
 import useSWR from "swr"
 import QRCode from "qrcode"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Field, FieldDescription, FieldLabel, Input } from "@fadymondy/nasaq/web"
+
+
+
 import { Ltr } from "@/components/copy-field"
 import { api, ApiError } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
@@ -45,7 +47,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
   return (
     <div className="space-y-3" data-recovery-codes>
       <p className="text-sm">{t("twofa.recoveryHint")}</p>
-      <ul className="grid grid-cols-2 gap-1 rounded-md border border-line p-3 font-mono text-sm" dir="ltr">
+      <ul className="grid grid-cols-2 gap-1 rounded-md border border-border p-3 font-mono text-sm" dir="ltr">
         {codes.map((c) => (
           <li key={c}>{c}</li>
         ))}
@@ -53,7 +55,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => {
             void navigator.clipboard?.writeText(text)
@@ -64,7 +66,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => {
             const a = document.createElement("a")
@@ -76,7 +78,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
         >
           {t("twofa.download")}
         </Button>
-        <Button type="button" size="sm" onClick={onDone}>
+        <Button variant="primary" type="button" size="sm" onClick={onDone}>
           {t("twofa.saved")}
         </Button>
       </div>
@@ -136,9 +138,9 @@ export function TwoFactor() {
 
   const s = state.data
   return (
-    <div className="mt-8 border-t border-line pt-5" data-two-factor>
-      <h3 className="grid-micro mb-2">{t("twofa.title")}</h3>
-      <p className="max-w-2xl text-sm text-grid-muted">
+    <div className="mt-8 border-t border-border pt-5" data-two-factor>
+      <h3 className="text-eyebrow uppercase mb-2">{t("twofa.title")}</h3>
+      <p className="max-w-2xl text-sm text-muted-foreground">
         {s?.enabled ? t("twofa.on", { n: s.recovery_codes_left }) : t("twofa.off")}
       </p>
 
@@ -150,7 +152,7 @@ export function TwoFactor() {
         <div className="mt-3 flex flex-wrap gap-2">
           {s?.enabled ? (
             <>
-              <Button type="button" variant="outline" size="sm" onClick={() => reset("regenerate")}>
+              <Button type="button" variant="secondary" size="sm" onClick={() => reset("regenerate")}>
                 {t("twofa.regenerate")}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={() => reset("disable")}>
@@ -158,7 +160,7 @@ export function TwoFactor() {
               </Button>
             </>
           ) : (
-            <Button type="button" variant="outline" size="sm" onClick={() => reset("password")}>
+            <Button type="button" variant="secondary" size="sm" onClick={() => reset("password")}>
               {t("twofa.setup")}
             </Button>
           )}
@@ -175,21 +177,21 @@ export function TwoFactor() {
             })
           }
         >
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field data-invalid={!!error || undefined}>
               <FieldLabel htmlFor="twofa-pw">{t("account.currentPassword")}</FieldLabel>
               <Input id="twofa-pw" type="password" dir="ltr" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </Field>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
-              <Button type="submit" disabled={busy || !password}>
+              <Button variant="primary" type="submit" disabled={busy || !password}>
                 {t("twofa.continue")}
               </Button>
               <Button type="button" variant="ghost" onClick={() => reset()}>
                 {t("common.cancel")}
               </Button>
             </div>
-          </FieldGroup>
+          </div>
         </form>
       ) : step === "scan" && enroll ? (
         <form
@@ -206,15 +208,15 @@ export function TwoFactor() {
             })
           }
         >
-          <div className="rounded-md border border-line bg-white p-2">
+          <div className="rounded-md border border-border bg-white p-2">
             {/* The QR is a data: URL generated in the browser from the otpauth link. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {qr ? <img src={qr} alt={t("twofa.qrAlt")} width={192} height={192} data-twofa-qr /> : <div className="size-48" />}
           </div>
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <p className="text-sm">{t("twofa.scan")}</p>
-            <p className="text-sm text-grid-muted">
-              {t("twofa.manual")} <Ltr mono className="break-all text-grid-fg" data-twofa-secret>{enroll.secret}</Ltr>
+            <p className="text-sm text-muted-foreground">
+              {t("twofa.manual")} <Ltr mono className="break-all text-foreground" data-twofa-secret>{enroll.secret}</Ltr>
             </p>
             <a href={enroll.otpauth_url} className="text-sm underline underline-offset-4">
               {t("twofa.openApp")}
@@ -224,16 +226,16 @@ export function TwoFactor() {
               <CodeInput id="twofa-code" value={code} onChange={setCode} />
               <FieldDescription>{t("twofa.confirmHint")}</FieldDescription>
             </Field>
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
-              <Button type="submit" disabled={busy || code.length !== 6}>
+              <Button variant="primary" type="submit" disabled={busy || code.length !== 6}>
                 {t("twofa.turnOn")}
               </Button>
               <Button type="button" variant="ghost" onClick={() => reset()}>
                 {t("common.cancel")}
               </Button>
             </div>
-          </FieldGroup>
+          </div>
         </form>
       ) : (
         <form
@@ -255,7 +257,7 @@ export function TwoFactor() {
             })
           }
         >
-          <FieldGroup>
+          <div className="flex flex-col gap-4">
             <Field>
               <FieldLabel htmlFor="twofa-pw2">{t("account.currentPassword")}</FieldLabel>
               <Input id="twofa-pw2" type="password" dir="ltr" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -270,11 +272,11 @@ export function TwoFactor() {
                 <Input id="twofa-recovery" dir="ltr" className="font-mono" value={recovery} onChange={(e) => setRecovery(e.target.value)} placeholder="xxxxx-xxxxx" />
               </Field>
             ) : null}
-            {error ? <FieldError>{error}</FieldError> : null}
+            {error ? <FormError>{error}</FormError> : null}
             <div className="flex gap-2">
               <Button
                 type="submit"
-                variant={step === "disable" ? "destructive" : "default"}
+                variant={step === "disable" ? "danger" : "primary"}
                 disabled={busy || !password || (code.length !== 6 && !(step === "disable" && recovery.trim()))}
               >
                 {step === "disable" ? t("twofa.disable") : t("twofa.regenerate")}
@@ -283,7 +285,7 @@ export function TwoFactor() {
                 {t("common.cancel")}
               </Button>
             </div>
-          </FieldGroup>
+          </div>
         </form>
       )}
     </div>

@@ -89,6 +89,11 @@ type Issue struct {
 	Skill        *string    `json:"skill" doc:"Skill the agent runs for this issue"`
 	SortOrder    int64      `json:"sort_order"`
 	AgentSeconds int64      `json:"agent_seconds" doc:"Time an agent has banked on the issue"`
+	AIInputTokens  int64    `json:"ai_input_tokens" doc:"Input tokens agents reported on this issue"`
+	AIOutputTokens int64    `json:"ai_output_tokens"`
+	AICacheTokens  int64    `json:"ai_cache_tokens" doc:"Cache read + write tokens"`
+	AICostMinor    int64    `json:"ai_cost_minor" doc:"What the AI work on this issue cost, in minor units"`
+	AICurrency     string   `json:"ai_currency"`
 	CommentCount int64      `json:"comment_count"`
 	StartedAt    *time.Time `json:"started_at"`
 	FinishedAt   *time.Time `json:"finished_at"`
@@ -116,6 +121,8 @@ type IssueDetail struct {
 // IssueList is the body of GET /api/w/issues.
 type IssueList struct {
 	Issues []Issue `json:"issues"`
+	// ColumnTotals (with per_column): how many items each board column holds in all.
+	ColumnTotals map[string]int `json:"column_totals,omitempty"`
 }
 
 // Priorities is the issue priority allowlist (the MCP tools' enum).
@@ -144,6 +151,7 @@ func toIssue(r *Report) Issue {
 		ConsoleLog: r.ConsoleLog, NetworkLog: r.NetworkLog, Viewport: r.Viewport,
 		UserAgent: r.UserAgent, ReporterID: r.ReporterID, ProjectID: r.ProjectID, Source: r.Source,
 		HumanOnly: r.HumanOnly, AIModel: r.AIModel, AIEffort: r.AIEffort, Agent: r.Agent, Skill: r.Skill, SortOrder: r.SortOrder, AgentSeconds: r.AgentSeconds,
+		AIInputTokens: r.AIInputTokens, AIOutputTokens: r.AIOutputTokens, AICacheTokens: r.AICacheTokens, AICostMinor: r.AICostMinor, AICurrency: r.AICurrency,
 		StartedAt: r.StartedAt, FinishedAt: r.FinishedAt, ClosedAt: r.ClosedAt,
 		CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, RequestState: r.RequestState,
 	}
@@ -185,6 +193,7 @@ func (h *issueRoutes) mount() {
 		Project          string `query:"project" doc:"Project id or name (must be visible to you)"`
 		IncludeHumanOnly bool   `query:"include_human_only" default:"true" doc:"Include issues marked human-only"`
 		IncludeBoard     bool   `query:"include_board" doc:"Also list items created on the project board (the board shows everything; the issue queue only what was filed as an issue)"`
+		PerColumn        int    `query:"per_column" minimum:"0" maximum:"500" doc:"With project: only the first N items of each board column, plus column_totals (the board's paging)"`
 	}) (*work.Resp[IssueList], error) {
 		s, err := h.reader(ctx)
 		if err != nil {
@@ -194,10 +203,29 @@ func (h *issueRoutes) mount() {
 		if err != nil {
 			return nil, err
 		}
-		rows, err := List(ctx, h.db, s.WorkspaceID, Filter{
-			Status: in.Status, State: in.State, IssueType: in.Type, Q: in.Q,
+		f := Filter{
+			Status: in.Status, State: in.State, IssueType: in.Type, Q: in.Q, Priority: in.Priority,
 			ProjectID: projectID, HideHumanOnly: !in.IncludeHumanOnly, IncludeBoard: in.IncludeBoard, Limit: 500,
-		})
+		}
+		if in.PerColumn > 0 && projectID != "" {
+			page, err := ListBoard(ctx, h.db, s.WorkspaceID, f, in.PerColumn)
+			if err != nil {
+				return nil, h.fail(err)
+			}
+			counts, err := h.commentCounts(ctx, s.WorkspaceID, page.Reports)
+			if err != nil {
+				return nil, h.fail(err)
+			}
+			out := IssueList{Issues: make([]Issue, 0, len(page.Reports)), ColumnTotals: page.Totals}
+			for _, rep := range page.Reports {
+				i := toIssue(rep)
+				i.CommentCount = counts[rep.ID]
+				i.ColumnID = page.Column[rep.Key]
+				out.Issues = append(out.Issues, i)
+			}
+			return &work.Resp[IssueList]{Body: out}, nil
+		}
+		rows, err := List(ctx, h.db, s.WorkspaceID, f)
 		if err != nil {
 			return nil, h.fail(err)
 		}
@@ -220,9 +248,6 @@ func (h *issueRoutes) mount() {
 		}
 		out := IssueList{Issues: make([]Issue, 0, len(rows))}
 		for _, rep := range rows {
-			if in.Priority != "" && rep.Priority != in.Priority {
-				continue
-			}
 			i := toIssue(rep)
 			i.CommentCount = counts[rep.ID]
 			i.ColumnID = columns[rep.Key]

@@ -4,9 +4,11 @@ import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useSWRConfig } from "swr"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Button, Field, FieldDescription, FieldLabel, Input } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
+
+
+
 import { api, ApiError, type WorkspaceSummary } from "@/lib/api"
 import { useTranslations } from "@/lib/i18n"
 
@@ -48,7 +50,7 @@ export function CreateWorkspaceForm({ onCreated, autoFocus }: { onCreated?: () =
 
   return (
     <form onSubmit={onSubmit} noValidate>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="ws-name">{t("workspaces.name")}</FieldLabel>
           <Input
@@ -63,7 +65,7 @@ export function CreateWorkspaceForm({ onCreated, autoFocus }: { onCreated?: () =
         </Field>
         <Field data-invalid={!!error || undefined}>
           <FieldLabel htmlFor="ws-slug">
-            {t("workspaces.slug")} <span className="font-normal text-grid-muted">({t("common.optional")})</span>
+            {t("workspaces.slug")} <span className="font-normal text-muted-foreground">({t("common.optional")})</span>
           </FieldLabel>
           <Input
             id="ws-slug"
@@ -75,14 +77,14 @@ export function CreateWorkspaceForm({ onCreated, autoFocus }: { onCreated?: () =
             pattern="[a-z0-9-]{3,40}"
           />
           <FieldDescription>{t("workspaces.slugHint")}</FieldDescription>
-          {error ? <FieldError>{error}</FieldError> : null}
+          {error ? <FormError>{error}</FormError> : null}
         </Field>
         <div>
-          <Button type="submit" disabled={busy || !name.trim()}>
+          <Button variant="primary" type="submit" disabled={busy || !name.trim()}>
             {busy ? t("common.working") : t("workspaces.create")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

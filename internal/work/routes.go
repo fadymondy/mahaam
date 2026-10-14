@@ -44,6 +44,7 @@ func Register(api huma.API, a *app.App) {
 	r.monitorKeys()   // per-project backend error-monitoring DSN keys
 	r.sync()          // delta sync for offline clients: rows + tombstones since a cursor
 	r.widgets()       // MH-355: project progress + the running timer, for home-screen widgets
+	r.viewAs()        // MH-1159: owners/admins view the workspace as a member (read-only)
 }
 
 type routes struct {
@@ -258,6 +259,9 @@ func (r routes) projects() {
 	}) (*ProjectDetail, error) {
 		return r.sv.SetProjectArchived(ctx, in.Project, false)
 	})
+	do(r, http.MethodGet, "/api/w/people", "w-people", "People on the projects you can see (the directory of a customer, who cannot list members)", tag, 0, func(ctx context.Context, _ *WS) (*PeopleList, error) {
+		return r.sv.People(ctx)
+	})
 	do(r, http.MethodPut, "/api/w/projects/{project}/members/{user}", "w-put-project-member", "Add a member to a project (or change their role)", tag, 0, func(ctx context.Context, in *struct {
 		WS
 		ProjectRef
@@ -369,6 +373,9 @@ func (r routes) tasks() {
 		list, err := r.sv.ListTasks(ctx, TaskFilter{ProjectID: in.Project, StatusID: in.Status, Category: in.Category,
 			AssigneeID: in.Assignee, LabelID: in.Label, Q: in.Q, Limit: in.Limit})
 		return TaskList{Tasks: list}, err
+	})
+	do(r, http.MethodGet, "/api/w/overview", "w-overview", "Home dashboard aggregates: overdue, completed, tasks needing attention, project members", tag, 0, func(ctx context.Context, _ *WS) (*Overview, error) {
+		return r.sv.Overview(ctx)
 	})
 	do(r, http.MethodGet, "/api/w/tasks/{task}", "w-get-task", "One task in full", tag, 0, func(ctx context.Context, in *struct {
 		WS

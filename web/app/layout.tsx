@@ -1,5 +1,6 @@
 import { headers } from "next/headers"
 import type { Metadata, Viewport } from "next"
+import { nasaqThemeScript } from "@fadymondy/nasaq/web"
 
 import "./globals.css"
 import { Providers } from "@/components/providers"
@@ -41,9 +42,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={locale}
       dir={dirForLocale(locale)}
       data-brand="mahaam"
-      className="grid-surface"
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: nasaqThemeScript("system") }} />
+      </head>
       <body className="min-h-dvh" suppressHydrationWarning>
         <Providers locale={locale}>{children}</Providers>
         <PwaRegister />

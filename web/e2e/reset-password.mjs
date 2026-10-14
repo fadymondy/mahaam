@@ -81,6 +81,7 @@ try {
   await ctx.clearCookies()
   await page.goto(`${WEB}/en/login`, { waitUntil: "load" })
   await page.getByLabel("Email").fill(email)
+  await page.getByRole("button", { name: "Continue" }).click()
   await page.getByLabel("Password").fill("old-password-1")
   await page.getByRole("button", { name: "Sign in" }).click()
   await page.getByText(/don't match an account/).waitFor()

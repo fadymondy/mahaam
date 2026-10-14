@@ -5,12 +5,14 @@
 // New entries send date + HH:MM and the server places them (an end at or before the start is the
 // next day); edits send exact instants computed here in the workspace timezone (DST-safe).
 import { useState, type FormEvent } from "react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
+import { FormError, FormHint } from "@/components/form-text"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
+import { Button, Field, FieldDescription, FieldLabel, Input, Switch } from "@fadymondy/nasaq/web"
+
+
+
+
 import { TargetPicker, targetBody, type Target } from "@/components/time/targets"
 import { DateField } from "@/components/work/fields"
 import { useWorkspace } from "@/components/workspace/workspace-context"
@@ -96,7 +98,7 @@ export function EntryForm({
 
   return (
     <form onSubmit={submit} noValidate data-entry-form={entry ? "edit" : "add"}>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="te-desc">{t("time.description")}</FieldLabel>
           <Input id="te-desc" dir="auto" autoFocus value={desc} placeholder={t("time.descriptionPlaceholder")} onChange={(e) => setDesc(e.target.value)} />
@@ -120,18 +122,18 @@ export function EntryForm({
             {running ? <FieldDescription>{t("time.stopFirst")}</FieldDescription> : null}
           </Field>
         </div>
-        <FieldDescription>{t(entry ? "time.editHint" : "time.addHint", { tz })}</FieldDescription>
-        <label className="flex items-center gap-2 text-sm text-grid-body">
+        <FormHint>{t(entry ? "time.editHint" : "time.addHint", { tz })}</FormHint>
+        <label className="flex items-center gap-2 text-sm text-nq-fg-body">
           <Switch checked={billable ?? false} onCheckedChange={(v) => setBillable(v)} />
           {t("time.billable")}
         </label>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("time.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }

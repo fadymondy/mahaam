@@ -5,26 +5,19 @@
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { BookmarkIcon, BookmarkPlusIcon, PencilIcon, Share2Icon, Trash2Icon, UsersIcon } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@fadymondy/nasaq/web"
+import { FormError } from "@/components/form-text"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Switch } from "@/components/ui/switch"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Field, FieldDescription, FieldLabel, Input, Popover, PopoverContent, PopoverTrigger, Switch, TooltipRoot, TooltipContent, TooltipTrigger } from "@fadymondy/nasaq/web"
+
+
+
+
+
+
+
+
+
 import { useWorkspace } from "@/components/workspace/workspace-context"
 import { useTranslations } from "@/lib/i18n"
 import { cleanFilters, reportsApi, useSavedReports, type Filters, type ReportKind, type SavedReport } from "@/lib/reports"
@@ -78,13 +71,13 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
       <button
         type="button"
         onClick={() => openView(v)}
-        className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-start text-sm hover:bg-grid-soft"
+        className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-start text-sm hover:bg-muted"
         data-open-view={v.id}
       >
         <span className="min-w-0 flex-1 truncate" dir="auto">
           {v.name}
         </span>
-        <span className="shrink-0 text-xs text-grid-muted">{t(`saved.kind.${v.kind}`)}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">{t(`saved.kind.${v.kind}`)}</span>
         {v.shared ? (
           <Badge variant="outline" className="shrink-0 gap-1">
             <UsersIcon />
@@ -95,7 +88,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
       {v.mine ? (
         <span className="flex shrink-0 items-center">
           {canShare ? (
-            <Tooltip>
+            <TooltipRoot>
               <TooltipTrigger
                 render={
                   <Button
@@ -111,7 +104,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
                 <Share2Icon />
               </TooltipTrigger>
               <TooltipContent>{v.shared ? t("saved.unshare") : t("saved.makeShared")}</TooltipContent>
-            </Tooltip>
+            </TooltipRoot>
           ) : null}
           <Button variant="ghost" size="icon-sm" aria-label={t("saved.rename")} onClick={() => setDialog({ mode: "rename", view: v })} data-rename-view={v.id}>
             <PencilIcon />
@@ -127,15 +120,15 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger render={<Button variant="outline" data-saved-views />}>
+        <PopoverTrigger render={<Button variant="secondary" data-saved-views />}>
           <BookmarkIcon />
           {t("saved.open")}
-          {views.length ? <span className="text-grid-muted tabular-nums">({views.length})</span> : null}
+          {views.length ? <span className="text-muted-foreground tabular-nums">({views.length})</span> : null}
         </PopoverTrigger>
         <PopoverContent align="end" className="w-96 max-w-[calc(100vw-2rem)] gap-0 p-0" data-saved-list>
-          <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
             <p className="text-sm font-medium">{t("saved.title")}</p>
-            <Button
+            <Button variant="primary"
               size="sm"
               onClick={() => {
                 setOpen(false)
@@ -148,18 +141,18 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
             </Button>
           </div>
           {views.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-grid-muted">{t("saved.empty")}</p>
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">{t("saved.empty")}</p>
           ) : (
             <div className="max-h-96 overflow-y-auto py-1">
               {mine.length ? (
                 <>
-                  <p className="grid-micro px-4 pt-2 pb-1">{t("saved.mine")}</p>
+                  <p className="text-eyebrow uppercase px-4 pt-2 pb-1">{t("saved.mine")}</p>
                   <ul>{mine.map(row)}</ul>
                 </>
               ) : null}
               {others.length ? (
                 <>
-                  <p className="grid-micro px-4 pt-2 pb-1">{t("saved.fromOthers")}</p>
+                  <p className="text-eyebrow uppercase px-4 pt-2 pb-1">{t("saved.fromOthers")}</p>
                   <ul>{others.map(row)}</ul>
                 </>
               ) : null}
@@ -203,7 +196,7 @@ export function SavedViews({ kind, filters, base }: { kind: ReportKind; filters:
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={remove} data-confirm-delete-view>
+            <AlertDialogAction variant="danger" onClick={remove} data-confirm-delete-view>
               {t("saved.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -244,27 +237,27 @@ function ViewForm({
 
   return (
     <form onSubmit={submit} noValidate data-view-form>
-      <FieldGroup>
+      <div className="flex flex-col gap-4">
         <Field>
           <FieldLabel htmlFor="sv-name">{t("saved.name")}</FieldLabel>
           <Input id="sv-name" dir="auto" autoFocus maxLength={120} value={name} placeholder={t("saved.namePlaceholder")} onChange={(e) => setName(e.target.value)} />
         </Field>
         {canShare ? (
           <Field>
-            <label className="flex items-center justify-between gap-4 text-sm text-grid-body">
+            <label className="flex items-center justify-between gap-4 text-sm text-nq-fg-body">
               <span>{t("saved.share")}</span>
               <Switch checked={shared} onCheckedChange={setShared} data-view-shared />
             </label>
             <FieldDescription>{t("saved.shareHint")}</FieldDescription>
           </Field>
         ) : null}
-        {error ? <FieldError>{error}</FieldError> : null}
+        {error ? <FormError>{error}</FormError> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? t("common.working") : t("common.save")}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }
