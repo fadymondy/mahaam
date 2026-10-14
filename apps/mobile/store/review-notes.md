@@ -21,10 +21,17 @@ To review both experiences, please sign in with these accounts. Two-step verific
 Other things you may want to check:
 - Create account: Sign in → "Create account". A new account verifies its email with a code. It
   can then create its own workspace ("Create a workspace") or wait for an invitation.
-- Sign in with Apple, Google or GitHub are on the sign-in screen. Google and GitHub open in the
-  system browser.
+- Sign in with Apple, Google and GitHub are under the email form on both the sign-in and the
+  "Create account" screen. On iPhone, "Continue with Apple" is Apple's native button, shown first
+  and the same size as the others; Google and GitHub open in the system browser
+  (ASWebAuthenticationSession), never in an in-app web view. On Android, Apple, Google and GitHub
+  all open in the system browser (Custom Tabs).
+- An account made with Apple, Google or GitHub has no password: to delete it (or other sensitive
+  changes) the app emails a 6-digit code to the account's address instead.
 - Account deletion: profile (the gear at the top of any tab) → Delete account. Deletion is
   immediate for sign-in and completes after 14 days. Signing in again within 14 days cancels it.
+  For an account that used Sign in with Apple, deleting it also revokes the app's Sign in with
+  Apple authorization (Apple's token revocation endpoint).
 - There are no purchases in the app. Workspaces are billed on the web by their owners, and the app
   does not link to billing.
 - Camera and photos are only used to attach images to issues and requests. Face ID is only used to
@@ -33,6 +40,17 @@ Other things you may want to check:
 Support: info@3x1.io · https://console.mahaam.app/en/support
 
 ---
+
+## Before submitting (owner)
+
+The buttons only show what the server has configured (GET /api/auth/methods):
+
+- Apple on iPhone needs nothing on the server (bundle id `com.fadymondy.mahaam`). Apple on Android
+  and the web needs `APPLE_SERVICES_ID`; revocation on deletion needs `APPLE_TEAM_ID`,
+  `APPLE_KEY_ID` and `APPLE_PRIVATE_KEY` (see `.env.example`). Without the key, say nothing about
+  revocation above (delete the last sentence of the deletion bullet).
+- Google and GitHub need `OAUTH_GOOGLE_*` / `OAUTH_GITHUB_*`. If they are off, Apple is the only
+  provider button on iPhone and none shows on Android — update the bullet above to match.
 
 ## The demo accounts (owner, on production)
 

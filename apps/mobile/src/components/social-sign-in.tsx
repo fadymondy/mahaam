@@ -1,16 +1,17 @@
-// "Continue with Apple / Google / GitHub" on the sign-in screen (lib/social.ts does the work).
-// Apple's own button on iOS (its guidelines want theirs), the server's OAuth providers as outlined
-// buttons under it; nothing at all when neither is available (a self-hosted server without OAuth).
+// "Continue with Apple / Google / GitHub" on the sign-in and sign-up screen (lib/social.ts does the
+// work), only for the providers GET /api/auth/methods lists. Apple comes first and as large as the
+// others (App Store 4.8): Apple's own native button on iOS, an Apple-styled button running the web
+// flow in the system browser on Android. Nothing at all when the server lists none.
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { useErrorText } from "@/components/kit";
 import { AppText, fonts, useColors, usePrefs } from "@/grid";
 import { useI18n } from "@/i18n";
 import { useSession } from "@/lib/session";
-import { appleAvailable, providers, signInWithApple, signInWithBrowser, type Provider } from "@/lib/social";
+import { appleAvailable, providers, signInWithApple, signInWithBrowser, visibleProviders, type Provider } from "@/lib/social";
 import { fs } from "@/lib/type-scale";
 
 function GoogleMark({ size = 18 }: { size?: number }) {
@@ -35,22 +36,35 @@ function GitHubMark({ size = 18, color }: { size?: number; color: string }) {
   );
 }
 
+function AppleMark({ size = 18, color }: { size?: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 384 512">
+      <Path
+        fill={color}
+        d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"
+      />
+    </Svg>
+  );
+}
+
 export function SocialSignIn({ onMfa, disabled }: { onMfa: (challenge: string) => void; disabled?: boolean }) {
   const { t, locale } = useI18n();
   const c = useColors();
   const { theme } = usePrefs();
+  const dark = theme === "dark";
   const errText = useErrorText();
   const { signInSocial } = useSession();
-  const [apple, setApple] = useState(false);
-  const [list, setList] = useState<Provider[]>([]);
+  const [nativeApple, setNativeApple] = useState(false);
+  const [all, setAll] = useState<Provider[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void appleAvailable().then(setApple);
-    void providers().then(setList);
+    void appleAvailable().then(setNativeApple);
+    void providers().then(setAll);
   }, []);
 
+  const { appleNative: apple, browser: list } = visibleProviders(all, Platform.OS, nativeApple);
   if (!apple && !list.length) return null;
 
   const run = async (key: string, fn: () => Promise<Awaited<ReturnType<typeof signInWithApple>>>) => {
@@ -77,7 +91,7 @@ export function SocialSignIn({ onMfa, disabled }: { onMfa: (challenge: string) =
       {apple ? (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-          buttonStyle={theme === "dark" ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
           cornerRadius={10}
           style={{ height: 48, width: "100%", opacity: busy && busy !== "apple" ? 0.5 : 1 }}
           onPress={() => void run("apple", () => signInWithApple(locale))}
@@ -90,16 +104,26 @@ export function SocialSignIn({ onMfa, disabled }: { onMfa: (challenge: string) =
           accessibilityLabel={t("auth.continueWith", { provider: p.label })}
           disabled={!!busy || disabled}
           onPress={() => void run(p.name, () => signInWithBrowser(p, locale))}
-          style={({ pressed }) => [styles.provider, { borderColor: c.line, backgroundColor: pressed ? c.soft : c.card, opacity: busy && busy !== p.name ? 0.5 : 1 }]}
+          style={({ pressed }) => [
+            styles.provider,
+            p.name === "apple"
+              ? // Apple's own look (black, white in dark mode), as on iOS.
+                { borderColor: dark ? "#fff" : "#000", backgroundColor: dark ? "#fff" : "#000", opacity: pressed ? 0.85 : busy && busy !== p.name ? 0.5 : 1 }
+              : { borderColor: c.line, backgroundColor: pressed ? c.soft : c.card, opacity: busy && busy !== p.name ? 0.5 : 1 },
+          ]}
           testID={`sign-in-${p.name}`}>
           {busy === p.name ? (
             <ActivityIndicator color={c.muted} />
+          ) : p.name === "apple" ? (
+            <AppleMark color={dark ? "#000" : "#fff"} />
           ) : p.name === "google" ? (
             <GoogleMark />
           ) : p.name === "github" ? (
             <GitHubMark color={c.fg} />
           ) : null}
-          <AppText style={{ fontFamily: fonts.medium, fontSize: fs.body, color: c.fg }}>{t("auth.continueWith", { provider: p.label })}</AppText>
+          <AppText style={{ fontFamily: fonts.medium, fontSize: fs.body, color: p.name === "apple" ? (dark ? "#000" : "#fff") : c.fg }}>
+            {t("auth.continueWith", { provider: p.label })}
+          </AppText>
         </Pressable>
       ))}
       {error ? <AppText style={{ fontFamily: fonts.regular, fontSize: fs.meta, color: c.dangerText }}>{error}</AppText> : null}

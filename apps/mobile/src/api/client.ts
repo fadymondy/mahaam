@@ -194,9 +194,10 @@ export class MahaamClient {
    * Sign in with Apple (iOS): the identity token Apple gave the app and the RAW nonce whose SHA-256
    * the app passed to Apple (the server checks token.nonce == sha256hex(raw)). Apple sends the name
    * only the first time. A new Apple ID becomes a passwordless account; one with two-factor on
-   * answers mfa_required like a password sign-in.
+   * answers mfa_required like a password sign-in. authorization_code lets the server revoke the
+   * Sign in with Apple grant when the account is deleted.
    */
-  async appleSignIn(input: { identity_token: string; nonce: string; name?: { given?: string; family?: string }; locale?: string }): Promise<User> {
+  async appleSignIn(input: { identity_token: string; nonce: string; name?: { given?: string; family?: string }; locale?: string; authorization_code?: string }): Promise<User> {
     let out: { token: string; user?: User; access_token?: string };
     try {
       out = (await this.authPost("/api/auth/apple", { ...input, device_name: this.o.deviceName ?? "Mahaam mobile" })) as typeof out;

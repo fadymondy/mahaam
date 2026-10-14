@@ -1,7 +1,9 @@
 // Sign in / create account, on the grid's sign-in shapes, with the second step for accounts that
 // have two-factor on (an authenticator code, or one of the recovery codes). This is the app's root
 // when signed out, so it has no back button: the mark, the product name and one line of intro head
-// it instead. Registering continues to the email code (verify-email).
+// it instead. Registering continues to the email code (verify-email). Apple / Google / GitHub
+// (components/social-sign-in.tsx) sit under the form in both modes; a provider sign-in on an account
+// with two-factor on comes to the same second step.
 import * as WebBrowser from "expo-web-browser";
 import { Redirect, router } from "expo-router";
 import { KeyRound, Lock, Mail, ShieldCheck, User, UserPlus } from "lucide-react-native";
@@ -10,6 +12,7 @@ import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 
 import { ApiError } from "@/api/client";
 import { useErrorText } from "@/components/kit";
+import { SocialSignIn } from "@/components/social-sign-in";
 import {
   AppText,
   Checkbox,
@@ -221,6 +224,16 @@ export default function SignIn() {
                 onPress={() => void submit()}
               />
               {!up ? <TextButton label={t("auth.forgot")} onPress={() => router.push({ pathname: "/forgot", params: { email } })} /> : null}
+              <SocialSignIn
+                disabled={busy}
+                onMfa={(mfa) => {
+                  setChallenge(mfa);
+                  setCode("");
+                  setRecovery(false);
+                  setError(null);
+                  setMode("mfa");
+                }}
+              />
             </Row>
           )}
 
