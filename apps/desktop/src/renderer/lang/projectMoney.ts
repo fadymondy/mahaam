@@ -7,9 +7,8 @@ export const en: Record<string, string> = {
   "projectMoney.delete": "Delete",
   "projectMoney.failed": "Something went wrong. Try again.",
   "projectMoney.loading": "Loading…",
-  "projectMoney.plan.title": "Not on your plan",
-  "projectMoney.plan.body": "Your workspace's plan doesn't include this feature. An owner can upgrade the plan on the web.",
-  "projectMoney.plan.upgrade": "See plans",
+  "projectMoney.plan.title": "Not available",
+  "projectMoney.plan.body": "This isn't available in this workspace right now. Ask a workspace owner.",
   "projectMoney.noAccess.title": "You can't see this",
   "projectMoney.noAccess.body": "Your role in this workspace doesn't include this. Ask a manager or an admin.",
 
@@ -143,9 +142,8 @@ export const ar: Record<string, string> = {
   "projectMoney.delete": "حذف",
   "projectMoney.failed": "حدث خطأ. حاول مرة أخرى.",
   "projectMoney.loading": "جارٍ التحميل…",
-  "projectMoney.plan.title": "غير متاح في خطتك",
-  "projectMoney.plan.body": "خطة مساحة العمل لا تشمل هذه الميزة. يمكن للمالك ترقية الخطة من الويب.",
-  "projectMoney.plan.upgrade": "عرض الخطط",
+  "projectMoney.plan.title": "غير متاح",
+  "projectMoney.plan.body": "هذا غير متاح في مساحة العمل الآن. اسأل مالك مساحة العمل.",
   "projectMoney.noAccess.title": "لا يمكنك رؤية هذا",
   "projectMoney.noAccess.body": "دورك في مساحة العمل لا يشمل هذا. اطلب من مدير أو مسؤول.",
 

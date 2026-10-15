@@ -139,7 +139,7 @@ func tokenSource(cfg circlexo.Config) (circlexo.TokenSource, error) {
 	if err != nil {
 		return nil, err
 	}
-	return service.NewSource(c, "billing.entitlements", "billing.usage", "orgs.read", "tenants.read", "tenants.write"), nil
+	return service.NewSource(c, "billing.entitlements", "orgs.read", "tenants.read", "tenants.write"), nil
 }
 
 // sessionKey turns CIRCLEXO_SESSION_KEY into the 32 bytes the OIDC state cookie is sealed with.

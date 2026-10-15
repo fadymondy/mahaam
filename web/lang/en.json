@@ -433,7 +433,7 @@
   "auth.circlexoError.suspended": "This account is suspended.",
   "auth.circlexoError.unavailable": "Sign in with CircleXO is unavailable right now. Please try again shortly.",
   "auth.signInCircleXO": "Sign in with CircleXO",
-  "plan.hubBilling": "Billing for this workspace is managed in CircleXO.",
+  "plan.hubBilling": "This workspace is linked to CircleXO, which is free too. Open it to cancel a subscription from before.",
   "plan.hubBillingOpen": "Manage billing in CircleXO",
   "viewAs.action": "View as",
   "viewAs.banner": "Viewing as {email} ({role}). Read-only: changes are off.",

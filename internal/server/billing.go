@@ -12,7 +12,8 @@ import (
 	"github.com/fadymondy/mahaam/internal/billing/polar"
 )
 
-// JobPolarBilling pushes overage usage to Polar and ends canceled subscriptions at period end.
+// JobPolarBilling ends canceled legacy subscriptions at period end. Nothing is charged any more
+// (free and open source since 2026-10-15), so no usage is pushed to Polar.
 const JobPolarBilling = "mahaam.billing.polar"
 
 // installBilling mounts the PUBLIC Polar webhook (guard allowlist; the signature authenticates it)
@@ -27,15 +28,7 @@ func installBilling(k *togo.Kernel, a *app.App) {
 		} else if n > 0 {
 			a.Log.Info("billing: canceled subscriptions ended, back on free", "workspaces", n)
 		}
-		c, err := polar.FromEnv()
-		if err != nil {
-			return nil // not configured: nothing to push
-		}
-		n, err := polar.PushUsage(ctx, a.SysDB, c, now)
-		if n > 0 {
-			a.Log.Info("billing: usage pushed to Polar", "events", n)
-		}
-		return err
+		return nil
 	})
 	if s, ok := scheduler.FromKernel(k); ok {
 		if err := s.Schedule(JobPolarBilling, scheduler.EveryFifteenMin); err != nil {

@@ -19,7 +19,7 @@ const en = {
     passwordShort: "Choose a longer password (at least 8 characters).",
     emailTaken: "That email address is already used by another account.",
     suspended: "This account is suspended. Contact your workspace admin or support.",
-    planLimit: "This workspace has reached its plan limit. Contact the workspace owner.",
+    planLimit: "This workspace can't add more right now. Contact the workspace owner.",
     empty: "Nothing here yet.",
     open: "Open",
     back: "Back",
