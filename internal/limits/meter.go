@@ -10,10 +10,11 @@ import (
 The API meter: every workspace-tier REST call and every user MCP call is counted per workspace.
 
   - api_rate_per_minute: a fixed one-minute window per workspace, in memory (per process), always
-    a hard cap → 429.
+    a hard cap → 429. It is abuse protection, the same for everyone (AbuseRatePerMinute), not a
+    plan.
   - api_calls_per_month: counted in memory and flushed to workspace_usage.api_calls every minute
-    (one UPSERT per active workspace, not one per call). A block policy refuses once the flushed
-    count + what is pending reaches the limit → 402; an overage policy lets the call through.
+    (one UPSERT per active workspace, not one per call) for reports only. It never refuses: Mahaam
+    is free and open source, so the per-minute rate (abuse protection) is the only cap.
 
 A refused call is not counted.
 */
@@ -67,45 +68,22 @@ func pendingCalls(ws string) int64 {
 	return meter.pending[ws]
 }
 
-// CountCall meters one API call for ws, refusing it when the plan's rate or a block-policy
-// monthly quota is exhausted.
+// AbuseRatePerMinute is the one API-call cap left: per workspace, per minute, the same for every
+// workspace. It is high enough that no person or agent working normally ever meets it.
+const AbuseRatePerMinute = 600
+
+// CountCall counts one API call for ws, refusing it only when the per-minute rate (abuse
+// protection) is exhausted. There is no monthly quota.
 func CountCall(ctx context.Context, ws string) error {
 	e, err := For(ctx, ws)
 	if err != nil || e == nil {
 		return err
 	}
-	rate, month := e.Rule(APIRateMinute), e.Rule(APICallsMonth)
-
-	// The flushed base is read outside the lock (a DB round trip), once per workspace per month.
-	needBase := false
-	if month.Limit != nil && month.Policy == Block {
-		meter.mu.Lock()
-		meter.roll()
-		_, have := meter.base[ws]
-		meter.mu.Unlock()
-		needBase = !have
-	}
-	if needBase {
-		var n int64
-		if db := pool(); db != nil {
-			_ = db.QueryRowContext(ctx, `SELECT COALESCE((SELECT api_calls FROM workspace_usage WHERE workspace_id = $1 AND period = $2), 0)`,
-				ws, PeriodOf(now())).Scan(&n)
-		}
-		meter.mu.Lock()
-		if _, have := meter.base[ws]; !have {
-			meter.base[ws] = n
-		}
-		meter.mu.Unlock()
-	}
-
 	meter.mu.Lock()
 	defer meter.mu.Unlock()
 	meter.roll()
-	if rate.Limit != nil && int64(meter.perMin[ws]) >= *rate.Limit {
-		return limitError(e, APIRateMinute, *rate.Limit)
-	}
-	if month.Limit != nil && month.Policy == Block && meter.base[ws]+meter.pending[ws] >= *month.Limit {
-		return limitError(e, APICallsMonth, *month.Limit)
+	if meter.perMin[ws] >= AbuseRatePerMinute {
+		return limitError(e, APIRateMinute, AbuseRatePerMinute)
 	}
 	meter.perMin[ws]++
 	meter.pending[ws]++

@@ -190,26 +190,23 @@ func TestPolarBilling(t *testing.T) {
 	if _, err := a.SysDB.Exec(`INSERT INTO workspace_members (workspace_id, user_id, role, status) VALUES ($1, $2, 'member', 'active')`, wsID, mateID); err != nil {
 		t.Fatal(err)
 	}
+	// Free and open source: nothing is offered and the checkout is gone (410); the portal stays so a
+	// legacy subscriber can cancel.
 	bill := owner.must("GET", "/api/w/billing", nil, 200)
-	if bill["configured"] != true {
-		t.Errorf("billing configured: %v", bill)
+	if bill["configured"] != false || len(bill["plans"].([]any)) != 0 {
+		t.Errorf("billing must offer nothing: %v", bill)
 	}
-	url := owner.must("POST", "/api/w/billing/checkout", map[string]string{"plan": "pro", "locale": "ar"}, 200)["url"].(string)
-	if !strings.HasPrefix(url, "https://polar.test/checkout/") {
-		t.Errorf("checkout url: %s", url)
+	before := fake.count("POST /v1/checkouts/")
+	if code, _ := owner.do("POST", "/api/w/billing/checkout", map[string]string{"plan": "pro", "locale": "ar"}); code != 410 {
+		t.Errorf("checkout must be retired: %d", code)
 	}
-	cb := fake.last("POST /v1/checkouts/")
-	if cb["external_customer_id"] != wsID || cb["customer_email"] != ownerEmail ||
-		cb["success_url"] != "https://app.test/ar/w/"+slug+"/settings/plan?paid=1" ||
-		fmt.Sprint(cb["products"]) != "["+proID+"]" || cb["metadata"].(map[string]any)["plan"] != "pro" {
-		t.Errorf("checkout request: %v", cb)
+	if fake.count("POST /v1/checkouts/") != before {
+		t.Errorf("a retired checkout reached Polar")
 	}
 	if code, _ := mate.do("POST", "/api/w/billing/checkout", map[string]string{"plan": "pro"}); code != 403 {
 		t.Errorf("a member must not start a checkout: %d", code)
 	}
-	if code, _ := owner.do("POST", "/api/w/billing/checkout", map[string]string{"plan": "free"}); code != 422 {
-		t.Errorf("free cannot be bought: %d", code)
-	}
+	_, _ = ownerEmail, slug
 	owner.must("POST", "/api/w/billing/portal", nil, 200)
 
 	// 3. Webhooks.
@@ -278,50 +275,9 @@ func TestPolarBilling(t *testing.T) {
 		t.Errorf("revoked: %s %s", p, s)
 	}
 
-	// 4. Usage push: pro allows 20 projects with overage at 2.00 each.
-	send("msg_"+rnd(), map[string]any{"type": "subscription.active", "data": sub("active", false)}, "polar_whs_test-secret")
-	if _, err := a.SysDB.Exec(`UPDATE workspaces SET plan_overrides = '{"limits": {"projects": {"limit": 1, "policy": "overage", "unit_price_minor": 200, "unit_size": 1}}}' WHERE id = $1`, wsID); err != nil {
-		t.Fatal(err)
-	}
+	// No usage push: nothing is charged, so no overage is ever sent to Polar (the billing job no
+	// longer calls polar.PushUsage), and limits never refuse a legacy "pro" workspace's projects.
 	for i := 0; i < 3; i++ {
 		owner.must("POST", "/api/w/projects", map[string]any{"name": fmt.Sprintf("B%d %s", i, rnd())}, 201)
 	}
-	events := func() []map[string]any {
-		var out []map[string]any
-		for _, e := range fake.last("POST /v1/events/ingest")["events"].([]any) {
-			if m := e.(map[string]any); m["external_customer_id"] == wsID {
-				out = append(out, m)
-			}
-		}
-		return out
-	}
-	before := fake.count("POST /v1/events/ingest")
-	if _, err := polar.PushUsage(ctx, a.SysDB, c, time.Now()); err != nil {
-		t.Fatal(err)
-	}
-	ev := events()
-	if len(ev) != 1 || ev[0]["metadata"].(map[string]any)["units"] != float64(2) || ev[0]["metadata"].(map[string]any)["key"] != "projects" {
-		t.Fatalf("first push: %v", ev)
-	}
-	sent := fake.count("POST /v1/events/ingest")
-	if _, err := polar.PushUsage(ctx, a.SysDB, c, time.Now()); err != nil {
-		t.Fatal(err)
-	}
-	if n := fake.count("POST /v1/events/ingest"); n != sent {
-		// Another workspace of an earlier run could still produce events; ours must not repeat.
-		for _, e := range events() {
-			if e["external_id"] == ev[0]["external_id"] {
-				t.Errorf("the same usage was sent twice")
-			}
-		}
-	}
-	owner.must("POST", "/api/w/projects", map[string]any{"name": "B3 " + rnd()}, 201)
-	if _, err := polar.PushUsage(ctx, a.SysDB, c, time.Now()); err != nil {
-		t.Fatal(err)
-	}
-	ev2 := events()
-	if len(ev2) != 1 || ev2[0]["metadata"].(map[string]any)["units"] != float64(1) || ev2[0]["external_id"] == ev[0]["external_id"] {
-		t.Errorf("delta push: %v", ev2)
-	}
-	_ = before
 }

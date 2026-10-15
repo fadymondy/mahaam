@@ -77,92 +77,44 @@ func TestPlatformAdmin(t *testing.T) {
 		t.Errorf("a member must not read the plan: %d", code)
 	}
 
-	// 2. Free = 2 projects, block.
+	// 2. Free and open source (2026-10-15): an admin can still label a workspace "free" and set
+	// overrides (history), but nothing is refused any more: not past the old project limit, not over
+	// MCP, not past the old monthly issue quota, not from the feedback widget.
 	adm.must("PUT", "/api/admin/workspaces/"+slug+"/plan", map[string]string{"plan": "free"}, 200)
-	owner.must("POST", "/api/w/projects", map[string]any{"name": "P1 " + rnd()}, 201)
-	pid := owner.must("POST", "/api/w/projects", map[string]any{"name": "P2 " + rnd()}, 201)["id"].(string)
-	code, b := owner.do("POST", "/api/w/projects", map[string]any{"name": "P3 " + rnd()})
-	if code != 402 || !strings.Contains(string(b), "Your plan (Free) allows 2 projects") {
-		t.Fatalf("3rd project on Free: %d %s", code, b)
+	adm.must("PUT", "/api/admin/workspaces/"+wsID+"/overrides", map[string]any{
+		"limits": map[string]any{
+			"projects":         map[string]any{"limit": 1, "policy": "block"},
+			"issues_per_month": map[string]any{"limit": 1, "policy": "block"},
+		}}, 200)
+	var pid string
+	for i := 0; i < 3; i++ {
+		pid = owner.must("POST", "/api/w/projects", map[string]any{"name": "P " + rnd()}, 201)["id"].(string)
 	}
 	tok := owner.must("POST", "/api/w/mcp_tokens", map[string]any{"name": "agent",
 		"scopes": []string{"projects:write", "projects:read", "issues:write", "issues:read"}}, 201)["plaintext"].(string)
 	agent := newClient(t, srv.URL)
 	agent.bearer = tok
-	if _, text, isErr := mcpCall(agent, "/api/mcp", "create_project", map[string]any{"name": "P3 via MCP"}); !isErr || !strings.Contains(text, "allows 2 projects") {
-		t.Fatalf("MCP create_project past the limit must fail in-band: %v %q", isErr, text)
-	}
-
-	// 3. An override raises it; an overage override allows and prices it.
-	adm.must("PUT", "/api/admin/workspaces/"+wsID+"/overrides", map[string]any{
-		"limits": map[string]any{"projects": map[string]any{"limit": 3, "policy": "block"}}}, 200)
-	owner.must("POST", "/api/w/projects", map[string]any{"name": "P3 " + rnd()}, 201)
-	if code, _ := owner.do("POST", "/api/w/projects", map[string]any{"name": "P4 " + rnd()}); code != 402 {
-		t.Fatalf("override limit 3: 4th project got %d", code)
-	}
-	adm.must("PUT", "/api/admin/workspaces/"+wsID+"/overrides", map[string]any{
-		"limits": map[string]any{
-			"projects":         map[string]any{"limit": 3, "policy": "overage", "unit_price_minor": 250, "unit_size": 1},
-			"issues_per_month": map[string]any{"limit": 1, "policy": "block"},
-		}}, 200)
 	if _, text, isErr := mcpCall(agent, "/api/mcp", "create_project", map[string]any{"name": "P4 via MCP " + rnd()}); isErr {
-		t.Fatalf("overage policy must allow the 4th project over MCP: %q", text)
+		t.Fatalf("MCP create_project must not be refused: %q", text)
 	}
-	usage := owner.must("GET", "/api/w/plan", nil, 200)
-	item := func(r map[string]any, key string) map[string]any {
-		for _, it := range r["items"].([]any) {
-			if m := it.(map[string]any); m["key"] == key {
-				return m
-			}
-		}
-		t.Fatalf("no %s in %v", key, r["items"])
-		return nil
-	}
-	if p := item(usage, "projects"); num(p["usage"]) != 4 || num(p["over"]) != 1 || num(p["overage_minor"]) != 250 || p["overridden"] != true {
-		t.Errorf("overage projects item: %v", p)
-	}
-	if num(usage["estimate_minor"]) != num(usage["base_fee_minor"])+num(usage["overage_minor"]) || num(usage["overage_minor"]) < 250 {
-		t.Errorf("estimate = base + overage: %v", usage)
-	}
-
-	// 4. issues_per_month = 1 (block). Last month's big counter must not count.
 	last := limits.PeriodOf(time.Now()).AddDate(0, -1, 0)
 	if _, err := a.SysDB.Exec(`INSERT INTO workspace_usage (workspace_id, period, issues_created) VALUES ($1, $2, 1000)`, wsID, last); err != nil {
 		t.Fatal(err)
 	}
 	owner.must("POST", "/api/w/issues", map[string]any{"title": "First issue"}, 201)
-	if code, b := owner.do("POST", "/api/w/issues", map[string]any{"title": "Second issue"}); code != 402 || !strings.Contains(string(b), "per month") {
-		t.Fatalf("2nd issue this month: %d %s", code, b)
-	}
-	if _, text, isErr := mcpCall(agent, "/api/mcp", "create_issue", map[string]any{"title": "via MCP"}); !isErr || !strings.Contains(text, "per month") {
-		t.Fatalf("MCP create_issue past the monthly quota: %v %q", isErr, text)
+	owner.must("POST", "/api/w/issues", map[string]any{"title": "Second issue"}, 201)
+	if _, text, isErr := mcpCall(agent, "/api/mcp", "create_issue", map[string]any{"title": "via MCP"}); isErr {
+		t.Fatalf("MCP create_issue must not be refused: %q", text)
 	}
 	pk := owner.must("POST", "/api/w/projects/"+pid+"/feedback-keys",
 		map[string]any{"name": "Site", "allowed_origins": []string{"https://client.test"}}, 201)["public_key"].(string)
-	code, out := postForm(t, srv.URL+"/api/feedback/embed", "https://client.test", map[string]string{"public_key": pk, "title": "From the widget"})
-	if code != 402 || out["code"] != "quota_exceeded" {
-		t.Fatalf("embed past the monthly quota: %d %v", code, out)
-	}
-	hist := adm.must("GET", "/api/admin/workspaces/"+wsID+"/usage?month="+last.Format("2006-01"), nil, 200)
-	if it := item(hist, "issues_per_month"); num(it["usage"]) != 1000 {
-		t.Errorf("last month's counter: %v", it)
-	}
-	if it := item(owner.must("GET", "/api/w/plan", nil, 200), "issues_per_month"); num(it["usage"]) != 1 {
-		t.Errorf("this month's counter (the trigger): %v", it)
-	}
-	// Overage instead of block lets the embed through.
-	adm.must("PUT", "/api/admin/workspaces/"+wsID+"/overrides", map[string]any{
-		"limits": map[string]any{"issues_per_month": map[string]any{"limit": 1, "policy": "overage", "unit_price_minor": 500, "unit_size": 100}}}, 200)
 	if code, out := postForm(t, srv.URL+"/api/feedback/embed", "https://client.test", map[string]string{"public_key": pk, "title": "From the widget"}); code != 201 {
-		t.Fatalf("embed with overage policy: %d %v", code, out)
-	}
-	if it := item(owner.must("GET", "/api/w/plan", nil, 200), "issues_per_month"); num(it["over"]) != 1 || num(it["overage_minor"]) != 500 {
-		t.Errorf("issues overage: %v", it)
+		t.Fatalf("feedback embed must not be refused: %d %v", code, out)
 	}
 
 	// 5. Suspended workspace.
 	adm.must("POST", "/api/admin/workspaces/"+wsID+"/suspend", map[string]string{"reason": "unpaid invoice"}, 200)
-	code, b = owner.do("GET", "/api/w/current", nil)
+	code, b := owner.do("GET", "/api/w/current", nil)
 	if code != 403 || !strings.Contains(string(b), "workspace_suspended") || !strings.Contains(string(b), "unpaid invoice") {
 		t.Fatalf("suspended workspace for its owner: %d %s", code, b)
 	}

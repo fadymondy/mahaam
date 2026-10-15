@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -14,7 +13,6 @@ import (
 	"github.com/fadymondy/mahaam/internal/authz"
 	"github.com/fadymondy/mahaam/internal/billing/polar"
 	"github.com/fadymondy/mahaam/internal/circlexo"
-	"github.com/fadymondy/mahaam/internal/limits"
 	"github.com/fadymondy/mahaam/internal/tenant"
 	"github.com/fadymondy/mahaam/internal/work"
 )
@@ -55,7 +53,9 @@ type BuyablePlan struct {
 	Purchasable  bool   `json:"purchasable"`
 }
 
-// WorkspaceBilling is GET /api/w/billing.
+// WorkspaceBilling is GET /api/w/billing. Mahaam is free and open source (since 2026-10-15):
+// Plans is always empty and Configured always false; Billing is kept so a workspace with a legacy
+// Polar subscription can still see it and cancel it from the portal.
 type WorkspaceBilling struct {
 	Configured bool `json:"configured"`
 	// HubLinked is true when the CircleXO hub runs this workspace's subscription: the plan and limits
@@ -111,6 +111,9 @@ func polarErr(err error) error {
 	return err
 }
 
+// ErrPaymentsRetired answers the old checkout: nothing can be bought any more.
+const paymentsRetired = "Mahaam is free and open source: there is nothing to buy. You can sponsor open source instead."
+
 // registerBilling mounts the workspace billing routes and the admin sync.
 func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) error, actor func(context.Context) Actor) {
 	client := func() (*polar.Client, error) { return polar.FromEnv() }
@@ -136,26 +139,8 @@ func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) err
 			if u, ok := circlexo.BillingURL(ctx, s.WorkspaceID); ok {
 				out.HubLinked, out.HubBillingURL = true, u
 			}
-			_, cerr := client()
-			out.Configured = cerr == nil
 			if out.Billing, err = BillingOf(ctx, sv.DB, s.WorkspaceID); err != nil {
 				return nil, fail(err)
-			}
-			plans, err := limits.ListPlans(ctx, sv.DB)
-			if err != nil {
-				return nil, fail(err)
-			}
-			ids, err := sv.PolarIDs(ctx)
-			if err != nil {
-				return nil, fail(err)
-			}
-			for _, p := range plans {
-				if !p.Active || p.Key == "unlimited" {
-					continue
-				}
-				out.Plans = append(out.Plans, BuyablePlan{Key: p.Key, NameEn: p.NameEn, NameAr: p.NameAr, PriceLabelEn: p.PriceLabelEn,
-					PriceLabelAr: p.PriceLabelAr, BaseFeeMinor: p.BaseFeeMinor, Currency: p.Currency,
-					Purchasable: out.Configured && ids[p.Key] != "" && polar.Paid(p)})
 			}
 			return &work.Resp[WorkspaceBilling]{Body: out}, nil
 		})
@@ -164,7 +149,7 @@ func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) err
 		URL string `json:"url"`
 	}
 	huma.Register(api, huma.Operation{OperationID: "w-billing-checkout", Method: http.MethodPost, Path: "/api/w/billing/checkout",
-		Summary: "Start a Polar checkout for a plan (owners/admins); returns the URL to redirect to", Tags: []string{"Plan"}},
+		Summary: "Retired: everything is free; always 410 Gone", Tags: []string{"Plan"}, Deprecated: true},
 		func(ctx context.Context, in *struct {
 			work.WS
 			Body struct {
@@ -172,28 +157,13 @@ func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) err
 				Locale string `json:"locale,omitempty" enum:"en,ar,"`
 			}
 		}) (*work.Resp[urlOut], error) {
-			s, err := owner(ctx)
-			if err != nil {
+			if _, err := owner(ctx); err != nil {
 				return nil, err
 			}
-			if u, ok := circlexo.BillingURL(ctx, s.WorkspaceID); ok {
-				return &work.Resp[urlOut]{Body: urlOut{URL: u}}, nil // CircleXO runs this subscription
-			}
-			c, err := client()
-			if err != nil {
-				return nil, fail(polarErr(err))
-			}
-			var email string
-			_ = sv.DB.QueryRowContext(ctx, `SELECT email FROM users WHERE id = $1`, s.UserID).Scan(&email)
-			u, err := polar.Checkout(ctx, sv.DB, c, polar.CheckoutInput{WorkspaceID: s.WorkspaceID, Slug: s.WorkspaceSlug,
-				Plan: strings.ToLower(strings.TrimSpace(in.Body.Plan)), Email: email, Locale: in.Body.Locale})
-			if err != nil {
-				return nil, fail(polarErr(err))
-			}
-			return &work.Resp[urlOut]{Body: urlOut{URL: u}}, nil
+			return nil, fail(errStatus(http.StatusGone, paymentsRetired))
 		})
 	huma.Register(api, huma.Operation{OperationID: "w-billing-portal", Method: http.MethodPost, Path: "/api/w/billing/portal",
-		Summary: "Open the Polar customer portal (manage billing); returns the URL", Tags: []string{"Plan"}},
+		Summary: "Open the Polar customer portal to manage or cancel a legacy subscription; returns the URL", Tags: []string{"Plan"}},
 		func(ctx context.Context, _ *work.WS) (*work.Resp[urlOut], error) {
 			s, err := owner(ctx)
 			if err != nil {

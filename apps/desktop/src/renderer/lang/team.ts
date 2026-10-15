@@ -1,6 +1,6 @@
 // Strings for the team feature. Add both languages together.
 export const en: Record<string, string> = {
-  "team.planLimit": "Your plan's limit is reached.",
+  "team.planLimit": "This workspace can't add more right now.",
   "team.forbidden": "Your role can't do that.",
   "team.unknownPerson": "Former member",
   "team.members.title": "Members",
@@ -60,7 +60,7 @@ export const en: Record<string, string> = {
 };
 
 export const ar: Record<string, string> = {
-  "team.planLimit": "بلغت الحد المسموح في باقتك.",
+  "team.planLimit": "لا يمكن لمساحة العمل إضافة المزيد الآن.",
   "team.forbidden": "دورك لا يسمح بذلك.",
   "team.unknownPerson": "عضو سابق",
   "team.members.title": "الأعضاء",

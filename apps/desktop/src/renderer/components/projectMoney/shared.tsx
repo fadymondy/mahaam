@@ -4,7 +4,6 @@ import { LockIcon, SparklesIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/kit";
-import { SmallButton } from "@/components/settings/parts";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -15,7 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { ApiError, desktop } from "@/lib/bridge";
+import { ApiError } from "@/lib/bridge";
 import { useI18n } from "@/lib/i18n";
 
 export const inputCls =
@@ -52,7 +51,6 @@ export function PlanState() {
       icon={<SparklesIcon />}
       title={t("projectMoney.plan.title")}
       body={t("projectMoney.plan.body")}
-      action={<SmallButton onClick={() => void desktop.openWeb("/settings/plan")}>{t("projectMoney.plan.upgrade")}</SmallButton>}
     />
   );
 }

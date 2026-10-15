@@ -259,73 +259,22 @@ func For(ctx context.Context, ws string) (*Effective, error) {
 
 // ---- checks -----------------------------------------------------------------------------------
 
-// Check refuses adding n of key when a block-policy limit would be exceeded. An overage rule
-// allows it and records the month's high-water mark (what the overage is billed on).
-func Check(ctx context.Context, ws, key string, n int64) error {
-	e, err := For(ctx, ws)
-	if err != nil || e == nil {
-		return err
-	}
-	if e.ReadOnly && n > 0 && HubGoverned(key) {
-		return readOnlyError(e, key)
-	}
-	r := e.Rule(key)
-	if r.Limit == nil {
-		return nil
-	}
-	db := pool()
-	usage, err := Usage(ctx, db, ws, key)
-	if err != nil {
-		return err
-	}
-	if !r.Allows(usage, n) {
-		return limitError(e, key, *r.Limit)
-	}
-	if d, _ := DefOf(key); d.Kind == KindCount || d.Kind == KindData {
-		recordPeak(ctx, db, ws, key, usage+n)
-	}
-	return nil
-}
+// Mahaam is free and open source (since 2026-10-15): no plan limit, quota, storage cap or feature
+// switch refuses anything any more. Check, CheckStorage, Feature and Integration keep their
+// signatures so callers need not change, and always allow. Abuse protection is the per-minute API
+// rate in CountCall (meter.go) and the auth rate limits, not a plan.
 
-// CheckStorage refuses storing addBytes more when the storage limit is a hard cap.
-func CheckStorage(ctx context.Context, ws string, addBytes int64) error {
-	e, err := For(ctx, ws)
-	if err != nil || e == nil {
-		return err
-	}
-	r := e.Rule(StorageMB)
-	if r.Limit == nil {
-		return nil
-	}
-	db := pool()
-	used, err := StorageBytes(ctx, db, ws)
-	if err != nil {
-		return err
-	}
-	if r.Policy == Block && used+addBytes > *r.Limit*mib {
-		return limitError(e, StorageMB, *r.Limit)
-	}
-	recordPeak(ctx, db, ws, StorageMB, ceilMB(used+addBytes))
-	return nil
-}
+// Check always allows: there are no plan limits.
+func Check(ctx context.Context, ws, key string, n int64) error { return nil }
 
-// Feature refuses when the plan does not include feature key (ai_usage_tracking,
-// customer_portal, vault, kpi).
-func Feature(ctx context.Context, ws, key string) error {
-	e, err := For(ctx, ws)
-	if err != nil || e == nil {
-		return err
-	}
-	if !e.Features.Has(key) {
-		return featureError(e, key)
-	}
-	return nil
-}
+// CheckStorage always allows: there is no storage cap tied to a plan.
+func CheckStorage(ctx context.Context, ws string, addBytes int64) error { return nil }
 
-// Integration refuses when the plan does not include provider (github, jira, linear).
-func Integration(ctx context.Context, ws, provider string) error {
-	return Feature(ctx, ws, strings.ToLower(provider))
-}
+// Feature always allows: every feature is included for everyone.
+func Feature(ctx context.Context, ws, key string) error { return nil }
+
+// Integration always allows: every integration is included for everyone.
+func Integration(ctx context.Context, ws, provider string) error { return nil }
 
 // As reports whether err is (or wraps) a refusal.
 func As(err error) (*Exceeded, bool) {

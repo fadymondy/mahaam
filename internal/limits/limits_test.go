@@ -117,8 +117,8 @@ func TestMessages(t *testing.T) {
 	}
 }
 
-// The meter, with the plan served from the cache (no database): the per-minute rate and a
-// block-policy monthly quota refuse, a new minute / month resets.
+// The meter, with the plan served from the cache (no database): only the abuse rate refuses (a
+// new minute resets it); there is no monthly quota, whatever the plan says.
 func TestMeter(t *testing.T) {
 	resetMeter()
 	defer resetMeter()
@@ -133,36 +133,29 @@ func TestMeter(t *testing.T) {
 	defer Invalidate("")
 	ctx := context.Background()
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < AbuseRatePerMinute; i++ {
 		if err := CountCall(ctx, "ws1"); err != nil {
 			t.Fatalf("call %d: %v", i, err)
 		}
 	}
 	if x, ok := As(CountCall(ctx, "ws1")); !ok || x.Status != http.StatusTooManyRequests {
-		t.Fatalf("4th call in a minute must be rate limited: %v", x)
+		t.Fatalf("one call over the abuse rate must be refused: %v", x)
 	}
 	clock = clock.Add(time.Minute)
 	mu.Lock()
 	cache["ws1"] = cached{e: e, at: clock}
 	mu.Unlock()
-	for i := 0; i < 2; i++ {
-		if err := CountCall(ctx, "ws1"); err != nil {
-			t.Fatalf("new minute call %d: %v", i, err)
-		}
+	if err := CountCall(ctx, "ws1"); err != nil {
+		t.Fatalf("a new minute resets the rate (and there is no monthly quota): %v", err)
 	}
-	if x, ok := As(CountCall(ctx, "ws1")); !ok || x.Status != http.StatusPaymentRequired || x.Key != APICallsMonth {
-		t.Fatalf("6th call in the month must hit the monthly block quota: %v", x)
-	}
-	if pendingCalls("ws1") != 5 {
+	if pendingCalls("ws1") != AbuseRatePerMinute+1 {
 		t.Errorf("refused calls are not counted: %d", pendingCalls("ws1"))
 	}
-	// A new month starts from zero (the flushed base resets with the period).
-	clock = time.Date(2026, 10, 1, 0, 0, 5, 0, time.UTC)
-	mu.Lock()
-	cache["ws1"] = cached{e: e, at: clock}
-	meter.pending = map[string]int64{}
-	mu.Unlock()
-	if err := CountCall(ctx, "ws1"); err != nil {
-		t.Errorf("a new month must reset the quota: %v", err)
+	// The plan's checks never refuse.
+	if err := Check(ctx, "ws1", Projects, 1000); err != nil {
+		t.Errorf("Check: %v", err)
+	}
+	if err := Feature(ctx, "ws1", FeatureVault); err != nil {
+		t.Errorf("Feature: %v", err)
 	}
 }
