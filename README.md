@@ -116,7 +116,7 @@ The full engineering notebook — tenancy, RLS, time-tracking invariants, MCP sc
 Mahaam is built on **[ToGO](https://to-go.dev)** ([GitHub](https://github.com/togo-framework/togo)), the
 open-source, API-first framework for Go + sqlc + Atlas + GraphQL/OpenAPI + Next.js with a
 Laravel-style CLI. The kernel is small and everything else is a plugin; these are the pieces
-Mahaam uses:
+Mahaam uses ([read the case study](https://to-go.dev/en/blog/mahaam-togo-case-study)):
 
 | ToGO piece | What it does in Mahaam |
 |---|---|
