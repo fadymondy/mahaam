@@ -624,85 +624,35 @@ func TestCircleXOEntitlements(t *testing.T) {
 		t.Fatalf("an unlinked workspace must not be hub governed: %v %+v", err, e)
 	}
 
+	// Free and open source: the hub's entitlements are still read (the workspace is hub governed),
+	// but nothing is refused for them, not a limit of 0, not the read-only grace, not a missing
+	// answer.
 	setEnts(true, lim(0), true)
 	e, err := limits.For(ctx, ws)
 	if err != nil || !e.Hub || e.ReadOnly {
 		t.Fatalf("expected a hub governed workspace: %v %+v", err, e)
 	}
-	if x := refused(limits.Projects); x == nil || x.Code != "plan_limit" {
-		t.Fatalf("a projects limit of 0 must refuse the first project: %v", x)
-	}
-	if x := refused(limits.Members); x != nil {
-		t.Fatalf("unlimited members refused: %v", x)
-	}
-	if !e.Features.CustomerPortal {
-		t.Fatal("client_portal should be on")
-	}
-	setEnts(true, lim(5), false)
 	if x := refused(limits.Projects); x != nil {
-		t.Fatalf("a limit of 5 refused the first project: %v", x)
-	}
-	if e, _ := limits.For(ctx, ws); e.Features.CustomerPortal {
-		t.Fatal("client_portal should be off")
-	}
-
-	// entitlement.changed and subscription.* invalidate: the hub's new answer is seen at once.
-	s.hub.Lock()
-	ent := s.hub.Entitlements[org]
-	ent.Features[0].Limit = lim(0)
-	ent.Version = 3
-	s.hub.Entitlements[org] = ent
-	s.hub.Unlock()
-	if x := refused(limits.Projects); x != nil {
-		t.Fatal("expected the cached (stale) answer before the event")
-	}
-	s.event(webhooks.EntitlementChanged, org, map[string]any{"version": 3, "reason": "plan_changed"}, "en-"+rnd())
-	if x := refused(limits.Projects); x == nil {
-		t.Fatal("entitlement.changed did not invalidate")
-	}
-	s.hub.Lock()
-	ent.Features[0].Limit = lim(9)
-	s.hub.Entitlements[org] = ent
-	s.hub.Unlock()
-	s.event("subscription.updated", org, map[string]any{}, "sub-"+rnd())
-	if x := refused(limits.Projects); x != nil {
-		t.Fatalf("subscription.* did not invalidate: %v", x)
-	}
-
-	// Hub down, inside the grace window: the last answer stands, read-only (adds refused).
-	if _, err := s.svc.Ents.Get(ctx, org, 0); err != nil {
-		t.Fatal(err)
+		t.Fatalf("a projects limit of 0 must no longer refuse: %v", x)
 	}
 	s.svc.Ents.Invalidate(org, 0)
 	limits.Invalidate(ws)
 	s.hub.Lock()
 	s.hub.Fail = http.StatusInternalServerError
 	s.hub.Unlock()
-	if e, err := limits.For(ctx, ws); err != nil || !e.ReadOnly || !e.Hub {
-		t.Fatalf("expected read-only grace: %v %+v", err, e)
-	}
-	if x := refused(limits.Projects); x == nil || x.Code != "plan_read_only" {
-		t.Fatalf("read-only must refuse adds, got %v", x)
-	}
-	if x, _ := limits.As(limits.Check(ctx, ws, limits.Projects, 0)); x != nil {
-		t.Fatalf("read-only must still allow reading (n=0): %v", x)
+	if x := refused(limits.Projects); x != nil {
+		t.Fatalf("the hub being down must not refuse adds: %v", x)
 	}
 	s.hub.Lock()
 	s.hub.Fail = 0
-	s.hub.Unlock()
-
-	// An org the hub has no entitlements for fails closed.
-	s.hub.Lock()
 	delete(s.hub.Entitlements, org)
 	s.hub.Unlock()
 	s.svc.Ents.Invalidate(org, 0)
 	limits.Invalidate(ws)
-	if e, _ := limits.For(ctx, ws); !e.ReadOnly || e.Features.CustomerPortal {
-		t.Fatalf("no entitlements must fail closed: %+v", e)
+	if x := refused(limits.Members); x != nil {
+		t.Fatalf("no entitlements must not refuse adding members: %v", x)
 	}
-	if x := refused(limits.Members); x == nil {
-		t.Fatal("no entitlements must refuse adding members")
-	}
+	s.event(webhooks.EntitlementChanged, org, map[string]any{"version": 3, "reason": "plan_changed"}, "en-"+rnd())
 
 	// Deprovisioned: back to Mahaam's own plan logic.
 	s.event(webhooks.AppRemoved, org, map[string]any{}, "rm-"+rnd())

@@ -76,7 +76,7 @@ export const en: Record<string, string> = {
   "agents.revokeBody": "“{name}” stops working at once, and anything using it loses access.",
   "agents.revoked": "Token revoked",
   "agents.forbidden": "Your role cannot manage MCP tokens in this workspace.",
-  "agents.planLimit": "Your workspace's plan does not allow more MCP tokens.",
+  "agents.planLimit": "This workspace can't add more MCP tokens right now.",
 };
 
 export const ar: Record<string, string> = {
@@ -156,5 +156,5 @@ export const ar: Record<string, string> = {
   "agents.revokeBody": "سيتوقف «{name}» عن العمل فورًا، وسيفقد كل ما يستخدمه صلاحية الوصول.",
   "agents.revoked": "تم إلغاء صلاحية الرمز",
   "agents.forbidden": "دورك لا يتيح لك إدارة رموز MCP في مساحة العمل هذه.",
-  "agents.planLimit": "خطة مساحة العمل لا تسمح بمزيد من رموز MCP.",
+  "agents.planLimit": "لا يمكن لمساحة العمل إضافة مزيد من رموز MCP الآن.",
 };

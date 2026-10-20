@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { BellIcon, CoinsIcon, GaugeIcon, KeyRoundIcon, Settings2Icon, ShieldCheckIcon, TimerIcon } from "lucide-react"
+import { BellIcon, CoinsIcon, HeartIcon, KeyRoundIcon, Settings2Icon, ShieldCheckIcon, TimerIcon } from "lucide-react"
 import { SettingsSections } from "@fadymondy/nasaq/web"
 
 import { Page } from "@/components/page"
@@ -30,7 +30,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       label: t("settings.wsGroup.workspace"),
       pages: [
         { id: "workspace", label: t("nav.workspaceSettings"), icon: <Settings2Icon />, ok: owner },
-        { id: "plan", label: t("nav.plan"), icon: <GaugeIcon />, ok: ws.can("workspace:update") },
+        { id: "plan", label: t("nav.plan"), icon: <HeartIcon />, ok: ws.can("workspace:update") },
         { id: "rates", label: t("nav.rates"), icon: <CoinsIcon />, ok: ws.can("rates:read") },
         { id: "time", label: t("nav.timeSettings"), icon: <TimerIcon />, ok: true },
       ],
