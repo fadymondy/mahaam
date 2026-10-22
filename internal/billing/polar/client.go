@@ -10,8 +10,13 @@
 //     workspace's plan and billing status.
 //   - Usage (usage.go): overage units from workspace_usage pushed to /v1/events/ingest as deltas.
 //
-// Configuration (never hard-coded): POLAR_ACCESS_TOKEN (organization access token),
-// POLAR_API_URL (default https://api.polar.sh), POLAR_WEBHOOK_SECRET, POLAR_SUCCESS_URL.
+// Configuration (never hard-coded): POLAR_BILLING_ENABLED (master switch, off unless "true"; Polar
+// closed the organization on 2026-10-21, so checkout, the portal, sync and the usage push are
+// unavailable until it is set), POLAR_ACCESS_TOKEN (organization access token), POLAR_API_URL
+// (default https://api.polar.sh), POLAR_WEBHOOK_SECRET, POLAR_SUCCESS_URL.
+//
+// The webhook stays mounted while billing is off, so subscriptions Polar cancels still move their
+// workspaces back to the free plan.
 package polar
 
 import (
@@ -40,8 +45,25 @@ type Client struct {
 // ErrNotConfigured is returned when POLAR_ACCESS_TOKEN is not set.
 var ErrNotConfigured = errors.New("Polar billing is not configured (POLAR_ACCESS_TOKEN)")
 
-// FromEnv builds a client from POLAR_ACCESS_TOKEN / POLAR_API_URL.
+// ErrDisabled is returned while billing is switched off (POLAR_BILLING_ENABLED is not "true").
+var ErrDisabled = errors.New("billing unavailable")
+
+// Enabled reports whether Polar billing is switched on. It is off unless POLAR_BILLING_ENABLED is
+// "true" (or "1"), so a deploy without the variable cannot open a checkout.
+func Enabled() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("POLAR_BILLING_ENABLED"))) {
+	case "true", "1", "yes", "on":
+		return true
+	}
+	return false
+}
+
+// FromEnv builds a client from POLAR_ACCESS_TOKEN / POLAR_API_URL. It returns ErrDisabled while
+// billing is switched off.
 func FromEnv() (*Client, error) {
+	if !Enabled() {
+		return nil, ErrDisabled
+	}
 	tok := strings.TrimSpace(os.Getenv("POLAR_ACCESS_TOKEN"))
 	if tok == "" {
 		return nil, ErrNotConfigured

@@ -1,6 +1,7 @@
 package polar
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -77,5 +78,25 @@ func TestProductBody(t *testing.T) {
 	}
 	if got := MeteredKeys([]limits.Plan{p}); len(got) != 1 || got[0] != "projects" {
 		t.Errorf("metered keys: %v", got)
+	}
+}
+
+// Polar closed the organization: billing stays off unless POLAR_BILLING_ENABLED is explicitly "true".
+func TestBillingSwitch(t *testing.T) {
+	t.Setenv("POLAR_ACCESS_TOKEN", "test-polar-token")
+	for _, v := range []string{"", "false", "0", "no"} {
+		t.Setenv("POLAR_BILLING_ENABLED", v)
+		if Enabled() {
+			t.Errorf("POLAR_BILLING_ENABLED=%q must be off", v)
+		}
+		if c, err := FromEnv(); c != nil || !errors.Is(err, ErrDisabled) {
+			t.Errorf("POLAR_BILLING_ENABLED=%q: want ErrDisabled, got %v %v", v, c, err)
+		}
+	}
+	for _, v := range []string{"true", "TRUE", "1"} {
+		t.Setenv("POLAR_BILLING_ENABLED", v)
+		if c, err := FromEnv(); err != nil || c == nil {
+			t.Errorf("POLAR_BILLING_ENABLED=%q: want a client, got %v", v, err)
+		}
 	}
 }

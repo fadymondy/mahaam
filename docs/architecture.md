@@ -555,6 +555,11 @@ The e2e scripts wait for `load`, not `networkidle`: the live stream keeps a requ
 
 ## Billing (Polar)
 
+> **Switched off (2026-10-21).** Polar offboarded the organization, so `POLAR_BILLING_ENABLED` defaults to off:
+> checkout, the customer portal, `polar-sync` and the 15-minute usage push answer "billing unavailable" (503) and
+> paid plans are not offered. Nothing was deleted; set `POLAR_BILLING_ENABLED=true` to bring it back. The webhook
+> stays mounted so subscriptions Polar cancels still move their workspaces back to the free plan.
+
 Polar (polar.sh, merchant of record, org `3x1io`) sells the paid plans (`internal/billing/polar`). Env only:
 `POLAR_ACCESS_TOKEN`, `POLAR_API_URL`, `POLAR_WEBHOOK_SECRET`, `POLAR_SUCCESS_URL`. Everything Mahaam creates is
 named "Mahaam …" and tagged `metadata {"app":"mahaam", …}`; the org's other products, meters and webhooks are never
