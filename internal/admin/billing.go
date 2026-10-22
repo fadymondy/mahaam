@@ -101,6 +101,8 @@ func (sv *Service) PolarIDs(ctx context.Context) (map[string]string, error) {
 func polarErr(err error) error {
 	var api *polar.APIError
 	switch {
+	case errors.Is(err, polar.ErrDisabled):
+		return errStatus(http.StatusServiceUnavailable, "billing unavailable")
 	case errors.Is(err, polar.ErrNotConfigured):
 		return errStatus(http.StatusServiceUnavailable, err.Error())
 	case errors.Is(err, polar.ErrPlanNotSold):
@@ -150,6 +152,9 @@ func registerBilling(api huma.API, a *app.App, sv *Service, fail func(error) err
 				return nil, fail(err)
 			}
 			for _, p := range plans {
+				if !polar.Enabled() {
+					break // billing is off: no paid plan is offered
+				}
 				if !p.Active || p.Key == "unlimited" {
 					continue
 				}

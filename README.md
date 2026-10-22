@@ -28,8 +28,8 @@
   attachments and a full activity log. Clients, teams and per-project access.
 - **Time tracking everywhere** — a timer on the web, the tray app, the Chrome extension and the
   mobile apps; timesheets, rates snapshotted per entry, budgets and profitability reports.
-- **Invoices from time** — turn tracked time, AI usage and subscriptions into invoices; billing
-  through Polar for the hosted plans.
+- **Invoices from time** — turn tracked time, AI usage and subscriptions into invoices. Hosted-plan
+  billing through Polar is switched off (`POLAR_BILLING_ENABLED=false`).
 - **Customer portal** — clients see their projects, accept or reopen issues, file requests and
   see their invoices without a staff seat.
 - **Feedback SDK and widget** — drop `/embed/v1.js` into any site and bug reports (with

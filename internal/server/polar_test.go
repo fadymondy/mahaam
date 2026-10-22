@@ -124,6 +124,7 @@ func TestPolarBilling(t *testing.T) {
 	}
 	fs := httptest.NewServer(fake.handler(t))
 	defer fs.Close()
+	t.Setenv("POLAR_BILLING_ENABLED", "true")
 	t.Setenv("POLAR_ACCESS_TOKEN", "test-polar-token")
 	t.Setenv("POLAR_API_URL", fs.URL)
 	t.Setenv("POLAR_WEBHOOK_SECRET", "polar_whs_test-secret")
