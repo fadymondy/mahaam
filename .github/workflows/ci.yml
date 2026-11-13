@@ -19,8 +19,8 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Codegen (sqlc + gqlgen)
@@ -32,7 +32,7 @@ jobs:
         run: go run ./cmd/api openapi > openapi.yaml
       # apps/ needs this spec to check its generated types, but producing it requires the
       # sqlc/gqlgen output generated above. Hand it over instead of regenerating it there.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: openapi-spec
           path: openapi.yaml
@@ -52,8 +52,8 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm ci
@@ -66,8 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: api
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Install (shared, tray, extension workspaces)
@@ -85,7 +85,7 @@ jobs:
       # The checked-in openapi.d.ts silently lagged the API for days because generation
       # needed a running server. It now comes from `go run ./cmd/api openapi`, so drift
       # can be a hard failure instead of something nobody notices.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: openapi-spec
       - name: API types are current
@@ -104,14 +104,14 @@ jobs:
       run:
         working-directory: apps/mobile
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       # apps/mobile is deliberately outside the apps/ npm workspace (its own lockfile),
       # so it needs its own job or it is never checked at all.
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: openapi-spec
           path: apps/mobile
@@ -131,7 +131,7 @@ jobs:
     # The one-command self-host path in the README must keep working.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Throwaway secrets
         run: |
           {
