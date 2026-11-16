@@ -37,6 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: ID,
+    versionCode: 100,
     adaptiveIcon: {
       backgroundColor: "#F0EBE1",
       foregroundImage: asset("adaptive-fg"),
@@ -52,6 +53,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "./plugins/with-scene-lifecycle",
     // Android release builds need more Gradle/Kotlin daemon memory than the template gives.
     "./plugins/with-gradle-memory",
+    "./plugins/with-release-signing",
     // OTA through Codemagic Patch; inert until the deployment keys exist.
     "./plugins/with-app-updates",
     "expo-secure-store",
